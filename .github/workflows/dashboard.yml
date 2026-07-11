@@ -10,9 +10,6 @@ on:
     paths:
       - 'sar_state.txt'
       - 'equity.csv'
-      - 'build_dashboard.py'
-      - 'ci_py311_preflight.py'
-      - '.github/workflows/dashboard.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -27,10 +24,6 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install pandas numpy yfinance
-      - name: Python 3.11 preflight
-        run: |
-          python ci_py311_preflight.py
-          python -m py_compile build_dashboard.py
       - name: Build dashboard
         env:
           V38_UNIVERSE_CSV: universe.csv
@@ -43,11 +36,11 @@ jobs:
           V38_STATE_JSON: state.json
           V38_EQUITY_CSV: equity.csv
         run: python build_dashboard.py
-      - name: Commit updated dashboard + repaired source + caches
+      - name: Commit updated dashboard + caches
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add build_dashboard.py index.html
+          git add index.html
           git add mktcap.json trend_history.json fred_cache.json state.json || true
-          git diff --staged --quiet || git commit -m "Daily dashboard rebuild + Python 3.11 source repair"
+          git diff --staged --quiet || git commit -m "Daily dashboard rebuild + cache refresh"
           git push
