@@ -2,10 +2,14 @@ name: Dashboard daily build
 
 on:
   schedule:
-    - cron: '0 22 * * 1-5'
+    # 朝一: JST 7時 = UTC 22時（米取引日の翌朝＝UTC火〜土）。起きてすぐ確認用。
+    - cron: '0 22 * * 2-6'
+    # 昼: JST 13時 = UTC 4時（同じくUTC火〜土）。夏時間の取りこぼし・朝のFRED障害を埋める確認用。
+    - cron: '0 4 * * 2-6'
   push:
     paths:
       - 'sar_state.txt'
+      - 'equity.csv'
   workflow_dispatch: {}
 
 permissions:
@@ -20,28 +24,23 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install pandas numpy yfinance
-
-      - name: Build dashboard (self-validating)
+      - name: Build dashboard
         env:
           V38_UNIVERSE_CSV: universe.csv
           V38_SECTOR_JSON: sector_snapshot.json
           V38_OUT_HTML: index.html
           V38_MKTCAP_JSON: mktcap.json
           V38_TREND_JSON: trend_history.json
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          V38_FRED_CACHE: fred_cache.json
           V38_STATE_JSON: state.json
-          V38_LOG_CSV: daily_log.csv
-          V38_ER_JSON: earnings.json
           V38_EQUITY_CSV: equity.csv
-        run: python build_dashboard.py --selftest
-
+        run: python build_dashboard.py
       - name: Commit updated dashboard + caches
         run: |
-          if [ ! -s index.html ] || ! grep -q "マーケットステータス" index.html; then
-            echo "index.html が不正 — コミットを見送り"; exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git add mktcap.json trend_history.json state.json daily_log.csv earnings.json || true
+          git add mktcap.json trend_history.json fred_cache.json state.json || true
           git diff --staged --quiet || git commit -m "Daily dashboard rebuild + cache refresh"
           git push
