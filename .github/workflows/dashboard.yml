@@ -10,6 +10,9 @@ on:
     paths:
       - 'sar_state.txt'
       - 'equity.csv'
+      - 'build_dashboard.py'
+      - 'ci_py311_preflight.py'
+      - '.github/workflows/dashboard.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -24,6 +27,10 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install pandas numpy yfinance
+      - name: Python 3.11 preflight
+        run: |
+          python ci_py311_preflight.py
+          python -m py_compile build_dashboard.py
       - name: Build dashboard
         env:
           V38_UNIVERSE_CSV: universe.csv
