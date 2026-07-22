@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-PRESENTATION_POLICY_VERSION = "1.0.0"
+PRESENTATION_POLICY_VERSION = "1.0.1"
 
 WARNING_JA = {
     "market_gate": "地合いゲートにより新規発注停止",
@@ -96,8 +96,6 @@ def _entry_plan(candidate: dict[str, Any]) -> dict[str, Any]:
     sma10 = _number(candidate.get("stop_sma10"))
     adr = _number(candidate.get("adr_pct")) or 0.0
     setup = str(candidate.get("setup") or "WATCH")
-    stops = [value for value in (ema, sma10) if value is not None and value > 0]
-    stop = max(stops) if stops else None
 
     entry_low = entry_high = entry_1 = entry_2 = None
     if price is not None:
@@ -109,12 +107,13 @@ def _entry_plan(candidate: dict[str, Any]) -> dict[str, Any]:
             entry_2 = pivot
         elif setup == "BREAKOUT" and pivot is not None:
             entry_low = pivot
-            entry_high = min(price, pivot * (1.0 + min(adr_fraction * 0.5, 0.025)))
+            entry_high = max(pivot, min(price, pivot * (1.0 + min(adr_fraction * 0.5, 0.025))))
             entry_1 = pivot
             entry_2 = entry_high
         elif setup == "PULLBACK":
-            anchor = ema if ema is not None else price * (1.0 - adr_fraction)
-            entry_low = max(anchor, price * (1.0 - min(adr_fraction * 0.75, 0.05)))
+            reference = price * (1.0 - min(adr_fraction * 0.75, 0.05))
+            entry_low = max(reference, (ema or reference) * 1.002)
+            entry_low = min(entry_low, price)
             entry_high = price
             entry_1 = entry_low
             entry_2 = price if pivot is None else min(max(price, entry_low), pivot)
@@ -126,11 +125,18 @@ def _entry_plan(candidate: dict[str, Any]) -> dict[str, Any]:
             entry_1 = entry_low
             entry_2 = pivot if pivot is not None and pivot >= price else price
 
+    stops = [value for value in (ema, sma10) if value is not None and value > 0]
+    valid_stops = [value for value in stops if entry_1 is not None and value < entry_1 * 0.998]
+    stop = max(valid_stops) if valid_stops else None
+    source_risk = _number(candidate.get("stop_risk_pct"))
+    if stop is None and entry_1 is not None and source_risk is not None and 0 < source_risk < 50:
+        stop = entry_1 * (1.0 - source_risk / 100.0)
+
     risk_pct = None
     if entry_1 is not None and stop is not None and entry_1 > 0:
-        risk_pct = max(0.0, (entry_1 - stop) / entry_1 * 100.0)
+        risk_pct = (entry_1 - stop) / entry_1 * 100.0
     if risk_pct is None:
-        risk_pct = _number(candidate.get("stop_risk_pct"))
+        risk_pct = source_risk
 
     distance_high = _number(candidate.get("distance_52w_high_pct"))
     target = None
