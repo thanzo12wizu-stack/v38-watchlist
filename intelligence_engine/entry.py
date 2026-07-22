@@ -4,7 +4,8 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-ENTRY_POLICY_VERSION = "1.0.0"
+
+ENTRY_POLICY_VERSION = "1.0.1"
 
 
 def add_entry_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
@@ -31,6 +32,11 @@ def add_entry_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
         )
         return pd.Series({"score_entry": entry, "score_entry_technical": technical, "score_entry_risk": risk, "score_entry_confidence": confidence})
 
+    if out.empty:
+        for column in ("score_entry", "score_entry_technical", "score_entry_risk", "score_entry_confidence", "entry_rank_pct"):
+            out[column] = pd.Series(dtype="float64")
+        out["setup"] = pd.Series(dtype="object")
+        return out
     out = pd.concat([out, out.apply(score_row, axis=1)], axis=1)
     out["entry_rank_pct"] = percentile_rank(out["score_entry"])
     out["setup"] = out.apply(classify_setup, axis=1)
@@ -54,7 +60,8 @@ def classify_setup(row: pd.Series) -> str:
         return "PULLBACK"
     if pd.notna(volume) and volume >= 1.5:
         return "VOLUME_SURGE"
-    if pd.notna(row.get("distance_52w_high_pct")) and row.get("distance_52w_high_pct") <= -20:
+    distance_high = pd.to_numeric(row.get("distance_52w_high_pct"), errors="coerce")
+    if pd.notna(distance_high) and distance_high <= -20:
         return "DEEP_PULLBACK"
     return "WATCH"
 
@@ -63,7 +70,7 @@ def build_entry_candidates(frame: pd.DataFrame, limit: int = 20) -> list[dict]:
     if frame.empty:
         return []
     work = frame[~frame["setup"].isin(["AVOID", "EXTENDED"])].sort_values(
-        ["score_entry", "score_leader", "ticker"], ascending=[False, False, True]
+        ["score_entry", "score_leader", "ticker"], ascending=[False, False, True], na_position="last"
     ).head(limit)
     records = []
     for _, row in work.iterrows():

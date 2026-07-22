@@ -2,6 +2,7 @@ import json
 import pickle
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from intelligence_engine.forward_validation import evaluate_snapshot, summarize_by_score_bucket
@@ -13,6 +14,7 @@ from intelligence_engine.score_policy import SCORE_POLICY_VERSION, validate_scor
 from intelligence_engine.scoring import score_universe
 from intelligence_engine.sec import parse_companyfacts
 from intelligence_engine.sector_rotation import build_sector_rotation
+from intelligence_engine.utils import atomic_write_json, weighted_available
 from intelligence_engine.validate_inputs import inspect_inputs
 from intelligence_engine.validate_outputs import validate
 
@@ -25,6 +27,38 @@ def test_score_universe_prefers_multi_factor_leader():
     scored = score_universe(frame).set_index("ticker")
     assert scored.loc["A", "score_candidate"] > scored.loc["B", "score_candidate"]
     assert 0 <= scored.loc["A", "score_confidence"] <= 1
+
+
+def test_weighted_available_ignores_nan_and_infinity():
+    value, confidence = weighted_available(
+        {"nan": np.nan, "valid": 80.0, "inf": np.inf, "missing": None},
+        {"nan": .20, "valid": .50, "inf": .20, "missing": .10},
+    )
+    assert value == 80.0
+    assert np.isclose(confidence, .50)
+
+
+def test_atomic_write_json_normalizes_non_finite_values(tmp_path):
+    target = tmp_path / "strict.json"
+    atomic_write_json(
+        target,
+        {
+            "nan": np.nan,
+            "inf": np.inf,
+            "missing": pd.NA,
+            "number": np.float64(1.25),
+            "nested": [float("-inf"), np.int64(2)],
+        },
+    )
+    text = target.read_text(encoding="utf-8")
+    assert "NaN" not in text
+    assert "Infinity" not in text
+    payload = json.loads(text)
+    assert payload["nan"] is None
+    assert payload["inf"] is None
+    assert payload["missing"] is None
+    assert payload["number"] == 1.25
+    assert payload["nested"] == [None, 2]
 
 
 def fact(val, start, end, form="10-Q", filed="2026-05-01"):
@@ -97,6 +131,18 @@ def test_output_contract_rejects_duplicate_tickers(tmp_path):
     assert "duplicate ticker: AAA" in errors
 
 
+def test_output_contract_rejects_nonstandard_nan(tmp_path):
+    root = tmp_path / "intelligence"
+    root.mkdir()
+    (root / "manifest.json").write_text("{}", encoding="utf-8")
+    (root / "index.json").write_text(
+        '{"generated_at":"2026-07-22T00:00:00Z","schema_version":"1.0","stocks":[],"bad":NaN}',
+        encoding="utf-8",
+    )
+    errors = validate(root)
+    assert errors and errors[0].startswith("invalid index.json")
+
+
 def test_forward_validation_uses_last_price_on_or_before_asof():
     dates = pd.date_range("2026-01-01", periods=8, freq="D")
     prices = {
@@ -124,7 +170,7 @@ def test_score_bucket_summary_reports_excess_win_rate():
 
 
 def test_score_policy_is_versioned_and_balanced():
-    assert SCORE_POLICY_VERSION == "1.0.0"
+    assert SCORE_POLICY_VERSION == "1.0.1"
     assert validate_score_policy() == []
 
 
@@ -134,8 +180,8 @@ def test_release_check_passes_repository_root():
 
 def test_leader_score_rewards_persistence_and_acceleration():
     frame = pd.DataFrame([
-        {"ticker":"A","sector":"Tech","industry":"Semi","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"distance_52w_high_pct":-2,"dollar_volume_20d":50_000_000,"sector_rank_pct":.9,"industry_rank_pct":.9},
-        {"ticker":"B","sector":"Tech","industry":"Semi","rs_raw_63":.1,"rs_raw_126":.1,"rs_raw_189":.1,"rs_change_raw_63":-.1,"rs_change_raw_126":-.1,"distance_52w_high_pct":-30,"dollar_volume_20d":10_000_000,"sector_rank_pct":.9,"industry_rank_pct":.9},
+        {"ticker":"A","sector":"Tech","industry":"Semi","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"distance_52w_high_pct":-2,"dollar_volume_20d":50_000_000,"sector_rank_pct":90,"industry_rank_pct":90},
+        {"ticker":"B","sector":"Tech","industry":"Semi","rs_raw_63":.1,"rs_raw_126":.1,"rs_raw_189":.1,"rs_change_raw_63":-.1,"rs_change_raw_126":-.1,"distance_52w_high_pct":-30,"dollar_volume_20d":10_000_000,"sector_rank_pct":90,"industry_rank_pct":90},
     ])
     scored = add_leader_scores(frame).set_index("ticker")
     assert scored.loc["A", "score_leader"] > scored.loc["B", "score_leader"]
@@ -144,12 +190,14 @@ def test_leader_score_rewards_persistence_and_acceleration():
 
 def test_sector_rotation_prefers_strong_accelerating_sector():
     frame = pd.DataFrame([
-        {"ticker":"A1","sector":"A","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"score_leader":.9,"leader_rank_pct":1.0},
-        {"ticker":"A2","sector":"A","rs_raw_63":.4,"rs_raw_126":.5,"rs_raw_189":.6,"rs_change_raw_63":.1,"rs_change_raw_126":.1,"score_leader":.8,"leader_rank_pct":.8},
-        {"ticker":"B1","sector":"B","rs_raw_63":-.1,"rs_raw_126":0,"rs_raw_189":.1,"rs_change_raw_63":-.2,"rs_change_raw_126":-.1,"score_leader":.2,"leader_rank_pct":.2},
-        {"ticker":"B2","sector":"B","rs_raw_63":-.2,"rs_raw_126":-.1,"rs_raw_189":0,"rs_change_raw_63":-.2,"rs_change_raw_126":-.2,"score_leader":.1,"leader_rank_pct":0},
+        {"ticker":"A1","sector":"A","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"score_leader":90,"leader_rank_pct":100},
+        {"ticker":"A2","sector":"A","rs_raw_63":.4,"rs_raw_126":.5,"rs_raw_189":.6,"rs_change_raw_63":.1,"rs_change_raw_126":.1,"score_leader":80,"leader_rank_pct":80},
+        {"ticker":"B1","sector":"B","rs_raw_63":-.1,"rs_raw_126":0,"rs_raw_189":.1,"rs_change_raw_63":-.2,"rs_change_raw_126":-.1,"score_leader":20,"leader_rank_pct":20},
+        {"ticker":"B2","sector":"B","rs_raw_63":-.2,"rs_raw_126":-.1,"rs_raw_189":0,"rs_change_raw_63":-.2,"rs_change_raw_126":-.2,"score_leader":10,"leader_rank_pct":0},
     ])
     rotation = build_sector_rotation(frame)
     assert rotation[0]["sector"] == "A"
     assert rotation[0]["score_rotation"] > rotation[1]["score_rotation"]
     assert rotation[0]["leaders"][0] == "A1"
+    assert rotation[0]["leader_share_top20pct"] == 1.0
+    assert rotation[1]["leader_share_top20pct"] == 0.0

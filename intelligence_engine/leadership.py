@@ -6,7 +6,7 @@ import pandas as pd
 from .utils import percentile_rank, weighted_available
 
 
-LEADER_POLICY_VERSION = "1.0.0"
+LEADER_POLICY_VERSION = "1.0.1"
 
 
 def add_leader_scores(frame: pd.DataFrame) -> pd.DataFrame:
@@ -41,6 +41,11 @@ def add_leader_scores(frame: pd.DataFrame) -> pd.DataFrame:
         )
         return pd.Series({"score_leader": leader, "score_leader_confidence": confidence})
 
+    if out.empty:
+        out["score_leader"] = pd.Series(dtype="float64")
+        out["score_leader_confidence"] = pd.Series(dtype="float64")
+        out["leader_rank_pct"] = pd.Series(dtype="float64")
+        return out
     scored = out.apply(row_score, axis=1)
     out = pd.concat([out, scored], axis=1)
     out["leader_rank_pct"] = percentile_rank(out["score_leader"]) if "score_leader" in out else np.nan

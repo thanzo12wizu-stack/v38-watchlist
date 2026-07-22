@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -10,8 +11,22 @@ REQUIRED_INDEX_KEYS = {"generated_at", "schema_version", "stocks"}
 REQUIRED_STOCK_KEYS = {"ticker", "scores", "features", "confidence"}
 
 
+def _reject_nonstandard_constant(token: str) -> None:
+    raise ValueError(f"non-standard JSON constant: {token}")
+
+
 def _load(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(
+        path.read_text(encoding="utf-8"),
+        parse_constant=_reject_nonstandard_constant,
+    )
+
+
+def _valid_score(value: object) -> bool:
+    if not isinstance(value, (int, float)):
+        return False
+    number = float(value)
+    return math.isfinite(number) and 0 <= number <= 100
 
 
 def validate(root: Path) -> list[str]:
@@ -56,11 +71,11 @@ def validate(root: Path) -> list[str]:
             errors.append(f"{ticker or number}: scores must be object")
         else:
             for key, value in scores.items():
-                if value is not None and (not isinstance(value, (int, float)) or not 0 <= float(value) <= 100):
-                    errors.append(f"{ticker or number}: score {key} outside 0..100")
+                if value is not None and not _valid_score(value):
+                    errors.append(f"{ticker or number}: score {key} outside finite 0..100")
         confidence = stock.get("confidence")
-        if confidence is not None and (not isinstance(confidence, (int, float)) or not 0 <= float(confidence) <= 100):
-            errors.append(f"{ticker or number}: confidence outside 0..100")
+        if confidence is not None and not _valid_score(confidence):
+            errors.append(f"{ticker or number}: confidence outside finite 0..100")
 
     return errors
 
