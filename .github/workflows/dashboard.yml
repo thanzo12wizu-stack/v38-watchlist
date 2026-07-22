@@ -34,7 +34,7 @@ jobs:
         env:
           V38_UNIVERSE_CSV: universe.csv
           V38_SECTOR_JSON: sector_snapshot.json
-          V38_OUT_HTML: index.html
+          V38_OUT_HTML: command-center.html
           V38_MKTCAP_JSON: mktcap.json
           V38_TREND_JSON: trend_history.json
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add command-center.html
           git add mktcap.json trend_history.json fred_cache.json state.json || true
 
           if git diff --staged --quiet; then
