@@ -1,6 +1,6 @@
 import json
 
-from intelligence_engine.intelligence_dashboard import build_html, generate
+from intelligence_engine.intelligence_dashboard import build_html, generate, load_payload
 
 
 def test_build_html_contains_views_and_preserves_existing_dashboard_name():
@@ -27,3 +27,26 @@ def test_generate_writes_standalone_file(tmp_path):
     generate(source, target)
     assert target.exists()
     assert "<!doctype html>" in target.read_text(encoding="utf-8")
+
+
+def test_generate_bootstraps_when_index_is_missing(tmp_path):
+    root = tmp_path / "data" / "intelligence"
+    root.mkdir(parents=True)
+    (root / "morning_brief.json").write_text(json.dumps({"headline": "bootstrap"}), encoding="utf-8")
+    target = tmp_path / "intelligence-dashboard.html"
+    generate(root / "index.json", target)
+    text = target.read_text(encoding="utf-8")
+    assert "<!doctype html>" in text
+    assert "bootstrap" in text
+    assert "統合JSONがまだ未生成" in text
+
+
+def test_load_payload_unwraps_individual_sidecar_files(tmp_path):
+    root = tmp_path / "data" / "intelligence"
+    root.mkdir(parents=True)
+    (root / "entry_candidates.json").write_text(json.dumps({"candidates": [{"ticker": "AAA"}]}), encoding="utf-8")
+    (root / "external_data.json").write_text(json.dumps({"records": [{"ticker": "BBB"}]}), encoding="utf-8")
+    payload = load_payload(root / "index.json")
+    assert payload["entry_candidates"][0]["ticker"] == "AAA"
+    assert payload["external_data"][0]["ticker"] == "BBB"
+    assert payload["dashboard_input_status"] == "BOOTSTRAP_NO_INDEX"
