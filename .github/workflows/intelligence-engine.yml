@@ -105,12 +105,12 @@ jobs:
         with:
           path: prices.pkl
           key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
-      - name: Build intelligence sidecar
+      - name: Preflight full scoring pipeline
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
-      - name: Refresh external market and filing-derived data
+      - name: Refresh external data incrementally
         continue-on-error: true
-        timeout-minutes: 20
-        run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external
+        timeout-minutes: 12
+        run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external --ttl-hours 20 --max-tickers 120
       - name: Build operational intelligence and settle observations
         run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv --external-root data/external
       - name: Validate generated contract
