@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 from .config import EngineConfig
+from .entry import ENTRY_POLICY_VERSION, add_entry_intelligence, build_entry_candidates
 from .leadership import LEADER_POLICY_VERSION, add_leader_scores
 from .prices import compute_price_features, download_price_map, load_price_map
 from .score_policy import SCORE_POLICY_VERSION
@@ -57,8 +58,12 @@ def _clean(value):
 
 
 def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
-    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality", "leader")
-    feature_names = ["price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct", "leader_rank_pct"]
+    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality", "leader", "entry", "entry_technical", "entry_risk")
+    feature_names = [
+        "price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct",
+        "leader_rank_pct", "entry_rank_pct", "setup", "pivot_20d", "distance_pivot_pct", "stop_ema21_low", "stop_sma10",
+        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block",
+    ]
     feature_names += [f"pct_rs_raw_{window}" for window in rs_windows]
     return {
         "ticker": str(row["ticker"]),
@@ -68,10 +73,8 @@ def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
         "scores": {name: _clean(row.get(f"score_{name}")) for name in score_names if f"score_{name}" in row.index},
         "confidence": _clean(float(row.get("score_confidence")) * 100 if pd.notna(row.get("score_confidence")) else None),
         "leader_confidence": _clean(float(row.get("score_leader_confidence")) * 100 if pd.notna(row.get("score_leader_confidence")) else None),
-        "fundamentals": {
-            "latest_filing_date": _clean(row.get("latest_filing_date")),
-            "accounting_standard": _clean(row.get("accounting_standard")),
-        },
+        "entry_confidence": _clean(float(row.get("score_entry_confidence")) * 100 if pd.notna(row.get("score_entry_confidence")) else None),
+        "fundamentals": {"latest_filing_date": _clean(row.get("latest_filing_date")), "accounting_standard": _clean(row.get("accounting_standard"))},
     }
 
 
@@ -95,28 +98,19 @@ def build(config: EngineConfig) -> dict:
             continue
         sec_path = config.sec_cache_dir / f"{ticker}.json"
         fundamentals = asdict(load_companyfacts(sec_path)) if sec_path.exists() else {}
-        rows.append({
-            "ticker": ticker,
-            "sector": meta.get("sector"),
-            "industry": meta.get("industry"),
-            "market_cap": finite_or_none(pd.to_numeric(meta.get("market_cap"), errors="coerce")),
-            **price_features,
-            **fundamentals,
-        })
+        rows.append({"ticker": ticker, "sector": meta.get("sector"), "industry": meta.get("industry"), "market_cap": finite_or_none(pd.to_numeric(meta.get("market_cap"), errors="coerce")), **price_features, **fundamentals})
 
     raw = pd.DataFrame(rows)
     if raw.empty:
         raise RuntimeError("no stocks built")
-    eligible = raw[
-        (pd.to_numeric(raw["price"], errors="coerce") >= config.min_price)
-        & (pd.to_numeric(raw["dollar_volume_20d"], errors="coerce") >= config.min_dollar_volume)
-    ].copy()
+    eligible = raw[(pd.to_numeric(raw["price"], errors="coerce") >= config.min_price) & (pd.to_numeric(raw["dollar_volume_20d"], errors="coerce") >= config.min_dollar_volume)].copy()
     if eligible.empty:
         raise RuntimeError("no eligible stocks after price and liquidity filters")
-    scored = add_leader_scores(score_universe(eligible)).sort_values(
+    scored = add_entry_intelligence(add_leader_scores(score_universe(eligible))).sort_values(
         ["score_candidate", "score_confidence", "ticker"], ascending=[False, False, True]
     )
     sector_rotation = build_sector_rotation(scored)
+    entry_candidates = build_entry_candidates(scored)
     candidate = scored.head(config.candidate_limit)
     detail = scored.head(config.detail_limit)
     stocks_dir = config.output_dir / "stocks"
@@ -125,49 +119,29 @@ def build(config: EngineConfig) -> dict:
 
     for _, row in detail.iterrows():
         payload = {k: _clean(v) for k, v in row.to_dict().items()}
-        payload.update({
-            "generated_at": generated_at,
-            "schema_version": "1.0",
-            "score_policy_version": SCORE_POLICY_VERSION,
-            "leader_policy_version": LEADER_POLICY_VERSION,
-            "narrative": None,
-            "institutional": None,
-            "estimate_revision": None,
-        })
+        payload.update({"generated_at": generated_at, "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION, "narrative": None, "institutional": None, "estimate_revision": None})
         atomic_write_json(stocks_dir / f"{row['ticker']}.json", payload)
 
-    requested_count = int(price_diagnostics.get("requested_count", len(universe) + 1))
-    downloaded_count = int(price_diagnostics.get("downloaded_count", len(prices)))
+    requested_count = int(price_diagnostics.get("requested_count", price_diagnostics.get("requested", len(universe) + 1)))
+    downloaded_count = int(price_diagnostics.get("downloaded_count", price_diagnostics.get("received", len(prices))))
     coverage_ratio = downloaded_count / requested_count if requested_count else 0.0
     manifest = {
-        "schema_version": "1.0",
-        "score_policy_version": SCORE_POLICY_VERSION,
-        "leader_policy_version": LEADER_POLICY_VERSION,
-        "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION,
-        "generated_at": generated_at,
-        "asof": asof,
-        "universe_count": len(universe),
-        "price_covered_count": len(raw),
-        "price_download_coverage_ratio": coverage_ratio,
-        "price_diagnostics": price_diagnostics,
-        "eligible_count": len(eligible),
-        "candidate_count": len(candidate),
-        "detail_count": len(detail),
-        "sector_count": len(sector_rotation),
-        "score_policy": "missing-aware weighted percentiles",
+        "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
+        "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
+        "generated_at": generated_at, "asof": asof, "universe_count": len(universe), "price_covered_count": len(raw),
+        "price_download_coverage_ratio": coverage_ratio, "price_diagnostics": price_diagnostics, "eligible_count": len(eligible),
+        "candidate_count": len(candidate), "detail_count": len(detail), "sector_count": len(sector_rotation),
+        "entry_candidate_count": len(entry_candidates), "score_policy": "missing-aware weighted percentiles",
     }
     index = {
-        "schema_version": "1.0",
-        "score_policy_version": SCORE_POLICY_VERSION,
-        "leader_policy_version": LEADER_POLICY_VERSION,
-        "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION,
-        "generated_at": generated_at,
-        "manifest": manifest,
-        "stocks": records,
-        "sector_rotation": sector_rotation,
+        "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
+        "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
+        "generated_at": generated_at, "manifest": manifest, "stocks": records, "sector_rotation": sector_rotation,
+        "entry_candidates": entry_candidates,
     }
     atomic_write_json(config.output_dir / "index.json", index)
     atomic_write_json(config.output_dir / "sector_rotation.json", {"generated_at": generated_at, "sectors": sector_rotation})
+    atomic_write_json(config.output_dir / "entry_candidates.json", {"generated_at": generated_at, "candidates": entry_candidates})
     atomic_write_json(config.output_dir / "manifest.json", manifest)
     atomic_write_json(config.history_dir / f"{asof}.json", index)
     return manifest
@@ -182,10 +156,7 @@ def main():
     parser.add_argument("--candidate-limit", type=int, default=300)
     parser.add_argument("--detail-limit", type=int, default=100)
     args = parser.parse_args()
-    cfg = EngineConfig(
-        Path(args.universe), Path(args.prices), Path(args.output), Path(args.sec_dir),
-        Path(args.output) / "history", args.candidate_limit, args.detail_limit,
-    )
+    cfg = EngineConfig(Path(args.universe), Path(args.prices), Path(args.output), Path(args.sec_dir), Path(args.output) / "history", args.candidate_limit, args.detail_limit)
     print(json.dumps(build(cfg), ensure_ascii=False, indent=2))
 
 
