@@ -39,7 +39,7 @@ jobs:
       - run: python -m pip install -e '.[test]'
       - name: Static release gate
         run: python -m intelligence_engine.release_check --root .
-      - name: Offline tests
+      - name: Offline tests including full synthetic pipeline
         run: pytest -q tests/test_*intelligence.py
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
@@ -109,8 +109,8 @@ jobs:
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
       - name: Refresh external data incrementally
         continue-on-error: true
-        timeout-minutes: 12
-        run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external --ttl-hours 20 --max-tickers 120
+        timeout-minutes: 8
+        run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external --ttl-hours 20 --max-tickers 50
       - name: Build operational intelligence and settle observations
         run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv --external-root data/external
       - name: Validate generated contract
