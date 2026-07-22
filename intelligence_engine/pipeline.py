@@ -10,6 +10,7 @@ import pandas as pd
 
 from .config import EngineConfig
 from .prices import compute_price_features, download_price_map, load_price_map
+from .score_policy import SCORE_POLICY_VERSION
 from .scoring import score_universe
 from .sec import load_companyfacts
 from .utils import atomic_write_json, finite_or_none
@@ -107,6 +108,8 @@ def build(config: EngineConfig) -> dict:
         (pd.to_numeric(raw["price"], errors="coerce") >= config.min_price)
         & (pd.to_numeric(raw["dollar_volume_20d"], errors="coerce") >= config.min_dollar_volume)
     ].copy()
+    if eligible.empty:
+        raise RuntimeError("no eligible stocks after price and liquidity filters")
     scored = score_universe(eligible).sort_values(
         ["score_candidate", "score_confidence", "ticker"], ascending=[False, False, True]
     )
@@ -121,25 +124,31 @@ def build(config: EngineConfig) -> dict:
         payload.update({
             "generated_at": generated_at,
             "schema_version": "1.0",
+            "score_policy_version": SCORE_POLICY_VERSION,
             "narrative": None,
             "institutional": None,
             "estimate_revision": None,
         })
         atomic_write_json(stocks_dir / f"{row['ticker']}.json", payload)
 
+    requested_count = int(price_diagnostics.get("requested_count", len(universe) + 1))
+    downloaded_count = int(price_diagnostics.get("downloaded_count", len(prices)))
+    coverage_ratio = downloaded_count / requested_count if requested_count else 0.0
     manifest = {
         "schema_version": "1.0",
+        "score_policy_version": SCORE_POLICY_VERSION,
         "generated_at": generated_at,
         "asof": asof,
         "universe_count": len(universe),
         "price_covered_count": len(raw),
+        "price_download_coverage_ratio": coverage_ratio,
         "price_diagnostics": price_diagnostics,
         "eligible_count": len(eligible),
         "candidate_count": len(candidate),
         "detail_count": len(detail),
         "score_policy": "missing-aware weighted percentiles",
     }
-    index = {"schema_version": "1.0", "generated_at": generated_at, "manifest": manifest, "stocks": records}
+    index = {"schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "generated_at": generated_at, "manifest": manifest, "stocks": records}
     atomic_write_json(config.output_dir / "index.json", index)
     atomic_write_json(config.output_dir / "manifest.json", manifest)
     atomic_write_json(config.history_dir / f"{asof}.json", index)
