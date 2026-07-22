@@ -1,6 +1,12 @@
 name: Intelligence Engine (sidecar)
 
 on:
+  pull_request:
+    paths:
+      - "intelligence_engine/**"
+      - "tests/test_intelligence_engine.py"
+      - "pyproject.toml"
+      - ".github/workflows/intelligence-engine.yml"
   workflow_dispatch:
     inputs:
       refresh_sec:
@@ -15,11 +21,34 @@ permissions:
   contents: write
 
 concurrency:
-  group: intelligence-engine-sidecar
+  group: intelligence-engine-sidecar-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - run: pytest -q tests/test_intelligence_engine.py
+      - name: Inspect repository inputs without mutation
+        run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-input-report
+          path: /tmp/intelligence-input-report.json
+          if-no-files-found: error
+
   build:
+    if: github.event_name != 'pull_request'
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -31,7 +60,6 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
-      - run: pytest -q tests/test_intelligence_engine.py
       - name: Restore SEC cache
         uses: actions/cache@v4
         with:
@@ -41,11 +69,17 @@ jobs:
           key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             sec-companyfacts-${{ runner.os }}-
+      - name: Require SEC identity before network access
+        if: ${{ inputs.refresh_sec || hashFiles('data/sec_companyfacts/*.json') == '' }}
+        run: |
+          test -n "$SEC_USER_AGENT" || (echo "SEC_USER_AGENT secret is required" && exit 1)
       - name: Refresh selected SEC company facts
         if: ${{ inputs.refresh_sec || hashFiles('data/sec_companyfacts/*.json') == '' }}
         run: python -m intelligence_engine.sec_bulk --universe universe.csv
       - name: Build intelligence sidecar
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
+      - name: Validate generated contract
+        run: python -m intelligence_engine.validate_outputs --root data/intelligence
       - name: Commit versioned lightweight outputs only
         run: |
           if git diff --quiet -- data/intelligence; then
