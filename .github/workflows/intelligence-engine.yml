@@ -1,0 +1,59 @@
+name: Intelligence Engine (sidecar)
+
+on:
+  workflow_dispatch:
+    inputs:
+      refresh_sec:
+        description: Download SEC bulk data for this run
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "25 10 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: intelligence-engine-sidecar
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - run: pytest -q tests/test_intelligence_engine.py
+      - name: Restore SEC cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/sec_companyfacts
+            data/sec/companyfacts.zip
+          key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            sec-companyfacts-${{ runner.os }}-
+      - name: Refresh selected SEC company facts
+        if: ${{ inputs.refresh_sec || hashFiles('data/sec_companyfacts/*.json') == '' }}
+        run: python -m intelligence_engine.sec_bulk --universe universe.csv
+      - name: Build intelligence sidecar
+        run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
+      - name: Commit versioned lightweight outputs only
+        run: |
+          if git diff --quiet -- data/intelligence; then
+            echo "No intelligence changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/intelligence
+          git commit -m "Update intelligence sidecar"
+          git push
