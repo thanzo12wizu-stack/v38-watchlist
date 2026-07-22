@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from intelligence_engine.command_layer import run as run_command_layer
 from intelligence_engine.config import EngineConfig
@@ -231,7 +232,7 @@ def test_leader_transition_ignores_current_day_history(tmp_path: Path) -> None:
     assert bbb["previous_rank"] == 2
     assert bbb["current_rank"] == 1
     assert bbb["rank_change"] == 1
-    assert result["changes"]["themes"][0]["score_change"] == 0.3
+    assert result["changes"]["themes"][0]["score_change"] == pytest.approx(0.3)
 
 
 def test_walk_forward_selects_setup_separately_by_horizon(tmp_path: Path) -> None:
