@@ -49,8 +49,31 @@ def _load_or_download_prices(config: EngineConfig, tickers: list[str]):
     return download_price_map(requested)
 
 
+def _clean(value):
+    return None if pd.isna(value) else value
+
+
+def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
+    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality")
+    feature_names = ["price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct"]
+    feature_names += [f"pct_rs_raw_{window}" for window in rs_windows]
+    return {
+        "ticker": str(row["ticker"]),
+        "sector": _clean(row.get("sector")),
+        "industry": _clean(row.get("industry")),
+        "features": {name: _clean(row.get(name)) for name in feature_names if name in row.index},
+        "scores": {name: _clean(row.get(f"score_{name}")) for name in score_names if f"score_{name}" in row.index},
+        "confidence": _clean(float(row.get("score_confidence")) * 100 if pd.notna(row.get("score_confidence")) else None),
+        "fundamentals": {
+            "latest_filing_date": _clean(row.get("latest_filing_date")),
+            "accounting_standard": _clean(row.get("accounting_standard")),
+        },
+    }
+
+
 def build(config: EngineConfig) -> dict:
-    asof = datetime.now(timezone.utc).date().isoformat()
+    generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    asof = generated_at[:10]
     universe = load_universe(config.universe_csv)
     prices, price_diagnostics = _load_or_download_prices(config, universe["ticker"].tolist())
     qqq = prices.get("QQQ")
@@ -68,16 +91,14 @@ def build(config: EngineConfig) -> dict:
             continue
         sec_path = config.sec_cache_dir / f"{ticker}.json"
         fundamentals = asdict(load_companyfacts(sec_path)) if sec_path.exists() else {}
-        rows.append(
-            {
-                "ticker": ticker,
-                "sector": meta.get("sector"),
-                "industry": meta.get("industry"),
-                "market_cap": finite_or_none(pd.to_numeric(meta.get("market_cap"), errors="coerce")),
-                **price_features,
-                **fundamentals,
-            }
-        )
+        rows.append({
+            "ticker": ticker,
+            "sector": meta.get("sector"),
+            "industry": meta.get("industry"),
+            "market_cap": finite_or_none(pd.to_numeric(meta.get("market_cap"), errors="coerce")),
+            **price_features,
+            **fundamentals,
+        })
 
     raw = pd.DataFrame(rows)
     if raw.empty:
@@ -93,29 +114,22 @@ def build(config: EngineConfig) -> dict:
     detail = scored.head(config.detail_limit)
     stocks_dir = config.output_dir / "stocks"
     stocks_dir.mkdir(parents=True, exist_ok=True)
-    fields = [
-        "ticker", "sector", "industry", "price", "market_cap", "adr_pct", "dollar_volume_20d",
-        "score_candidate", "score_emerging", "score_compounder", "score_breakout", "score_turnaround",
-        "score_momentum", "score_fundamental", "score_improvement", "score_quality", "score_confidence",
-        "latest_filing_date", "accounting_standard",
-    ]
-    fields += [f"pct_rs_raw_{w}" for w in config.rs_windows if f"pct_rs_raw_{w}" in candidate]
-    records = candidate[[c for c in fields if c in candidate]].where(pd.notna(candidate), None).to_dict("records")
+    records = [_index_record(row, config.rs_windows) for _, row in candidate.iterrows()]
+
     for _, row in detail.iterrows():
-        payload = {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
-        payload.update(
-            {
-                "asof": asof,
-                "schema_version": "1.0",
-                "narrative": None,
-                "institutional": None,
-                "estimate_revision": None,
-            }
-        )
+        payload = {k: _clean(v) for k, v in row.to_dict().items()}
+        payload.update({
+            "generated_at": generated_at,
+            "schema_version": "1.0",
+            "narrative": None,
+            "institutional": None,
+            "estimate_revision": None,
+        })
         atomic_write_json(stocks_dir / f"{row['ticker']}.json", payload)
 
     manifest = {
         "schema_version": "1.0",
+        "generated_at": generated_at,
         "asof": asof,
         "universe_count": len(universe),
         "price_covered_count": len(raw),
@@ -125,9 +139,10 @@ def build(config: EngineConfig) -> dict:
         "detail_count": len(detail),
         "score_policy": "missing-aware weighted percentiles",
     }
-    atomic_write_json(config.output_dir / "index.json", {"manifest": manifest, "stocks": records})
+    index = {"schema_version": "1.0", "generated_at": generated_at, "manifest": manifest, "stocks": records}
+    atomic_write_json(config.output_dir / "index.json", index)
     atomic_write_json(config.output_dir / "manifest.json", manifest)
-    atomic_write_json(config.history_dir / f"{asof}.json", {"manifest": manifest, "stocks": records})
+    atomic_write_json(config.history_dir / f"{asof}.json", index)
     return manifest
 
 
