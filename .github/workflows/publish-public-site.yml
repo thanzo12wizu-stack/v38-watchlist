@@ -1,0 +1,65 @@
+name: Publish safe public site mirror
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "45 11 * * 1-5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-safe-public-site
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
+      PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Export allowlisted public artifacts
+        run: python scripts/export_public_site.py --root . --output /tmp/v38-public-site --source-commit "${GITHUB_SHA}"
+      - name: Validate deployment configuration
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
+            echo "::warning::Public Pages mirror is not configured; export validation completed without deployment"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid V38_PUBLIC_PAGES_REPOSITORY: expected owner/repository"
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+      - name: Publish to clean Pages repository
+        if: steps.config.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=/tmp/v38-pages-repository
+          git clone --depth 1 "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" "$target"
+          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
+          cp -a /tmp/v38-public-site/. "$target/"
+          cd "$target"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Public site mirror already current"
+            exit 0
+          fi
+          git commit -m "Publish V38 public site"
+          git push origin HEAD:main
