@@ -20,7 +20,7 @@ from .sec import load_companyfacts
 from .sector_rotation import SECTOR_ROTATION_POLICY_VERSION, build_sector_rotation
 from .story import STORY_POLICY_VERSION, add_story_intelligence, apply_story_context, build_story_records
 from .theme import THEME_POLICY_VERSION, apply_theme_context, attach_theme_context, build_theme_intelligence
-from .utils import atomic_write_json, finite_or_none
+from .utils import _json_safe, atomic_write_json, finite_or_none
 
 
 def _col(df: pd.DataFrame, names: tuple[str, ...]):
@@ -63,7 +63,8 @@ def _load_or_download_prices(config: EngineConfig, tickers: list[str]):
 
 
 def _clean(value):
-    return None if pd.isna(value) else value
+    """Normalize nested pandas/numpy values before strict JSON serialization."""
+    return _json_safe(value)
 
 
 def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
@@ -71,7 +72,8 @@ def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
     feature_names = [
         "price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct",
         "leader_rank_pct", "entry_rank_pct", "setup", "pivot_20d", "distance_pivot_pct", "stop_ema21_low", "stop_sma10",
-        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block", "theme", "theme_ja", "theme_phase", "story_phase", "story_rank_pct", "story_evidence_count",
+        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block", "theme", "theme_ja", "theme_phase",
+        "themes", "themes_ja", "theme_phases", "story_phase", "story_rank_pct", "story_evidence_count",
     ]
     feature_names += [f"pct_rs_raw_{window}" for window in rs_windows]
     return {
