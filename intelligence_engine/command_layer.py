@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .display_labels import external_for_display, portfolio_for_display, quality_for_display
 from .expectancy import EXPECTANCY_POLICY_VERSION, build_expectancy, calibrate_candidates
 from .external_data import EXTERNAL_DATA_POLICY_VERSION, apply_external_context, build_external_records, load_external_layer
 from .leader_history import LEADER_HISTORY_POLICY_VERSION, build_price_leader_transitions
@@ -153,12 +154,16 @@ def run(
         expectancy=expectancy,
         quality=quality,
     )
-    index["portfolio_doctor"] = doctor
+    # The combined index is the dashboard/app presentation contract. Preserve
+    # machine-readable codes alongside Japanese labels, while the dedicated
+    # operational JSON files written below retain their raw code contracts.
+    index["external_data"] = external_for_display(records)
+    index["portfolio_doctor"] = portfolio_for_display(doctor)
     index["morning_brief"] = brief
     index["leader_transitions"] = transitions
     index["leader_board"] = leader_board
     index["robust_expectancy"] = robust
-    index["data_quality"] = quality
+    index["data_quality"] = quality_for_display(quality)
 
     market_state = index.setdefault("market_state", {})
     market_state["candidate_counts"] = {
