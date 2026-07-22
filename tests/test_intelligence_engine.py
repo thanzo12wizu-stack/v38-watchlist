@@ -6,6 +6,8 @@ import pandas as pd
 from intelligence_engine.forward_validation import evaluate_snapshot, summarize_by_score_bucket
 from intelligence_engine.pipeline import load_universe
 from intelligence_engine.prices import _split_yfinance_download
+from intelligence_engine.release_check import run as run_release_check
+from intelligence_engine.score_policy import SCORE_POLICY_VERSION, validate_score_policy
 from intelligence_engine.scoring import score_universe
 from intelligence_engine.sec import parse_companyfacts
 from intelligence_engine.validate_inputs import inspect_inputs
@@ -116,3 +118,12 @@ def test_score_bucket_summary_reports_excess_win_rate():
     summary = summarize_by_score_bucket(evaluated, "candidate", 21, buckets=2)
     assert list(summary["count"]) == [2, 2]
     assert list(summary["win_rate"]) == [0.0, 1.0]
+
+
+def test_score_policy_is_versioned_and_balanced():
+    assert SCORE_POLICY_VERSION == "1.0.0"
+    assert validate_score_policy() == []
+
+
+def test_release_check_passes_repository_root():
+    assert run_release_check(pd.Path(".")) == []
