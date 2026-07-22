@@ -1,0 +1,32 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V38 Intelligence Dashboard</title><style>
+    :root{color-scheme:dark;--bg:#0a0d12;--panel:#121821;--line:#273140;--muted:#8e9aab;--text:#f3f6fa;--good:#49d17d;--warn:#f5c451;--bad:#ff6b6b;--accent:#7db4ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.35}.wrap{max-width:1440px;margin:auto;padding:14px}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}.top h1{font-size:24px;margin:0}.muted{color:var(--muted);font-size:12px}.banner{margin:10px 0;padding:10px 12px;border:1px solid var(--warn);border-radius:10px;color:var(--warn);background:rgba(245,196,81,.08)}.tabs{display:flex;gap:8px;overflow:auto;position:sticky;top:0;background:rgba(10,13,18,.96);padding:10px 0;z-index:5}.tabs button{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:8px 13px;white-space:nowrap}.tabs button.active{border-color:var(--accent);color:var(--accent)}.view{display:none}.view.active{display:block}.hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:8px 0 12px}.metric,.section{background:var(--panel);border:1px solid var(--line);border-radius:14px}.metric{padding:12px}.metric small{color:var(--muted)}.metric strong{display:block;font-size:20px;margin-top:3px}.section{padding:12px;margin-bottom:12px}.section h2{font-size:16px;margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.item{border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}.item h3{font-size:15px;margin:0 0 7px;color:var(--accent)}.item div{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:4px}.item span{color:var(--muted)}.item b{overflow:hidden;text-overflow:ellipsis}.empty{color:var(--muted);padding:14px}.copy{width:100%;min-height:180px;background:#090c10;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}.copybtn{margin-top:8px;border:0;border-radius:9px;padding:9px 14px;background:var(--accent);color:#08111e;font-weight:700}.warnlist{margin:0;padding-left:20px;color:var(--warn)}pre{white-space:pre-wrap;word-break:break-word}@media(max-width:900px){.hero{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.wrap{padding:10px}.grid{grid-template-columns:1fr}.hero{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}.section{padding:10px}.item{break-inside:avoid}}@media print{.tabs{display:none}.view{display:block!important}.section{break-inside:avoid}}
+    </style></head><body><div class="wrap"><header class="top"><div><h1>V38 Intelligence Dashboard</h1><div class="muted">既存Command Centerとは独立 / generated —</div></div><div class="muted">—</div></header><div class="banner">Intelligence Engineの統合JSONがまだ未生成です。現在は取得済みの個別データだけを表示しています。</div><nav class="tabs"><button data-tab="daily" class="active">日次</button><button data-tab="expectancy" class="">期待値</button><button data-tab="portfolio" class="">Portfolio</button><button data-tab="changes" class="">交代</button><button data-tab="data" class="">Data</button><button data-tab="x" class="">X投稿</button></nav><main><div id="daily" class="view active">
+    <div class="hero">
+      <div class="metric"><small>Market Regime</small><strong>—</strong></div>
+      <div class="metric"><small>Entry Gate</small><strong>—</strong></div>
+      <div class="metric"><small>推奨Exposure</small><strong>—</strong></div>
+      <div class="metric"><small>Quality</small><strong>—</strong></div>
+    </div>
+    <section class="section"><h2>発注可能候補</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    <section class="section"><h2>避ける・待つ候補</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    <section class="section"><h2>強いテーマ</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    <section class="section"><h2>強いセクター</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    </div><div id="expectancy" class="view">
+    <section class="section"><h2>実測期待値ランキング</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    <section class="section"><h2>検証ステータス</h2><pre>{}</pre></section>
+    </div><div id="portfolio" class="view">
+    <div class="hero">
+      <div class="metric"><small>Gross Exposure</small><strong>0.0%</strong></div>
+      <div class="metric"><small>Exposure Cap</small><strong>0.0%</strong></div>
+      <div class="metric"><small>Portfolio ADR</small><strong>—</strong></div>
+      <div class="metric"><small>Stop Risk</small><strong>—</strong></div>
+    </div>
+    <section class="section"><h2>保有診断</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    </div><div id="changes" class="view">
+    <section class="section"><h2>リーダー交代</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    <section class="section"><h2>Leader Transition Raw</h2><pre>{}</pre></section>
+    </div><div id="data" class="view">
+    <section class="section"><h2>データ品質</h2><ul class="warnlist"><li>重大警告なし</li></ul></section>
+    <section class="section"><h2>外部材料</h2><div class="grid"><div class="empty">データなし</div></div></section>
+    </div><div id="x" class="view"><section class="section"><h2>X投稿用</h2><textarea id="xpost" class="copy"></textarea><button class="copybtn" onclick="navigator.clipboard.writeText(document.getElementById('xpost').value)">コピー</button></section></div></main></div><script>document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active')})</script></body></html>
