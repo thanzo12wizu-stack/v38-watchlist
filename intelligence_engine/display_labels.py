@@ -74,10 +74,11 @@ def candidates_with_freshness(
     generated_at: Any,
     price_asof: Any,
 ) -> list[dict[str, Any]]:
-    """Reserve one visible reason line for price/build freshness."""
+    """Reserve one visible reason line for each ticker's price/build freshness."""
     result = deepcopy(candidates)
-    label = f"データ鮮度：価格 {_date_label(price_asof)} / 生成 {_date_label(generated_at)}"
     for candidate in result:
+        candidate_price_asof = candidate.get("price_asof") or price_asof
+        label = f"データ鮮度：価格 {_date_label(candidate_price_asof)} / 生成 {_date_label(generated_at)}"
         reasons = [
             str(reason)
             for reason in (candidate.get("reasons_ja") or [])
