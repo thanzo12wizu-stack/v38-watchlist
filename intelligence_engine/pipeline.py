@@ -17,6 +17,7 @@ from .score_policy import SCORE_POLICY_VERSION
 from .scoring import score_universe
 from .sec import load_companyfacts
 from .sector_rotation import SECTOR_ROTATION_POLICY_VERSION, build_sector_rotation
+from .theme import THEME_POLICY_VERSION, apply_theme_context, attach_theme_context, build_theme_intelligence
 from .utils import atomic_write_json, finite_or_none
 
 
@@ -59,11 +60,11 @@ def _clean(value):
 
 
 def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
-    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality", "leader", "entry", "entry_technical", "entry_risk")
+    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality", "leader", "entry", "entry_technical", "entry_risk", "theme")
     feature_names = [
         "price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct",
         "leader_rank_pct", "entry_rank_pct", "setup", "pivot_20d", "distance_pivot_pct", "stop_ema21_low", "stop_sma10",
-        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block",
+        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block", "theme", "theme_phase",
     ]
     feature_names += [f"pct_rs_raw_{window}" for window in rs_windows]
     return {
@@ -110,9 +111,11 @@ def build(config: EngineConfig) -> dict:
     scored = add_entry_intelligence(add_leader_scores(score_universe(eligible))).sort_values(
         ["score_candidate", "score_confidence", "ticker"], ascending=[False, False, True]
     )
+    theme_intelligence = build_theme_intelligence(scored)
+    scored = attach_theme_context(scored, theme_intelligence)
     sector_rotation = build_sector_rotation(scored)
     market_state = build_market_state(scored, qqq, sector_rotation)
-    entry_candidates = apply_market_gate(build_entry_candidates(scored), market_state)
+    entry_candidates = apply_theme_context(apply_market_gate(build_entry_candidates(scored), market_state), scored)
     candidate = scored.head(config.candidate_limit)
     detail = scored.head(config.detail_limit)
     stocks_dir = config.output_dir / "stocks"
@@ -121,7 +124,7 @@ def build(config: EngineConfig) -> dict:
 
     for _, row in detail.iterrows():
         payload = {k: _clean(v) for k, v in row.to_dict().items()}
-        payload.update({"generated_at": generated_at, "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION, "market_policy_version": MARKET_POLICY_VERSION, "narrative": None, "institutional": None, "estimate_revision": None})
+        payload.update({"generated_at": generated_at, "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION, "market_policy_version": MARKET_POLICY_VERSION, "theme_policy_version": THEME_POLICY_VERSION, "narrative": None, "institutional": None, "estimate_revision": None})
         atomic_write_json(stocks_dir / f"{row['ticker']}.json", payload)
 
     requested_count = int(price_diagnostics.get("requested_count", price_diagnostics.get("requested", len(universe) + 1)))
@@ -130,22 +133,23 @@ def build(config: EngineConfig) -> dict:
     manifest = {
         "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
         "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
-        "market_policy_version": MARKET_POLICY_VERSION,
+        "market_policy_version": MARKET_POLICY_VERSION, "theme_policy_version": THEME_POLICY_VERSION,
         "generated_at": generated_at, "asof": asof, "universe_count": len(universe), "price_covered_count": len(raw),
         "price_download_coverage_ratio": coverage_ratio, "price_diagnostics": price_diagnostics, "eligible_count": len(eligible),
-        "candidate_count": len(candidate), "detail_count": len(detail), "sector_count": len(sector_rotation),
+        "candidate_count": len(candidate), "detail_count": len(detail), "sector_count": len(sector_rotation), "theme_count": len(theme_intelligence),
         "entry_candidate_count": len(entry_candidates), "market_regime": market_state.get("regime"),
         "market_entry_gate": market_state.get("entry_gate"), "score_policy": "missing-aware weighted percentiles",
     }
     index = {
         "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
         "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
-        "market_policy_version": MARKET_POLICY_VERSION,
+        "market_policy_version": MARKET_POLICY_VERSION, "theme_policy_version": THEME_POLICY_VERSION,
         "generated_at": generated_at, "manifest": manifest, "stocks": records, "sector_rotation": sector_rotation,
-        "market_state": market_state, "entry_candidates": entry_candidates,
+        "theme_intelligence": theme_intelligence, "market_state": market_state, "entry_candidates": entry_candidates,
     }
     atomic_write_json(config.output_dir / "index.json", index)
     atomic_write_json(config.output_dir / "sector_rotation.json", {"generated_at": generated_at, "sectors": sector_rotation})
+    atomic_write_json(config.output_dir / "theme_intelligence.json", {"generated_at": generated_at, "themes": theme_intelligence})
     atomic_write_json(config.output_dir / "market_state.json", {"generated_at": generated_at, **market_state})
     atomic_write_json(config.output_dir / "entry_candidates.json", {"generated_at": generated_at, "market_state": {"regime": market_state.get("regime"), "entry_gate": market_state.get("entry_gate")}, "candidates": entry_candidates})
     atomic_write_json(config.output_dir / "manifest.json", manifest)
