@@ -1,0 +1,12 @@
+# Private Intelligence Engine working data
+/data/intelligence/
+/data/external/
+/portfolio.csv
+
+# Only encrypted private state may be versioned
+/private/*
+!/private/*.enc.json
+
+# Local generated plaintext
+*.full.html
+*.tar.gz
