@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-PORTFOLIO_POLICY_VERSION = "2.1.1"
+PORTFOLIO_POLICY_VERSION = "2.2.0"
 DEFAULT_POSITION_WEIGHT = 0.08
 MAX_POSITIONS = 6
 MARKET_EXPOSURE_CAP = {"BLUE": 1.00, "GREEN": 0.75, "YELLOW": 0.35, "RED": 0.00}
@@ -143,6 +143,12 @@ def _row_for_ticker(lookup: pd.DataFrame, ticker: str) -> pd.Series:
     return row.iloc[0] if isinstance(row, pd.DataFrame) else row
 
 
+def _classification_shares(weights: dict[str, float], total: float) -> dict[str, float]:
+    if total <= 0:
+        return {}
+    return {key: round(value / total, 6) for key, value in weights.items()}
+
+
 def build_portfolio_doctor(
     positions: pd.DataFrame,
     scored: pd.DataFrame,
@@ -247,7 +253,10 @@ def build_portfolio_doctor(
             }
         )
 
-    weights = pd.Series({record["ticker"]: record["weight"] for record in records})
+    weights = pd.Series({record["ticker"]: record["weight"] for record in records}, dtype="float64")
+    total = float(weights.sum())
+    invested_weights = weights / total if total > 0 else weights
+
     sector_weights: dict[str, float] = {}
     theme_weights: dict[str, float] = {}
     for record in records:
@@ -255,8 +264,10 @@ def build_portfolio_doctor(
         theme = str(record.get("theme") or "Unknown")
         sector_weights[sector] = sector_weights.get(sector, 0.0) + record["weight"]
         theme_weights[theme] = theme_weights.get(theme, 0.0) + record["weight"]
+    sector_shares = _classification_shares(sector_weights, total)
+    theme_shares = _classification_shares(theme_weights, total)
+
     correlation = _correlation_cluster(positions, prices)
-    total = float(weights.sum())
     warnings: list[str] = []
     if len(records) > MAX_POSITIONS:
         warnings.append("max_position_count_exceeded")
@@ -264,13 +275,32 @@ def build_portfolio_doctor(
         warnings.append("market_exposure_cap_exceeded")
     if not weights.empty and weights.max() > DEFAULT_POSITION_WEIGHT * 1.25:
         warnings.extend(["single_position_above_rule", "single_position_concentration"])
-    if sector_weights and max(sector_weights.values()) > .40:
+    if sector_weights and (
+        max(sector_weights.values()) > .40
+        or max((value for key, value in sector_shares.items() if key != "Unknown"), default=0.0) > .50
+    ):
         warnings.append("sector_concentration")
-    if theme_weights and max(theme_weights.values()) > .24:
+    if theme_weights and (
+        max(theme_weights.values()) > .24
+        or max((value for key, value in theme_shares.items() if key != "Unknown"), default=0.0) > .40
+    ):
         warnings.append("theme_concentration")
+    unknown_weight = max(sector_weights.get("Unknown", 0.0), theme_weights.get("Unknown", 0.0))
+    if total > 0 and unknown_weight / total > .20:
+        warnings.append("portfolio_classification_missing")
     if correlation.get("average_pairwise_correlation") is not None and correlation["average_pairwise_correlation"] >= .65:
         warnings.append("correlation_concentration")
-    hhi = float((weights ** 2).sum()) if len(weights) else 0.0
+
+    hhi = float((invested_weights ** 2).sum()) if len(invested_weights) else 0.0
+    adr_weight = sum(record["weight"] for record in records if record["adr_pct"] is not None)
+    portfolio_adr = (
+        sum(record["weight"] * record["adr_pct"] for record in records if record["adr_pct"] is not None) / adr_weight
+        if adr_weight > 0
+        else None
+    )
+    portfolio_stop_risk = sum(record["risk_contribution_pct"] for record in records)
+    stop_risk_on_invested = portfolio_stop_risk / total if total > 0 else None
+
     sorted_records = sorted(records, key=lambda record: ({"EXIT": 0, "REDUCE": 1, "ADD": 2, "HOLD": 3}[record["action"]], -record["weight"]))
     action_counts = {action: sum(record["action"] == action for record in records) for action in ("EXIT", "REDUCE", "ADD", "HOLD")}
     return {
@@ -283,10 +313,13 @@ def build_portfolio_doctor(
         "exposure_headroom": round(exposure_cap - total, 4),
         "concentration_hhi": round(hhi, 4),
         "effective_position_count": round(1 / hhi, 2) if hhi else None,
-        "portfolio_adr_pct": round(sum(record["weight"] * (record["adr_pct"] or 0) for record in records), 2),
-        "portfolio_stop_risk_pct": round(sum(record["risk_contribution_pct"] for record in records), 2),
+        "portfolio_adr_pct": None if portfolio_adr is None else round(portfolio_adr, 2),
+        "portfolio_stop_risk_pct": round(portfolio_stop_risk, 2),
+        "portfolio_stop_risk_on_invested_pct": None if stop_risk_on_invested is None else round(stop_risk_on_invested, 2),
         "sector_weights": sector_weights,
         "theme_weights": theme_weights,
+        "sector_shares": sector_shares,
+        "theme_shares": theme_shares,
         "correlation": correlation,
         "action_counts": action_counts,
         "positions_copy": " ".join(record["ticker"] for record in sorted_records),
