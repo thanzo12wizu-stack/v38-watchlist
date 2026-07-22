@@ -89,6 +89,8 @@ jobs:
           fi
       - name: Build intelligence sidecar
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
+      - name: Build portfolio doctor, morning brief and dashboard bridge
+        run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv
       - name: Validate generated contract
         run: python -m intelligence_engine.validate_outputs --root data/intelligence
       - name: Commit versioned lightweight outputs only
