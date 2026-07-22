@@ -28,9 +28,14 @@ def _numeric_series(frame: pd.DataFrame, column: str) -> pd.Series:
     return pd.to_numeric(value, errors="coerce").reindex(frame.index)
 
 
-def _ratio(series: pd.Series) -> float | None:
-    values = series.dropna()
-    return float(values.mean()) if not values.empty else None
+def _comparison_ratio(left: pd.Series, right: pd.Series) -> float | None:
+    valid = left.notna() & right.notna()
+    return float((left[valid] > right[valid]).mean()) if valid.any() else None
+
+
+def _threshold_ratio(series: pd.Series, threshold: float) -> float | None:
+    valid = series.dropna()
+    return float((valid >= threshold).mean()) if not valid.empty else None
 
 
 def _index_state(frame: pd.DataFrame) -> dict[str, Any]:
@@ -74,16 +79,21 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
     leaders = _numeric_series(work, "leader_rank_pct")
 
     breadth = {
-        "above_sma10": _ratio(price > sma10),
-        "above_sma50": _ratio(price > sma50),
-        "above_sma200": _ratio(price > sma200),
-        "positive_rs63": _ratio(rs63 > 0),
-        "positive_rs126": _ratio(rs126 > 0),
-        "leader_share_top20pct": _ratio(leaders >= 80.0),
+        "above_sma10": _comparison_ratio(price, sma10),
+        "above_sma50": _comparison_ratio(price, sma50),
+        "above_sma200": _comparison_ratio(price, sma200),
+        "positive_rs63": _threshold_ratio(rs63, 0.0),
+        "positive_rs126": _threshold_ratio(rs126, 0.0),
+        "leader_share_top20pct": _threshold_ratio(leaders, 80.0),
     }
     top_sector = sector_rotation[0] if sector_rotation else None
     top3 = sector_rotation[:3]
-    sector_breadth = _finite(sum(float(x.get("breadth_positive_63d") or 0) for x in top3) / len(top3)) if top3 else None
+    sector_values: list[float] = []
+    for item in top3:
+        value = _finite(item.get("breadth_positive_63d"))
+        if value is not None:
+            sector_values.append(value)
+    sector_breadth = sum(sector_values) / len(sector_values) if sector_values else None
 
     components = {
         "index_trend": sum(bool(qqq.get(k)) for k in ("above_sma20", "above_sma50", "above_sma200", "sma20_rising", "sma50_rising")) / 5 if qqq.get("available") else None,
