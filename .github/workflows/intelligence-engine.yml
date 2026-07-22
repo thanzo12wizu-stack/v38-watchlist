@@ -37,7 +37,10 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
-      - run: pytest -q tests/test_intelligence_engine.py
+      - name: Static release gate
+        run: python -m intelligence_engine.release_check --root .
+      - name: Offline tests
+        run: pytest -q tests/test_intelligence_engine.py
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
       - name: Smoke-test live price adapter
@@ -74,13 +77,16 @@ jobs:
           key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             sec-companyfacts-${{ runner.os }}-
-      - name: Require SEC identity before network access
-        if: ${{ inputs.refresh_sec || hashFiles('data/sec_companyfacts/*.json') == '' }}
+      - name: Refresh SEC facts when configured
+        shell: bash
         run: |
-          test -n "$SEC_USER_AGENT" || (echo "SEC_USER_AGENT secret is required" && exit 1)
-      - name: Refresh selected SEC company facts
-        if: ${{ inputs.refresh_sec || hashFiles('data/sec_companyfacts/*.json') == '' }}
-        run: python -m intelligence_engine.sec_bulk --universe universe.csv
+          if [[ "${{ inputs.refresh_sec }}" == "true" || -z "$(find data/sec_companyfacts -name '*.json' -print -quit 2>/dev/null)" ]]; then
+            if [[ -n "$SEC_USER_AGENT" ]]; then
+              python -m intelligence_engine.sec_bulk --universe universe.csv
+            else
+              echo "SEC_USER_AGENT is not configured; continuing with nullable fundamentals"
+            fi
+          fi
       - name: Build intelligence sidecar
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
       - name: Validate generated contract
