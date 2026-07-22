@@ -1,3 +1,0 @@
-# Investment Intelligence Engine
-
-Placeholder
