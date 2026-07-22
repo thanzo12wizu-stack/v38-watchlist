@@ -1,0 +1,104 @@
+name: Intelligence Engine (sidecar)
+
+on:
+  pull_request:
+    paths:
+      - "intelligence_engine/**"
+      - "tests/test_intelligence_engine.py"
+      - "pyproject.toml"
+      - ".github/workflows/intelligence-engine.yml"
+  workflow_dispatch:
+    inputs:
+      refresh_sec:
+        description: Download SEC bulk data for this run
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "25 10 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: intelligence-engine-sidecar-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - name: Static release gate
+        run: python -m intelligence_engine.release_check --root .
+      - name: Offline tests
+        run: pytest -q tests/test_intelligence_engine.py
+      - name: Inspect repository inputs without mutation
+        run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
+      - name: Smoke-test live price adapter
+        continue-on-error: true
+        run: python -m intelligence_engine.smoke_prices --tickers AAPL,MSFT,NVDA,AMD --report /tmp/intelligence-price-smoke.json --strict
+      - uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-validation-reports
+          path: |
+            /tmp/intelligence-input-report.json
+            /tmp/intelligence-price-smoke.json
+          if-no-files-found: error
+
+  build:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - name: Restore SEC cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/sec_companyfacts
+            data/sec/companyfacts.zip
+          key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            sec-companyfacts-${{ runner.os }}-
+      - name: Refresh SEC facts when configured
+        shell: bash
+        run: |
+          if [[ "${{ inputs.refresh_sec }}" == "true" || -z "$(find data/sec_companyfacts -name '*.json' -print -quit 2>/dev/null)" ]]; then
+            if [[ -n "$SEC_USER_AGENT" ]]; then
+              python -m intelligence_engine.sec_bulk --universe universe.csv
+            else
+              echo "SEC_USER_AGENT is not configured; continuing with nullable fundamentals"
+            fi
+          fi
+      - name: Build intelligence sidecar
+        run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
+      - name: Validate generated contract
+        run: python -m intelligence_engine.validate_outputs --root data/intelligence
+      - name: Commit versioned lightweight outputs only
+        run: |
+          if git diff --quiet -- data/intelligence; then
+            echo "No intelligence changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/intelligence
+          git commit -m "Update intelligence sidecar"
+          git push
