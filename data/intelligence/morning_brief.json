@@ -1,0 +1,1052 @@
+{
+  "actionable_candidates": [],
+  "avoid_candidates": [
+    {
+      "actionable": false,
+      "distance_pivot_pct": -25.618808346161114,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": null
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": null
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": null
+        }
+      },
+      "extension_atr": NaN,
+      "external_data": {
+        "coverage": {
+          "earnings": false,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "CONTRACT",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 10000.0,
+        "institutional_holder_count": 2,
+        "institutional_position_change_pct": null,
+        "news_count": 7,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AADX",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 24.239999771118164,
+      "price": 18.030000686645508,
+      "reward_risk_raw": NaN,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "電子テクノロジー",
+      "setup": "DEEP_PULLBACK",
+      "stop_ema21_low": 18.72598992879641,
+      "stop_risk_pct": -4.414860265824941,
+      "stop_sma10": 18.826000022888184,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "電子テクノロジー",
+      "theme_confirmed": false,
+      "theme_phase": "WEAKENING",
+      "theme_score": 0.334907,
+      "ticker": "AADX",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate",
+        "theme_weakening"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -18.680154398798464,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.11169,
+            "horizon": 10,
+            "mean_excess_return": 0.001106,
+            "median_excess_return": -0.001494,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.4911
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.1759,
+            "horizon": 21,
+            "mean_excess_return": 0.002333,
+            "median_excess_return": 0.000212,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.501
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.073321,
+            "horizon": 5,
+            "mean_excess_return": 0.000752,
+            "median_excess_return": -0.002052,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.4827
+          }
+        }
+      },
+      "extension_atr": 0.2996486030889196,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": null,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AAL",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 18.790000915527344,
+      "price": 15.279999732971191,
+      "reward_risk_raw": NaN,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "交通・輸送",
+      "setup": "WATCH",
+      "stop_ema21_low": 15.760479974333942,
+      "stop_risk_pct": -4.149216704454764,
+      "stop_sma10": 15.914000034332275,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "交通・輸送",
+      "theme_confirmed": false,
+      "theme_phase": "MIXED",
+      "theme_score": 0.384332,
+      "ticker": "AAL",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -0.4269963477360639,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.11169,
+            "horizon": 10,
+            "mean_excess_return": 0.001106,
+            "median_excess_return": -0.001494,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.4911
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.1759,
+            "horizon": 21,
+            "mean_excess_return": 0.002333,
+            "median_excess_return": 0.000212,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.501
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.073321,
+            "horizon": 5,
+            "mean_excess_return": 0.000752,
+            "median_excess_return": -0.002052,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.4827
+          }
+        }
+      },
+      "extension_atr": 2.871434794685696,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "GUIDANCE",
+          "M&A",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 146775000.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AAMI",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 84.30999755859375,
+      "price": 83.94999694824219,
+      "reward_risk_raw": 0.0,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "金融",
+      "setup": "WATCH",
+      "stop_ema21_low": 77.44038266789705,
+      "stop_risk_pct": 3.026798578705997,
+      "stop_sma10": 81.40899963378907,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "金融",
+      "theme_confirmed": false,
+      "theme_phase": "MIXED",
+      "theme_score": 0.364301,
+      "ticker": "AAMI",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -32.6823212514205,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.090784,
+            "horizon": 10,
+            "mean_excess_return": -0.000796,
+            "median_excess_return": -0.001718,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4897
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.138983,
+            "horizon": 21,
+            "mean_excess_return": 0.005673,
+            "median_excess_return": 0.006744,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.5277
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.061966,
+            "horizon": 5,
+            "mean_excess_return": 0.00142,
+            "median_excess_return": -0.000886,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4908
+          }
+        }
+      },
+      "extension_atr": -2.7817067945887226,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 488360.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AAOI",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 177.16000366210938,
+      "price": 119.26000213623047,
+      "reward_risk_raw": NaN,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "電子テクノロジー",
+      "setup": "PULLBACK",
+      "stop_ema21_low": 119.84393130939262,
+      "stop_risk_pct": -0.4896270020984287,
+      "stop_sma10": 112.79199905395508,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "電子テクノロジー",
+      "theme_confirmed": false,
+      "theme_phase": "WEAKENING",
+      "theme_score": 0.334907,
+      "ticker": "AAOI",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate",
+        "theme_weakening"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -24.4941700885396,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": null
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": null
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": null
+        }
+      },
+      "extension_atr": -3.080084922695705,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 606667.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AAON",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 139.8699951171875,
+      "price": 105.61000061035156,
+      "reward_risk_raw": NaN,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "生産財製造",
+      "setup": "DEEP_PULLBACK",
+      "stop_ema21_low": 112.3253233182112,
+      "stop_risk_pct": -6.35860493234523,
+      "stop_sma10": 110.47300033569336,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "生産財製造",
+      "theme_confirmed": false,
+      "theme_phase": "WEAKENING",
+      "theme_score": 0.289948,
+      "ticker": "AAON",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate",
+        "theme_weakening"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -11.962027344980996,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.090784,
+            "horizon": 10,
+            "mean_excess_return": -0.000796,
+            "median_excess_return": -0.001718,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4897
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.138983,
+            "horizon": 21,
+            "mean_excess_return": 0.005673,
+            "median_excess_return": 0.006744,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.5277
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.061966,
+            "horizon": 5,
+            "mean_excess_return": 0.00142,
+            "median_excess_return": -0.000886,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4908
+          }
+        }
+      },
+      "extension_atr": -0.24782235636382158,
+      "external_data": {
+        "coverage": {
+          "earnings": false,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 335000.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AAP",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 63.20000076293945,
+      "price": 55.63999938964844,
+      "reward_risk_raw": 11.587972871538078,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "小売業",
+      "setup": "PULLBACK",
+      "stop_ema21_low": 54.815808216443955,
+      "stop_risk_pct": 1.4812925633457494,
+      "stop_sma10": 54.431959533691405,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "小売業",
+      "theme_confirmed": false,
+      "theme_phase": "MIXED",
+      "theme_score": 0.275239,
+      "ticker": "AAP",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -2.164243771859442,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.11169,
+            "horizon": 10,
+            "mean_excess_return": 0.001106,
+            "median_excess_return": -0.001494,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.4911
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.1759,
+            "horizon": 21,
+            "mean_excess_return": 0.002333,
+            "median_excess_return": 0.000212,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.501
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.073321,
+            "horizon": 5,
+            "mean_excess_return": 0.000752,
+            "median_excess_return": -0.002052,
+            "samples": 15778,
+            "setup": "WATCH",
+            "usable": true,
+            "win_rate": 0.4827
+          }
+        }
+      },
+      "extension_atr": 2.8555556879413215,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "CONTRACT",
+          "M&A",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 34236.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "AAPL",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 334.989990234375,
+      "price": 327.739990234375,
+      "reward_risk_raw": 1.1657296542204718,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "電子テクノロジー",
+      "setup": "WATCH",
+      "stop_ema21_low": 309.0887676854593,
+      "stop_risk_pct": 1.570449478294096,
+      "stop_sma10": 322.59299926757814,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "電子テクノロジー",
+      "theme_confirmed": false,
+      "theme_phase": "WEAKENING",
+      "theme_score": 0.334907,
+      "ticker": "AAPL",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate",
+        "theme_weakening"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -2.735467730493324,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.090784,
+            "horizon": 10,
+            "mean_excess_return": -0.000796,
+            "median_excess_return": -0.001718,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4897
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.138983,
+            "horizon": 21,
+            "mean_excess_return": 0.005673,
+            "median_excess_return": 0.006744,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.5277
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.061966,
+            "horizon": 5,
+            "mean_excess_return": 0.00142,
+            "median_excess_return": -0.000886,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4908
+          }
+        }
+      },
+      "extension_atr": 1.789637316283373,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 23750.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "ABCB",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 93.22000122070312,
+      "price": 90.66999816894531,
+      "reward_risk_raw": 27.778201639495375,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "金融",
+      "setup": "PULLBACK",
+      "stop_ema21_low": 89.07803090620126,
+      "stop_risk_pct": 0.09925954397980213,
+      "stop_sma10": 90.57999954223632,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "金融",
+      "theme_confirmed": false,
+      "theme_phase": "MIXED",
+      "theme_score": 0.364301,
+      "ticker": "ABCB",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -4.493636373197929,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.090784,
+            "horizon": 10,
+            "mean_excess_return": -0.000796,
+            "median_excess_return": -0.001718,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4897
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.138983,
+            "horizon": 21,
+            "mean_excess_return": 0.005673,
+            "median_excess_return": 0.006744,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.5277
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.061966,
+            "horizon": 5,
+            "mean_excess_return": 0.00142,
+            "median_excess_return": -0.000886,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4908
+          }
+        }
+      },
+      "extension_atr": 1.2208682267586113,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 35529853.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "ABNB",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 150.8800048828125,
+      "price": 144.10000610351562,
+      "reward_risk_raw": NaN,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "消費者サービス",
+      "setup": "PULLBACK",
+      "stop_ema21_low": 142.9188976182909,
+      "stop_risk_pct": -1.4940969349213165,
+      "stop_sma10": 146.25299987792968,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "消費者サービス",
+      "theme_confirmed": false,
+      "theme_phase": "MIXED",
+      "theme_score": 0.339843,
+      "ticker": "ABNB",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate"
+      ]
+    },
+    {
+      "actionable": false,
+      "distance_pivot_pct": -4.320100337177291,
+      "entry_confidence": 1.0,
+      "entry_score_calibrated": null,
+      "expectancy": {
+        "10": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.090784,
+            "horizon": 10,
+            "mean_excess_return": -0.000796,
+            "median_excess_return": -0.001718,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4897
+          }
+        },
+        "21": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.138983,
+            "horizon": 21,
+            "mean_excess_return": 0.005673,
+            "median_excess_return": 0.006744,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.5277
+          }
+        },
+        "5": {
+          "score_calibration": null,
+          "setup": {
+            "downside_tail_p10": -0.061966,
+            "horizon": 5,
+            "mean_excess_return": 0.00142,
+            "median_excess_return": -0.000886,
+            "samples": 14273,
+            "setup": "PULLBACK",
+            "usable": true,
+            "win_rate": 0.4908
+          }
+        }
+      },
+      "extension_atr": 2.321446881368473,
+      "external_data": {
+        "coverage": {
+          "earnings": true,
+          "guidance": false,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
+        },
+        "days_to_earnings": null,
+        "earnings_date": null,
+        "eps_revision_30d_pct": null,
+        "event_types": [
+          "NEWS"
+        ],
+        "guidance_direction": "UNKNOWN",
+        "insider_transaction_type": "UNKNOWN",
+        "insider_transaction_value": 0.0,
+        "institutional_holder_count": 10,
+        "institutional_position_change_pct": null,
+        "news_count": 10,
+        "positives": [],
+        "revenue_revision_30d_pct": null,
+        "ticker": "ACGL",
+        "warnings": []
+      },
+      "industry": null,
+      "market_gate": "NO_NEW",
+      "market_regime": "YELLOW",
+      "pivot": 105.08999633789062,
+      "price": 100.55000305175781,
+      "reward_risk_raw": NaN,
+      "score_entry": NaN,
+      "score_leader": NaN,
+      "sector": "金融",
+      "setup": "PULLBACK",
+      "stop_ema21_low": 98.21247490815848,
+      "stop_risk_pct": -0.6136218263654567,
+      "stop_sma10": 101.16699981689453,
+      "story_confidence": 1.0,
+      "story_phase": "MIXED",
+      "story_score": NaN,
+      "theme": "金融",
+      "theme_confirmed": false,
+      "theme_phase": "MIXED",
+      "theme_score": 0.364301,
+      "ticker": "ACGL",
+      "warnings": [
+        "earnings_unknown",
+        "market_gate"
+      ]
+    }
+  ],
+  "headline": "地合い YELLOW / 新規 NO_NEW",
+  "leader_changes": [],
+  "market_comment": "内部悪化を警戒。新規を止め、既存ポジションのストップと集中を点検。",
+  "portfolio_actions": {
+    "add": [],
+    "exit": [],
+    "reduce": []
+  },
+  "strong_sectors": [
+    {
+      "breadth_positive_63d": 0.5625,
+      "leader_share_top20pct": 0.0,
+      "leaders": [
+        "BTSG",
+        "CI",
+        "CNC",
+        "DGX",
+        "DVA"
+      ],
+      "score_acceleration": 84.0,
+      "score_confidence": 1.0,
+      "score_rotation": 79.75000000000001,
+      "score_strength": 73.25,
+      "sector": "ヘルスケアサービス",
+      "stock_count": 16
+    },
+    {
+      "breadth_positive_63d": 0.43380855397148677,
+      "leader_share_top20pct": 0.0,
+      "leaders": [
+        "AAMI",
+        "AAT",
+        "AB",
+        "ABCB",
+        "ABR"
+      ],
+      "score_acceleration": 67.0,
+      "score_confidence": 1.0,
+      "score_rotation": 75.35000000000001,
+      "score_strength": 82.5,
+      "sector": "金融",
+      "stock_count": 491
+    },
+    {
+      "breadth_positive_63d": 0.4722222222222222,
+      "leader_share_top20pct": 0.0,
+      "leaders": [
+        "AAL",
+        "ALGT",
+        "ALK",
+        "ARCB",
+        "ASC"
+      ],
+      "score_acceleration": 39.0,
+      "score_confidence": 1.0,
+      "score_rotation": 74.05000000000001,
+      "score_strength": 95.25,
+      "sector": "交通・輸送",
+      "stock_count": 72
+    },
+    {
+      "breadth_positive_63d": 0.27419354838709675,
+      "leader_share_top20pct": 0.0,
+      "leaders": [
+        "AMR",
+        "APA",
+        "AR",
+        "BKV",
+        "BP"
+      ],
+      "score_acceleration": 92.0,
+      "score_confidence": 1.0,
+      "score_rotation": 73.55000000000001,
+      "score_strength": 84.25,
+      "sector": "エネルギー鉱物",
+      "stock_count": 62
+    },
+    {
+      "breadth_positive_63d": 0.3253012048192771,
+      "leader_share_top20pct": 0.0,
+      "leaders": [
+        "A",
+        "ABBV",
+        "ABT",
+        "ABVX",
+        "ALC"
+      ],
+      "score_acceleration": 84.0,
+      "score_confidence": 1.0,
+      "score_rotation": 65.45000000000002,
+      "score_strength": 57.5,
+      "sector": "ヘルスケアテクノロジー",
+      "stock_count": 83
+    }
+  ],
+  "strong_themes": [],
+  "x_post_en": "US Market AI Brief: YELLOW / New entries NO_NEW\n内部悪化を警戒。新規を止め、既存ポジションのストップと集中を点検。",
+  "x_post_ja": "【AI分析】今日の米株：地合い YELLOW / 新規 NO_NEW\n内部悪化を警戒。新規を止め、既存ポジションのストップと集中を点検。\n警戒候補：AADX AAL AAMI AAOI AAON AAP"
+}
