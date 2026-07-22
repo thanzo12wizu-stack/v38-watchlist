@@ -5,7 +5,7 @@ import pandas as pd
 from .utils import percentile_rank, weighted_available
 
 
-SECTOR_ROTATION_POLICY_VERSION = "1.0.0"
+SECTOR_ROTATION_POLICY_VERSION = "1.0.1"
 
 
 def build_sector_rotation(frame: pd.DataFrame, top_leaders: int = 5) -> list[dict]:
@@ -33,7 +33,7 @@ def build_sector_rotation(frame: pd.DataFrame, top_leaders: int = 5) -> list[dic
             "rs126": pd.to_numeric(group.get("rs_change_raw_126"), errors="coerce").median(),
         }
         breadth = float((pd.to_numeric(group.get("rs_raw_63"), errors="coerce") > 0).mean()) if "rs_raw_63" in group else None
-        leader_share = float((pd.to_numeric(group.get("leader_rank_pct"), errors="coerce") >= 0.80).mean()) if "leader_rank_pct" in group else None
+        leader_share = float((pd.to_numeric(group.get("leader_rank_pct"), errors="coerce") >= 80.0).mean()) if "leader_rank_pct" in group else None
         leaders = group.sort_values(["score_leader", "ticker"], ascending=[False, True]).head(top_leaders) if "score_leader" in group else group.head(0)
         rows.append({
             "sector": str(sector),
