@@ -1,23 +1,23 @@
 {
   "breadth": {
     "above_sma10": 0.5273972602739726,
-    "above_sma200": 0.6410958904109589,
-    "above_sma50": 0.6105022831050229,
-    "leader_share_top20pct": 0.0,
-    "positive_rs126": 0.36666666666666664,
-    "positive_rs63": 0.3493150684931507
+    "above_sma200": 0.6557683325548809,
+    "above_sma50": 0.6138659320477502,
+    "leader_share_top20pct": 0.2004566210045662,
+    "positive_rs126": 0.3726218097447796,
+    "positive_rs63": 0.3518859245630175
   },
   "components": {
     "index_trend": 0.4,
-    "long_breadth": 0.6410958904109589,
-    "medium_breadth": 0.6105022831050229,
-    "relative_strength_breadth": 0.3562557077625571,
-    "sector_participation": 0.4895102587312363,
+    "long_breadth": 0.6557683325548809,
+    "medium_breadth": 0.6138659320477502,
+    "relative_strength_breadth": 0.36018027863572233,
+    "sector_participation": 0.436305256869773,
     "short_breadth": 0.5273972602739726
   },
   "entry_gate": "NO_NEW",
-  "generated_at": "2026-07-22T12:36:23.133502Z",
-  "policy_version": "1.0.0",
+  "generated_at": "2026-07-22T13:36:34.167024Z",
+  "policy_version": "1.0.1",
   "qqq": {
     "above_sma10": false,
     "above_sma20": false,
@@ -32,9 +32,10 @@
     "sma50_rising": true
   },
   "recommended_exposure": 0.35,
+  "recommended_exposure_pct": 35.0,
   "regime": "YELLOW",
   "score_confidence": 0.9999999999999999,
-  "score_market": 0.4877090167407036,
+  "score_market": 0.48511717618846967,
   "top_sector": "ヘルスケアサービス",
   "warnings": []
 }
