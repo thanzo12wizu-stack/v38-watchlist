@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "intelligence_engine/**"
-      - "tests/test_intelligence_engine.py"
+      - "tests/test_*intelligence.py"
       - "pyproject.toml"
       - ".github/workflows/intelligence-engine.yml"
   workflow_dispatch:
@@ -40,7 +40,7 @@ jobs:
       - name: Static release gate
         run: python -m intelligence_engine.release_check --root .
       - name: Offline tests
-        run: pytest -q tests/test_intelligence_engine.py
+        run: pytest -q tests/test_*intelligence.py
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
       - name: Smoke-test live price adapter
