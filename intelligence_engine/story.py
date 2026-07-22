@@ -27,16 +27,16 @@ def _mean_available(series: list[pd.Series], index: pd.Index) -> pd.Series:
 
 
 def _phase(row: pd.Series) -> str:
-    evidence = pd.to_numeric(row.get("story_evidence_count"), errors="coerce")
-    confidence = pd.to_numeric(row.get("score_story_confidence"), errors="coerce")
-    if pd.isna(evidence) or evidence < 2 or pd.isna(confidence) or confidence < .25:
-        return "DATA_INSUFFICIENT"
     growth = pd.to_numeric(row.get("story_growth_raw"), errors="coerce")
     acceleration = pd.to_numeric(row.get("story_acceleration_raw"), errors="coerce")
     quality = pd.to_numeric(row.get("story_quality_raw"), errors="coerce")
     dilution = pd.to_numeric(row.get("shares_yoy"), errors="coerce")
     if pd.notna(dilution) and dilution > .08:
         return "DILUTING"
+    evidence = pd.to_numeric(row.get("story_evidence_count"), errors="coerce")
+    confidence = pd.to_numeric(row.get("score_story_confidence"), errors="coerce")
+    if pd.isna(evidence) or evidence < 2 or pd.isna(confidence) or confidence < .25:
+        return "DATA_INSUFFICIENT"
     if pd.notna(growth) and growth > .20 and pd.notna(acceleration) and acceleration > 0 and pd.notna(quality) and quality >= 0:
         return "ACCELERATING"
     if pd.notna(growth) and growth > .10 and (pd.isna(quality) or quality >= 0):
