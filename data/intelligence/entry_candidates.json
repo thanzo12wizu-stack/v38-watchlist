@@ -3,6 +3,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -25.618808346161114,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -31,18 +32,24 @@
         },
         "days_to_earnings": null,
         "earnings_date": null,
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "CONTRACT",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 10000.0,
         "institutional_holder_count": 2,
         "institutional_position_change_pct": null,
         "news_count": 7,
+        "next_earnings_date": null,
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AADX",
         "warnings": []
@@ -77,6 +84,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -18.680154398798464,
+      "earnings_window": true,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -130,22 +138,31 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 1,
+        "earnings_date": "2026-07-23",
+        "earnings_window": true,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": null,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-07-23",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AAL",
-        "warnings": []
+        "warnings": [
+          "earnings_window"
+        ]
       },
       "industry": null,
       "market_gate": "NO_NEW",
@@ -170,12 +187,14 @@
       "ticker": "AAL",
       "warnings": [
         "earnings_unknown",
-        "market_gate"
+        "market_gate",
+        "earnings_window"
       ]
     },
     {
       "actionable": false,
       "distance_pivot_pct": -0.4269963477360639,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -229,21 +248,27 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 8,
+        "earnings_date": "2026-07-30",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "M&A",
         "event_types": [
-          "GUIDANCE",
           "M&A",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 146775000.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-07-30",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AAMI",
         "warnings": []
@@ -277,6 +302,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -32.6823212514205,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -330,20 +356,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 15,
+        "earnings_date": "2026-08-06",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "GUIDANCE",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 488360.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-06",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AAOI",
         "warnings": []
@@ -378,6 +410,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -24.4941700885396,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -404,20 +437,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 19,
+        "earnings_date": "2026-08-10",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "GUIDANCE",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 606667.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-10",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AAON",
         "warnings": []
@@ -452,6 +491,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -11.962027344980996,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -507,18 +547,24 @@
         },
         "days_to_earnings": null,
         "earnings_date": null,
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "GUIDANCE",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 335000.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": null,
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AAP",
         "warnings": []
@@ -552,6 +598,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -2.164243771859442,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -605,21 +652,28 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 8,
+        "earnings_date": "2026-07-30",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "CONTRACT",
         "event_types": [
           "CONTRACT",
           "M&A",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 34236.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-07-30",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "AAPL",
         "warnings": []
@@ -654,6 +708,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -2.735467730493324,
+      "earnings_window": true,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -707,23 +762,31 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 1,
+        "earnings_date": "2026-07-23",
+        "earnings_window": true,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "GUIDANCE",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 23750.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-07-23",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ABCB",
-        "warnings": []
+        "warnings": [
+          "earnings_window"
+        ]
       },
       "industry": null,
       "market_gate": "NO_NEW",
@@ -748,12 +811,14 @@
       "ticker": "ABCB",
       "warnings": [
         "earnings_unknown",
-        "market_gate"
+        "market_gate",
+        "earnings_window"
       ]
     },
     {
       "actionable": false,
       "distance_pivot_pct": -4.493636373197929,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -807,19 +872,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 15,
+        "earnings_date": "2026-08-06",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 35529853.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-06",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ABNB",
         "warnings": []
@@ -853,6 +925,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -4.320100337177291,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -906,19 +979,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 6,
+        "earnings_date": "2026-07-28",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 0.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-07-28",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ACGL",
         "warnings": []
@@ -952,6 +1032,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -25.099367678005713,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1005,20 +1086,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 13,
+        "earnings_date": "2026-08-04",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "CONTRACT",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 249703.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-04",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ACLS",
         "warnings": []
@@ -1053,6 +1140,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -25.09631668027109,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1079,20 +1167,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 16,
+        "earnings_date": "2026-08-07",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "CONTRACT",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 260438.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-07",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ACMR",
         "warnings": []
@@ -1127,6 +1221,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -3.7436558871882353,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1180,19 +1275,26 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 14,
+        "earnings_date": "2026-08-05",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 25580418.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-05",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ACT",
         "warnings": []
@@ -1226,6 +1328,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -18.18580952697193,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1279,20 +1382,27 @@
           "news": true,
           "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 12,
+        "earnings_date": "2026-08-03",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "CONTRACT",
         "event_types": [
           "CONTRACT",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 3154108.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": "2026-08-03",
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ADEA",
         "warnings": []
@@ -1326,6 +1436,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -14.1508388655326,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1381,18 +1492,24 @@
         },
         "days_to_earnings": null,
         "earnings_date": null,
+        "earnings_window": false,
+        "eps_estimate_growth_pct": null,
         "eps_revision_30d_pct": null,
+        "event_type": "NEWS",
         "event_types": [
-          "GUIDANCE",
           "NEWS"
         ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": 389830.0,
         "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
         "news_count": 10,
+        "next_earnings_date": null,
         "positives": [],
+        "revenue_estimate_growth_pct": null,
         "revenue_revision_30d_pct": null,
         "ticker": "ADI",
         "warnings": []
@@ -1427,6 +1544,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -7.082485864631504,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1473,24 +1591,34 @@
       "extension_atr": -0.08806126636418624,
       "external_data": {
         "coverage": {
-          "earnings": false,
-          "guidance": false,
-          "holdings_13f": false,
-          "insider": false,
-          "news": false,
-          "revisions": false
+          "earnings": true,
+          "guidance": true,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 8,
+        "earnings_date": "2026-07-30",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": 8.459999999999999,
         "eps_revision_30d_pct": null,
-        "event_types": [],
+        "event_type": "GUIDANCE",
+        "event_types": [
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
-        "insider_transaction_value": null,
-        "institutional_holder_count": 0,
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
+        "insider_transaction_value": 536445.0,
+        "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
-        "news_count": 0,
+        "news_count": 10,
+        "next_earnings_date": "2026-07-30",
         "positives": [],
+        "revenue_estimate_growth_pct": 6.0,
         "revenue_revision_30d_pct": null,
         "ticker": "AEE",
         "warnings": []
@@ -1524,6 +1652,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -15.699307833872322,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1570,24 +1699,35 @@
       "extension_atr": 0.39580379085505024,
       "external_data": {
         "coverage": {
-          "earnings": false,
-          "guidance": false,
-          "holdings_13f": false,
-          "insider": false,
-          "news": false,
-          "revisions": false
+          "earnings": true,
+          "guidance": true,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 78,
+        "earnings_date": "2026-10-08",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": 84.440005,
         "eps_revision_30d_pct": null,
-        "event_types": [],
+        "event_type": "CONTRACT",
+        "event_types": [
+          "CONTRACT",
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
-        "insider_transaction_value": null,
-        "institutional_holder_count": 0,
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
+        "insider_transaction_value": 185900.0,
+        "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
-        "news_count": 0,
+        "news_count": 10,
+        "next_earnings_date": "2026-10-08",
         "positives": [],
+        "revenue_estimate_growth_pct": 48.099998,
         "revenue_revision_30d_pct": null,
         "ticker": "AEHR",
         "warnings": []
@@ -1622,6 +1762,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -7.184525517116969,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1668,24 +1809,35 @@
       "extension_atr": -0.2425908894481058,
       "external_data": {
         "coverage": {
-          "earnings": false,
-          "guidance": false,
-          "holdings_13f": false,
-          "insider": false,
-          "news": false,
-          "revisions": false
+          "earnings": true,
+          "guidance": true,
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 8,
+        "earnings_date": "2026-07-30",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": 7.93,
         "eps_revision_30d_pct": null,
-        "event_types": [],
+        "event_type": "CONTRACT",
+        "event_types": [
+          "CONTRACT",
+          "GUIDANCE",
+          "NEWS"
+        ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
-        "insider_transaction_value": null,
-        "institutional_holder_count": 0,
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
+        "insider_transaction_value": 516747.0,
+        "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
-        "news_count": 0,
+        "news_count": 10,
+        "next_earnings_date": "2026-07-30",
         "positives": [],
+        "revenue_estimate_growth_pct": 6.0700003,
         "revenue_revision_30d_pct": null,
         "ticker": "AEP",
         "warnings": []
@@ -1719,6 +1871,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -2.6988951635441016,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1765,24 +1918,33 @@
       "extension_atr": 1.9574537031688901,
       "external_data": {
         "coverage": {
-          "earnings": false,
+          "earnings": true,
           "guidance": false,
-          "holdings_13f": false,
-          "insider": false,
-          "news": false,
-          "revisions": false
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 7,
+        "earnings_date": "2026-07-29",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": -1.2,
         "eps_revision_30d_pct": null,
-        "event_types": [],
+        "event_type": "NEWS",
+        "event_types": [
+          "NEWS"
+        ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
         "insider_transaction_value": null,
-        "institutional_holder_count": 0,
+        "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
-        "news_count": 0,
+        "news_count": 10,
+        "next_earnings_date": "2026-07-29",
         "positives": [],
+        "revenue_estimate_growth_pct": -0.69,
         "revenue_revision_30d_pct": null,
         "ticker": "AER",
         "warnings": []
@@ -1816,6 +1978,7 @@
     {
       "actionable": false,
       "distance_pivot_pct": -0.06743242706191976,
+      "earnings_window": false,
       "entry_confidence": 1.0,
       "entry_score_calibrated": null,
       "expectancy": {
@@ -1862,24 +2025,33 @@
       "extension_atr": 2.3025205340947847,
       "external_data": {
         "coverage": {
-          "earnings": false,
+          "earnings": true,
           "guidance": false,
-          "holdings_13f": false,
-          "insider": false,
-          "news": false,
-          "revisions": false
+          "holdings_13f": true,
+          "insider": true,
+          "news": true,
+          "revisions": true
         },
-        "days_to_earnings": null,
-        "earnings_date": null,
+        "days_to_earnings": 8,
+        "earnings_date": "2026-07-30",
+        "earnings_window": false,
+        "eps_estimate_growth_pct": 5.1,
         "eps_revision_30d_pct": null,
-        "event_types": [],
+        "event_type": "NEWS",
+        "event_types": [
+          "NEWS"
+        ],
+        "guidance": "UNKNOWN",
         "guidance_direction": "UNKNOWN",
-        "insider_transaction_type": "UNKNOWN",
-        "insider_transaction_value": null,
-        "institutional_holder_count": 0,
+        "insider_signal": "NAN",
+        "insider_transaction_type": "NAN",
+        "insider_transaction_value": 0.0,
+        "institutional_holder_count": 10,
         "institutional_position_change_pct": null,
-        "news_count": 0,
+        "news_count": 10,
+        "next_earnings_date": "2026-07-30",
         "positives": [],
+        "revenue_estimate_growth_pct": 2.2,
         "revenue_revision_30d_pct": null,
         "ticker": "AES",
         "warnings": []
@@ -1911,5 +2083,5 @@
       ]
     }
   ],
-  "generated_at": "2026-07-22T12:20:30.671349Z"
+  "generated_at": "2026-07-22T12:36:23.133502Z"
 }
