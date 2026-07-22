@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from intelligence_engine.theme import apply_theme_context, attach_theme_context, build_theme_intelligence
 
@@ -34,7 +35,7 @@ def test_theme_intelligence_prefers_broad_accelerating_group():
     assert 0 <= themes[0]["score_theme"] <= 1
     assert themes[0]["phase"] in {"LEADING", "EMERGING"}
     assert themes[0]["leaders"][0] == "A1"
-    assert themes[0]["leader_share_top20pct"] == 2 / 3
+    assert themes[0]["leader_share_top20pct"] == pytest.approx(2 / 3, abs=1e-6)
 
 
 def test_theme_uses_sector_fallback_and_enriches_candidates():
