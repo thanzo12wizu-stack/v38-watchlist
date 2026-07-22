@@ -31,6 +31,8 @@ def run(root: Path) -> list[str]:
     package = root / "intelligence_engine"
     if package.exists():
         for path in package.glob("*.py"):
+            if path.name == "release_check.py":
+                continue
             text = path.read_text(encoding="utf-8")
             for forbidden in FORBIDDEN_IMPORTS:
                 if forbidden in text:
