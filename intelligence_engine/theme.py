@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-THEME_POLICY_VERSION = "1.2.0"
+THEME_POLICY_VERSION = "1.2.1"
 
 
 def _num(value, default: float = 0.0) -> float:
@@ -194,7 +194,8 @@ def attach_theme_context(frame: pd.DataFrame, themes: list[dict]) -> pd.DataFram
             )
         options.sort(
             key=lambda item: (
-                -1.0 if item.get("score_theme") is None else -float(item["score_theme"]),
+                item.get("score_theme") is None,
+                -float(item.get("score_theme") or 0.0),
                 str(item["theme"]),
             )
         )
