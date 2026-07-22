@@ -9,10 +9,12 @@ from pathlib import Path
 import pandas as pd
 
 from .config import EngineConfig
+from .leadership import LEADER_POLICY_VERSION, add_leader_scores
 from .prices import compute_price_features, download_price_map, load_price_map
 from .score_policy import SCORE_POLICY_VERSION
 from .scoring import score_universe
 from .sec import load_companyfacts
+from .sector_rotation import SECTOR_ROTATION_POLICY_VERSION, build_sector_rotation
 from .utils import atomic_write_json, finite_or_none
 
 
@@ -55,8 +57,8 @@ def _clean(value):
 
 
 def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
-    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality")
-    feature_names = ["price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct"]
+    score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality", "leader")
+    feature_names = ["price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct", "leader_rank_pct"]
     feature_names += [f"pct_rs_raw_{window}" for window in rs_windows]
     return {
         "ticker": str(row["ticker"]),
@@ -65,6 +67,7 @@ def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
         "features": {name: _clean(row.get(name)) for name in feature_names if name in row.index},
         "scores": {name: _clean(row.get(f"score_{name}")) for name in score_names if f"score_{name}" in row.index},
         "confidence": _clean(float(row.get("score_confidence")) * 100 if pd.notna(row.get("score_confidence")) else None),
+        "leader_confidence": _clean(float(row.get("score_leader_confidence")) * 100 if pd.notna(row.get("score_leader_confidence")) else None),
         "fundamentals": {
             "latest_filing_date": _clean(row.get("latest_filing_date")),
             "accounting_standard": _clean(row.get("accounting_standard")),
@@ -110,9 +113,10 @@ def build(config: EngineConfig) -> dict:
     ].copy()
     if eligible.empty:
         raise RuntimeError("no eligible stocks after price and liquidity filters")
-    scored = score_universe(eligible).sort_values(
+    scored = add_leader_scores(score_universe(eligible)).sort_values(
         ["score_candidate", "score_confidence", "ticker"], ascending=[False, False, True]
     )
+    sector_rotation = build_sector_rotation(scored)
     candidate = scored.head(config.candidate_limit)
     detail = scored.head(config.detail_limit)
     stocks_dir = config.output_dir / "stocks"
@@ -125,6 +129,7 @@ def build(config: EngineConfig) -> dict:
             "generated_at": generated_at,
             "schema_version": "1.0",
             "score_policy_version": SCORE_POLICY_VERSION,
+            "leader_policy_version": LEADER_POLICY_VERSION,
             "narrative": None,
             "institutional": None,
             "estimate_revision": None,
@@ -137,6 +142,8 @@ def build(config: EngineConfig) -> dict:
     manifest = {
         "schema_version": "1.0",
         "score_policy_version": SCORE_POLICY_VERSION,
+        "leader_policy_version": LEADER_POLICY_VERSION,
+        "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION,
         "generated_at": generated_at,
         "asof": asof,
         "universe_count": len(universe),
@@ -146,10 +153,21 @@ def build(config: EngineConfig) -> dict:
         "eligible_count": len(eligible),
         "candidate_count": len(candidate),
         "detail_count": len(detail),
+        "sector_count": len(sector_rotation),
         "score_policy": "missing-aware weighted percentiles",
     }
-    index = {"schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "generated_at": generated_at, "manifest": manifest, "stocks": records}
+    index = {
+        "schema_version": "1.0",
+        "score_policy_version": SCORE_POLICY_VERSION,
+        "leader_policy_version": LEADER_POLICY_VERSION,
+        "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION,
+        "generated_at": generated_at,
+        "manifest": manifest,
+        "stocks": records,
+        "sector_rotation": sector_rotation,
+    }
     atomic_write_json(config.output_dir / "index.json", index)
+    atomic_write_json(config.output_dir / "sector_rotation.json", {"generated_at": generated_at, "sectors": sector_rotation})
     atomic_write_json(config.output_dir / "manifest.json", manifest)
     atomic_write_json(config.history_dir / f"{asof}.json", index)
     return manifest
