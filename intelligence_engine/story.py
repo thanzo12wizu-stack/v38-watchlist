@@ -7,7 +7,7 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-STORY_POLICY_VERSION = "1.0.1"
+STORY_POLICY_VERSION = "1.0.2"
 
 
 def _numeric_series(frame: pd.DataFrame, column: str) -> pd.Series:
@@ -64,9 +64,19 @@ def add_story_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
         out["shares_yoy"] = shares_yoy
     for col in ("story_growth_raw", "story_acceleration_raw", "story_quality_raw", "story_dilution_quality_raw"):
         out[f"pct_{col}"] = percentile_rank(out[col])
+
     def score(row: pd.Series) -> pd.Series:
-        value, confidence = weighted_available({"growth": row.get("pct_story_growth_raw"), "acceleration": row.get("pct_story_acceleration_raw"), "quality": row.get("pct_story_quality_raw"), "dilution": row.get("pct_story_dilution_quality_raw")}, {"growth": .35, "acceleration": .30, "quality": .25, "dilution": .10})
+        value, confidence = weighted_available(
+            {
+                "growth": row.get("pct_story_growth_raw"),
+                "acceleration": row.get("pct_story_acceleration_raw"),
+                "quality": row.get("pct_story_quality_raw"),
+                "dilution": row.get("pct_story_dilution_quality_raw"),
+            },
+            {"growth": .35, "acceleration": .30, "quality": .25, "dilution": .10},
+        )
         return pd.Series({"score_story": value, "score_story_confidence": confidence})
+
     if out.empty:
         out["score_story"] = pd.Series(dtype="float64")
         out["score_story_confidence"] = pd.Series(dtype="float64")
@@ -82,7 +92,11 @@ def add_story_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
 def build_story_records(frame: pd.DataFrame, limit: int = 100) -> list[dict]:
     if frame.empty:
         return []
-    work = frame.sort_values(["score_story", "score_story_confidence", "ticker"], ascending=[False, False, True]).head(limit)
+    work = frame.sort_values(
+        ["score_story", "score_story_confidence", "ticker"],
+        ascending=[False, False, True],
+        na_position="last",
+    ).head(limit)
     records = []
     for _, row in work.iterrows():
         risks = []
