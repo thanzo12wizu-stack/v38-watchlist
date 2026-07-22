@@ -70,7 +70,7 @@ def _clean(value):
 def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
     score_names = ("candidate", "emerging", "compounder", "breakout", "turnaround", "momentum", "fundamental", "improvement", "quality", "leader", "entry", "entry_technical", "entry_risk", "theme", "story")
     feature_names = [
-        "price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct",
+        "price", "price_asof", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct",
         "leader_rank_pct", "entry_rank_pct", "setup", "pivot_20d", "distance_pivot_pct", "stop_ema21_low", "stop_sma10",
         "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block", "theme", "theme_ja", "theme_phase",
         "themes", "themes_ja", "theme_phases", "story_phase", "story_rank_pct", "story_evidence_count",
