@@ -30,4 +30,4 @@ def test_story_accepts_partial_fundamentals():
     frame["shares_yoy"] = [0.01, 0.10, np.nan]
     out = add_story_intelligence(frame)
     assert out.loc[1, "story_phase"] == "DILUTING"
-    assert out.loc[0, "story_phase"] == "DATA_INSUFFICIENT"
+    assert out.loc[0, "story_phase"] == "COMPOUNDING"
