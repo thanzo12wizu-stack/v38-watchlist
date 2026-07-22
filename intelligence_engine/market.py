@@ -6,7 +6,7 @@ from typing import Any
 import pandas as pd
 
 
-MARKET_POLICY_VERSION = "1.0.0"
+MARKET_POLICY_VERSION = "1.0.1"
 
 
 def _finite(value: Any) -> float | None:
@@ -15,6 +15,17 @@ def _finite(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return number if math.isfinite(number) else None
+
+
+def _numeric_series(frame: pd.DataFrame, column: str) -> pd.Series:
+    if column not in frame.columns:
+        return pd.Series(float("nan"), index=frame.index, dtype="float64", name=column)
+    value: Any = frame.loc[:, column]
+    if isinstance(value, pd.DataFrame):
+        value = value.apply(pd.to_numeric, errors="coerce").bfill(axis=1).iloc[:, 0]
+    elif not isinstance(value, pd.Series):
+        value = pd.Series(value, index=frame.index, name=column)
+    return pd.to_numeric(value, errors="coerce").reindex(frame.index)
 
 
 def _ratio(series: pd.Series) -> float | None:
@@ -27,7 +38,7 @@ def _index_state(frame: pd.DataFrame) -> dict[str, Any]:
         return {"available": False}
     f = frame.copy()
     f.columns = [str(c).lower().replace(" ", "_") for c in f.columns]
-    close = pd.to_numeric(f.get("close"), errors="coerce").dropna()
+    close = _numeric_series(f, "close").dropna()
     if len(close) < 50:
         return {"available": False, "history_count": int(len(close))}
     latest = float(close.iloc[-1])
@@ -54,13 +65,13 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
     """Build a transparent market regime from index trend and cross-sectional breadth."""
     qqq = _index_state(qqq_frame)
     work = frame.copy()
-    price = pd.to_numeric(work.get("price"), errors="coerce")
-    sma10 = pd.to_numeric(work.get("sma10"), errors="coerce")
-    sma50 = pd.to_numeric(work.get("sma50"), errors="coerce")
-    sma200 = pd.to_numeric(work.get("sma200"), errors="coerce")
-    rs63 = pd.to_numeric(work.get("rs_raw_63"), errors="coerce")
-    rs126 = pd.to_numeric(work.get("rs_raw_126"), errors="coerce")
-    leaders = pd.to_numeric(work.get("leader_rank_pct"), errors="coerce")
+    price = _numeric_series(work, "price")
+    sma10 = _numeric_series(work, "sma10")
+    sma50 = _numeric_series(work, "sma50")
+    sma200 = _numeric_series(work, "sma200")
+    rs63 = _numeric_series(work, "rs_raw_63")
+    rs126 = _numeric_series(work, "rs_raw_126")
+    leaders = _numeric_series(work, "leader_rank_pct")
 
     breadth = {
         "above_sma10": _ratio(price > sma10),
@@ -68,7 +79,7 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
         "above_sma200": _ratio(price > sma200),
         "positive_rs63": _ratio(rs63 > 0),
         "positive_rs126": _ratio(rs126 > 0),
-        "leader_share_top20pct": _ratio(leaders >= .80),
+        "leader_share_top20pct": _ratio(leaders >= 80.0),
     }
     top_sector = sector_rotation[0] if sector_rotation else None
     top3 = sector_rotation[:3]
@@ -138,6 +149,6 @@ def apply_market_gate(candidates: list[dict], market_state: dict[str, Any]) -> l
         warnings = list(item.get("warnings") or [])
         if not item["actionable"]:
             warnings.append("market_gate")
-        item["warnings"] = warnings
+        item["warnings"] = sorted(set(warnings))
         output.append(item)
     return output
