@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import math
+import os
 from collections import defaultdict
+from functools import lru_cache
+from pathlib import Path
 
 import pandas as pd
 
-THEME_POLICY_VERSION = "1.0.1"
+THEME_POLICY_VERSION = "1.1.0"
 
 
 def _num(value, default: float = 0.0) -> float:
@@ -18,14 +21,70 @@ def _score_unit(value) -> float:
     return min(max(_num(value) / 100.0, 0.0), 1.0)
 
 
-def _label(row: pd.Series) -> tuple[str, str]:
+@lru_cache(maxsize=4)
+def _load_taxonomy(path_text: str) -> dict[str, dict[str, str]]:
+    path = Path(path_text)
+    if not path.exists():
+        return {}
+    try:
+        frame = pd.read_csv(path)
+    except Exception:
+        return {}
+    required = {"ticker", "theme"}
+    if not required.issubset(frame.columns):
+        return {}
+    frame = frame.copy()
+    frame["ticker"] = frame["ticker"].astype(str).str.upper().str.strip()
+    result: dict[str, dict[str, str]] = {}
+    for _, row in frame.iterrows():
+        ticker = str(row.get("ticker") or "").upper().strip()
+        theme = str(row.get("theme") or "").strip()
+        if not ticker or not theme:
+            continue
+        result[ticker] = {
+            "theme": theme,
+            "theme_ja": str(row.get("theme_ja") or theme).strip(),
+            "sector_hint": str(row.get("sector_hint") or "").strip(),
+        }
+    return result
+
+
+def taxonomy_path() -> Path:
+    return Path(os.getenv("V38_THEME_TAXONOMY", "data/theme_taxonomy.csv"))
+
+
+def _label(row: pd.Series) -> tuple[str, str, str | None]:
+    ticker = str(row.get("ticker") or "").upper().strip()
+    mapped = _load_taxonomy(str(taxonomy_path())).get(ticker)
+    if mapped:
+        return mapped["theme"], "curated_ticker", mapped.get("theme_ja")
     industry = row.get("industry")
     sector = row.get("sector")
     if pd.notna(industry) and str(industry).strip():
-        return str(industry).strip(), "industry"
+        label = str(industry).strip()
+        return label, "industry", label
     if pd.notna(sector) and str(sector).strip():
-        return str(sector).strip(), "sector_fallback"
-    return "Unknown", "unknown"
+        label = str(sector).strip()
+        return label, "sector_fallback", label
+    return "Unknown", "unknown", "不明"
+
+
+def _phase(score: float, breadth: float, acceleration_component: float, concentration: float) -> str:
+    if score >= .76 and breadth >= .65 and acceleration_component >= .52:
+        return "LEADING"
+    if score >= .66 and acceleration_component >= .62 and breadth >= .48:
+        return "ACCELERATING"
+    if acceleration_component >= .58 and breadth >= .42:
+        return "EMERGING"
+    if score >= .58 and acceleration_component < .52:
+        return "MATURE"
+    if score < .34 and breadth < .30:
+        return "BROKEN"
+    if acceleration_component < .43 and breadth < .42:
+        return "WEAKENING"
+    if concentration >= .70 and breadth < .45:
+        return "WEAKENING"
+    return "IMPROVING"
 
 
 def build_theme_intelligence(frame: pd.DataFrame, *, min_members: int = 2, limit: int = 50) -> list[dict]:
@@ -33,14 +92,17 @@ def build_theme_intelligence(frame: pd.DataFrame, *, min_members: int = 2, limit
         return []
     groups: dict[str, list[pd.Series]] = defaultdict(list)
     sources: dict[str, str] = {}
+    labels_ja: dict[str, str] = {}
     for _, row in frame.iterrows():
-        label, source = _label(row)
+        label, source, label_ja = _label(row)
         groups[label].append(row)
         sources[label] = source
+        labels_ja[label] = label_ja or label
 
     records: list[dict] = []
     for theme, rows in groups.items():
-        if len(rows) < min_members:
+        required_members = 1 if sources[theme] == "curated_ticker" else min_members
+        if len(rows) < required_members:
             continue
         member_count = len(rows)
         rs_strength = sum((_num(r.get("rs_raw_63")) + _num(r.get("rs_raw_126")) + _num(r.get("rs_raw_189"))) / 3 for r in rows) / member_count
@@ -61,32 +123,31 @@ def build_theme_intelligence(frame: pd.DataFrame, *, min_members: int = 2, limit
             + 0.10 * entry_ready
             + 0.05 * avg_leader
         )
-        if score >= 0.75 and breadth >= 0.60:
-            phase = "LEADING"
-        elif acceleration_component >= 0.58 and breadth >= 0.45:
-            phase = "EMERGING"
-        elif score >= 0.50:
-            phase = "IMPROVING"
-        elif acceleration_component < 0.45 and breadth < 0.40:
-            phase = "WEAKENING"
-        else:
-            phase = "MIXED"
-        ordered = sorted(rows, key=lambda r: (_num(r.get("score_leader")), _num(r.get("score_entry")), str(r.get("ticker"))), reverse=True)
-        records.append({
-            "theme": theme,
-            "source": sources[theme],
-            "sector": next((r.get("sector") for r in rows if pd.notna(r.get("sector"))), None),
-            "member_count": member_count,
-            "score_theme": round(score, 6),
-            "phase": phase,
-            "rs_strength_raw": round(rs_strength, 6),
-            "rs_acceleration_raw": round(acceleration, 6),
-            "breadth_positive": round(breadth, 6),
-            "leader_share_top20pct": round(leader_share, 6),
-            "entry_ready_share": round(entry_ready, 6),
-            "leader_concentration": round(concentration, 6),
-            "leaders": [str(r.get("ticker")) for r in ordered[:5]],
-        })
+        phase = _phase(score, breadth, acceleration_component, concentration)
+        ordered = sorted(
+            rows,
+            key=lambda r: (_num(r.get("score_leader")), _num(r.get("score_entry")), str(r.get("ticker"))),
+            reverse=True,
+        )
+        records.append(
+            {
+                "theme": theme,
+                "theme_ja": labels_ja[theme],
+                "source": sources[theme],
+                "sector": next((r.get("sector") for r in rows if pd.notna(r.get("sector"))), None),
+                "member_count": member_count,
+                "score_theme": round(score, 6),
+                "phase": phase,
+                "rs_strength_raw": round(rs_strength, 6),
+                "rs_acceleration_raw": round(acceleration, 6),
+                "acceleration_component": round(acceleration_component, 6),
+                "breadth_positive": round(breadth, 6),
+                "leader_share_top20pct": round(leader_share, 6),
+                "entry_ready_share": round(entry_ready, 6),
+                "leader_concentration": round(concentration, 6),
+                "leaders": [str(r.get("ticker")) for r in ordered[:5]],
+            }
+        )
     return sorted(records, key=lambda x: (-x["score_theme"], x["theme"]))[:limit]
 
 
@@ -94,15 +155,18 @@ def attach_theme_context(frame: pd.DataFrame, themes: list[dict]) -> pd.DataFram
     out = frame.copy()
     mapping = {item["theme"]: item for item in themes}
     theme_names = []
+    theme_names_ja = []
     theme_scores = []
     theme_phases = []
     for _, row in out.iterrows():
-        label, _ = _label(row)
+        label, _, label_ja = _label(row)
         item = mapping.get(label, {})
         theme_names.append(label)
+        theme_names_ja.append(item.get("theme_ja") or label_ja or label)
         theme_scores.append(item.get("score_theme"))
         theme_phases.append(item.get("phase"))
     out["theme"] = theme_names
+    out["theme_ja"] = theme_names_ja
     out["score_theme"] = theme_scores
     out["theme_phase"] = theme_phases
     return out
@@ -119,13 +183,11 @@ def apply_theme_context(candidates: list[dict], frame: pd.DataFrame) -> list[dic
             if isinstance(row, pd.DataFrame):
                 row = row.iloc[0]
             item["theme"] = row.get("theme")
+            item["theme_ja"] = row.get("theme_ja") or row.get("theme")
             item["theme_score"] = row.get("score_theme")
             item["theme_phase"] = row.get("theme_phase")
-            if row.get("theme_phase") == "WEAKENING":
+            if row.get("theme_phase") in {"WEAKENING", "BROKEN"}:
                 item.setdefault("warnings", []).append("theme_weakening")
-            if row.get("theme_phase") in {"LEADING", "EMERGING"}:
-                item["theme_confirmed"] = True
-            else:
-                item["theme_confirmed"] = False
+            item["theme_confirmed"] = row.get("theme_phase") in {"LEADING", "ACCELERATING", "EMERGING"}
         enriched.append(item)
     return enriched

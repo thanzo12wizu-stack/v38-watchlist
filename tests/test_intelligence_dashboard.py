@@ -15,7 +15,8 @@ def test_build_html_contains_views_and_preserves_existing_dashboard_name():
     }
     text = build_html(payload)
     assert "V38 Intelligence Dashboard" in text
-    assert "発注可能候補" in text
+    assert "発注可能" in text
+    assert "準備候補" in text
     assert "AAA" in text
     assert "intelligence-dashboard.html" not in text
 
@@ -38,7 +39,7 @@ def test_generate_bootstraps_when_index_is_missing(tmp_path):
     text = target.read_text(encoding="utf-8")
     assert "<!doctype html>" in text
     assert "bootstrap" in text
-    assert "統合JSONがまだ未生成" in text
+    assert "統合JSON未生成" in text
 
 
 def test_load_payload_unwraps_individual_sidecar_files(tmp_path):

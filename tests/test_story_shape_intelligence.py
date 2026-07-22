@@ -11,7 +11,7 @@ def _base_frame():
 def test_story_accepts_missing_fundamental_columns():
     out = add_story_intelligence(_base_frame())
     assert len(out) == 3
-    assert out["story_phase"].eq("MIXED").all()
+    assert out["story_phase"].eq("DATA_INSUFFICIENT").all()
     assert {"score_story", "score_story_confidence"}.issubset(out.columns)
 
 
@@ -30,3 +30,4 @@ def test_story_accepts_partial_fundamentals():
     frame["shares_yoy"] = [0.01, 0.10, np.nan]
     out = add_story_intelligence(frame)
     assert out.loc[1, "story_phase"] == "DILUTING"
+    assert out.loc[0, "story_phase"] == "COMPOUNDING"

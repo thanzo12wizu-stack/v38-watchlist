@@ -7,7 +7,7 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-STORY_POLICY_VERSION = "1.0.2"
+STORY_POLICY_VERSION = "1.1.0"
 
 
 def _numeric_series(frame: pd.DataFrame, column: str) -> pd.Series:
@@ -33,6 +33,10 @@ def _phase(row: pd.Series) -> str:
     dilution = pd.to_numeric(row.get("shares_yoy"), errors="coerce")
     if pd.notna(dilution) and dilution > .08:
         return "DILUTING"
+    evidence = pd.to_numeric(row.get("story_evidence_count"), errors="coerce")
+    confidence = pd.to_numeric(row.get("score_story_confidence"), errors="coerce")
+    if pd.isna(evidence) or evidence < 2 or pd.isna(confidence) or confidence < .25:
+        return "DATA_INSUFFICIENT"
     if pd.notna(growth) and growth > .20 and pd.notna(acceleration) and acceleration > 0 and pd.notna(quality) and quality >= 0:
         return "ACCELERATING"
     if pd.notna(growth) and growth > .10 and (pd.isna(quality) or quality >= 0):
@@ -56,6 +60,11 @@ def add_story_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
     operating_delta = _numeric_series(out, "operating_margin_delta")
     fcf_yoy = _numeric_series(out, "free_cash_flow_yoy")
     shares_yoy = _numeric_series(out, "shares_yoy")
+    evidence_frame = pd.concat(
+        [eps_yoy, revenue_yoy, eps_acc, revenue_acc, gross_delta, operating_delta, fcf_yoy, shares_yoy],
+        axis=1,
+    )
+    out["story_evidence_count"] = evidence_frame.notna().sum(axis=1)
     out["story_growth_raw"] = _mean_available([eps_yoy, revenue_yoy], out.index)
     out["story_acceleration_raw"] = _mean_available([eps_acc, revenue_acc], out.index)
     out["story_quality_raw"] = _mean_available([gross_delta, operating_delta, fcf_yoy], out.index)
@@ -102,7 +111,25 @@ def build_story_records(frame: pd.DataFrame, limit: int = 100) -> list[dict]:
         risks = []
         if row.get("story_phase") in {"DETERIORATING", "MARGIN_PRESSURE", "DILUTING"}:
             risks.append(str(row.get("story_phase")).lower())
-        records.append({"ticker": str(row["ticker"]), "sector": row.get("sector"), "industry": row.get("industry"), "score_story": row.get("score_story"), "story_confidence": row.get("score_story_confidence"), "story_phase": row.get("story_phase"), "growth": row.get("story_growth_raw"), "acceleration": row.get("story_acceleration_raw"), "quality": row.get("story_quality_raw"), "shares_yoy": row.get("shares_yoy"), "latest_filing_date": row.get("latest_filing_date"), "risks": risks})
+        if row.get("story_phase") == "DATA_INSUFFICIENT":
+            risks.append("data_insufficient")
+        records.append(
+            {
+                "ticker": str(row["ticker"]),
+                "sector": row.get("sector"),
+                "industry": row.get("industry"),
+                "score_story": row.get("score_story"),
+                "story_confidence": row.get("score_story_confidence"),
+                "story_evidence_count": row.get("story_evidence_count"),
+                "story_phase": row.get("story_phase"),
+                "growth": row.get("story_growth_raw"),
+                "acceleration": row.get("story_acceleration_raw"),
+                "quality": row.get("story_quality_raw"),
+                "shares_yoy": row.get("shares_yoy"),
+                "latest_filing_date": row.get("latest_filing_date"),
+                "risks": risks,
+            }
+        )
     return records
 
 
@@ -116,10 +143,25 @@ def apply_story_context(candidates: list[dict], frame: pd.DataFrame) -> list[dic
             row = lookup.loc[ticker]
             if isinstance(row, pd.DataFrame):
                 row = row.iloc[0]
-            enriched.update({"story_score": row.get("score_story"), "story_phase": row.get("story_phase"), "story_confidence": row.get("score_story_confidence")})
+            enriched.update(
+                {
+                    "story_score": row.get("score_story"),
+                    "story_phase": row.get("story_phase"),
+                    "story_confidence": row.get("score_story_confidence"),
+                    "story_evidence_count": row.get("story_evidence_count"),
+                }
+            )
+            warnings = list(enriched.get("warnings") or [])
             if row.get("story_phase") in {"DETERIORATING", "MARGIN_PRESSURE", "DILUTING"}:
-                warnings = list(enriched.get("warnings") or [])
                 warnings.append(f"story_{str(row.get('story_phase')).lower()}")
-                enriched["warnings"] = sorted(set(warnings))
+            if row.get("story_phase") == "DATA_INSUFFICIENT":
+                warnings.append("story_data_insufficient")
+            enriched["warnings"] = sorted(set(warnings))
+        else:
+            enriched["story_phase"] = "DATA_INSUFFICIENT"
+            enriched["story_confidence"] = 0.0
+            warnings = list(enriched.get("warnings") or [])
+            warnings.append("story_data_insufficient")
+            enriched["warnings"] = sorted(set(warnings))
         result.append(enriched)
     return result
