@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-PORTFOLIO_POLICY_VERSION = "2.1.0"
+PORTFOLIO_POLICY_VERSION = "2.1.1"
 DEFAULT_POSITION_WEIGHT = 0.08
 MAX_POSITIONS = 6
 MARKET_EXPOSURE_CAP = {"BLUE": 1.00, "GREEN": 0.75, "YELLOW": 0.35, "RED": 0.00}
@@ -73,6 +73,38 @@ def load_positions(path: Path) -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
+def _normalized_index(frame: pd.DataFrame | None) -> pd.DatetimeIndex:
+    if frame is None or frame.empty or not isinstance(frame.index, pd.DatetimeIndex):
+        return pd.DatetimeIndex([])
+    index = frame.index
+    if index.tz is not None:
+        index = index.tz_convert(None)
+    return pd.DatetimeIndex(index.normalize().unique()).sort_values()
+
+
+def _market_asof(price_map: dict[str, pd.DataFrame]) -> pd.Timestamp:
+    latest = [index.max() for index in (_normalized_index(frame) for frame in price_map.values()) if len(index)]
+    return max(latest) if latest else pd.Timestamp.now(tz="UTC").tz_localize(None).normalize()
+
+
+def _session_age(
+    frame: pd.DataFrame | None,
+    start: pd.Timestamp | None,
+    fallback_end: pd.Timestamp,
+) -> int | None:
+    if start is None or pd.isna(start):
+        return None
+    start = pd.Timestamp(start).tz_localize(None) if pd.Timestamp(start).tzinfo is not None else pd.Timestamp(start)
+    start = start.normalize()
+    index = _normalized_index(frame)
+    if len(index):
+        return int(((index > start) & (index <= index.max())).sum())
+    end = pd.Timestamp(fallback_end).normalize()
+    if start >= end:
+        return 0
+    return int(np.busday_count((start + pd.Timedelta(days=1)).date(), (end + pd.Timedelta(days=1)).date()))
+
+
 def _correlation_cluster(positions: pd.DataFrame, price_map: dict[str, pd.DataFrame]) -> dict[str, Any]:
     series: dict[str, pd.Series] = {}
     for ticker in positions.ticker:
@@ -128,7 +160,7 @@ def build_portfolio_doctor(
         }
     lookup = scored.set_index("ticker", drop=False) if not scored.empty and "ticker" in scored else pd.DataFrame()
     records = []
-    now = pd.Timestamp.utcnow().tz_localize(None).normalize()
+    market_asof = _market_asof(prices)
     regime = str(market_state.get("regime") or "GREEN")
     exposure_cap = MARKET_EXPOSURE_CAP.get(regime, .5)
     gate = str(market_state.get("entry_gate") or "NO_NEW")
@@ -147,10 +179,11 @@ def build_portfolio_doctor(
             stop = max(float(stop) if pd.notna(stop) else 0.0, float(cost))
         stop_distance = float(price / stop - 1) * 100 if pd.notna(price) and pd.notna(stop) and stop else None
         entry_date = pd.to_datetime(position.get("entry_date"), errors="coerce")
-        held = int((now - entry_date.normalize()).days) if pd.notna(entry_date) else None
         first_pivot = pd.to_datetime(position.get("first_pivot_date"), errors="coerce")
         second_pivot = pd.to_datetime(position.get("second_pivot_date"), errors="coerce")
-        first_age = int((now - first_pivot.normalize()).days) if pd.notna(first_pivot) else held
+        ticker_prices = prices.get(ticker)
+        held = _session_age(ticker_prices, entry_date, market_asof)
+        first_age = _session_age(ticker_prices, first_pivot, market_asof) if pd.notna(first_pivot) else held
         stage = int(position.get("entry_stage") or 2)
         action = "HOLD"
         reasons: list[str] = []
@@ -195,7 +228,11 @@ def build_portfolio_doctor(
                 "cost_basis": None if pd.isna(cost) else float(cost),
                 "gain_pct": None if gain is None else round(gain * 100, 2),
                 "held_days": held,
+                "held_sessions": held,
                 "first_pivot_age_days": first_age,
+                "first_pivot_age_sessions": first_age,
+                "age_basis": "trading_sessions",
+                "market_asof": market_asof.date().isoformat(),
                 "sector": row.get("sector"),
                 "theme": row.get("theme"),
                 "adr_pct": None if pd.isna(adr) else float(adr),
