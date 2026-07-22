@@ -5,15 +5,23 @@ on:
     paths:
       - "intelligence_engine/**"
       - "tests/**"
+      - "scripts/private_crypto.mjs"
+      - "data/theme_taxonomy.csv"
+      - "portfolio.example.csv"
       - "pyproject.toml"
       - ".github/workflows/intelligence-engine.yml"
+      - ".github/workflows/intelligence-dashboard.yml"
   push:
     branches:
       - main
     paths:
       - "intelligence_engine/**"
+      - "scripts/private_crypto.mjs"
+      - "data/theme_taxonomy.csv"
+      - "portfolio.example.csv"
       - "pyproject.toml"
       - ".github/workflows/intelligence-engine.yml"
+      - ".github/workflows/intelligence-dashboard.yml"
   workflow_dispatch:
     inputs:
       refresh_sec:
@@ -34,7 +42,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
@@ -53,6 +61,21 @@ jobs:
           pytest -q tests 2>&1 | tee /tmp/intelligence-pytest.log
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
+      - name: Test private crypto round trip
+        shell: bash
+        env:
+          V38_PRIVATE_DASHBOARD_PASSPHRASE: validation-only-passphrase-38
+        run: |
+          printf '<html><body>private-test</body></html>' >/tmp/private-source.html
+          node scripts/private_crypto.mjs encrypt /tmp/private-source.html /tmp/private-source.enc.json
+          node scripts/private_crypto.mjs decrypt /tmp/private-source.enc.json /tmp/private-roundtrip.html
+          cmp /tmp/private-source.html /tmp/private-roundtrip.html
+          node scripts/private_crypto.mjs lock-html /tmp/private-source.html /tmp/private-locked.html
+          grep -q 'V38 Private Intelligence' /tmp/private-locked.html
+          if grep -q 'private-test' /tmp/private-locked.html; then
+            echo 'plaintext leaked into locked HTML'
+            exit 1
+          fi
       - name: Smoke-test live price adapter
         continue-on-error: true
         run: python -m intelligence_engine.smoke_prices --tickers AAPL,MSFT,NVDA,AMD --report /tmp/intelligence-price-smoke.json --strict
@@ -73,6 +96,11 @@ jobs:
     timeout-minutes: 120
     env:
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      V38_PRICE_PROVIDER: ${{ vars.V38_PRICE_PROVIDER }}
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+      V38_FMP_PRICE_URL_TEMPLATE: ${{ vars.V38_FMP_PRICE_URL_TEMPLATE }}
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+      V38_PORTFOLIO_CSV_B64: ${{ secrets.V38_PORTFOLIO_CSV_B64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,6 +111,21 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
+      - name: Restore encrypted operational state
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" && -f private/intelligence-state.enc.json ]]; then
+            node scripts/private_crypto.mjs decrypt private/intelligence-state.enc.json /tmp/intelligence-state.tar.gz
+            tar -xzf /tmp/intelligence-state.tar.gz
+            echo "Encrypted intelligence state restored"
+          else
+            echo "No decryptable private state; starting from available inputs"
+          fi
+          if [[ -n "${V38_PORTFOLIO_CSV_B64:-}" ]]; then
+            printf '%s' "$V38_PORTFOLIO_CSV_B64" | base64 --decode > portfolio.csv
+            chmod 600 portfolio.csv
+          fi
       - name: Restore price cache
         uses: actions/cache/restore@v4
         with:
@@ -119,14 +162,14 @@ jobs:
           path: prices.pkl
           key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
       - name: Preflight full scoring pipeline
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
       - name: Refresh external data incrementally
         continue-on-error: true
         timeout-minutes: 8
         run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external --ttl-hours 20 --max-tickers 50
       - name: Build operational intelligence and settle observations
-        timeout-minutes: 20
+        timeout-minutes: 25
         run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv --external-root data/external
       - name: Validate generated contract
         timeout-minutes: 5
@@ -141,18 +184,52 @@ jobs:
           hit=critical.intersection(p.get('warnings',[]))
           if hit: raise SystemExit(f'critical data quality failure: {sorted(hit)}')
           PY
-      - name: Commit versioned operational outputs
+      - name: Build private dashboard and encrypted state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m intelligence_engine.intelligence_dashboard --input data/intelligence/index.json --output /tmp/intelligence-dashboard.full.html
+          if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
+            node scripts/private_crypto.mjs lock-html /tmp/intelligence-dashboard.full.html intelligence-dashboard.html
+            mkdir -p private
+            paths=()
+            [[ -d data/intelligence/history ]] && paths+=(data/intelligence/history)
+            [[ -d data/intelligence/observations ]] && paths+=(data/intelligence/observations)
+            [[ -d data/external ]] && paths+=(data/external)
+            [[ -f portfolio.csv ]] && paths+=(portfolio.csv)
+            if (( ${#paths[@]} )); then
+              tar -czf /tmp/intelligence-state.tar.gz "${paths[@]}"
+              node scripts/private_crypto.mjs encrypt /tmp/intelligence-state.tar.gz private/intelligence-state.enc.json
+            fi
+          else
+            echo "Private passphrase is not configured; publishing a locked placeholder only"
+            node scripts/private_crypto.mjs placeholder-html ignored intelligence-dashboard.html
+          fi
+          rm -f /tmp/intelligence-dashboard.full.html /tmp/intelligence-state.tar.gz portfolio.csv
+      - name: Remove plaintext private data from the public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -r --ignore-unmatch data/intelligence data/external portfolio.csv
+          find data -maxdepth 2 -type d -empty -delete || true
+          if grep -RIl --exclude='intelligence-dashboard.html' --exclude='*.enc.json' -E 'entry_candidates|portfolio_doctor|leader_transitions' . | grep -E '^\./data/(intelligence|external)/'; then
+            echo "plaintext private intelligence files remain"
+            exit 1
+          fi
+      - name: Commit encrypted private outputs
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/intelligence data/external
+          git add intelligence-dashboard.html
+          git add private/intelligence-state.enc.json 2>/dev/null || true
+          git add -u data/intelligence data/external portfolio.csv 2>/dev/null || true
           if git diff --staged --quiet; then
-            echo "No intelligence changes"
+            echo "No encrypted intelligence changes"
             exit 0
           fi
-          git commit -m "Update intelligence observations and external data"
+          git commit -m "Update encrypted private intelligence dashboard"
           for attempt in 1 2 3; do
             if git push origin HEAD:main; then exit 0; fi
             echo "Push attempt ${attempt} failed; rebasing onto latest main"
@@ -160,5 +237,5 @@ jobs:
             git rebase origin/main
             sleep $((attempt * 2))
           done
-          echo "Failed to push intelligence outputs after 3 attempts"
+          echo "Failed to push encrypted intelligence outputs after 3 attempts"
           exit 1
