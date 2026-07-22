@@ -3,6 +3,8 @@ import pickle
 
 import pandas as pd
 
+from intelligence_engine.pipeline import load_universe
+from intelligence_engine.prices import _split_yfinance_download
 from intelligence_engine.scoring import score_universe
 from intelligence_engine.sec import parse_companyfacts
 from intelligence_engine.validate_inputs import inspect_inputs
@@ -53,6 +55,23 @@ def test_input_diagnostics_accept_repository_style_mapping(tmp_path):
     report = inspect_inputs(universe_path, prices_path)
     assert report["compatible"] is True
     assert report["prices"]["shape"] == "mapping"
+
+
+def test_load_universe_accepts_japanese_columns(tmp_path):
+    path = tmp_path / "universe.csv"
+    pd.DataFrame({"シンボル": ["nvda", "AMD"], "セクター": ["Technology", "Technology"], "時価総額": [1, 2]}).to_csv(path, index=False)
+    result = load_universe(path)
+    assert list(result.index) == ["NVDA", "AMD"]
+    assert result.loc["NVDA", "sector"] == "Technology"
+    assert result.loc["AMD", "market_cap"] == 2
+
+
+def test_split_yfinance_multiindex_field_first():
+    columns = pd.MultiIndex.from_product([["Open", "High", "Low", "Close", "Volume"], ["AAA", "QQQ"]])
+    raw = pd.DataFrame([[1, 2, 2, 3, 0, 1, 1.5, 2.5, 100, 200]], columns=columns)
+    result = _split_yfinance_download(raw, ["AAA", "QQQ"])
+    assert set(result) == {"AAA", "QQQ"}
+    assert result["AAA"]["close"].iloc[0] == 1.5
 
 
 def test_output_contract_rejects_duplicate_tickers(tmp_path):
