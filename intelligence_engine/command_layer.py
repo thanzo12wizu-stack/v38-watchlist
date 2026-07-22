@@ -78,6 +78,21 @@ def _leader_board_from_index(index: dict) -> dict[str, list[dict]]:
     return output
 
 
+def _resolve_external_coverage(candidates: list[dict]) -> list[dict]:
+    output = []
+    for candidate in candidates:
+        item = dict(candidate)
+        external = item.get("external_data") or {}
+        warnings = list(item.get("warnings") or [])
+        if external.get("next_earnings_date") or external.get("earnings_date"):
+            warnings = [warning for warning in warnings if warning != "earnings_unknown"]
+        elif "earnings_unknown" not in warnings:
+            warnings.append("earnings_unknown")
+        item["warnings"] = list(dict.fromkeys(warnings))
+        output.append(item)
+    return output
+
+
 def run(
     root: Path,
     prices_path: Path,
@@ -102,11 +117,8 @@ def run(
     tickers = scored.get("ticker", pd.Series(dtype=str)).dropna().astype(str).tolist()
     records = build_external_records(tickers, layer)
     candidates = apply_external_context(candidates, records)
-    candidates = enrich_candidates(
-        candidates,
-        generated_at=index.get("generated_at"),
-        price_asof=price_asof,
-    )
+    candidates = _resolve_external_coverage(candidates)
+    candidates = enrich_candidates(candidates, generated_at=index.get("generated_at"), price_asof=price_asof)
     partitions = partition_candidates(candidates)
     index["entry_candidates"] = candidates
     index["candidate_partitions"] = partitions
@@ -114,12 +126,7 @@ def run(
     index["external_data"] = records
 
     positions = load_positions(portfolio_path)
-    doctor = build_portfolio_doctor(
-        positions,
-        scored,
-        prices,
-        index.get("market_state") or {},
-    )
+    doctor = build_portfolio_doctor(positions, scored, prices, index.get("market_state") or {})
 
     history_dir = root / "history"
     ledger_dir = root / "observations"
@@ -222,13 +229,7 @@ def main() -> None:
     parser.add_argument("--portfolio", default="portfolio.csv")
     parser.add_argument("--external-root", default="data/external")
     args = parser.parse_args()
-    print(
-        json.dumps(
-            run(Path(args.root), Path(args.prices), Path(args.portfolio), Path(args.external_root)),
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
+    print(json.dumps(run(Path(args.root), Path(args.prices), Path(args.portfolio), Path(args.external_root)), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
