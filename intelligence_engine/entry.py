@@ -4,7 +4,7 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-ENTRY_POLICY_VERSION = "1.1.1"
+ENTRY_POLICY_VERSION = "1.1.2"
 
 
 def add_entry_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
@@ -102,6 +102,7 @@ def build_entry_candidates(frame: pd.DataFrame, limit: int = 20) -> list[dict]:
                 "leader_confidence": row.get("score_leader_confidence"),
                 "entry_confidence": row.get("score_entry_confidence"),
                 "price": row.get("price"),
+                "price_asof": row.get("price_asof"),
                 "adr_pct": row.get("adr_pct"),
                 "pivot": row.get("pivot_20d"),
                 "distance_pivot_pct": row.get("distance_pivot_pct"),
