@@ -4,16 +4,39 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
+SECTOR_ROTATION_POLICY_VERSION = "1.1.0"
 
-SECTOR_ROTATION_POLICY_VERSION = "1.0.1"
+
+def _numeric(group: pd.DataFrame, column: str) -> pd.Series:
+    if column not in group.columns:
+        return pd.Series(dtype="float64")
+    value = group.loc[:, column]
+    if isinstance(value, pd.DataFrame):
+        value = value.apply(pd.to_numeric, errors="coerce").bfill(axis=1).iloc[:, 0]
+    return pd.to_numeric(value, errors="coerce")
+
+
+def _phase(strength: float | None, acceleration: float | None, breadth: float | None) -> str:
+    s = 0.0 if strength is None else strength
+    a = 0.0 if acceleration is None else acceleration
+    b = 0.0 if breadth is None else breadth
+    if s >= 75 and a >= 60 and b >= .60:
+        return "LEADING"
+    if a >= 70 and b >= .48:
+        return "ACCELERATING"
+    if a >= 58 and s < 65:
+        return "EMERGING"
+    if s >= 65 and a < 45:
+        return "MATURE"
+    if s < 35 and a < 40 and b < .35:
+        return "BROKEN"
+    if a < 40 and b < .45:
+        return "WEAKENING"
+    return "IMPROVING"
 
 
 def build_sector_rotation(frame: pd.DataFrame, top_leaders: int = 5) -> list[dict]:
-    """Aggregate stock evidence into a sector rotation table.
-
-    The score separates established strength from acceleration so consumers can
-    distinguish strong sectors from sectors whose internal leadership is improving.
-    """
+    """Aggregate stock evidence into established strength, acceleration and breadth."""
     if frame.empty or "sector" not in frame:
         return []
     work = frame.copy()
@@ -23,27 +46,37 @@ def build_sector_rotation(frame: pd.DataFrame, top_leaders: int = 5) -> list[dic
 
     rows: list[dict] = []
     for sector, group in work.groupby("sector", sort=True):
+        rs63 = _numeric(group, "rs_raw_63")
+        rs126 = _numeric(group, "rs_raw_126")
+        rs189 = _numeric(group, "rs_raw_189")
+        change63 = _numeric(group, "rs_change_raw_63")
+        change126 = _numeric(group, "rs_change_raw_126")
+        leaders_rank = _numeric(group, "leader_rank_pct")
         strength_inputs = {
-            "rs63": pd.to_numeric(group.get("rs_raw_63"), errors="coerce").median(),
-            "rs126": pd.to_numeric(group.get("rs_raw_126"), errors="coerce").median(),
-            "rs189": pd.to_numeric(group.get("rs_raw_189"), errors="coerce").median(),
+            "rs63": None if rs63.dropna().empty else float(rs63.median()),
+            "rs126": None if rs126.dropna().empty else float(rs126.median()),
+            "rs189": None if rs189.dropna().empty else float(rs189.median()),
         }
         acceleration_inputs = {
-            "rs63": pd.to_numeric(group.get("rs_change_raw_63"), errors="coerce").median(),
-            "rs126": pd.to_numeric(group.get("rs_change_raw_126"), errors="coerce").median(),
+            "rs63": None if change63.dropna().empty else float(change63.median()),
+            "rs126": None if change126.dropna().empty else float(change126.median()),
         }
-        breadth = float((pd.to_numeric(group.get("rs_raw_63"), errors="coerce") > 0).mean()) if "rs_raw_63" in group else None
-        leader_share = float((pd.to_numeric(group.get("leader_rank_pct"), errors="coerce") >= 80.0).mean()) if "leader_rank_pct" in group else None
+        valid_breadth = rs63.dropna()
+        breadth = float((valid_breadth > 0).mean()) if not valid_breadth.empty else None
+        valid_leaders = leaders_rank.dropna()
+        leader_share = float((valid_leaders >= 80.0).mean()) if not valid_leaders.empty else None
         leaders = group.sort_values(["score_leader", "ticker"], ascending=[False, True]).head(top_leaders) if "score_leader" in group else group.head(0)
-        rows.append({
-            "sector": str(sector),
-            "stock_count": int(len(group)),
-            "strength_raw": strength_inputs,
-            "acceleration_raw": acceleration_inputs,
-            "breadth_positive_63d": breadth,
-            "leader_share_top20pct": leader_share,
-            "leaders": [str(t) for t in leaders.get("ticker", pd.Series(dtype=str)).tolist()],
-        })
+        rows.append(
+            {
+                "sector": str(sector),
+                "stock_count": int(len(group)),
+                "strength_raw": strength_inputs,
+                "acceleration_raw": acceleration_inputs,
+                "breadth_positive_63d": breadth,
+                "leader_share_top20pct": leader_share,
+                "leaders": [str(t) for t in leaders.get("ticker", pd.Series(dtype=str)).tolist()],
+            }
+        )
 
     result = pd.DataFrame(rows)
     for key in ("rs63", "rs126", "rs189"):
@@ -73,15 +106,21 @@ def build_sector_rotation(frame: pd.DataFrame, top_leaders: int = 5) -> list[dic
 
     output: list[dict] = []
     for _, row in result.iterrows():
-        output.append({
-            "sector": row["sector"],
-            "stock_count": int(row["stock_count"]),
-            "score_rotation": None if pd.isna(row["score_rotation"]) else float(row["score_rotation"]),
-            "score_strength": None if pd.isna(row["score_strength"]) else float(row["score_strength"]),
-            "score_acceleration": None if pd.isna(row["score_acceleration"]) else float(row["score_acceleration"]),
-            "score_confidence": None if pd.isna(row["score_confidence"]) else float(row["score_confidence"]),
-            "breadth_positive_63d": row["breadth_positive_63d"],
-            "leader_share_top20pct": row["leader_share_top20pct"],
-            "leaders": row["leaders"],
-        })
+        strength = None if pd.isna(row["score_strength"]) else float(row["score_strength"])
+        acceleration = None if pd.isna(row["score_acceleration"]) else float(row["score_acceleration"])
+        breadth = None if pd.isna(row["breadth_positive_63d"]) else float(row["breadth_positive_63d"])
+        output.append(
+            {
+                "sector": row["sector"],
+                "stock_count": int(row["stock_count"]),
+                "score_rotation": None if pd.isna(row["score_rotation"]) else float(row["score_rotation"]),
+                "score_strength": strength,
+                "score_acceleration": acceleration,
+                "score_confidence": None if pd.isna(row["score_confidence"]) else float(row["score_confidence"]),
+                "phase": _phase(strength, acceleration, breadth),
+                "breadth_positive_63d": breadth,
+                "leader_share_top20pct": None if pd.isna(row["leader_share_top20pct"]) else float(row["leader_share_top20pct"]),
+                "leaders": row["leaders"],
+            }
+        )
     return output
