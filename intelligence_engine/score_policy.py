@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-SCORE_POLICY_VERSION = "1.0.0"
+SCORE_POLICY_VERSION = "1.0.1"
 
 SCORE_WEIGHTS: dict[str, dict[str, float]] = {
     "momentum": {"r63": .25, "r126": .30, "r189": .25, "r252": .10, "high": .10},
