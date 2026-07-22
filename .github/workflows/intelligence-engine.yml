@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: intelligence-engine-sidecar-${{ github.ref }}
+  group: intelligence-engine-sidecar-main
   cancel-in-progress: false
 
 jobs:
@@ -63,11 +63,21 @@ jobs:
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
+      - name: Restore price cache
+        uses: actions/cache@v4
+        with:
+          path: prices.pkl
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            intelligence-prices-${{ runner.os }}-
       - name: Restore SEC cache
         uses: actions/cache@v4
         with:
@@ -89,7 +99,10 @@ jobs:
           fi
       - name: Refresh external market and filing-derived data
         continue-on-error: true
+        timeout-minutes: 25
         run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external
+      - name: Ensure resumable price cache
+        run: python -m intelligence_engine.ensure_prices --universe universe.csv --prices prices.pkl --min-coverage 0.70
       - name: Build intelligence sidecar
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
       - name: Build operational intelligence and settle observations
@@ -107,13 +120,23 @@ jobs:
           if hit: raise SystemExit(f'critical data quality failure: {sorted(hit)}')
           PY
       - name: Commit versioned operational outputs
+        shell: bash
         run: |
-          if git diff --quiet -- data/intelligence data/external; then
-            echo "No intelligence changes"
-            exit 0
-          fi
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/intelligence data/external
+          if git diff --staged --quiet; then
+            echo "No intelligence changes"
+            exit 0
+          fi
           git commit -m "Update intelligence observations and external data"
-          git push
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "Push attempt ${attempt} failed; rebasing onto latest main"
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          echo "Failed to push intelligence outputs after 3 attempts"
+          exit 1
