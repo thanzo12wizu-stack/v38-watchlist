@@ -12,7 +12,8 @@ from .config import EngineConfig
 from .entry import ENTRY_POLICY_VERSION, add_entry_intelligence, build_entry_candidates
 from .leadership import LEADER_POLICY_VERSION, add_leader_scores
 from .market import MARKET_POLICY_VERSION, apply_market_gate, build_market_state
-from .prices import compute_price_features, download_price_map, load_price_map
+from .prices import compute_price_features, load_price_map
+from .providers import get_price_provider
 from .score_policy import SCORE_POLICY_VERSION
 from .scoring import score_universe
 from .sec import load_companyfacts
@@ -50,10 +51,15 @@ def load_universe(path: Path) -> pd.DataFrame:
 
 
 def _load_or_download_prices(config: EngineConfig, tickers: list[str]):
+    provider = get_price_provider()
     if config.price_cache.exists():
-        return load_price_map(config.price_cache), {"source": "pickle", "path": str(config.price_cache)}
+        return load_price_map(config.price_cache), {
+            "source": "pickle",
+            "path": str(config.price_cache),
+            "provider": provider.name,
+        }
     requested = sorted(set(tickers) | {"QQQ"})
-    return download_price_map(requested)
+    return provider.download(requested)
 
 
 def _clean(value):
@@ -65,7 +71,7 @@ def _index_record(row: pd.Series, rs_windows: tuple[int, ...]) -> dict:
     feature_names = [
         "price", "market_cap", "adr_pct", "dollar_volume_20d", "volume_ratio_20d", "distance_52w_high_pct",
         "leader_rank_pct", "entry_rank_pct", "setup", "pivot_20d", "distance_pivot_pct", "stop_ema21_low", "stop_sma10",
-        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block", "theme", "theme_phase", "story_phase", "story_rank_pct",
+        "stop_risk_pct", "reward_risk_raw", "extension_atr", "hard_block", "theme", "theme_ja", "theme_phase", "story_phase", "story_rank_pct", "story_evidence_count",
     ]
     feature_names += [f"pct_rs_raw_{window}" for window in rs_windows]
     return {
@@ -133,13 +139,14 @@ def build(config: EngineConfig) -> dict:
     requested_count = int(price_diagnostics.get("requested_count", price_diagnostics.get("requested", len(universe) + 1)))
     downloaded_count = int(price_diagnostics.get("downloaded_count", price_diagnostics.get("received", len(prices))))
     coverage_ratio = downloaded_count / requested_count if requested_count else 0.0
+    provider_name = str(price_diagnostics.get("provider") or price_diagnostics.get("source") or "unknown")
     manifest = {
         "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
         "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
         "market_policy_version": MARKET_POLICY_VERSION, "theme_policy_version": THEME_POLICY_VERSION, "story_policy_version": STORY_POLICY_VERSION,
         "generated_at": generated_at, "asof": asof, "universe_count": len(universe), "price_covered_count": len(raw),
-        "price_download_coverage_ratio": coverage_ratio, "price_diagnostics": price_diagnostics, "eligible_count": len(eligible),
-        "candidate_count": len(candidate), "detail_count": len(detail), "sector_count": len(sector_rotation), "theme_count": len(theme_intelligence),
+        "price_download_coverage_ratio": coverage_ratio, "price_diagnostics": price_diagnostics, "price_provider": provider_name,
+        "eligible_count": len(eligible), "candidate_count": len(candidate), "detail_count": len(detail), "sector_count": len(sector_rotation), "theme_count": len(theme_intelligence),
         "story_count": len(story_records), "entry_candidate_count": len(entry_candidates), "market_regime": market_state.get("regime"),
         "market_entry_gate": market_state.get("entry_gate"), "score_policy": "missing-aware weighted percentiles",
     }
