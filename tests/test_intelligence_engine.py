@@ -35,7 +35,7 @@ def test_weighted_available_ignores_nan_and_infinity():
         {"nan": .20, "valid": .50, "inf": .20, "missing": .10},
     )
     assert value == 80.0
-    assert confidence == .50
+    assert np.isclose(confidence, .50)
 
 
 def test_atomic_write_json_normalizes_non_finite_values(tmp_path):
