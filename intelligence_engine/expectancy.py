@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-EXPECTANCY_POLICY_VERSION = "1.1.0"
+EXPECTANCY_POLICY_VERSION = "1.1.1"
 HORIZONS = (5, 10, 21)
 
 
@@ -129,11 +129,13 @@ def build_expectancy(prices: dict[str, pd.DataFrame], min_samples: int = 30, str
             row=feat.iloc[i]
             if pd.isna(row.get("entry_score_raw")): continue
             setup=_classify(row)
-            rec={"ticker":ticker,"date":str(common[i])[:10],"year":int(str(common[i])[:4]),"setup":setup,"entry_score_raw":float(row["entry_score_raw"]),"regime":_regime(bench,i),"adr_bucket":_adr_bucket(row.get("adr_pct"))}
+            entry_date=pd.Timestamp(common[i]).date().isoformat()
+            rec={"ticker":ticker,"date":entry_date,"year":pd.Timestamp(common[i]).year,"setup":setup,"entry_score_raw":float(row["entry_score_raw"]),"regime":_regime(bench,i),"adr_bucket":_adr_bucket(row.get("adr_pct"))}
             for h in HORIZONS:
                 stock_ret=float(close.iloc[i+h]/close.iloc[i]-1)
                 bench_ret=float(bench.iloc[i+h]/bench.iloc[i]-1)
                 rec[f"excess_{h}"]=stock_ret-bench_ret
+                rec[f"outcome_date_{h}"]=pd.Timestamp(common[i+h]).date().isoformat()
             samples.append(rec)
     data=pd.DataFrame(samples)
     if data.empty:
@@ -145,7 +147,11 @@ def build_expectancy(prices: dict[str, pd.DataFrame], min_samples: int = 30, str
             summary=_summary(group[f"excess_{h}"],min_samples)
             setup_stats.append({"setup":setup,"horizon":h,**summary})
 
-    data["score_bucket"] = pd.qcut(data["entry_score_raw"], q=min(10, data["entry_score_raw"].nunique()), duplicates="drop")
+    unique_scores=int(data["entry_score_raw"].nunique())
+    if unique_scores >= 2:
+        data["score_bucket"] = pd.qcut(data["entry_score_raw"], q=min(10, unique_scores), duplicates="drop")
+    else:
+        data["score_bucket"] = "all"
     calibration=[]
     for bucket, group in data.groupby("score_bucket", observed=True):
         lo=float(group["entry_score_raw"].min()); hi=float(group["entry_score_raw"].max())
@@ -159,10 +165,14 @@ def build_expectancy(prices: dict[str, pd.DataFrame], min_samples: int = 30, str
 
     walk_forward=[]
     years=sorted(int(year) for year in data["year"].dropna().unique())
+    entry_dates=pd.to_datetime(data["date"],errors="coerce")
     for horizon in HORIZONS:
+        outcome_dates=pd.to_datetime(data[f"outcome_date_{horizon}"],errors="coerce")
         for test_year in years:
-            train=data[data["year"]<test_year]
-            test=data[data["year"]==test_year]
+            test_start=pd.Timestamp(year=test_year,month=1,day=1)
+            test_end=pd.Timestamp(year=test_year+1,month=1,day=1)
+            train=data[outcome_dates < test_start]
+            test=data[(entry_dates >= test_start) & (entry_dates < test_end)]
             if train.empty or test.empty: continue
             train_stats=[]
             for setup, group in train.groupby("setup"):
@@ -173,7 +183,7 @@ def build_expectancy(prices: dict[str, pd.DataFrame], min_samples: int = 30, str
             train_stats.sort(key=lambda item:(-item[1],-item[2],item[0]))
             selected=train_stats[0][0]
             observed=test[test["setup"]==selected][f"excess_{horizon}"].dropna()
-            walk_forward.append({"horizon":horizon,"test_year":test_year,"selected_setup":selected,"train_samples":train_stats[0][2],"test_samples":int(len(observed)),"mean_excess":None if observed.empty else float(observed.mean()),"median_excess":None if observed.empty else float(observed.median()),"win_rate":None if observed.empty else float((observed>0).mean())})
+            walk_forward.append({"horizon":horizon,"test_year":test_year,"selected_setup":selected,"train_samples":train_stats[0][2],"train_mean_excess":train_stats[0][1],"test_samples":int(len(observed)),"mean_excess":None if observed.empty else float(observed.mean()),"median_excess":None if observed.empty else float(observed.median()),"win_rate":None if observed.empty else float((observed>0).mean()),"training_cutoff":test_start.date().isoformat()})
 
     excluding_2020=[]
     filtered=data[data["year"]!=2020]
@@ -198,12 +208,9 @@ def calibrate_candidates(candidates: list[dict], expectancy: dict[str, Any]) -> 
     for item in candidates:
         rec=dict(item); score=float(rec.get("score_entry") or 0); bucket=next((b for b in buckets if b["score_min"]<=score<=b["score_max"]),None)
         rec["expectancy"]={}
-        qualified_scores=[]
         for h in HORIZONS:
             base=setup_map.get((rec.get("setup"),h)); cal=(bucket or {}).get("metrics",{}).get(str(h))
             rec["expectancy"][str(h)]={"setup":base,"score_calibration":cal}
-            if base and base.get("mean_excess_return") is not None:
-                qualified_scores.append(float(base["mean_excess_return"]))
         ten=rec["expectancy"].get("10",{})
         ten_base=ten.get("setup") or {}
         ten_cal=ten.get("score_calibration") or {}
