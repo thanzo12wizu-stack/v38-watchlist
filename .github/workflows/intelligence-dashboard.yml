@@ -5,6 +5,11 @@ on:
     workflows: ["Intelligence Engine (sidecar)"]
     types: [completed]
   workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "intelligence_engine/intelligence_dashboard.py"
+      - ".github/workflows/intelligence-dashboard.yml"
   pull_request:
     paths:
       - "intelligence_engine/intelligence_dashboard.py"
