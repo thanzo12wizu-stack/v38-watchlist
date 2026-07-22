@@ -24,10 +24,11 @@ def test_story_accepts_duplicate_fundamental_columns():
     assert isinstance(out["story_growth_raw"], pd.Series)
 
 
-def test_story_accepts_partial_fundamentals():
+def test_story_accepts_partial_fundamentals_without_overstating_signal():
     frame = _base_frame()
     frame["revenue_yoy"] = [0.30, np.nan, -0.05]
     frame["shares_yoy"] = [0.01, 0.10, np.nan]
     out = add_story_intelligence(frame)
-    assert out.loc[1, "story_phase"] == "DILUTING"
+    assert out.loc[1, "story_evidence_count"] == 1
+    assert out.loc[1, "story_phase"] == "DATA_INSUFFICIENT"
     assert out.loc[0, "story_phase"] == "COMPOUNDING"
