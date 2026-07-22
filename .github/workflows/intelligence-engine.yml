@@ -40,10 +40,15 @@ jobs:
       - run: pytest -q tests/test_intelligence_engine.py
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
+      - name: Smoke-test live price adapter
+        continue-on-error: true
+        run: python -m intelligence_engine.smoke_prices --tickers AAPL,MSFT,NVDA,AMD --report /tmp/intelligence-price-smoke.json --strict
       - uses: actions/upload-artifact@v4
         with:
-          name: intelligence-input-report
-          path: /tmp/intelligence-input-report.json
+          name: intelligence-validation-reports
+          path: |
+            /tmp/intelligence-input-report.json
+            /tmp/intelligence-price-smoke.json
           if-no-files-found: error
 
   build:
