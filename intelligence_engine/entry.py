@@ -4,8 +4,7 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-
-ENTRY_POLICY_VERSION = "1.0.1"
+ENTRY_POLICY_VERSION = "1.1.0"
 
 
 def add_entry_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
@@ -74,13 +73,35 @@ def build_entry_candidates(frame: pd.DataFrame, limit: int = 20) -> list[dict]:
     ).head(limit)
     records = []
     for _, row in work.iterrows():
-        records.append({
-            "ticker": str(row["ticker"]), "sector": row.get("sector"), "industry": row.get("industry"),
-            "setup": row["setup"], "score_entry": row.get("score_entry"), "score_leader": row.get("score_leader"),
-            "entry_confidence": row.get("score_entry_confidence"), "price": row.get("price"), "pivot": row.get("pivot_20d"),
-            "distance_pivot_pct": row.get("distance_pivot_pct"), "stop_ema21_low": row.get("stop_ema21_low"),
-            "stop_sma10": row.get("stop_sma10"), "stop_risk_pct": row.get("stop_risk_pct"),
-            "reward_risk_raw": row.get("reward_risk_raw"), "extension_atr": row.get("extension_atr"),
-            "warnings": [name for name, flag in (("supply", pd.notna(row.get("supply_risk_raw")) and row.get("supply_risk_raw") >= .5), ("earnings_unknown", True)) if flag],
-        })
+        warnings = []
+        if pd.notna(row.get("supply_risk_raw")) and row.get("supply_risk_raw") >= .5:
+            warnings.append("supply")
+        warnings.append("earnings_unknown")
+        records.append(
+            {
+                "ticker": str(row["ticker"]),
+                "sector": row.get("sector"),
+                "industry": row.get("industry"),
+                "setup": row["setup"],
+                "score_entry": row.get("score_entry"),
+                "score_candidate": row.get("score_candidate"),
+                "score_leader": row.get("score_leader"),
+                "leader_confidence": row.get("score_leader_confidence"),
+                "entry_confidence": row.get("score_entry_confidence"),
+                "price": row.get("price"),
+                "adr_pct": row.get("adr_pct"),
+                "pivot": row.get("pivot_20d"),
+                "distance_pivot_pct": row.get("distance_pivot_pct"),
+                "distance_52w_high_pct": row.get("distance_52w_high_pct"),
+                "stop_ema21_low": row.get("stop_ema21_low"),
+                "stop_sma10": row.get("stop_sma10"),
+                "stop_risk_pct": row.get("stop_risk_pct"),
+                "reward_risk_raw": row.get("reward_risk_raw"),
+                "extension_atr": row.get("extension_atr"),
+                "hard_block": bool(row.get("hard_block", False)),
+                "volume_ratio_20d": row.get("volume_ratio_20d"),
+                "contraction_score_raw": row.get("contraction_score_raw"),
+                "warnings": warnings,
+            }
+        )
     return records
