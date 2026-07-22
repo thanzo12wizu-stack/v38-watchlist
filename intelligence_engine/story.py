@@ -7,7 +7,7 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-STORY_POLICY_VERSION = "1.1.0"
+STORY_POLICY_VERSION = "1.1.1"
 
 
 def _numeric_series(frame: pd.DataFrame, column: str) -> pd.Series:
@@ -31,12 +31,14 @@ def _phase(row: pd.Series) -> str:
     acceleration = pd.to_numeric(row.get("story_acceleration_raw"), errors="coerce")
     quality = pd.to_numeric(row.get("story_quality_raw"), errors="coerce")
     dilution = pd.to_numeric(row.get("shares_yoy"), errors="coerce")
-    if pd.notna(dilution) and dilution > .08:
-        return "DILUTING"
     evidence = pd.to_numeric(row.get("story_evidence_count"), errors="coerce")
     confidence = pd.to_numeric(row.get("score_story_confidence"), errors="coerce")
+    # Missing evidence is not a negative signal. Require a minimally supported
+    # story before assigning dilution, deterioration, or margin-pressure labels.
     if pd.isna(evidence) or evidence < 2 or pd.isna(confidence) or confidence < .25:
         return "DATA_INSUFFICIENT"
+    if pd.notna(dilution) and dilution > .08:
+        return "DILUTING"
     if pd.notna(growth) and growth > .20 and pd.notna(acceleration) and acceleration > 0 and pd.notna(quality) and quality >= 0:
         return "ACCELERATING"
     if pd.notna(growth) and growth > .10 and (pd.isna(quality) or quality >= 0):
