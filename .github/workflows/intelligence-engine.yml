@@ -210,9 +210,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git rm -r --ignore-unmatch data/intelligence data/external portfolio.csv
+          # The files were intentionally regenerated before encryption, so Git sees
+          # working-tree modifications. Encryption has already succeeded at this point;
+          # force removal is required to prevent plaintext from being committed.
+          git rm -r -f --ignore-unmatch -- data/intelligence data/external portfolio.csv
           find data -maxdepth 2 -type d -empty -delete || true
-          if grep -RIl --exclude='intelligence-dashboard.html' --exclude='*.enc.json' -E 'entry_candidates|portfolio_doctor|leader_transitions' . | grep -E '^\./data/(intelligence|external)/'; then
+          if find data/intelligence data/external -type f -print -quit 2>/dev/null | grep -q .; then
             echo "plaintext private intelligence files remain"
             exit 1
           fi
