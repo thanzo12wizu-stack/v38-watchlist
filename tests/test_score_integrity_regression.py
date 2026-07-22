@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from intelligence_engine.config import EngineConfig
 from intelligence_engine.intelligence_dashboard import build_html
@@ -89,5 +90,7 @@ def test_pipeline_without_sec_data_emits_finite_scores_and_strict_json(tmp_path:
 def test_market_state_accepts_missing_cross_section_columns():
     frame = pd.DataFrame({"ticker": ["AAA", "BBB"], "price": [10.0, 20.0]})
     market = build_market_state(frame, _price_frame(10), [])
-    assert market["regime"] in {"BLUE", "GREEN", "YELLOW", "RED", "UNKNOWN"}
+    assert market["breadth"]["above_sma50"] is None
+    assert market["breadth"]["positive_rs63"] is None
+    assert market["score_confidence"] == pytest.approx(.30)
     assert market["recommended_exposure_pct"] == market["recommended_exposure"] * 100
