@@ -3,6 +3,7 @@ import pickle
 
 import pandas as pd
 
+from intelligence_engine.forward_validation import evaluate_snapshot, summarize_by_score_bucket
 from intelligence_engine.pipeline import load_universe
 from intelligence_engine.prices import _split_yfinance_download
 from intelligence_engine.scoring import score_universe
@@ -89,3 +90,29 @@ def test_output_contract_rejects_duplicate_tickers(tmp_path):
     (root / "index.json").write_text(json.dumps(payload), encoding="utf-8")
     errors = validate(root)
     assert "duplicate ticker: AAA" in errors
+
+
+def test_forward_validation_uses_last_price_on_or_before_asof():
+    dates = pd.date_range("2026-01-01", periods=8, freq="D")
+    prices = {
+        "AAA": pd.DataFrame({"Close": [10, 11, 12, 13, 14, 15, 16, 17]}, index=dates),
+        "QQQ": pd.DataFrame({"Close": [100, 101, 102, 103, 104, 105, 106, 107]}, index=dates),
+    }
+    result = evaluate_snapshot(
+        [{"ticker": "AAA", "scores": {"candidate": 90}, "confidence": 80}],
+        prices,
+        "2026-01-03",
+        horizons=(2,),
+    )
+    assert result.loc[0, "return_2d"] == 14 / 12 - 1
+    assert result.loc[0, "benchmark_return_2d"] == 104 / 102 - 1
+
+
+def test_score_bucket_summary_reports_excess_win_rate():
+    evaluated = pd.DataFrame({
+        "scores": [{"candidate": 10}, {"candidate": 20}, {"candidate": 80}, {"candidate": 90}],
+        "excess_return_21d": [-0.02, -0.01, 0.03, 0.05],
+    })
+    summary = summarize_by_score_bucket(evaluated, "candidate", 21, buckets=2)
+    assert list(summary["count"]) == [2, 2]
+    assert list(summary["win_rate"]) == [0.0, 1.0]
