@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: intelligence-engine-sidecar-main
+  group: ${{ github.event_name == 'pull_request' && format('intelligence-engine-pr-{0}', github.event.pull_request.number) || 'intelligence-engine-main' }}
   cancel-in-progress: false
 
 jobs:
