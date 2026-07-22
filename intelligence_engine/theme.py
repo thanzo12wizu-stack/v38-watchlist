@@ -5,12 +5,17 @@ from collections import defaultdict
 
 import pandas as pd
 
-THEME_POLICY_VERSION = "1.0.0"
+THEME_POLICY_VERSION = "1.0.1"
 
 
 def _num(value, default: float = 0.0) -> float:
     value = pd.to_numeric(value, errors="coerce")
     return default if pd.isna(value) else float(value)
+
+
+def _score_unit(value) -> float:
+    """Normalize the engine's 0..100 score scale for 0..1 aggregations."""
+    return min(max(_num(value) / 100.0, 0.0), 1.0)
 
 
 def _label(row: pd.Series) -> tuple[str, str]:
@@ -41,10 +46,11 @@ def build_theme_intelligence(frame: pd.DataFrame, *, min_members: int = 2, limit
         rs_strength = sum((_num(r.get("rs_raw_63")) + _num(r.get("rs_raw_126")) + _num(r.get("rs_raw_189"))) / 3 for r in rows) / member_count
         acceleration = sum((_num(r.get("rs_change_raw_63")) + _num(r.get("rs_change_raw_126"))) / 2 for r in rows) / member_count
         breadth = sum(1 for r in rows if _num(r.get("rs_raw_63")) > 0 and _num(r.get("rs_raw_126")) > 0) / member_count
-        leader_share = sum(1 for r in rows if _num(r.get("leader_rank_pct")) >= 0.80) / member_count
+        leader_share = sum(1 for r in rows if _num(r.get("leader_rank_pct")) >= 80.0) / member_count
         entry_ready = sum(1 for r in rows if str(r.get("setup")) in {"PULLBACK", "PRE_BREAKOUT", "BREAKOUT"}) / member_count
-        avg_leader = sum(_num(r.get("score_leader")) for r in rows) / member_count
-        concentration = max((_num(r.get("score_leader")) for r in rows), default=0.0) / max(sum(_num(r.get("score_leader")) for r in rows), 1e-9)
+        avg_leader = sum(_score_unit(r.get("score_leader")) for r in rows) / member_count
+        leader_total = sum(max(_num(r.get("score_leader")), 0.0) for r in rows)
+        concentration = max((max(_num(r.get("score_leader")), 0.0) for r in rows), default=0.0) / max(leader_total, 1e-9)
         strength_component = 1 / (1 + math.exp(-4 * rs_strength))
         acceleration_component = 1 / (1 + math.exp(-6 * acceleration))
         score = (
@@ -110,6 +116,8 @@ def apply_theme_context(candidates: list[dict], frame: pd.DataFrame) -> list[dic
         ticker = item.get("ticker")
         if not lookup.empty and ticker in lookup.index:
             row = lookup.loc[ticker]
+            if isinstance(row, pd.DataFrame):
+                row = row.iloc[0]
             item["theme"] = row.get("theme")
             item["theme_score"] = row.get("score_theme")
             item["theme_phase"] = row.get("theme_phase")
