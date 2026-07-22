@@ -34,11 +34,12 @@ def test_hard_block_is_never_actionable():
     assert classify_setup(row) == "AVOID"
 
 
-def test_candidates_exclude_avoid_and_extended():
+def test_candidates_keep_avoid_and_extended_for_explanation():
     frame = pd.DataFrame([
         {"ticker":"A","sector":"Tech","industry":"Semi","setup":"PRE_BREAKOUT","score_entry":.9,"score_leader":.8,"score_entry_confidence":1.0},
         {"ticker":"B","sector":"Tech","industry":"Semi","setup":"AVOID","score_entry":1.0,"score_leader":1.0,"score_entry_confidence":1.0},
     ])
     result = build_entry_candidates(frame)
-    assert [item["ticker"] for item in result] == ["A"]
+    assert {item["ticker"] for item in result} == {"A", "B"}
+    assert next(item for item in result if item["ticker"] == "B")["setup"] == "AVOID"
     assert "earnings_unknown" in result[0]["warnings"]
