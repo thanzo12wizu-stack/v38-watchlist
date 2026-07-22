@@ -15,11 +15,17 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: dashboard-build-main
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -37,10 +43,35 @@ jobs:
           V38_EQUITY_CSV: equity.csv
         run: python build_dashboard.py
       - name: Commit updated dashboard + caches
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git add mktcap.json trend_history.json fred_cache.json state.json || true
-          git diff --staged --quiet || git commit -m "Daily dashboard rebuild + cache refresh"
-          git push
+
+          if git diff --staged --quiet; then
+            echo "No dashboard changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Daily dashboard rebuild + cache refresh"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            echo "Push attempt ${attempt} failed; rebasing onto latest origin/main"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "Rebase conflict detected; refusing to overwrite remote changes"
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+
+          echo "Push failed after 3 attempts"
+          exit 1
