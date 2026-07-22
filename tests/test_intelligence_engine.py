@@ -1,26 +1,72 @@
+import json
+import pickle
+
 import pandas as pd
 
 from intelligence_engine.scoring import score_universe
 from intelligence_engine.sec import parse_companyfacts
+from intelligence_engine.validate_inputs import inspect_inputs
+from intelligence_engine.validate_outputs import validate
 
 
 def test_score_universe_prefers_multi_factor_leader():
-    frame=pd.DataFrame([
+    frame = pd.DataFrame([
         {"ticker":"A","sector":"Tech","industry":"Semi","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_raw_252":.8,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"rs_change_raw_189":.1,"eps_yoy":.8,"eps_acceleration":.3,"revenue_yoy":.5,"revenue_acceleration":.2,"gross_margin_delta":.02,"operating_margin_delta":.03,"free_cash_flow_yoy":.5,"shares_yoy":-.01,"volume_ratio_20d":1.5,"distance_52w_high_pct":-2},
         {"ticker":"B","sector":"Tech","industry":"Semi","rs_raw_63":.1,"rs_raw_126":.1,"rs_raw_189":.1,"rs_raw_252":.1,"rs_change_raw_63":-.1,"rs_change_raw_126":-.1,"rs_change_raw_189":-.1,"eps_yoy":-.2,"eps_acceleration":-.2,"revenue_yoy":-.1,"revenue_acceleration":-.1,"gross_margin_delta":-.02,"operating_margin_delta":-.03,"free_cash_flow_yoy":-.4,"shares_yoy":.1,"volume_ratio_20d":.8,"distance_52w_high_pct":-30},
     ])
-    scored=score_universe(frame).set_index("ticker")
-    assert scored.loc["A","score_candidate"]>scored.loc["B","score_candidate"]
-    assert 0<=scored.loc["A","score_confidence"]<=1
+    scored = score_universe(frame).set_index("ticker")
+    assert scored.loc["A", "score_candidate"] > scored.loc["B", "score_candidate"]
+    assert 0 <= scored.loc["A", "score_confidence"] <= 1
 
 
-def fact(val,start,end,form="10-Q",filed="2026-05-01"):
-    return {"val":val,"start":start,"end":end,"form":form,"filed":filed,"accn":"x"}
+def fact(val, start, end, form="10-Q", filed="2026-05-01"):
+    return {"val": val, "start": start, "end": end, "form": form, "filed": filed, "accn": "x"}
 
 
 def test_companyfacts_derives_single_quarter_from_cumulative():
-    revenue=[fact(100,"2024-01-01","2024-03-31"),fact(220,"2024-01-01","2024-06-30"),fact(130,"2024-07-01","2024-09-30"),fact(140,"2024-10-01","2024-12-31","10-K"),fact(150,"2025-01-01","2025-03-31"),fact(330,"2025-01-01","2025-06-30")]
-    payload={"facts":{"us-gaap":{"RevenueFromContractWithCustomerExcludingAssessedTax":{"units":{"USD":revenue}}}}}
-    snap=parse_companyfacts(payload)
-    assert snap.revenue==180
-    assert snap.revenue_yoy==.5
+    revenue = [
+        fact(100, "2024-01-01", "2024-03-31"),
+        fact(220, "2024-01-01", "2024-06-30"),
+        fact(130, "2024-07-01", "2024-09-30"),
+        fact(140, "2024-10-01", "2024-12-31", "10-K"),
+        fact(150, "2025-01-01", "2025-03-31"),
+        fact(330, "2025-01-01", "2025-06-30"),
+    ]
+    payload = {"facts":{"us-gaap":{"RevenueFromContractWithCustomerExcludingAssessedTax":{"units":{"USD":revenue}}}}}
+    snap = parse_companyfacts(payload)
+    assert snap.revenue == 180
+    assert snap.revenue_yoy == .5
+
+
+def test_input_diagnostics_accept_repository_style_mapping(tmp_path):
+    universe_path = tmp_path / "universe.csv"
+    prices_path = tmp_path / "prices.pkl"
+    pd.DataFrame({"Ticker": ["AAA", "QQQ"]}).to_csv(universe_path, index=False)
+    frame = pd.DataFrame({
+        "Close": range(1, 31),
+        "High": range(2, 32),
+        "Low": range(0, 30),
+        "Volume": [1_000_000] * 30,
+    })
+    with prices_path.open("wb") as handle:
+        pickle.dump({"AAA": frame, "QQQ": frame}, handle)
+    report = inspect_inputs(universe_path, prices_path)
+    assert report["compatible"] is True
+    assert report["prices"]["shape"] == "mapping"
+
+
+def test_output_contract_rejects_duplicate_tickers(tmp_path):
+    root = tmp_path / "intelligence"
+    root.mkdir()
+    (root / "manifest.json").write_text("{}", encoding="utf-8")
+    payload = {
+        "schema_version": "1.0",
+        "generated_at": "2026-07-22T00:00:00Z",
+        "stocks": [
+            {"ticker": "AAA", "scores": {"candidate": 80}, "features": {}, "confidence": 80},
+            {"ticker": "AAA", "scores": {"candidate": 70}, "features": {}, "confidence": 70},
+        ],
+    }
+    (root / "index.json").write_text(json.dumps(payload), encoding="utf-8")
+    errors = validate(root)
+    assert "duplicate ticker: AAA" in errors
