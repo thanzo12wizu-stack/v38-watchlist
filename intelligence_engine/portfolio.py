@@ -24,6 +24,10 @@ def load_positions(path:Path)->pd.DataFrame:
     out["entry_stage"]=pd.to_numeric(out["entry_stage"],errors="coerce").fillna(2).clip(1,2)
     out["partial_taken"]=out["partial_taken"].astype(str).str.lower().isin({"1","true","yes","y","済","済み"})
     if out.weight.notna().sum()==0: out["weight"]=DEFAULT_POSITION_WEIGHT
+    else:
+        total=float(out.weight.fillna(0).sum())
+        if total>1.000001: out["weight"]=out.weight.fillna(0)/total
+        else: out["weight"]=out.weight.fillna(0)
     return out.reset_index(drop=True)
 
 
@@ -49,18 +53,12 @@ def _correlation_cluster(positions,pmap):
 
 def build_portfolio_doctor(positions:pd.DataFrame,scored:pd.DataFrame,prices:dict[str,pd.DataFrame],market_state:dict[str,Any])->dict[str,Any]:
     if positions.empty:return {"status":"NO_POSITIONS","position_count":0,"positions":[],"warnings":["portfolio_input_missing"]}
-    lookup=scored.set_index("ticker",drop=False); records=[]; now=pd.Timestamp.utcnow().tz_localize(None).normalize()
-    regime=str(market_state.get("regime") or "GREEN"); exposure_cap=MARKET_EXPOSURE_CAP.get(regime,.5)
+    lookup=scored.set_index("ticker",drop=False); records=[]; now=pd.Timestamp.utcnow().tz_localize(None).normalize(); regime=str(market_state.get("regime") or "GREEN"); exposure_cap=MARKET_EXPOSURE_CAP.get(regime,.5)
     for _,p in positions.iterrows():
         t=str(p.ticker); row=lookup.loc[t] if t in lookup.index else pd.Series(dtype=object); price=pd.to_numeric(row.get("price"),errors="coerce"); cost=pd.to_numeric(p.get("cost_basis"),errors="coerce"); method=str(p.get("stop_method") or "21EMA_LOW").upper(); stop=pd.to_numeric(row.get("stop_sma10") if "10" in method else row.get("stop_ema21_low"),errors="coerce")
-        gain=float(price/cost-1) if pd.notna(price) and pd.notna(cost) and cost else None
-        if gain is not None and gain>=.25 and not bool(p.get("partial_taken")): partial_due=True
-        else: partial_due=False
+        gain=float(price/cost-1) if pd.notna(price) and pd.notna(cost) and cost else None; partial_due=bool(gain is not None and gain>=.25 and not bool(p.get("partial_taken")))
         if bool(p.get("partial_taken")) and pd.notna(cost): stop=max(float(stop) if pd.notna(stop) else 0,float(cost))
-        stop_distance=float(price/stop-1)*100 if pd.notna(price) and pd.notna(stop) and stop else None
-        entry=pd.to_datetime(p.get("entry_date"),errors="coerce"); held=int((now-entry.normalize()).days) if pd.notna(entry) else None
-        fp=pd.to_datetime(p.get("first_pivot_date"),errors="coerce"); sp=pd.to_datetime(p.get("second_pivot_date"),errors="coerce"); first_age=int((now-fp.normalize()).days) if pd.notna(fp) else held
-        stage=int(p.get("entry_stage") or 2); action="HOLD"; reasons=[]
+        stop_distance=float(price/stop-1)*100 if pd.notna(price) and pd.notna(stop) and stop else None; entry=pd.to_datetime(p.get("entry_date"),errors="coerce"); held=int((now-entry.normalize()).days) if pd.notna(entry) else None; fp=pd.to_datetime(p.get("first_pivot_date"),errors="coerce"); sp=pd.to_datetime(p.get("second_pivot_date"),errors="coerce"); first_age=int((now-fp.normalize()).days) if pd.notna(fp) else held; stage=int(p.get("entry_stage") or 2); action="HOLD"; reasons=[]
         if bool(row.get("hard_block",False)) or (stop_distance is not None and stop_distance<=0):action="EXIT";reasons.append("stop_or_hard_block")
         elif stage==1 and first_age is not None and first_age>=10 and pd.isna(sp):action="EXIT";reasons.append("second_pivot_missing_10d")
         elif stage==1 and first_age is not None and first_age>=5 and pd.isna(sp):action="REDUCE";reasons.append("second_pivot_late")
@@ -75,9 +73,9 @@ def build_portfolio_doctor(positions:pd.DataFrame,scored:pd.DataFrame,prices:dic
     corr=_correlation_cluster(positions,prices); total=float(weights.sum()); warnings=[]
     if len(records)>MAX_POSITIONS:warnings.append("max_position_count_exceeded")
     if total>exposure_cap:warnings.append("market_exposure_cap_exceeded")
-    if weights.max()>DEFAULT_POSITION_WEIGHT*1.25:warnings.append("single_position_above_rule")
+    if weights.max()>DEFAULT_POSITION_WEIGHT*1.25:warnings.extend(["single_position_above_rule","single_position_concentration"])
     if sector and max(sector.values())>.40:warnings.append("sector_concentration")
     if theme and max(theme.values())>.24:warnings.append("theme_concentration")
     if corr.get("average_pairwise_correlation") is not None and corr["average_pairwise_correlation"]>=.65:warnings.append("correlation_concentration")
     hhi=float((weights**2).sum()) if len(weights) else 0
-    return {"status":"OK","policy_version":PORTFOLIO_POLICY_VERSION,"position_count":len(records),"max_positions":MAX_POSITIONS,"gross_exposure":round(total,4),"market_exposure_cap":exposure_cap,"exposure_headroom":round(exposure_cap-total,4),"concentration_hhi":round(hhi,4),"effective_position_count":round(1/hhi,2) if hhi else None,"portfolio_adr_pct":round(sum(r["weight"]*(r["adr_pct"] or 0) for r in records),2),"portfolio_stop_risk_pct":round(sum(r["risk_contribution_pct"] for r in records),2),"sector_weights":sector,"theme_weights":theme,"correlation":corr,"positions":sorted(records,key=lambda r:({"EXIT":0,"REDUCE":1,"ADD":2,"HOLD":3}[r["action"]],-r["weight"])),"warnings":warnings}
+    return {"status":"OK","policy_version":PORTFOLIO_POLICY_VERSION,"position_count":len(records),"max_positions":MAX_POSITIONS,"gross_exposure":round(total,4),"market_exposure_cap":exposure_cap,"exposure_headroom":round(exposure_cap-total,4),"concentration_hhi":round(hhi,4),"effective_position_count":round(1/hhi,2) if hhi else None,"portfolio_adr_pct":round(sum(r["weight"]*(r["adr_pct"] or 0) for r in records),2),"portfolio_stop_risk_pct":round(sum(r["risk_contribution_pct"] for r in records),2),"sector_weights":sector,"theme_weights":theme,"correlation":corr,"positions":sorted(records,key=lambda r:({"EXIT":0,"REDUCE":1,"ADD":2,"HOLD":3}[r["action"]],-r["weight"])),"warnings":sorted(set(warnings))}
