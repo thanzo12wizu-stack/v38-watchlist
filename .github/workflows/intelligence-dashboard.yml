@@ -1,34 +1,27 @@
-name: Intelligence Dashboard
+name: Intelligence Dashboard validation
 
 on:
-  workflow_run:
-    workflows: ["Intelligence Engine (sidecar)"]
-    types: [completed]
-  workflow_dispatch: {}
-  push:
-    branches: [main]
-    paths:
-      - "intelligence_engine/intelligence_dashboard.py"
-      - ".github/workflows/intelligence-dashboard.yml"
   pull_request:
     paths:
       - "intelligence_engine/intelligence_dashboard.py"
+      - "intelligence_engine/presentation.py"
+      - "scripts/private_crypto.mjs"
       - "tests/test_intelligence_dashboard.py"
+      - "tests/test_intelligence_sprints.py"
       - ".github/workflows/intelligence-dashboard.yml"
+  workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: intelligence-dashboard-main
-  cancel-in-progress: false
+  group: intelligence-dashboard-validation-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   validate:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,41 +29,17 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
-      - run: pytest -q tests/test_intelligence_dashboard.py
-
-  build:
-    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Build standalone dashboard
-        run: python -m intelligence_engine.intelligence_dashboard --input data/intelligence/index.json --output intelligence-dashboard.html
-      - name: Commit standalone dashboard
+      - name: Test dashboard and decision presentation
+        run: pytest -q tests/test_intelligence_dashboard.py tests/test_intelligence_sprints.py
+      - name: Validate encrypted page does not contain plaintext
         shell: bash
+        env:
+          V38_PRIVATE_DASHBOARD_PASSPHRASE: validation-only-passphrase-38
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add intelligence-dashboard.html
-          if git diff --staged --quiet; then
-            echo "No dashboard changes"
-            exit 0
+          printf '<html><body><h1>SECRET-CONTENT</h1></body></html>' >/tmp/full.html
+          node scripts/private_crypto.mjs lock-html /tmp/full.html /tmp/locked.html
+          grep -q 'V38 Private Intelligence' /tmp/locked.html
+          if grep -q 'SECRET-CONTENT' /tmp/locked.html; then
+            echo 'private dashboard plaintext leak'
+            exit 1
           fi
-          git commit -m "Update standalone intelligence dashboard"
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-            echo "Push attempt ${attempt} failed; rebasing onto latest main"
-            git fetch origin main
-            git rebase origin/main
-            sleep $((attempt * 2))
-          done
-          echo "Failed to push intelligence dashboard after 3 attempts"
-          exit 1
