@@ -11,6 +11,7 @@ import pandas as pd
 from .config import EngineConfig
 from .entry import ENTRY_POLICY_VERSION, add_entry_intelligence, build_entry_candidates
 from .leadership import LEADER_POLICY_VERSION, add_leader_scores
+from .market import MARKET_POLICY_VERSION, apply_market_gate, build_market_state
 from .prices import compute_price_features, download_price_map, load_price_map
 from .score_policy import SCORE_POLICY_VERSION
 from .scoring import score_universe
@@ -110,7 +111,8 @@ def build(config: EngineConfig) -> dict:
         ["score_candidate", "score_confidence", "ticker"], ascending=[False, False, True]
     )
     sector_rotation = build_sector_rotation(scored)
-    entry_candidates = build_entry_candidates(scored)
+    market_state = build_market_state(scored, qqq, sector_rotation)
+    entry_candidates = apply_market_gate(build_entry_candidates(scored), market_state)
     candidate = scored.head(config.candidate_limit)
     detail = scored.head(config.detail_limit)
     stocks_dir = config.output_dir / "stocks"
@@ -119,7 +121,7 @@ def build(config: EngineConfig) -> dict:
 
     for _, row in detail.iterrows():
         payload = {k: _clean(v) for k, v in row.to_dict().items()}
-        payload.update({"generated_at": generated_at, "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION, "narrative": None, "institutional": None, "estimate_revision": None})
+        payload.update({"generated_at": generated_at, "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION, "market_policy_version": MARKET_POLICY_VERSION, "narrative": None, "institutional": None, "estimate_revision": None})
         atomic_write_json(stocks_dir / f"{row['ticker']}.json", payload)
 
     requested_count = int(price_diagnostics.get("requested_count", price_diagnostics.get("requested", len(universe) + 1)))
@@ -128,20 +130,24 @@ def build(config: EngineConfig) -> dict:
     manifest = {
         "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
         "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
+        "market_policy_version": MARKET_POLICY_VERSION,
         "generated_at": generated_at, "asof": asof, "universe_count": len(universe), "price_covered_count": len(raw),
         "price_download_coverage_ratio": coverage_ratio, "price_diagnostics": price_diagnostics, "eligible_count": len(eligible),
         "candidate_count": len(candidate), "detail_count": len(detail), "sector_count": len(sector_rotation),
-        "entry_candidate_count": len(entry_candidates), "score_policy": "missing-aware weighted percentiles",
+        "entry_candidate_count": len(entry_candidates), "market_regime": market_state.get("regime"),
+        "market_entry_gate": market_state.get("entry_gate"), "score_policy": "missing-aware weighted percentiles",
     }
     index = {
         "schema_version": "1.0", "score_policy_version": SCORE_POLICY_VERSION, "leader_policy_version": LEADER_POLICY_VERSION,
         "sector_rotation_policy_version": SECTOR_ROTATION_POLICY_VERSION, "entry_policy_version": ENTRY_POLICY_VERSION,
+        "market_policy_version": MARKET_POLICY_VERSION,
         "generated_at": generated_at, "manifest": manifest, "stocks": records, "sector_rotation": sector_rotation,
-        "entry_candidates": entry_candidates,
+        "market_state": market_state, "entry_candidates": entry_candidates,
     }
     atomic_write_json(config.output_dir / "index.json", index)
     atomic_write_json(config.output_dir / "sector_rotation.json", {"generated_at": generated_at, "sectors": sector_rotation})
-    atomic_write_json(config.output_dir / "entry_candidates.json", {"generated_at": generated_at, "candidates": entry_candidates})
+    atomic_write_json(config.output_dir / "market_state.json", {"generated_at": generated_at, **market_state})
+    atomic_write_json(config.output_dir / "entry_candidates.json", {"generated_at": generated_at, "market_state": {"regime": market_state.get("regime"), "entry_gate": market_state.get("entry_gate")}, "candidates": entry_candidates})
     atomic_write_json(config.output_dir / "manifest.json", manifest)
     atomic_write_json(config.history_dir / f"{asof}.json", index)
     return manifest
