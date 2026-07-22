@@ -1,5 +1,6 @@
 import json
 import pickle
+from pathlib import Path
 
 import pandas as pd
 
@@ -126,4 +127,4 @@ def test_score_policy_is_versioned_and_balanced():
 
 
 def test_release_check_passes_repository_root():
-    assert run_release_check(pd.Path(".")) == []
+    assert run_release_check(Path(".")) == []
