@@ -14,7 +14,7 @@ REQUIRED_FILES = (
     "intelligence_engine/score_policy.py",
     "intelligence_engine/validate_inputs.py",
     "intelligence_engine/validate_outputs.py",
-    "intelligence_engine/validation.py",
+    "intelligence_engine/forward_validation.py",
     ".github/workflows/intelligence-engine.yml",
     "tests/test_intelligence_engine.py",
 )
