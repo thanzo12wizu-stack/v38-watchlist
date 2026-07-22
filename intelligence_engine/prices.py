@@ -138,7 +138,19 @@ def download_price_map(
     return prices, diagnostics
 
 
-def compute_price_features(frame: pd.DataFrame, benchmark: pd.Series | None = None) -> dict[str, float | bool | None]:
+def _date_text(value: Any) -> str | None:
+    try:
+        stamp = pd.Timestamp(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(stamp):
+        return None
+    if stamp.tzinfo is not None:
+        stamp = stamp.tz_convert(None)
+    return stamp.date().isoformat()
+
+
+def compute_price_features(frame: pd.DataFrame, benchmark: pd.Series | None = None) -> dict[str, Any]:
     f = _normalize_frame(frame)
     close = f["close"].dropna()
     high, low, volume = f["high"], f["low"], f["volume"]
@@ -157,8 +169,9 @@ def compute_price_features(frame: pd.DataFrame, benchmark: pd.Series | None = No
     risk_pct = (latest - stop) / latest * 100 if latest and pd.notna(stop) else np.nan
     upside = (close.tail(252).max() - latest) / latest * 100 if latest else np.nan
     aligned = sum(latest > x for x in (sma10.iloc[-1], sma50.iloc[-1], sma150.iloc[-1], sma200.iloc[-1]) if pd.notna(x)) / 4
-    out: dict[str, float | bool | None] = {
+    out: dict[str, Any] = {
         "price": finite_or_none(latest),
+        "price_asof": _date_text(close.index[-1]),
         "adr_pct": finite_or_none(tr.rolling(20).mean().iloc[-1] / latest * 100 if latest else np.nan),
         "dollar_volume_20d": finite_or_none((close * volume).rolling(20).mean().iloc[-1]),
         "volume_ratio_20d": finite_or_none(volume.rolling(5).mean().iloc[-1] / volume.rolling(20).mean().iloc[-1]),
