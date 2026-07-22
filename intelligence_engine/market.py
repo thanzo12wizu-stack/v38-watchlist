@@ -125,6 +125,7 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
         "regime": regime,
         "entry_gate": gate,
         "recommended_exposure": exposure,
+        "recommended_exposure_pct": exposure * 100.0,
         "score_market": score,
         "score_confidence": confidence,
         "qqq": qqq,
