@@ -4,7 +4,7 @@ import pandas as pd
 
 from .utils import percentile_rank, weighted_available
 
-ENTRY_POLICY_VERSION = "1.1.0"
+ENTRY_POLICY_VERSION = "1.1.1"
 
 
 def add_entry_intelligence(frame: pd.DataFrame) -> pd.DataFrame:
@@ -66,13 +66,26 @@ def classify_setup(row: pd.Series) -> str:
 
 
 def build_entry_candidates(frame: pd.DataFrame, limit: int = 20) -> list[dict]:
-    if frame.empty:
+    if frame.empty or limit <= 0:
         return []
-    work = frame[~frame["setup"].isin(["AVOID", "EXTENDED"])].sort_values(
-        ["score_entry", "score_leader", "ticker"], ascending=[False, False, True], na_position="last"
-    ).head(limit)
+    ordered = frame.sort_values(
+        ["score_entry", "score_leader", "ticker"],
+        ascending=[False, False, True],
+        na_position="last",
+    )
+    avoid_mask = ordered["setup"].isin(["AVOID", "EXTENDED"])
+    trade_limit = max(1, int(round(limit * .75)))
+    avoid_limit = max(0, limit - trade_limit)
+    selected = pd.concat(
+        [ordered.loc[~avoid_mask].head(trade_limit), ordered.loc[avoid_mask].head(avoid_limit)],
+        axis=0,
+    )
+    if len(selected) < limit:
+        remaining = ordered.loc[~ordered.index.isin(selected.index)].head(limit - len(selected))
+        selected = pd.concat([selected, remaining], axis=0)
+
     records = []
-    for _, row in work.iterrows():
+    for _, row in selected.iterrows():
         warnings = []
         if pd.notna(row.get("supply_risk_raw")) and row.get("supply_risk_raw") >= .5:
             warnings.append("supply")
