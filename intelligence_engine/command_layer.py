@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from .display_labels import external_for_display, portfolio_for_display, quality_for_display
+from .display_labels import (
+    candidates_with_freshness,
+    external_for_display,
+    portfolio_for_display,
+    quality_for_display,
+)
 from .expectancy import EXPECTANCY_POLICY_VERSION, build_expectancy, calibrate_candidates
 from .external_data import EXTERNAL_DATA_POLICY_VERSION, apply_external_context, build_external_records, load_external_layer
 from .leader_history import LEADER_HISTORY_POLICY_VERSION, build_price_leader_transitions
@@ -120,6 +125,11 @@ def run(
     candidates = apply_external_context(candidates, records)
     candidates = _resolve_external_coverage(candidates)
     candidates = enrich_candidates(candidates, generated_at=index.get("generated_at"), price_asof=price_asof)
+    candidates = candidates_with_freshness(
+        candidates,
+        generated_at=index.get("generated_at"),
+        price_asof=price_asof,
+    )
     partitions = partition_candidates(candidates)
     index["entry_candidates"] = candidates
     index["candidate_partitions"] = partitions
@@ -154,9 +164,6 @@ def run(
         expectancy=expectancy,
         quality=quality,
     )
-    # The combined index is the dashboard/app presentation contract. Preserve
-    # machine-readable codes alongside Japanese labels, while the dedicated
-    # operational JSON files written below retain their raw code contracts.
     index["external_data"] = external_for_display(records)
     index["portfolio_doctor"] = portfolio_for_display(doctor)
     index["morning_brief"] = brief

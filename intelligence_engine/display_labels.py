@@ -63,6 +63,31 @@ def _translated_list(values: Any, mapping: dict[str, str]) -> list[str]:
     return [_translate(value, mapping) for value in values]
 
 
+def _date_label(value: Any) -> str:
+    text = str(value or "").strip()
+    return text[:10] if len(text) >= 10 else (text or "未確認")
+
+
+def candidates_with_freshness(
+    candidates: list[dict[str, Any]],
+    *,
+    generated_at: Any,
+    price_asof: Any,
+) -> list[dict[str, Any]]:
+    """Reserve one visible reason line for price/build freshness."""
+    result = deepcopy(candidates)
+    label = f"データ鮮度：価格 {_date_label(price_asof)} / 生成 {_date_label(generated_at)}"
+    for candidate in result:
+        reasons = [
+            str(reason)
+            for reason in (candidate.get("reasons_ja") or [])
+            if not str(reason).startswith("データ鮮度：")
+        ]
+        candidate["data_freshness_ja"] = label
+        candidate["reasons_ja"] = reasons[:2] + [label]
+    return result
+
+
 def portfolio_for_display(payload: dict[str, Any]) -> dict[str, Any]:
     result = deepcopy(payload)
     raw_warnings = list(result.get("warnings") or [])
