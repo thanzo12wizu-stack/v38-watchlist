@@ -47,7 +47,10 @@ jobs:
       - name: Static release gate
         run: python -m intelligence_engine.release_check --root .
       - name: Offline tests including full synthetic pipeline
-        run: pytest -q tests
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest -q tests 2>&1 | tee /tmp/intelligence-pytest.log
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
       - name: Smoke-test live price adapter
@@ -58,6 +61,7 @@ jobs:
         with:
           name: intelligence-validation-reports
           path: |
+            /tmp/intelligence-pytest.log
             /tmp/intelligence-input-report.json
             /tmp/intelligence-price-smoke.json
           if-no-files-found: warn
