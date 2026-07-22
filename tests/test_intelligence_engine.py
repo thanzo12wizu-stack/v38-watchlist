@@ -5,12 +5,14 @@ from pathlib import Path
 import pandas as pd
 
 from intelligence_engine.forward_validation import evaluate_snapshot, summarize_by_score_bucket
+from intelligence_engine.leadership import add_leader_scores
 from intelligence_engine.pipeline import load_universe
 from intelligence_engine.prices import _split_yfinance_download
 from intelligence_engine.release_check import run as run_release_check
 from intelligence_engine.score_policy import SCORE_POLICY_VERSION, validate_score_policy
 from intelligence_engine.scoring import score_universe
 from intelligence_engine.sec import parse_companyfacts
+from intelligence_engine.sector_rotation import build_sector_rotation
 from intelligence_engine.validate_inputs import inspect_inputs
 from intelligence_engine.validate_outputs import validate
 
@@ -128,3 +130,26 @@ def test_score_policy_is_versioned_and_balanced():
 
 def test_release_check_passes_repository_root():
     assert run_release_check(Path(".")) == []
+
+
+def test_leader_score_rewards_persistence_and_acceleration():
+    frame = pd.DataFrame([
+        {"ticker":"A","sector":"Tech","industry":"Semi","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"distance_52w_high_pct":-2,"dollar_volume_20d":50_000_000,"sector_rank_pct":.9,"industry_rank_pct":.9},
+        {"ticker":"B","sector":"Tech","industry":"Semi","rs_raw_63":.1,"rs_raw_126":.1,"rs_raw_189":.1,"rs_change_raw_63":-.1,"rs_change_raw_126":-.1,"distance_52w_high_pct":-30,"dollar_volume_20d":10_000_000,"sector_rank_pct":.9,"industry_rank_pct":.9},
+    ])
+    scored = add_leader_scores(frame).set_index("ticker")
+    assert scored.loc["A", "score_leader"] > scored.loc["B", "score_leader"]
+    assert scored.loc["A", "leader_rank_pct"] > scored.loc["B", "leader_rank_pct"]
+
+
+def test_sector_rotation_prefers_strong_accelerating_sector():
+    frame = pd.DataFrame([
+        {"ticker":"A1","sector":"A","rs_raw_63":.5,"rs_raw_126":.6,"rs_raw_189":.7,"rs_change_raw_63":.2,"rs_change_raw_126":.2,"score_leader":.9,"leader_rank_pct":1.0},
+        {"ticker":"A2","sector":"A","rs_raw_63":.4,"rs_raw_126":.5,"rs_raw_189":.6,"rs_change_raw_63":.1,"rs_change_raw_126":.1,"score_leader":.8,"leader_rank_pct":.8},
+        {"ticker":"B1","sector":"B","rs_raw_63":-.1,"rs_raw_126":0,"rs_raw_189":.1,"rs_change_raw_63":-.2,"rs_change_raw_126":-.1,"score_leader":.2,"leader_rank_pct":.2},
+        {"ticker":"B2","sector":"B","rs_raw_63":-.2,"rs_raw_126":-.1,"rs_raw_189":0,"rs_change_raw_63":-.2,"rs_change_raw_126":-.2,"score_leader":.1,"leader_rank_pct":0},
+    ])
+    rotation = build_sector_rotation(frame)
+    assert rotation[0]["sector"] == "A"
+    assert rotation[0]["score_rotation"] > rotation[1]["score_rotation"]
+    assert rotation[0]["leaders"][0] == "A1"
