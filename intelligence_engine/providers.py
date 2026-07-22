@@ -163,7 +163,8 @@ class FMPPriceProvider:
 
 
 def get_price_provider(name: str | None = None) -> PriceProvider:
-    provider = (name or os.getenv("V38_PRICE_PROVIDER", "yfinance")).strip().lower()
+    raw = name if name is not None else os.getenv("V38_PRICE_PROVIDER", "")
+    provider = str(raw or "yfinance").strip().lower() or "yfinance"
     if provider in {"yfinance", "yf"}:
         return YFinancePriceProvider()
     if provider in {"fmp", "financial_modeling_prep"}:
