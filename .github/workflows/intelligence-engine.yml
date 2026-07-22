@@ -87,20 +87,33 @@ jobs:
               echo "SEC_USER_AGENT is not configured; continuing with nullable fundamentals"
             fi
           fi
+      - name: Refresh external market and filing-derived data
+        continue-on-error: true
+        run: python -m intelligence_engine.external_fetch --universe universe.csv --root data/external
       - name: Build intelligence sidecar
         run: python -m intelligence_engine.pipeline --universe universe.csv --prices prices.pkl
-      - name: Build portfolio doctor, morning brief and dashboard bridge
-        run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv
+      - name: Build operational intelligence and settle observations
+        run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv --external-root data/external
       - name: Validate generated contract
         run: python -m intelligence_engine.validate_outputs --root data/intelligence
-      - name: Commit versioned lightweight outputs only
+      - name: Fail on silent critical data outage
         run: |
-          if git diff --quiet -- data/intelligence; then
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('data/intelligence/data_quality.json').read_text())
+          critical={'qqq_missing','candidate_count_zero'}
+          hit=critical.intersection(p.get('warnings',[]))
+          if hit: raise SystemExit(f'critical data quality failure: {sorted(hit)}')
+          PY
+      - name: Commit versioned operational outputs
+        run: |
+          if git diff --quiet -- data/intelligence data/external; then
             echo "No intelligence changes"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/intelligence
-          git commit -m "Update intelligence sidecar"
+          git add data/intelligence data/external
+          git commit -m "Update intelligence observations and external data"
           git push
