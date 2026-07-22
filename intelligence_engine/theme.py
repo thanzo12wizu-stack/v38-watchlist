@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-THEME_POLICY_VERSION = "1.1.0"
+THEME_POLICY_VERSION = "1.2.0"
 
 
 def _num(value, default: float = 0.0) -> float:
@@ -22,7 +22,7 @@ def _score_unit(value) -> float:
 
 
 @lru_cache(maxsize=4)
-def _load_taxonomy(path_text: str) -> dict[str, dict[str, str]]:
+def _load_taxonomy(path_text: str) -> dict[str, list[dict[str, str]]]:
     path = Path(path_text)
     if not path.exists():
         return {}
@@ -35,38 +35,50 @@ def _load_taxonomy(path_text: str) -> dict[str, dict[str, str]]:
         return {}
     frame = frame.copy()
     frame["ticker"] = frame["ticker"].astype(str).str.upper().str.strip()
-    result: dict[str, dict[str, str]] = {}
+    result: dict[str, list[dict[str, str]]] = defaultdict(list)
+    seen: set[tuple[str, str]] = set()
     for _, row in frame.iterrows():
         ticker = str(row.get("ticker") or "").upper().strip()
         theme = str(row.get("theme") or "").strip()
-        if not ticker or not theme:
+        if not ticker or not theme or (ticker, theme) in seen:
             continue
-        result[ticker] = {
-            "theme": theme,
-            "theme_ja": str(row.get("theme_ja") or theme).strip(),
-            "sector_hint": str(row.get("sector_hint") or "").strip(),
-        }
-    return result
+        seen.add((ticker, theme))
+        result[ticker].append(
+            {
+                "theme": theme,
+                "theme_ja": str(row.get("theme_ja") or theme).strip(),
+                "sector_hint": str(row.get("sector_hint") or "").strip(),
+            }
+        )
+    return dict(result)
 
 
 def taxonomy_path() -> Path:
     return Path(os.getenv("V38_THEME_TAXONOMY", "data/theme_taxonomy.csv"))
 
 
-def _label(row: pd.Series) -> tuple[str, str, str | None]:
+def _labels(row: pd.Series) -> list[tuple[str, str, str | None]]:
     ticker = str(row.get("ticker") or "").upper().strip()
-    mapped = _load_taxonomy(str(taxonomy_path())).get(ticker)
+    mapped = _load_taxonomy(str(taxonomy_path())).get(ticker) or []
     if mapped:
-        return mapped["theme"], "curated_ticker", mapped.get("theme_ja")
+        return [
+            (item["theme"], "curated_ticker", item.get("theme_ja"))
+            for item in mapped
+        ]
     industry = row.get("industry")
     sector = row.get("sector")
     if pd.notna(industry) and str(industry).strip():
         label = str(industry).strip()
-        return label, "industry", label
+        return [(label, "industry", label)]
     if pd.notna(sector) and str(sector).strip():
         label = str(sector).strip()
-        return label, "sector_fallback", label
-    return "Unknown", "unknown", "不明"
+        return [(label, "sector_fallback", label)]
+    return [("Unknown", "unknown", "不明")]
+
+
+def _label(row: pd.Series) -> tuple[str, str, str | None]:
+    """Backward-compatible primary label helper."""
+    return _labels(row)[0]
 
 
 def _phase(score: float, breadth: float, acceleration_component: float, concentration: float) -> str:
@@ -93,11 +105,17 @@ def build_theme_intelligence(frame: pd.DataFrame, *, min_members: int = 2, limit
     groups: dict[str, list[pd.Series]] = defaultdict(list)
     sources: dict[str, str] = {}
     labels_ja: dict[str, str] = {}
+    group_tickers: dict[str, set[str]] = defaultdict(set)
     for _, row in frame.iterrows():
-        label, source, label_ja = _label(row)
-        groups[label].append(row)
-        sources[label] = source
-        labels_ja[label] = label_ja or label
+        ticker = str(row.get("ticker") or "").upper().strip()
+        for label, source, label_ja in _labels(row):
+            if ticker and ticker in group_tickers[label]:
+                continue
+            groups[label].append(row)
+            if ticker:
+                group_tickers[label].add(ticker)
+            sources[label] = source
+            labels_ja[label] = label_ja or label
 
     records: list[dict] = []
     for theme, rows in groups.items():
@@ -158,17 +176,43 @@ def attach_theme_context(frame: pd.DataFrame, themes: list[dict]) -> pd.DataFram
     theme_names_ja = []
     theme_scores = []
     theme_phases = []
+    all_themes = []
+    all_themes_ja = []
+    all_phases = []
     for _, row in out.iterrows():
-        label, _, label_ja = _label(row)
-        item = mapping.get(label, {})
-        theme_names.append(label)
-        theme_names_ja.append(item.get("theme_ja") or label_ja or label)
-        theme_scores.append(item.get("score_theme"))
-        theme_phases.append(item.get("phase"))
+        labels = _labels(row)
+        options = []
+        for label, _, label_ja in labels:
+            item = mapping.get(label, {})
+            options.append(
+                {
+                    "theme": label,
+                    "theme_ja": item.get("theme_ja") or label_ja or label,
+                    "score_theme": item.get("score_theme"),
+                    "phase": item.get("phase"),
+                }
+            )
+        options.sort(
+            key=lambda item: (
+                -1.0 if item.get("score_theme") is None else -float(item["score_theme"]),
+                str(item["theme"]),
+            )
+        )
+        primary = options[0]
+        theme_names.append(primary["theme"])
+        theme_names_ja.append(primary["theme_ja"])
+        theme_scores.append(primary.get("score_theme"))
+        theme_phases.append(primary.get("phase"))
+        all_themes.append([item["theme"] for item in options])
+        all_themes_ja.append([item["theme_ja"] for item in options])
+        all_phases.append([item["phase"] for item in options if item.get("phase")])
     out["theme"] = theme_names
     out["theme_ja"] = theme_names_ja
     out["score_theme"] = theme_scores
     out["theme_phase"] = theme_phases
+    out["themes"] = all_themes
+    out["themes_ja"] = all_themes_ja
+    out["theme_phases"] = all_phases
     return out
 
 
@@ -182,12 +226,18 @@ def apply_theme_context(candidates: list[dict], frame: pd.DataFrame) -> list[dic
             row = lookup.loc[ticker]
             if isinstance(row, pd.DataFrame):
                 row = row.iloc[0]
+            phases = row.get("theme_phases")
+            if not isinstance(phases, list):
+                phases = [row.get("theme_phase")] if row.get("theme_phase") else []
             item["theme"] = row.get("theme")
             item["theme_ja"] = row.get("theme_ja") or row.get("theme")
+            item["themes"] = row.get("themes") if isinstance(row.get("themes"), list) else [row.get("theme")]
+            item["themes_ja"] = row.get("themes_ja") if isinstance(row.get("themes_ja"), list) else [item["theme_ja"]]
             item["theme_score"] = row.get("score_theme")
             item["theme_phase"] = row.get("theme_phase")
-            if row.get("theme_phase") in {"WEAKENING", "BROKEN"}:
+            item["theme_phases"] = phases
+            if phases and all(phase in {"WEAKENING", "BROKEN"} for phase in phases):
                 item.setdefault("warnings", []).append("theme_weakening")
-            item["theme_confirmed"] = row.get("theme_phase") in {"LEADING", "ACCELERATING", "EMERGING"}
+            item["theme_confirmed"] = any(phase in {"LEADING", "ACCELERATING", "EMERGING"} for phase in phases)
         enriched.append(item)
     return enriched
