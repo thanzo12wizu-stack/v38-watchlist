@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.4",
+  "schema_version": "2.5",
   "research_status": "PASS",
   "backfill_status": "IN_PROGRESS",
-  "updated_at": "2026-07-23T13:00:50.107349Z",
+  "updated_at": "2026-07-23T13:11:26.688705Z",
   "encrypted_bundle_count": 4,
   "summary_present": true,
   "success_marker_present": true,
@@ -44,6 +44,9 @@
   "warmup_runs_completed": 0,
   "warmup_runs_target": 14,
   "bootstrap_last_result": null,
+  "sec_cache_file_count": 0,
+  "sec_fact_partition_count": 0,
+  "sec_data_ready": false,
   "error_type": null,
   "error_message": null,
   "privacy": "No ticker, portfolio, price, financial or ranking values are included."
