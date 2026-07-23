@@ -23,7 +23,7 @@ def _companyfacts() -> dict:
             row("2023-01-01","2023-03-31",1.0,"2023-05-01"),row("2023-04-01","2023-06-30",1.2,"2023-08-01"),row("2023-07-01","2023-09-30",1.4,"2023-11-01"),row("2023-10-01","2023-12-31",1.6,"2024-02-01","10-K"),row("2024-01-01","2024-03-31",1.8,"2024-05-01"),row("2024-04-01","2024-06-30",2.0,"2024-08-01")]}},
         "GrossProfit":{"units":{"USD":[row("2023-01-01","2023-03-31",50,"2023-05-01"),row("2023-04-01","2023-06-30",62,"2023-08-01"),row("2023-07-01","2023-09-30",74,"2023-11-01"),row("2023-10-01","2023-12-31",88,"2024-02-01","10-K"),row("2024-01-01","2024-03-31",90,"2024-05-01"),row("2024-04-01","2024-06-30",112,"2024-08-01")]}},
         "OperatingIncomeLoss":{"units":{"USD":[row("2023-01-01","2023-03-31",20,"2023-05-01"),row("2023-04-01","2023-06-30",24,"2023-08-01"),row("2023-07-01","2023-09-30",28,"2023-11-01"),row("2023-10-01","2023-12-31",32,"2024-02-01","10-K"),row("2024-01-01","2024-03-31",38,"2024-05-01"),row("2024-04-01","2024-06-30",45,"2024-08-01")]}},
-        "WeightedAverageNumberOfDilutedSharesOutstanding":{"units":{"shares":[row("2023-01-01","2023-03-31",100,"2023-05-01"),row("2023-04-01","2023-06-30",101,"2023-08-01"),row("2023-07-01","2023-09-30",102,"2023-11-01"),row("2023-10-01","2023-12-31",103,"2024-02-01","10-K"),row("2024-01-01","2024-03-31",104,"2024-05-01"),row("2024-04-01","2024-06-30",105,"2024-08-01")]}}
+        "WeightedAverageNumberOfDilutedSharesOutstanding":{"units":{"shares":[row("2023-01-01","2023-03-31",100,"2023-05-01"),row("2023-04-01","2023-06-30",101,"2023-08-01"),row("2023-07-01","2023-09-30",102,"2023-11-01"),row("2023-10-01","2023-12-31",103,"2024-02-01","10-K"),row("2024-01-01","2024-03-31",104,"2024-05-01"),row("2024-04-01","2024-06-30",105,"2024-08-01")]}},
     }}}
 
 
@@ -39,6 +39,17 @@ def test_companyfacts_point_in_time_and_cumulative_derivation():
     assert pd.isna(before.eps_yoy) and after.eps_yoy==.8
     panel=pd.DataFrame({"ticker":["TEST","TEST"],"date":pd.to_datetime(["2024-04-15","2024-05-02"])}); merged=merge_financial_snapshots(panel,snapshots)
     assert pd.isna(merged.iloc[0].eps_yoy) and merged.iloc[1].eps_yoy==.8
+
+
+def test_missing_filing_date_is_not_backdated_and_eps_is_not_subtracted():
+    payload = _companyfacts()
+    revenue_units = payload["facts"]["us-gaap"]["RevenueFromContractWithCustomerExcludingAssessedTax"]["units"]["USD"]
+    revenue_units.append({"start":"2024-07-01","end":"2024-09-30","val":999,"form":"10-Q","accn":"missing-filed"})
+    eps_units = payload["facts"]["us-gaap"]["EarningsPerShareDiluted"]["units"]["USD/shares"]
+    eps_units.append({"start":"2024-01-01","end":"2024-06-30","val":4.0,"filed":"2024-08-01","form":"10-Q","accn":"cumulative-eps"})
+    facts = extract_companyfacts_history(payload, ticker="TEST")
+    assert "missing-filed" not in set(facts.get("accession", []))
+    assert facts[(facts.metric == "eps") & facts.derived_quarter.astype(bool)].empty
 
 
 def test_price_rs_financial_archetype_and_ranking():
@@ -59,3 +70,16 @@ def test_labels_expectancy_and_storage_retention(tmp_path: Path):
     root=tmp_path/"research"; old=signals.head(1).copy(); old["date"]=pd.Timestamp("2019-01-02"); current=signals.head(2).copy(); current["date"]=pd.to_datetime(["2024-01-02","2025-01-02"])
     upsert_year_partitions(root,"signals",pd.concat([old,current]),date_column="date",keys=("ticker","date"),retention_years=5,reference_date=pd.Timestamp("2025-12-31")); stored=load_dataset(root,"signals")
     assert set(pd.to_datetime(stored.date).dt.year)=={2024,2025}
+
+
+def test_effective_stop_uses_higher_valid_trailing_level():
+    dates = pd.bdate_range("2024-01-02", periods=80)
+    close = np.linspace(100, 120, len(dates))
+    low = close - 1
+    low[41] = 109.5
+    frame = pd.DataFrame({"open":close,"high":close+1,"low":low,"close":close,"volume":1_000_000}, index=dates)
+    qqq = pd.DataFrame({"open":close,"high":close+1,"low":close-1,"close":close,"volume":1_000_000}, index=dates)
+    signals = pd.DataFrame({"ticker":["TEST"],"date":[dates[40]],"candidate_archetype":["EMERGING_LEADER"],"setup":["PULLBACK"],"stop_ema21_low":[108.0],"stop_sma10":[110.0],"pivot_20d":[121.0]})
+    labelled = attach_forward_labels(signals, {"TEST":frame,"QQQ":qqq}, horizons=(5,))
+    assert bool(labelled.iloc[0]["stop_hit_5"])
+    assert labelled.iloc[0]["days_to_stop_5"] == 1
