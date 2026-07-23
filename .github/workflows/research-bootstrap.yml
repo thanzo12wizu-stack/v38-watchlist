@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/research-bootstrap.yml"
+      - ".github/workflows/research-worker.yml"
   schedule:
     - cron: "12 * * * *"
   workflow_dispatch:
@@ -42,29 +43,46 @@ jobs:
   advance:
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    env:
+      RESET: ${{ inputs.reset || false }}
+      REQUESTED_WARMUPS: ${{ inputs.warmup_runs || 14 }}
+      REQUESTED_BATCH: ${{ inputs.price_batch || 250 }}
+      REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
-      - name: Select exactly one bounded next run
-        id: next
+
+      - name: Inspect worker and production runs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RESET: ${{ inputs.reset || false }}
-          REQUESTED_WARMUPS: ${{ inputs.warmup_runs || 14 }}
-          REQUESTED_BATCH: ${{ inputs.price_batch || 250 }}
-          REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
         run: |
           set -euo pipefail
-          active="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intelligence-engine.yml --branch main --limit 30 --json status --jq '[.[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending")] | length')"
-          if (( active > 0 )); then
-            echo "Intelligence Engine already has ${active} active run(s); bootstrap will wait."
-            echo "dispatch=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow research-worker.yml \
+            --branch main \
+            --event workflow_dispatch \
+            --limit 50 \
+            --json databaseId,status,conclusion,createdAt \
+            > /tmp/research-worker-runs.json
+          worker_active="$(python - <<'PY'
+          import json
+          runs=json.load(open('/tmp/research-worker-runs.json'))
+          print(sum(run.get('status') in {'queued','in_progress','waiting','pending','requested'} for run in runs))
+          PY
+          )"
+          engine_active="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intelligence-engine.yml --branch main --limit 30 --json status --jq '[.[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending" or .status == "requested")] | length')"
+          echo "ACTIVE_RUNS=$((worker_active + engine_active))" >> "$GITHUB_ENV"
+          echo "Active research/production runs: $((worker_active + engine_active))"
 
+      - name: Reconcile result and select exactly one next slice
+        id: next
+        shell: bash
+        run: |
+          set -euo pipefail
           python - <<'PY'
           import json
           import os
@@ -98,23 +116,57 @@ jobs:
           warmup_target = bounded_int('REQUESTED_WARMUPS', 14, 1, 20)
           batch = bounded_int('REQUESTED_BATCH', 250, 20, 250)
           stride = bounded_int('REQUESTED_STRIDE', 5, 1, 10)
+          active_runs = bounded_int('ACTIVE_RUNS', 0, 0, 100)
           warmup_dispatched = int(state.get('warmup_runs_dispatched') or 0)
           warmup_completed = int(state.get('warmup_runs_completed') or 0)
           failures = int(state.get('failed_dispatches') or 0)
           timeouts = int(state.get('dispatch_timeouts') or 0)
 
+          try:
+              worker_runs = json.loads(Path('/tmp/research-worker-runs.json').read_text())
+          except (OSError, json.JSONDecodeError):
+              worker_runs = []
+
           awaiting = bool(state.get('awaiting_result'))
           awaiting_since = parse_time(state.get('awaiting_since'))
-          stale = awaiting and (awaiting_since is None or now - awaiting_since > timedelta(hours=4))
-          if awaiting and not stale:
-              with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as handle:
-                  handle.write('dispatch=false\n')
-              print(json.dumps({'status': 'WAITING_RESULT', 'awaiting_action': state.get('awaiting_action')}, ensure_ascii=False))
-              raise SystemExit(0)
-          if stale:
-              awaiting = False
-              timeouts += 1
-              state['last_result'] = 'TIMEOUT_RETRY'
+          awaiting_action = str(state.get('awaiting_action') or '')
+          selected_run = None
+          if awaiting:
+              expected_id = str(state.get('last_workflow_run_id') or '')
+              if expected_id:
+                  selected_run = next((run for run in worker_runs if str(run.get('databaseId')) == expected_id), None)
+              if selected_run is None and awaiting_since is not None:
+                  threshold = awaiting_since - timedelta(minutes=2)
+                  candidates = []
+                  for run in worker_runs:
+                      created = parse_time(run.get('createdAt'))
+                      if created is not None and created >= threshold:
+                          candidates.append((created, run))
+                  if candidates:
+                      selected_run = sorted(candidates, key=lambda item: item[0])[0][1]
+
+              if selected_run is not None:
+                  state['last_workflow_run_id'] = selected_run.get('databaseId')
+                  status = str(selected_run.get('status') or '')
+                  conclusion = str(selected_run.get('conclusion') or '')
+                  if status != 'completed':
+                      state['last_result'] = f'RUNNING:{status}'
+                  else:
+                      state['last_workflow_conclusion'] = conclusion
+                      if conclusion == 'success':
+                          if awaiting_action == 'PRICE_WARMUP':
+                              warmup_completed = min(warmup_target, warmup_completed + 1)
+                          state['last_result'] = 'SUCCESS'
+                      else:
+                          failures += 1
+                          state['last_result'] = f'FAILURE:{conclusion or "unknown"}'
+                      awaiting = False
+              elif awaiting_since is None or now - awaiting_since >= timedelta(minutes=30):
+                  timeouts += 1
+                  state['last_result'] = 'DISPATCH_NOT_FOUND_RETRY'
+                  awaiting = False
+              else:
+                  state['last_result'] = 'WAITING_FOR_RUN_REGISTRATION'
 
           signal_years = set()
           ranking_years = set()
@@ -130,24 +182,43 @@ jobs:
           completed = sorted(set(target_years) & signal_years & ranking_years)
           missing = sorted(set(target_years) - set(completed))
 
+          success_path = Path('private/research-success.json')
+          try:
+              success = json.loads(success_path.read_text()) if success_path.exists() else {}
+          except (OSError, json.JSONDecodeError):
+              success = {}
+          sec_data_ready = bool(success.get('sec_data_present')) and int(success.get('sec_cache_file_count') or 0) > 0
+
           action = None
           year = None
-          refresh_sec = False
-          if warmup_completed < warmup_target:
+          refresh_sec = not sec_data_ready
+          dispatch = False
+          if awaiting:
+              action = awaiting_action or 'PRICE_WARMUP'
+              year = state.get('awaiting_year') or current_year
+          elif warmup_completed < warmup_target:
               action = 'PRICE_WARMUP'
               year = current_year
-              refresh_sec = warmup_completed == 0
-              warmup_dispatched += 1
           elif missing:
               action = 'YEAR_BACKFILL'
               year = missing[0]
           else:
               action = 'COMPLETE'
 
-          state = {
-              'schema_version': '1.2',
+          if not awaiting and action != 'COMPLETE' and active_runs == 0:
+              dispatch = True
+              warmup_dispatched += int(action == 'PRICE_WARMUP')
+              awaiting = True
+              state['awaiting_since'] = now.isoformat().replace('+00:00', 'Z')
+              state['last_workflow_run_id'] = None
+              state['last_workflow_conclusion'] = None
+          elif not awaiting and action != 'COMPLETE' and active_runs > 0:
+              state['last_result'] = 'WAITING_FOR_ENGINE_SLOT'
+
+          state.update({
+              'schema_version': '1.3',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
-              'status': action,
+              'status': action if active_runs == 0 else 'WAITING_ENGINE',
               'years_retained': 10,
               'warmup_runs_target': warmup_target,
               'warmup_runs_dispatched': warmup_dispatched,
@@ -160,26 +231,26 @@ jobs:
               'completed_years': completed,
               'missing_years': missing,
               'next_year': year,
-              'awaiting_result': action != 'COMPLETE',
-              'awaiting_action': action if action != 'COMPLETE' else None,
-              'awaiting_year': year,
-              'awaiting_since': now.isoformat().replace('+00:00', 'Z') if action != 'COMPLETE' else None,
-              'last_result': state.get('last_result'),
-              'last_workflow_run_id': state.get('last_workflow_run_id'),
-              'last_workflow_conclusion': state.get('last_workflow_conclusion'),
+              'awaiting_result': awaiting,
+              'awaiting_action': action if awaiting else None,
+              'awaiting_year': year if awaiting else None,
+              'awaiting_since': state.get('awaiting_since') if awaiting else None,
+              'sec_data_ready': sec_data_ready,
               'privacy': 'Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.',
-          }
+          })
           state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+
           output = Path(os.environ['GITHUB_OUTPUT'])
           with output.open('a', encoding='utf-8') as handle:
-              handle.write(f"dispatch={'true' if action != 'COMPLETE' else 'false'}\n")
-              handle.write(f"action={action}\n")
+              handle.write(f"dispatch={'true' if dispatch else 'false'}\n")
+              handle.write(f"action={action or ''}\n")
               handle.write(f"year={year or ''}\n")
               handle.write(f"refresh_sec={'true' if refresh_sec else 'false'}\n")
               handle.write(f"batch={batch}\n")
               handle.write(f"stride={stride}\n")
           print(json.dumps(state, ensure_ascii=False))
           PY
+
       - name: Commit bootstrap progress
         shell: bash
         run: |
@@ -196,7 +267,8 @@ jobs:
               sleep $((attempt * 2))
             done
           fi
-      - name: Dispatch selected research slice
+
+      - name: Dispatch selected research worker
         if: steps.next.outputs.dispatch == 'true'
         shell: bash
         env:
@@ -208,12 +280,12 @@ jobs:
           ACTION: ${{ steps.next.outputs.action }}
         run: |
           set -euo pipefail
-          gh workflow run intelligence-engine.yml \
+          gh workflow run research-worker.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref main \
-            -f refresh_sec="$REFRESH_SEC" \
-            -f research_mode=backfill \
+            -f action="$ACTION" \
             -f research_year="$YEAR" \
-            -f research_price_batch="$BATCH" \
-            -f research_stride="$STRIDE"
-          echo "Dispatched ${ACTION}: year=${YEAR}, batch=${BATCH}, stride=${STRIDE}."
+            -f refresh_sec="$REFRESH_SEC" \
+            -f price_batch="$BATCH" \
+            -f stride="$STRIDE"
+          echo "Dispatched ${ACTION}: year=${YEAR}, batch=${BATCH}, stride=${STRIDE}, refresh_sec=${REFRESH_SEC}."

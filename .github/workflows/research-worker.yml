@@ -1,0 +1,251 @@
+name: Ten-year research worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Bootstrap action selected by the serial controller
+        required: true
+        type: choice
+        options:
+          - PRICE_WARMUP
+          - YEAR_BACKFILL
+      research_year:
+        description: Calendar year to materialize
+        required: true
+        type: string
+      refresh_sec:
+        description: Refresh SEC Company Facts before research
+        required: false
+        default: false
+        type: boolean
+      price_batch:
+        description: Maximum tickers to extend to ten-year history
+        required: false
+        default: 250
+        type: number
+      stride:
+        description: Trading-session stride for historical signals
+        required: false
+        default: 5
+        type: number
+
+permissions:
+  contents: write
+
+# Share the production mutation lock with the daily Intelligence Engine.
+concurrency:
+  group: intelligence-engine-main
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+      RESEARCH_YEAR: ${{ inputs.research_year }}
+      RESEARCH_ACTION: ${{ inputs.action }}
+      RESEARCH_PRICE_BATCH: ${{ inputs.price_batch || 250 }}
+      RESEARCH_STRIDE: ${{ inputs.stride || 5 }}
+      REFRESH_SEC: ${{ inputs.refresh_sec || false }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+
+      - name: Validate private research configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" || { echo "V38_PRIVATE_DASHBOARD_PASSPHRASE is required"; exit 1; }
+          [[ "${RESEARCH_YEAR}" =~ ^20[0-9]{2}$ ]] || { echo "Invalid research year: ${RESEARCH_YEAR}"; exit 1; }
+          [[ "${RESEARCH_ACTION}" == "PRICE_WARMUP" || "${RESEARCH_ACTION}" == "YEAR_BACKFILL" ]] || exit 1
+
+      - name: Restore encrypted research state
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          restored=0
+          for encrypted in private/research-*-year-*.enc.json; do
+            name="$(basename "$encrypted")"
+            if [[ "$name" =~ ^research-([a-z_]+)-year-([0-9]{4})\.enc\.json$ ]]; then
+              dataset="${BASH_REMATCH[1]}"
+              year="${BASH_REMATCH[2]}"
+              target="data/intelligence/research/${dataset}/year=${year}.jsonl.gz"
+              mkdir -p "$(dirname "$target")"
+              node scripts/private_crypto.mjs decrypt "$encrypted" "$target"
+              restored=$((restored + 1))
+            fi
+          done
+          if [[ -f private/research-summary.enc.json ]]; then
+            node scripts/private_crypto.mjs decrypt private/research-summary.enc.json /tmp/research-summary.tar.gz
+            tar -xzf /tmp/research-summary.tar.gz
+            restored=$((restored + 1))
+          fi
+          echo "Restored research bundles: ${restored}"
+
+      - name: Restore price cache
+        uses: actions/cache/restore@v4
+        with:
+          path: prices.pkl
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            intelligence-prices-${{ runner.os }}-
+
+      - name: Restore SEC cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/sec_companyfacts
+            data/sec/companyfacts.zip
+          key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            sec-companyfacts-${{ runner.os }}-
+
+      - name: Refresh and verify SEC Company Facts
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(find data/sec_companyfacts -maxdepth 1 -name '*.json' -type f 2>/dev/null | wc -l | tr -d ' ')"
+          if [[ "${REFRESH_SEC}" == "true" || "$existing" == "0" ]]; then
+            test -n "${SEC_USER_AGENT:-}" || { echo "SEC_USER_AGENT is required until SEC data is cached"; exit 1; }
+            python -m intelligence_engine.sec_bulk --universe universe.csv --report /tmp/sec-bulk-report.json
+          fi
+          count="$(find data/sec_companyfacts -maxdepth 1 -name '*.json' -type f 2>/dev/null | wc -l | tr -d ' ')"
+          if (( count <= 0 )); then
+            echo "SEC Company Facts ingestion produced zero files"
+            exit 1
+          fi
+          echo "SEC company-fact files: ${count}"
+
+      - name: Persist verified SEC cache
+        if: success() && hashFiles('data/sec_companyfacts/*.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/sec_companyfacts
+            data/sec/companyfacts.zip
+          key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Extend resumable price cache to ten years
+        timeout-minutes: 65
+        shell: bash
+        run: |
+          set -euo pipefail
+          batch="${RESEARCH_PRICE_BATCH:-250}"
+          [[ "$batch" =~ ^[0-9]+$ ]] || batch=250
+          (( batch < 20 )) && batch=20
+          (( batch > 250 )) && batch=250
+          python -m intelligence_engine.ensure_prices \
+            --universe universe.csv \
+            --prices prices.pkl \
+            --min-coverage 0.60 \
+            --history-years 10 \
+            --max-history-tickers "$batch"
+
+      - name: Persist price cache immediately
+        if: success() && hashFiles('prices.pkl') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: prices.pkl
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Build bounded ten-year point-in-time research
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          set -euo pipefail
+          stride="${RESEARCH_STRIDE:-5}"
+          [[ "$stride" =~ ^[0-9]+$ ]] || stride=5
+          (( stride < 1 )) && stride=1
+          (( stride > 10 )) && stride=10
+          python -m intelligence_engine.research_pipeline \
+            --universe universe.csv \
+            --prices prices.pkl \
+            --sec-dir data/sec_companyfacts \
+            --root data/intelligence/research \
+            --mode backfill \
+            --years 10 \
+            --year "$RESEARCH_YEAR" \
+            --stride "$stride" \
+            --max-daily-signals 300 \
+            --min-samples 40
+
+      - name: Encrypt research partitions and summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p private
+          rm -f private/research-*-year-*.enc.json private/research-summary.enc.json
+          shopt -s nullglob
+          encrypted_count=0
+          for dataset in facts signals outcomes rankings; do
+            for source in data/intelligence/research/${dataset}/year=*.jsonl.gz; do
+              year="$(basename "$source" .jsonl.gz)"
+              year="${year#year=}"
+              target="private/research-${dataset}-year-${year}.enc.json"
+              node scripts/private_crypto.mjs encrypt "$source" "$target"
+              test -s "$target"
+              encrypted_count=$((encrypted_count + 1))
+            done
+          done
+          summary_files=(data/intelligence/research/*.json)
+          if (( ${#summary_files[@]} == 0 )); then
+            echo "Research summary files are missing"
+            exit 1
+          fi
+          tar -czf /tmp/research-summary.tar.gz "${summary_files[@]}"
+          node scripts/private_crypto.mjs encrypt /tmp/research-summary.tar.gz private/research-summary.enc.json
+          test -s private/research-summary.enc.json
+          encrypted_count=$((encrypted_count + 1))
+          if (( encrypted_count < 3 )); then
+            echo "Too few encrypted research bundles: ${encrypted_count}"
+            exit 1
+          fi
+          echo "Encrypted research bundles: ${encrypted_count}"
+
+      - name: Remove plaintext research data
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf data/intelligence data/sec_companyfacts data/sec
+          rm -f /tmp/research-summary.tar.gz
+
+      - name: Commit encrypted research outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A private
+          if git diff --staged --quiet; then
+            echo "No encrypted research changes"
+            exit 0
+          fi
+          git commit -m "Update encrypted ten-year research"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-worker-diagnostics-${{ github.run_id }}
+          path: |
+            /tmp/sec-bulk-report.json
+            /tmp/research-pipeline.log
+          if-no-files-found: warn
