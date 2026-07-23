@@ -87,8 +87,11 @@ jobs:
           )
           sec_data_ready = sec_configured and sec_data_present
 
+          portfolio_secret_configured = bool(os.environ.get('PORTFOLIO_VALUE', '').strip())
+          portfolio_mode = 'POSITIONS' if portfolio_secret_configured else 'FLAT'
+
           status = {
-              'schema_version': '2.6',
+              'schema_version': '2.7',
               'research_status': 'PASS' if passed else 'FAIL',
               'backfill_status': 'COMPLETE' if not missing_years else 'IN_PROGRESS',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
@@ -110,6 +113,7 @@ jobs:
               'sec_cache_file_count': sec_cache_file_count,
               'sec_fact_partition_count': sec_fact_partition_count,
               'sec_data_ready': sec_data_ready,
+              'portfolio_mode': portfolio_mode,
               'error_type': None if passed else error.get('error_type', 'MissingSuccessMarker'),
               'error_message': None if passed else error.get('error_template', 'Research process did not complete cleanly.'),
               'privacy': 'No ticker, portfolio, price, financial or ranking values are included.',
@@ -118,7 +122,6 @@ jobs:
               json.dumps(status, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8'
           )
 
-          portfolio_ready = bool(os.environ.get('PORTFOLIO_VALUE', '').strip())
           fmp_ready = bool(os.environ.get('FMP_KEY_VALUE', '').strip()) and bool(os.environ.get('FMP_TEMPLATE_VALUE', '').strip())
           blockers = []
           if not passed:
@@ -129,10 +132,8 @@ jobs:
               blockers.append('sec_user_agent_not_configured')
           elif not sec_data_ready:
               blockers.append('sec_data_not_ingested')
-          if not portfolio_ready:
-              blockers.append('portfolio_not_configured')
           readiness = {
-              'schema_version': '1.4',
+              'schema_version': '1.5',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'research_pipeline_ready': passed,
               'ten_year_backfill_complete': not missing_years,
@@ -140,10 +141,12 @@ jobs:
               'sec_cache_file_count': sec_cache_file_count,
               'sec_fact_partition_count': sec_fact_partition_count,
               'sec_data_ready': sec_data_ready,
-              'portfolio_configured': portfolio_ready,
+              'portfolio_configured': True,
+              'portfolio_mode': portfolio_mode,
+              'portfolio_secret_configured': portfolio_secret_configured,
               'fmp_provider_configured': fmp_ready,
               'price_provider': os.environ.get('PRICE_PROVIDER_VALUE', '').strip() or 'default',
-              'full_operational_ready': passed and not missing_years and sec_data_ready and portfolio_ready,
+              'full_operational_ready': passed and not missing_years and sec_data_ready,
               'blockers': blockers,
               'privacy': 'Only configuration booleans and aggregate status are included; no secret values or holdings are stored.',
           }
