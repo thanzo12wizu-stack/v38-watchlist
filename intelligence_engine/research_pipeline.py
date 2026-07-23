@@ -10,14 +10,32 @@ import pandas as pd
 
 from .pipeline import load_universe
 from .prices import load_price_map
-from .research_contracts import RESEARCH_POLICY_VERSION, RESEARCH_SCHEMA_VERSION, ResearchConfig, ResearchManifest
+from .research_contracts import (
+    RESEARCH_POLICY_VERSION,
+    RESEARCH_RETENTION_YEARS,
+    RESEARCH_SCHEMA_VERSION,
+    ResearchConfig,
+    ResearchManifest,
+)
 from .research_engine import add_research_scores, build_signal_pool, rank_signals
 from .research_expectancy import build_research_expectancy
 from .research_financials import build_financial_snapshots, merge_financial_snapshots
 from .research_labels import attach_forward_labels
 from .research_prices import build_price_panel
-from .research_providers import NullEstimateProvider, NullEventProvider, NullOwnershipProvider, SecCompanyFactsProvider
-from .research_storage import load_dataset, storage_bytes, upsert_year_partitions, write_json
+from .research_providers import (
+    NullEstimateProvider,
+    NullEventProvider,
+    NullOwnershipProvider,
+    SecCompanyFactsProvider,
+)
+from .research_storage import (
+    load_dataset,
+    storage_bytes,
+    upsert_year_partitions,
+    write_json,
+)
+
+MAX_INCREMENTAL_CATCHUP_CALENDAR_DAYS = 14
 
 
 def _latest_date(prices: dict[str, pd.DataFrame], ticker: str = "QQQ") -> pd.Timestamp:
@@ -43,18 +61,28 @@ def _date_range(
     end: str | None,
     existing_signals: pd.DataFrame,
 ) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Resolve a bounded research slice.
+
+    Daily runs establish a current state quickly. Historical research is performed
+    by explicit calendar-year backfills, so an empty state never attempts all
+    retained years in one Actions job.
+    """
     latest = _latest_date(prices)
     resolved_end = min(pd.Timestamp(end).normalize(), latest) if end else latest
     if year is not None:
         return pd.Timestamp(year, 1, 1), min(pd.Timestamp(year, 12, 31), resolved_end)
     if start:
-        resolved_start = pd.Timestamp(start).normalize()
-    elif mode == "incremental" and not existing_signals.empty and "date" in existing_signals:
+        return pd.Timestamp(start).normalize(), resolved_end
+    if mode == "incremental":
+        if existing_signals.empty or "date" not in existing_signals:
+            return resolved_end, resolved_end
         previous = pd.to_datetime(existing_signals["date"], errors="coerce").max()
-        resolved_start = resolved_end if pd.isna(previous) else min(resolved_end, pd.Timestamp(previous).normalize() + pd.Timedelta(days=1))
-    else:
-        resolved_start = pd.Timestamp(config.cutoff(resolved_end.date()))
-    return resolved_start, resolved_end
+        if pd.isna(previous):
+            return resolved_end, resolved_end
+        requested = pd.Timestamp(previous).normalize() + pd.Timedelta(days=1)
+        catchup_floor = resolved_end - pd.Timedelta(days=MAX_INCREMENTAL_CATCHUP_CALENDAR_DAYS)
+        return min(max(requested, catchup_floor), resolved_end), resolved_end
+    return pd.Timestamp(resolved_end.year, 1, 1), resolved_end
 
 
 def _load_facts(provider: SecCompanyFactsProvider, tickers: list[str]) -> pd.DataFrame:
@@ -101,8 +129,10 @@ def _research_summary(rankings: pd.DataFrame, expectancy: dict[str, Any], manife
     columns = [
         "ticker", "research_rank", "candidate_archetype", "financial_phase", "rs_archetype", "entry_state",
         "decision_status", "composite_rank_score", "fundamental_quality", "fundamental_change", "leadership_quality",
-        "entry_quality", "risk_fit", "research_confidence", "expected_edge_10d", "expectancy_status", "expectancy_samples",
-        "setup", "price", "pivot_20d", "stop_ema21_low", "stop_sma10", "stop_risk_pct", "reward_risk_raw", "hard_blocks",
+        "entry_quality", "risk_fit", "research_confidence", "expected_edge_10d", "expected_edge_10d_10y",
+        "expected_edge_10d_8y", "expected_edge_10d_5y", "expected_edge_10d_3y", "expectancy_status",
+        "expectancy_samples", "expectancy_consistency", "setup", "price", "pivot_20d", "stop_ema21_low",
+        "stop_sma10", "stop_risk_pct", "reward_risk_raw", "hard_blocks",
     ]
     return {
         "schema_version": RESEARCH_SCHEMA_VERSION,
@@ -142,14 +172,7 @@ def _key_tuples(frame: pd.DataFrame) -> set[tuple[str, str, str, str]]:
         stamp = pd.to_datetime(row.get("date"), errors="coerce")
         if pd.isna(stamp):
             continue
-        result.add(
-            (
-                str(row.get("ticker")),
-                stamp.date().isoformat(),
-                str(row.get("candidate_archetype")),
-                str(row.get("setup")),
-            )
-        )
+        result.add((str(row.get("ticker")), stamp.date().isoformat(), str(row.get("candidate_archetype")), str(row.get("setup"))))
     return result
 
 
@@ -163,12 +186,7 @@ def _pending_signals(signals: pd.DataFrame, existing_outcomes: pd.DataFrame) -> 
     keep = []
     for _, row in signals.iterrows():
         stamp = pd.to_datetime(row.get("date"), errors="coerce")
-        key = (
-            str(row.get("ticker")),
-            stamp.date().isoformat() if pd.notna(stamp) else "",
-            str(row.get("candidate_archetype")),
-            str(row.get("setup")),
-        )
+        key = (str(row.get("ticker")), stamp.date().isoformat() if pd.notna(stamp) else "", str(row.get("candidate_archetype")), str(row.get("setup")))
         keep.append(key not in completed_keys)
     return signals.loc[keep].copy()
 
@@ -180,6 +198,8 @@ def _expectancy_for_training(training: pd.DataFrame, config: ResearchConfig) -> 
         min_samples=config.min_samples,
         bootstrap_samples=config.bootstrap_samples,
         seed=config.seed,
+        analysis_windows=config.analysis_windows,
+        primary_window_years=config.primary_window_years,
     )
 
 
@@ -195,10 +215,10 @@ def _point_in_time_rankings(signals: pd.DataFrame, outcomes: pd.DataFrame, confi
     )
     pieces = []
     years = sorted(int(value) for value in work["date"].dt.year.dropna().unique())
-    for year in years:
-        cutoff = pd.Timestamp(year, 1, 1)
+    for signal_year in years:
+        cutoff = pd.Timestamp(signal_year, 1, 1)
         training = outcomes[outcome_dates < cutoff] if outcomes is not None and not outcomes.empty else pd.DataFrame()
-        pieces.append(rank_signals(work[work["date"].dt.year == year], _expectancy_for_training(training, config)))
+        pieces.append(rank_signals(work[work["date"].dt.year == signal_year], _expectancy_for_training(training, config)))
     ranked = pd.concat(pieces, ignore_index=True, sort=False) if pieces else rank_signals(work, None)
     latest = work["date"].max()
     if pd.notna(latest):
@@ -223,7 +243,7 @@ def build(
     sec_dir: Path,
     root: Path,
     mode: str = "incremental",
-    years: int = 5,
+    years: int = RESEARCH_RETENTION_YEARS,
     year: int | None = None,
     start: str | None = None,
     end: str | None = None,
@@ -232,33 +252,24 @@ def build(
     min_samples: int = 40,
 ) -> dict[str, Any]:
     generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    config = ResearchConfig(
-        root=root,
-        years=years,
-        stride=max(1, stride),
-        max_daily_signals=max_daily_signals,
-        min_samples=min_samples,
-    )
+    config = ResearchConfig(root=root, years=years, stride=max(1, stride), max_daily_signals=max_daily_signals, min_samples=min_samples)
     universe = load_universe(universe_path).reset_index(drop=True)
     prices = load_price_map(price_path)
     existing_signals = load_dataset(root, "signals")
     range_start, range_end = _date_range(
-        prices,
-        config,
-        mode=mode,
-        year=year,
-        start=start,
-        end=end,
-        existing_signals=existing_signals,
+        prices, config, mode=mode, year=year, start=start, end=end, existing_signals=existing_signals
     )
     warnings = []
+    if mode == "incremental" and existing_signals.empty and not start:
+        warnings.append("initial_incremental_latest_session_only")
+    if mode == "backfill" and year is None and not start:
+        warnings.append("backfill_without_year_bounded_to_current_year")
     if range_start > range_end:
         range_start = range_end
     panel = build_price_panel(prices, universe, start=range_start, end=range_end, stride=config.stride)
     if panel.empty:
         raise RuntimeError("research price panel is empty")
     panel["market_regime"] = _regime_series(panel, prices["QQQ"])
-
     tickers = sorted(panel["ticker"].astype(str).unique())
     fundamental_provider = SecCompanyFactsProvider(sec_dir)
     estimate_provider = NullEstimateProvider()
@@ -270,30 +281,19 @@ def build(
     scored = add_research_scores(panel)
     signals = build_signal_pool(scored, max_daily_signals=config.max_daily_signals)
     compact_signals = _compact_columns(signals)
-
     facts_result = (
         upsert_year_partitions(
-            root,
-            "facts",
-            facts,
-            date_column="available_at",
+            root, "facts", facts, date_column="available_at",
             keys=("ticker", "metric", "period_end", "available_at", "accession"),
-            retention_years=config.years,
-            reference_date=range_end,
+            retention_years=config.years, reference_date=range_end,
         )
-        if not facts.empty
-        else {"rows": 0, "partitions": 0}
+        if not facts.empty else {"rows": 0, "partitions": 0}
     )
     signals_result = upsert_year_partitions(
-        root,
-        "signals",
-        compact_signals,
-        date_column="date",
+        root, "signals", compact_signals, date_column="date",
         keys=("ticker", "date", "candidate_archetype", "setup"),
-        retention_years=config.years,
-        reference_date=range_end,
+        retention_years=config.years, reference_date=range_end,
     )
-
     all_signals = load_dataset(root, "signals")
     existing_outcomes = load_dataset(root, "outcomes")
     pending = _pending_signals(all_signals, existing_outcomes)
@@ -306,18 +306,12 @@ def build(
     ready_outcomes = labelled[ready_mask].copy()
     outcomes_result = (
         upsert_year_partitions(
-            root,
-            "outcomes",
-            ready_outcomes,
-            date_column="date",
+            root, "outcomes", ready_outcomes, date_column="date",
             keys=("ticker", "date", "candidate_archetype", "setup"),
-            retention_years=config.years,
-            reference_date=range_end,
+            retention_years=config.years, reference_date=range_end,
         )
-        if not ready_outcomes.empty
-        else {"rows": int(len(existing_outcomes)), "partitions": 0}
+        if not ready_outcomes.empty else {"rows": int(len(existing_outcomes)), "partitions": 0}
     )
-
     all_outcomes = load_dataset(root, "outcomes")
     expectancy = build_research_expectancy(
         all_outcomes,
@@ -325,22 +319,18 @@ def build(
         min_samples=config.min_samples,
         bootstrap_samples=config.bootstrap_samples,
         seed=config.seed,
+        analysis_windows=config.analysis_windows,
+        primary_window_years=config.primary_window_years,
     )
     ranked = _point_in_time_rankings(all_signals, all_outcomes, config)
     ranking_result = (
         upsert_year_partitions(
-            root,
-            "rankings",
-            ranked,
-            date_column="date",
+            root, "rankings", ranked, date_column="date",
             keys=("ticker", "date", "candidate_archetype", "setup"),
-            retention_years=config.years,
-            reference_date=range_end,
+            retention_years=config.years, reference_date=range_end,
         )
-        if not ranked.empty
-        else {"rows": 0, "partitions": 0}
+        if not ranked.empty else {"rows": 0, "partitions": 0}
     )
-
     if storage_bytes(root) > 85 * 1024 * 1024:
         warnings.append("research_store_above_85mb_split_encryption_recommended")
     manifest = ResearchManifest(
@@ -387,7 +377,7 @@ def main() -> None:
     parser.add_argument("--sec-dir", default="data/sec_companyfacts")
     parser.add_argument("--root", default="data/intelligence/research")
     parser.add_argument("--mode", choices=("incremental", "backfill"), default="incremental")
-    parser.add_argument("--years", type=int, default=5)
+    parser.add_argument("--years", type=int, default=RESEARCH_RETENTION_YEARS)
     parser.add_argument("--year", type=int, default=None)
     parser.add_argument("--start", default=None)
     parser.add_argument("--end", default=None)
