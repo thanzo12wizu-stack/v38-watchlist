@@ -70,8 +70,11 @@ def run(
 
     missing = [ticker for ticker in requested if ticker not in existing]
     if missing:
-        missing_period = f"{resolved_history_years}y" if resolved_history_years else "18mo"
-        downloaded, diagnostics = provider.download(missing, period=missing_period)
+        # Establish broad operational coverage with a bounded recent window first.
+        # Long-history expansion is handled separately below and respects
+        # max_history_tickers, so a research run never requests ten years for
+        # every missing symbol in one unbounded provider call.
+        downloaded, diagnostics = provider.download(missing, period="18mo")
         phases.append({"phase": "missing_backfill", **diagnostics})
         _apply_download(existing, downloaded)
         if downloaded:
