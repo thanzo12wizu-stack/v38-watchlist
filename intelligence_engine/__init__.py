@@ -13,6 +13,7 @@ import re
 import signal
 import sys
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
 from types import TracebackType
 from typing import Type
@@ -36,12 +37,12 @@ def _is_research_command(arguments: list[str]) -> bool:
 _RESEARCH_COMMAND = _is_research_command(list(sys.argv))
 _RESEARCH_FAILED = False
 _RESEARCH_ERROR_PATH = Path("private/research-error-detail.json")
+_RESEARCH_SUCCESS_PATH = Path("private/research-success.json")
 _ORIGINAL_EXCEPTOOK = sys.excepthook
 _ORIGINAL_EXIT = sys.exit
 
 
 def _safe_error_template(error: BaseException | str) -> str:
-    """Return a useful error shape without persisting ticker or financial values."""
     text = str(error).replace("\n", " ").strip()
     text = re.sub(r"/home/runner/[^\s:]+", "<path>", text)
     text = re.sub(r"'[^']{1,120}'", "'<value>'", text)
@@ -49,17 +50,24 @@ def _safe_error_template(error: BaseException | str) -> str:
     return text[:500] or type(error).__name__
 
 
+def _write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False),
+        encoding="utf-8",
+    )
+
+
 def _write_research_failure(payload: dict) -> None:
     try:
-        document = {
-            "schema_version": "1.1",
-            **payload,
-            "privacy": "No ticker, price, portfolio or financial values are persisted.",
-        }
-        _RESEARCH_ERROR_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _RESEARCH_ERROR_PATH.write_text(
-            json.dumps(document, ensure_ascii=False, indent=2, allow_nan=False),
-            encoding="utf-8",
+        _RESEARCH_SUCCESS_PATH.unlink(missing_ok=True)
+        _write_json(
+            _RESEARCH_ERROR_PATH,
+            {
+                "schema_version": "1.1",
+                **payload,
+                "privacy": "No ticker, price, portfolio or financial values are persisted.",
+            },
         )
     except Exception:
         pass
@@ -76,25 +84,16 @@ def _research_excepthook(
     try:
         for frame in traceback.extract_tb(exc_traceback):
             normalized = frame.filename.replace("\\", "/")
-            if "/intelligence_engine/" not in normalized:
-                continue
-            frames.append(
-                {
-                    "module": Path(normalized).name,
-                    "function": frame.name,
-                    "line": int(frame.lineno),
-                }
-            )
+            if "/intelligence_engine/" in normalized:
+                frames.append({"module": Path(normalized).name, "function": frame.name, "line": int(frame.lineno)})
     except Exception:
         frames = []
-    _write_research_failure(
-        {
-            "failure_kind": "uncaught_exception",
-            "error_type": exc_type.__name__,
-            "error_template": _safe_error_template(exc_value),
-            "frames": frames[-12:],
-        }
-    )
+    _write_research_failure({
+        "failure_kind": "uncaught_exception",
+        "error_type": exc_type.__name__,
+        "error_template": _safe_error_template(exc_value),
+        "frames": frames[-12:],
+    })
     _ORIGINAL_EXCEPTOOK(exc_type, exc_value, exc_traceback)
 
 
@@ -103,15 +102,13 @@ def _research_exit(code: object = 0) -> None:
     numeric = code if isinstance(code, int) else 1
     if numeric not in (0, None):
         _RESEARCH_FAILED = True
-        _write_research_failure(
-            {
-                "failure_kind": "system_exit",
-                "error_type": "SystemExit",
-                "exit_code": int(numeric),
-                "error_template": _safe_error_template(code),
-                "frames": [],
-            }
-        )
+        _write_research_failure({
+            "failure_kind": "system_exit",
+            "error_type": "SystemExit",
+            "exit_code": int(numeric),
+            "error_template": _safe_error_template(code),
+            "frames": [],
+        })
     _ORIGINAL_EXIT(code)
 
 
@@ -122,28 +119,38 @@ def _research_signal(signum: int, _frame: object) -> None:
         name = signal.Signals(signum).name
     except ValueError:
         name = f"SIGNAL_{signum}"
-    _write_research_failure(
-        {
-            "failure_kind": "signal",
-            "error_type": name,
-            "signal": int(signum),
-            "error_template": f"Research process terminated by {name}",
-            "frames": [],
-        }
-    )
+    _write_research_failure({
+        "failure_kind": "signal",
+        "error_type": name,
+        "signal": int(signum),
+        "error_template": f"Research process terminated by {name}",
+        "frames": [],
+    })
     signal.signal(signum, signal.SIG_DFL)
     os.kill(os.getpid(), signum)
 
 
-def _remove_stale_research_error() -> None:
-    if _RESEARCH_COMMAND and not _RESEARCH_FAILED:
-        try:
-            _RESEARCH_ERROR_PATH.unlink(missing_ok=True)
-        except OSError:
-            pass
+def _finalize_research_process() -> None:
+    if not _RESEARCH_COMMAND or _RESEARCH_FAILED:
+        return
+    try:
+        _RESEARCH_ERROR_PATH.unlink(missing_ok=True)
+        bundle_count = len(list(Path("private").glob("research-*-year-*.enc.json")))
+        _write_json(_RESEARCH_SUCCESS_PATH, {
+            "schema_version": "1.0",
+            "research_status": "PASS",
+            "completed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "summary_present": Path("data/intelligence/research/current_rankings.json").exists(),
+            "manifest_present": Path("data/intelligence/research/manifest.json").exists(),
+            "existing_encrypted_bundle_count": bundle_count,
+            "privacy": "No ticker, price, portfolio, financial or ranking values are included.",
+        })
+    except Exception:
+        pass
 
 
 if _RESEARCH_COMMAND and os.environ.get("V38_DISABLE_RESEARCH_ERROR_HOOK") != "1":
+    _RESEARCH_SUCCESS_PATH.unlink(missing_ok=True)
     sys.excepthook = _research_excepthook
     sys.exit = _research_exit
     for _signal in (signal.SIGTERM, signal.SIGINT, signal.SIGABRT):
@@ -151,4 +158,4 @@ if _RESEARCH_COMMAND and os.environ.get("V38_DISABLE_RESEARCH_ERROR_HOOK") != "1
             signal.signal(_signal, _research_signal)
         except (OSError, RuntimeError, ValueError):
             pass
-    atexit.register(_remove_stale_research_error)
+    atexit.register(_finalize_research_process)
