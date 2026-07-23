@@ -37,7 +37,7 @@ def _exception_type_from_log(path: Path) -> str | None:
     return None
 
 
-def _failure_payload(returncode: int, log_path: Path, *, stage: str) -> dict:
+def _failure_payload(returncode: int, log_path: Path, *, stage: str = "worker") -> dict:
     if returncode in (-9, 137):
         error_type = "ProcessMemoryLimit"
         template = f"Research {stage} was killed by SIGKILL, usually because the runner exceeded memory."
