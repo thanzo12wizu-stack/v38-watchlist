@@ -7,6 +7,7 @@ import pandas as pd
 
 RS_WINDOWS = (21, 63, 126, 189, 252)
 MIN_RESEARCH_SESSIONS = 80
+_MISSING_DIMENSION = "__V38_MISSING_DIMENSION__"
 
 
 def _normalize(frame: pd.DataFrame) -> pd.DataFrame:
@@ -199,6 +200,48 @@ def _percentile(
     return values.rank(pct=True) * 100.0
 
 
+def _dimension_key(series: pd.Series) -> pd.Series:
+    key = series.astype("string").str.strip()
+    key = key.mask(key.eq(""), pd.NA)
+    return key.fillna(_MISSING_DIMENSION)
+
+
+def _attach_dimension_rank(
+    panel: pd.DataFrame,
+    dimension: str,
+    *,
+    value_column: str = "rs_raw_126",
+) -> pd.DataFrame:
+    """Attach peer-group means/ranks without merging mixed object/float keys.
+
+    Real universe inputs may contain text labels, blank strings and floating NaN in
+    the same sector/industry column. A private normalized string key keeps missing
+    values as a neutral peer group while preserving the original display column.
+    """
+    if dimension not in panel or value_column not in panel:
+        return panel
+    key_column = f"__{dimension}_key"
+    score_column = f"{dimension}_rs_126"
+    rank_column = f"{dimension}_rank_pct"
+    work = panel.copy()
+    work[key_column] = _dimension_key(work[dimension])
+    scores = (
+        work.groupby(["date", key_column], dropna=False, as_index=False)[value_column]
+        .mean()
+        .rename(columns={value_column: score_column})
+    )
+    scores[rank_column] = (
+        scores.groupby("date", dropna=False)[score_column].rank(pct=True) * 100.0
+    )
+    work = work.merge(
+        scores[["date", key_column, score_column, rank_column]],
+        on=["date", key_column],
+        how="left",
+        validate="many_to_one",
+    )
+    return work.drop(columns=[key_column])
+
+
 def build_price_panel(
     prices: Mapping[str, pd.DataFrame],
     universe: pd.DataFrame,
@@ -259,30 +302,8 @@ def build_price_panel(
             panel[f"pct_{column}"] = _percentile(panel, column, group=["date"])
 
     if "rs_raw_126" in panel:
-        sector_scores = (
-            panel.groupby(["date", "sector"], dropna=False, as_index=False)[
-                "rs_raw_126"
-            ]
-            .mean()
-            .rename(columns={"rs_raw_126": "sector_rs_126"})
-        )
-        sector_scores["sector_rank_pct"] = (
-            sector_scores.groupby("date")["sector_rs_126"].rank(pct=True) * 100.0
-        )
-        industry_scores = (
-            panel.groupby(["date", "industry"], dropna=False, as_index=False)[
-                "rs_raw_126"
-            ]
-            .mean()
-            .rename(columns={"rs_raw_126": "industry_rs_126"})
-        )
-        industry_scores["industry_rank_pct"] = (
-            industry_scores.groupby("date")["industry_rs_126"].rank(pct=True)
-            * 100.0
-        )
-        panel = panel.merge(
-            sector_scores, on=["date", "sector"], how="left"
-        ).merge(industry_scores, on=["date", "industry"], how="left")
+        panel = _attach_dimension_rank(panel, "sector")
+        panel = _attach_dimension_rank(panel, "industry")
 
     panel = panel.sort_values(["ticker", "date"]).reset_index(drop=True)
     panel["rs126_top20"] = (
