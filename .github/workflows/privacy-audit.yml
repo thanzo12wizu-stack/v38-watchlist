@@ -1,0 +1,83 @@
+name: Audit privacy boundary
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "intelligence-dashboard.html"
+      - "research-dashboard.html"
+      - "scripts/export_public_site.py"
+      - "scripts/privacy_audit.py"
+      - ".github/workflows/privacy-audit.yml"
+      - "private/**"
+  schedule:
+    - cron: "10 13 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: privacy-boundary-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Audit current tree and encrypted shells
+        run: python scripts/privacy_audit.py --root . --output privacy-audit-status.json
+      - name: Audit historical exposure without reading values
+        shell: bash
+        run: |
+          set -euo pipefail
+          git log --all --name-only --pretty=format: -- data/intelligence data/external portfolio.csv \
+            | sed '/^$/d' | sort -u > /tmp/historical-private-paths.txt || true
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('privacy-audit-status.json')
+          report = json.loads(path.read_text(encoding='utf-8'))
+          history_paths = [line.strip() for line in Path('/tmp/historical-private-paths.txt').read_text(encoding='utf-8').splitlines() if line.strip()]
+          report['historical_private_path_count'] = len(history_paths)
+          report['historical_exposure_status'] = 'REVIEW_REQUIRED' if history_paths else 'PASS'
+          report['overall_status'] = (
+              'CURRENT_TREE_PASS_HISTORY_REVIEW_REQUIRED'
+              if report.get('current_tree_status') == 'PASS' and history_paths
+              else report.get('current_tree_status')
+          )
+          report['history_note'] = (
+              'Current main is clean, but old public Git history contains former private-data paths. '
+              'Use the clean public mirror and make the source repository private, or perform a separately approved history purge.'
+              if history_paths else 'No former private-data paths were found in reachable refs.'
+          )
+          path.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+          print(json.dumps({
+              'current_tree_status': report.get('current_tree_status'),
+              'historical_exposure_status': report.get('historical_exposure_status'),
+              'historical_private_path_count': report.get('historical_private_path_count'),
+          }, ensure_ascii=False))
+          PY
+      - name: Commit privacy status
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add privacy-audit-status.json
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Update privacy audit status"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((attempt * 2))
+          done
+          exit 1
