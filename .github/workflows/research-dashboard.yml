@@ -1,0 +1,97 @@
+name: Research Decision Dashboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "private/research-summary.enc.json"
+      - "private/research-rankings-year-*.enc.json"
+      - "intelligence_engine/research_dashboard.py"
+      - "intelligence_engine/research_expectancy.py"
+      - "intelligence_engine/research_engine.py"
+      - "intelligence_engine/research_contracts.py"
+      - ".github/workflows/research-dashboard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: intelligence-engine-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - name: Restore encrypted research summaries and rankings
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/intelligence/research/rankings
+          if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
+            shopt -s nullglob
+            for encrypted in private/research-rankings-year-*.enc.json; do
+              name="$(basename "$encrypted")"
+              year="${name#research-rankings-year-}"
+              year="${year%.enc.json}"
+              node scripts/private_crypto.mjs decrypt "$encrypted" "data/intelligence/research/rankings/year=${year}.jsonl.gz"
+            done
+            if [[ -f private/research-summary.enc.json ]]; then
+              node scripts/private_crypto.mjs decrypt private/research-summary.enc.json /tmp/research-summary.tar.gz
+              tar -xzf /tmp/research-summary.tar.gz
+            fi
+          fi
+      - name: Build and lock research dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m intelligence_engine.research_dashboard --root data/intelligence/research --output /tmp/research-dashboard.full.html
+          if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
+            node scripts/private_crypto.mjs lock-html /tmp/research-dashboard.full.html research-dashboard.html
+            test -s research-dashboard.html
+            grep -q 'V38 Private Intelligence' research-dashboard.html
+            grep -q 'ciphertext' research-dashboard.html
+            if grep -q 'Research Decision' research-dashboard.html; then
+              echo 'plaintext research dashboard leaked into locked HTML'
+              exit 1
+            fi
+          else
+            node scripts/private_crypto.mjs placeholder-html ignored research-dashboard.html
+          fi
+          rm -rf data/intelligence /tmp/research-dashboard.full.html /tmp/research-summary.tar.gz
+      - name: Commit encrypted research dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research-dashboard.html
+          if git diff --staged --quiet; then
+            echo "No research dashboard changes"
+            exit 0
+          fi
+          git commit -m "Update encrypted research decision dashboard"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
