@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from .research_contracts import RESEARCH_PRIMARY_WINDOW_YEARS
 from .research_prices import classify_rs_archetype
 
 
@@ -133,21 +134,73 @@ def _expectancy_lookup(expectancy: dict[str,Any]|None) -> dict[tuple[str,str,int
     return lookup
 
 
+def _window_lookups(expectancy: dict[str, Any] | None) -> dict[int, dict[tuple[str, str, int], dict[str, Any]]]:
+    result: dict[int, dict[tuple[str, str, int], dict[str, Any]]] = {}
+    if not expectancy:
+        return result
+    for window in expectancy.get("windows", []):
+        try:
+            years = int(window.get("window_years"))
+        except (TypeError, ValueError):
+            continue
+        result[years] = _expectancy_lookup({"groups": window.get("groups") or []})
+    if RESEARCH_PRIMARY_WINDOW_YEARS not in result:
+        result[RESEARCH_PRIMARY_WINDOW_YEARS] = _expectancy_lookup(expectancy)
+    return result
+
+
+def _edge(match: dict[str, Any] | None) -> float | None:
+    return _num((match or {}).get("mean_excess_return"))
+
+
+def _consistency(primary: float | None, recent5: float | None, recent3: float | None) -> tuple[str, float]:
+    if primary is None:
+        return ("RECENT_ONLY", 0.0) if recent5 is not None or recent3 is not None else ("UNAVAILABLE", 0.0)
+    if recent5 is not None and np.sign(primary) != np.sign(recent5):
+        return "CONFLICT", .25
+    if recent3 is not None and np.sign(primary) != np.sign(recent3):
+        return "MIXED", .60
+    if recent5 is not None:
+        return "CONFIRMED", 1.0
+    return "PRIMARY_ONLY", .70
+
+
 def rank_signals(signals: pd.DataFrame, expectancy: dict[str,Any]|None=None) -> pd.DataFrame:
     if signals.empty: return signals.copy()
-    lookup=_expectancy_lookup(expectancy); out=signals.copy(); edges=[]; statuses=[]; samples=[]
+    windows=_window_lookups(expectancy); out=signals.copy()
+    records=[]
     for _,row in out.iterrows():
-        match=lookup.get((str(row.get("candidate_archetype")),str(row.get("setup")),10))
-        if match is None: edges.append(None); statuses.append("UNAVAILABLE"); samples.append(0)
-        else: edges.append(_num(match.get("mean_excess_return"))); statuses.append(str(match.get("qualification") or "EXPLORATORY")); samples.append(int(match.get("samples") or 0))
-    out["expected_edge_10d"]=edges; out["expectancy_status"]=statuses; out["expectancy_samples"]=samples
+        key=(str(row.get("candidate_archetype")),str(row.get("setup")),10)
+        matches={years: lookup.get(key) for years,lookup in windows.items()}
+        primary_match=matches.get(RESEARCH_PRIMARY_WINDOW_YEARS)
+        edges={years:_edge(match) for years,match in matches.items()}
+        primary=edges.get(RESEARCH_PRIMARY_WINDOW_YEARS); recent5=edges.get(5); recent3=edges.get(3)
+        consistency,factor=_consistency(primary,recent5,recent3)
+        blend,coverage=_weighted(
+            {"primary":primary,"recent5":recent5,"recent3":recent3},
+            {"primary":.60,"recent5":.30,"recent3":.10},
+        )
+        records.append({
+            "expected_edge_10d": blend,
+            "expected_edge_10d_10y": edges.get(10),
+            "expected_edge_10d_8y": primary,
+            "expected_edge_10d_5y": recent5,
+            "expected_edge_10d_3y": recent3,
+            "expectancy_status": str((primary_match or {}).get("qualification") or ("RECENT_ONLY" if consistency=="RECENT_ONLY" else "UNAVAILABLE")),
+            "expectancy_samples": int((primary_match or {}).get("samples") or 0),
+            "expectancy_consistency": consistency,
+            "expectancy_consistency_factor": factor,
+            "expectancy_window_coverage": coverage,
+        })
+    out=pd.concat([out,pd.DataFrame(records,index=out.index)],axis=1)
     def final(row:pd.Series)->pd.Series:
         base=_num(row.get("base_composite")) or 0; edge=_num(row.get("expected_edge_10d")); adjustment=0
-        if edge is not None and row.get("expectancy_status")=="QUALIFIED": adjustment=float(np.clip(edge*500,-10,10))
-        elif edge is not None and row.get("expectancy_status")=="PROMISING": adjustment=float(np.clip(edge*250,-5,5))
+        factor=_num(row.get("expectancy_consistency_factor")) or 0
+        if edge is not None and row.get("expectancy_status")=="QUALIFIED": adjustment=float(np.clip(edge*500,-10,10))*factor
+        elif edge is not None and row.get("expectancy_status")=="PROMISING": adjustment=float(np.clip(edge*250,-5,5))*factor
         risk=(_num(row.get("risk_fit")) or 50)/100; conf=float(np.clip(_num(row.get("research_confidence")) or 0,0,1)); score=(base+adjustment)*(.80+.20*risk)*(.80+.20*conf)
         blocks=row.get("hard_blocks") if isinstance(row.get("hard_blocks"),list) else []; state=str(row.get("entry_state") or "EARLY")
         status="AVOID" if blocks else ("ACTIONABLE" if state in {"READY","TRIGGERED"} else "READY")
-        return pd.Series({"composite_rank_score":float(np.clip(score,0,100)),"decision_status":status})
+        return pd.Series({"expectancy_adjustment":adjustment,"composite_rank_score":float(np.clip(score,0,100)),"decision_status":status})
     out=pd.concat([out,out.apply(final,axis=1)],axis=1); out=out.sort_values(["date","composite_rank_score","research_confidence","ticker"],ascending=[True,False,False,True]); out["research_rank"]=out.groupby("date").cumcount()+1
     return out.reset_index(drop=True)
