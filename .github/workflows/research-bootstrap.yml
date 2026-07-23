@@ -5,10 +5,17 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/research-bootstrap.yml"
+  schedule:
+    - cron: "12 * * * *"
   workflow_dispatch:
     inputs:
+      reset:
+        description: Reset bootstrap progress and restart warmups
+        required: false
+        default: false
+        type: boolean
       warmup_runs:
-        description: Price-history warmup runs before yearly research
+        description: Bounded ten-year price-history warmup runs
         required: false
         default: 14
         type: number
@@ -24,7 +31,7 @@ on:
         type: number
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -32,63 +39,149 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  queue:
+  advance:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
-      - name: Queue price warmup and all ten research years
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Select exactly one bounded next run
+        id: next
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          RESET: ${{ inputs.reset || false }}
           REQUESTED_WARMUPS: ${{ inputs.warmup_runs || 14 }}
           REQUESTED_BATCH: ${{ inputs.price_batch || 250 }}
           REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
         run: |
           set -euo pipefail
-          current_year="$(date -u +%Y)"
-          minimum_year=$(( current_year - 9 ))
+          active="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intelligence-engine.yml --branch main --limit 30 --json status --jq '[.[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending")] | length')"
+          if (( active > 0 )); then
+            echo "Intelligence Engine already has ${active} active run(s); bootstrap will wait."
+            echo "dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-          warmups="${REQUESTED_WARMUPS:-14}"
-          [[ "$warmups" =~ ^[0-9]+$ ]] || warmups=14
-          (( warmups < 1 )) && warmups=1
-          (( warmups > 20 )) && warmups=20
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from datetime import datetime, timezone
+          from pathlib import Path
 
-          batch="${REQUESTED_BATCH:-250}"
-          [[ "$batch" =~ ^[0-9]+$ ]] || batch=250
-          (( batch < 20 )) && batch=20
-          (( batch > 250 )) && batch=250
+          now = datetime.now(timezone.utc)
+          current_year = now.year
+          target_years = list(range(current_year - 9, current_year + 1))
+          state_path = Path('research-bootstrap-status.json')
+          reset = os.environ.get('RESET', '').lower() == 'true'
+          try:
+              state = json.loads(state_path.read_text()) if state_path.exists() and not reset else {}
+          except (OSError, json.JSONDecodeError):
+              state = {}
 
-          stride="${REQUESTED_STRIDE:-5}"
-          [[ "$stride" =~ ^[0-9]+$ ]] || stride=5
-          (( stride < 1 )) && stride=1
-          (( stride > 10 )) && stride=10
+          def bounded_int(name, default, low, high):
+              try:
+                  value = int(os.environ.get(name, default))
+              except (TypeError, ValueError):
+                  value = default
+              return max(low, min(high, value))
 
-          echo "Queueing ${warmups} price-history warmups at batch=${batch}."
-          for run in $(seq 1 "$warmups"); do
-            refresh=false
-            [[ "$run" == "1" ]] && refresh=true
-            gh workflow run intelligence-engine.yml \
-              --repo "$GITHUB_REPOSITORY" \
-              --ref main \
-              -f refresh_sec="$refresh" \
-              -f research_mode=backfill \
-              -f research_year="$current_year" \
-              -f research_price_batch="$batch" \
-              -f research_stride="$stride"
-            sleep 2
-          done
+          warmup_target = bounded_int('REQUESTED_WARMUPS', 14, 1, 20)
+          batch = bounded_int('REQUESTED_BATCH', 250, 20, 250)
+          stride = bounded_int('REQUESTED_STRIDE', 5, 1, 10)
+          warmups = int(state.get('warmup_runs_dispatched') or 0)
 
-          echo "Queueing complete point-in-time years ${minimum_year}-${current_year}."
-          for year in $(seq "$minimum_year" "$current_year"); do
-            gh workflow run intelligence-engine.yml \
-              --repo "$GITHUB_REPOSITORY" \
-              --ref main \
-              -f refresh_sec=false \
-              -f research_mode=backfill \
-              -f research_year="$year" \
-              -f research_price_batch="$batch" \
-              -f research_stride="$stride"
-            sleep 2
-          done
+          signal_years = set()
+          ranking_years = set()
+          signal_re = re.compile(r'^research-signals-year-(20\d{2})\.enc\.json$')
+          ranking_re = re.compile(r'^research-rankings-year-(20\d{2})\.enc\.json$')
+          for path in Path('private').glob('research-*-year-*.enc.json'):
+              signal = signal_re.match(path.name)
+              ranking = ranking_re.match(path.name)
+              if signal:
+                  signal_years.add(int(signal.group(1)))
+              if ranking:
+                  ranking_years.add(int(ranking.group(1)))
+          completed = sorted(set(target_years) & signal_years & ranking_years)
+          missing = sorted(set(target_years) - set(completed))
 
-          echo "Queued warmups=${warmups}, years=10, total=$((warmups + 10))."
+          action = None
+          year = None
+          refresh_sec = False
+          if warmups < warmup_target:
+              action = 'PRICE_WARMUP'
+              year = current_year
+              refresh_sec = warmups == 0
+              warmups += 1
+          elif missing:
+              action = 'YEAR_BACKFILL'
+              year = missing[0]
+          else:
+              action = 'COMPLETE'
+
+          state = {
+              'schema_version': '1.1',
+              'updated_at': now.isoformat().replace('+00:00', 'Z'),
+              'status': action,
+              'years_retained': 10,
+              'warmup_runs_target': warmup_target,
+              'warmup_runs_dispatched': warmups,
+              'price_batch': batch,
+              'stride': stride,
+              'target_years': target_years,
+              'completed_years': completed,
+              'missing_years': missing,
+              'next_year': year,
+              'privacy': 'Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.',
+          }
+          state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+          output = Path(os.environ['GITHUB_OUTPUT'])
+          with output.open('a', encoding='utf-8') as handle:
+              handle.write(f"dispatch={'true' if action != 'COMPLETE' else 'false'}\n")
+              handle.write(f"action={action}\n")
+              handle.write(f"year={year or ''}\n")
+              handle.write(f"refresh_sec={'true' if refresh_sec else 'false'}\n")
+              handle.write(f"batch={batch}\n")
+              handle.write(f"stride={stride}\n")
+          print(json.dumps(state, ensure_ascii=False))
+          PY
+      - name: Commit bootstrap progress
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research-bootstrap-status.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Advance ten-year research bootstrap"
+            for attempt in 1 2 3; do
+              if git push origin HEAD:main; then break; fi
+              git fetch origin main
+              git rebase origin/main || { git rebase --abort || true; exit 1; }
+              sleep $((attempt * 2))
+            done
+          fi
+      - name: Dispatch selected research slice
+        if: steps.next.outputs.dispatch == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YEAR: ${{ steps.next.outputs.year }}
+          REFRESH_SEC: ${{ steps.next.outputs.refresh_sec }}
+          BATCH: ${{ steps.next.outputs.batch }}
+          STRIDE: ${{ steps.next.outputs.stride }}
+          ACTION: ${{ steps.next.outputs.action }}
+        run: |
+          set -euo pipefail
+          gh workflow run intelligence-engine.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f refresh_sec="$REFRESH_SEC" \
+            -f research_mode=backfill \
+            -f research_year="$YEAR" \
+            -f research_price_batch="$BATCH" \
+            -f research_stride="$STRIDE"
+          echo "Dispatched ${ACTION}: year=${YEAR}, batch=${BATCH}, stride=${STRIDE}."
