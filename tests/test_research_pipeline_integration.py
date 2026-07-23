@@ -6,7 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from intelligence_engine.research_pipeline import build
+from intelligence_engine.research_contracts import ResearchConfig
+from intelligence_engine.research_pipeline import _point_in_time_rankings, build
 
 
 def _prices(seed: int, drift: float, periods: int = 700) -> pd.DataFrame:
@@ -28,14 +29,7 @@ def _prices(seed: int, drift: float, periods: int = 700) -> pd.DataFrame:
 
 def _companyfacts() -> dict:
     def point(start: str, end: str, value: float, filed: str) -> dict:
-        return {
-            "start": start,
-            "end": end,
-            "val": value,
-            "filed": filed,
-            "form": "10-Q",
-            "accn": f"{end}-{filed}",
-        }
+        return {"start": start, "end": end, "val": value, "filed": filed, "form": "10-Q", "accn": f"{end}-{filed}"}
 
     quarters = [
         ("2022-01-01", "2022-03-31", "2022-05-01"),
@@ -56,23 +50,16 @@ def _companyfacts() -> dict:
     shares = np.linspace(100, 102, len(revenue))
 
     def rows(values: list[float]) -> list[dict]:
-        return [
-            point(start, end, float(value), filed)
-            for (start, end, filed), value in zip(quarters, values)
-        ]
+        return [point(start, end, float(value), filed) for (start, end, filed), value in zip(quarters, values)]
 
     return {
         "facts": {
             "us-gaap": {
-                "RevenueFromContractWithCustomerExcludingAssessedTax": {
-                    "units": {"USD": rows(revenue)}
-                },
+                "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": rows(revenue)}},
                 "EarningsPerShareDiluted": {"units": {"USD/shares": rows(eps)}},
                 "GrossProfit": {"units": {"USD": rows(gross)}},
                 "OperatingIncomeLoss": {"units": {"USD": rows(operating)}},
-                "WeightedAverageNumberOfDilutedSharesOutstanding": {
-                    "units": {"shares": rows(list(shares))}
-                },
+                "WeightedAverageNumberOfDilutedSharesOutstanding": {"units": {"shares": rows(list(shares))}},
             }
         }
     }
@@ -80,22 +67,12 @@ def _companyfacts() -> dict:
 
 def test_research_pipeline_builds_phase_1_to_8_contract(tmp_path: Path):
     pd.DataFrame(
-        {
-            "ticker": ["FAST"],
-            "sector": ["Technology"],
-            "industry": ["Software"],
-            "market_cap": [10_000_000_000],
-        }
+        {"ticker": ["FAST"], "sector": ["Technology"], "industry": ["Software"], "market_cap": [10_000_000_000]}
     ).to_csv(tmp_path / "universe.csv", index=False)
-    pd.to_pickle(
-        {"QQQ": _prices(1, .0002), "FAST": _prices(2, .0012)},
-        tmp_path / "prices.pkl",
-    )
+    pd.to_pickle({"QQQ": _prices(1, .0002), "FAST": _prices(2, .0012)}, tmp_path / "prices.pkl")
     sec_dir = tmp_path / "sec"
     sec_dir.mkdir()
-    (sec_dir / "FAST.json").write_text(
-        json.dumps(_companyfacts()), encoding="utf-8"
-    )
+    (sec_dir / "FAST.json").write_text(json.dumps(_companyfacts()), encoding="utf-8")
     intelligence_root = tmp_path / "data" / "intelligence"
     research_root = intelligence_root / "research"
     intelligence_root.mkdir(parents=True)
@@ -123,3 +100,39 @@ def test_research_pipeline_builds_phase_1_to_8_contract(tmp_path: Path):
     payload = json.loads((intelligence_root / "index.json").read_text(encoding="utf-8"))
     assert payload["research"]["schema_version"] == "2.0"
     assert payload["research"]["rankings"]
+
+
+def test_historical_ranking_does_not_use_future_expectancy():
+    signals = pd.DataFrame(
+        {
+            "ticker": ["A", "B", "A", "B"],
+            "date": pd.to_datetime(["2023-06-01", "2023-06-01", "2024-06-03", "2024-06-03"]),
+            "candidate_archetype": ["EMERGING_LEADER"] * 4,
+            "setup": ["PRE_BREAKOUT"] * 4,
+            "base_composite": [80.0, 79.0, 80.0, 79.0],
+            "risk_fit": [80.0] * 4,
+            "research_confidence": [1.0] * 4,
+            "hard_blocks": [[] for _ in range(4)],
+            "entry_state": ["READY"] * 4,
+        }
+    )
+    outcomes = pd.DataFrame(
+        {
+            "ticker": ["A"] * 60,
+            "date": pd.to_datetime(["2024-01-02"] * 60),
+            "candidate_archetype": ["EMERGING_LEADER"] * 60,
+            "setup": ["PRE_BREAKOUT"] * 60,
+            "outcome_date_10": pd.to_datetime(["2024-02-01"] * 60),
+            "excess_10": [.10] * 60,
+            "excess_5": [.05] * 60,
+            "excess_21": [.12] * 60,
+            "excess_63": [.20] * 60,
+        }
+    )
+    ranked = _point_in_time_rankings(
+        signals,
+        outcomes,
+        ResearchConfig(min_samples=10, bootstrap_samples=20),
+    )
+    old = ranked[pd.to_datetime(ranked.date).dt.year == 2023]
+    assert set(old.expectancy_status) == {"UNAVAILABLE"}
