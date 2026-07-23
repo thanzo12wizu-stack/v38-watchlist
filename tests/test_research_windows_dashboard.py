@@ -179,5 +179,5 @@ def test_research_dashboard_builds_from_rank_partitions(tmp_path: Path) -> None:
     page = build_html(root)
     assert "Research Decision" in page
     assert "AAA" in page
-    assert "8年・標準" in page
+    assert "8年を標準" in page
     assert "買える" in page

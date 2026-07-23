@@ -5,9 +5,11 @@ on:
     branches:
       - main
     paths:
+      - "private/intelligence-state.enc.json"
       - "private/research-summary.enc.json"
       - "private/research-rankings-year-*.enc.json"
       - "intelligence_engine/research_decision_dashboard.py"
+      - "intelligence_engine/research_operations.py"
       - "intelligence_engine/research_expectancy.py"
       - "intelligence_engine/research_engine.py"
       - "intelligence_engine/research_contracts.py"
@@ -24,7 +26,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
     steps:
@@ -37,7 +39,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
-      - name: Restore encrypted research summaries and rankings
+      - name: Restore encrypted research and portfolio inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -54,7 +56,21 @@ jobs:
               node scripts/private_crypto.mjs decrypt private/research-summary.enc.json /tmp/research-summary.tar.gz
               tar -xzf /tmp/research-summary.tar.gz
             fi
+            if [[ -f private/intelligence-state.enc.json ]]; then
+              if node scripts/private_crypto.mjs decrypt private/intelligence-state.enc.json /tmp/intelligence-state.tar.gz; then
+                tar -xzf /tmp/intelligence-state.tar.gz
+              else
+                echo "::warning::Operational state could not be restored; portfolio overlay will be empty"
+              fi
+            fi
           fi
+      - name: Build research changes, portfolio overlay and model health
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m intelligence_engine.research_operations \
+            --root data/intelligence/research \
+            --portfolio portfolio.csv
       - name: Build and lock research dashboard
         shell: bash
         run: |
@@ -72,7 +88,9 @@ jobs:
           else
             node scripts/private_crypto.mjs placeholder-html ignored research-dashboard.html
           fi
-          rm -rf data/intelligence /tmp/research-dashboard.full.html /tmp/research-summary.tar.gz
+          rm -rf data/intelligence data/external portfolio.csv \
+            /tmp/research-dashboard.full.html /tmp/research-summary.tar.gz \
+            /tmp/intelligence-state.tar.gz
       - name: Commit encrypted research dashboard
         shell: bash
         run: |
