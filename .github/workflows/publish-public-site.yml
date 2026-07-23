@@ -1,6 +1,15 @@
 name: Publish safe public site mirror
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "command-center.html"
+      - "intelligence-dashboard.html"
+      - "research-dashboard.html"
+      - "scripts/export_public_site.py"
+      - ".github/workflows/publish-public-site.yml"
   workflow_dispatch: {}
   schedule:
     - cron: "45 11 * * 1-5"
