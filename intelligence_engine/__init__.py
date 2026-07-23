@@ -19,7 +19,7 @@ from types import TracebackType
 from typing import Type
 
 __all__ = ["__version__"]
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def _is_research_command(arguments: list[str]) -> bool:
