@@ -9,6 +9,7 @@ import pandas as pd
 from .pipeline import load_universe
 from .prices import load_price_map, save_price_map
 from .providers import get_price_provider
+from .research_contracts import RESEARCH_RETENTION_YEARS
 
 
 def _latest_date(frame: pd.DataFrame | None) -> pd.Timestamp | None:
@@ -33,8 +34,7 @@ def _merge_frame(existing: pd.DataFrame | None, update: pd.DataFrame) -> pd.Data
     if existing is None or existing.empty:
         return update.sort_index().loc[~update.index.duplicated(keep="last")]
     combined = pd.concat([existing, update], axis=0).sort_index()
-    combined = combined.loc[~combined.index.duplicated(keep="last")]
-    return combined
+    return combined.loc[~combined.index.duplicated(keep="last")]
 
 
 def _apply_download(existing: dict[str, pd.DataFrame], downloaded: dict[str, pd.DataFrame]) -> None:
@@ -58,6 +58,9 @@ def run(
     existing = load_price_map(cache_path) if cache_path.exists() else {}
     provider = get_price_provider(provider_name)
     phases: list[dict] = []
+    resolved_history_years = (
+        max(RESEARCH_RETENTION_YEARS, int(history_years)) if history_years else None
+    )
 
     benchmark_update, benchmark_diagnostics = provider.download(["QQQ"], period="3mo")
     phases.append({"phase": "benchmark_refresh", **benchmark_diagnostics})
@@ -67,7 +70,7 @@ def run(
 
     missing = [ticker for ticker in requested if ticker not in existing]
     if missing:
-        missing_period = f"{max(1, int(history_years))}y" if history_years else "18mo"
+        missing_period = f"{resolved_history_years}y" if resolved_history_years else "18mo"
         downloaded, diagnostics = provider.download(missing, period=missing_period)
         phases.append({"phase": "missing_backfill", **diagnostics})
         _apply_download(existing, downloaded)
@@ -91,8 +94,8 @@ def run(
             save_price_map(cache_path, existing)
 
     history_requested = history_batch = history_received = 0
-    if history_years and benchmark_date is not None:
-        target_start = benchmark_date - pd.DateOffset(years=max(1, int(history_years)))
+    if resolved_history_years and benchmark_date is not None:
+        target_start = benchmark_date - pd.DateOffset(years=resolved_history_years)
         tolerance = target_start + pd.Timedelta(days=45)
         short = [
             ticker
@@ -116,7 +119,7 @@ def run(
         history_batch = len(selected)
         if selected:
             downloaded, diagnostics = provider.download(
-                selected, period=f"{max(1, int(history_years))}y"
+                selected, period=f"{resolved_history_years}y"
             )
             phases.append({"phase": "research_history_backfill", **diagnostics})
             _apply_download(existing, downloaded)
@@ -150,7 +153,8 @@ def run(
         "missing_requested": len(missing),
         "stale_requested": len(stale),
         "still_stale": len(still_stale),
-        "history_years": history_years,
+        "history_years_requested": history_years,
+        "history_years": resolved_history_years,
         "history_requested": history_requested,
         "history_batch": history_batch,
         "history_received": history_received,
