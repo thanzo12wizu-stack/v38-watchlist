@@ -5,7 +5,10 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from scripts.export_public_site import LOCKED_DASHBOARDS, PUBLIC_FILES, _validate_locked_dashboard
+try:
+    from scripts.export_public_site import LOCKED_DASHBOARDS, PUBLIC_FILES, _validate_locked_dashboard
+except ModuleNotFoundError:  # direct execution: python scripts/privacy_audit.py
+    from export_public_site import LOCKED_DASHBOARDS, PUBLIC_FILES, _validate_locked_dashboard
 
 FORBIDDEN_CURRENT_PATHS = (
     "data/intelligence",
