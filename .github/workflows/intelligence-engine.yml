@@ -29,6 +29,29 @@ on:
         required: false
         default: false
         type: boolean
+      research_mode:
+        description: Historical research update mode
+        required: false
+        default: incremental
+        type: choice
+        options:
+          - incremental
+          - backfill
+      research_year:
+        description: Optional calendar year for a bounded backfill, for example 2022
+        required: false
+        default: ""
+        type: string
+      research_price_batch:
+        description: Maximum tickers to extend to five-year price history in this run
+        required: false
+        default: 120
+        type: number
+      research_stride:
+        description: Trading-day sampling stride for research signals
+        required: false
+        default: 1
+        type: number
   schedule:
     - cron: "25 10 * * 1-5"
 
@@ -93,7 +116,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
       V38_PRICE_PROVIDER: ${{ vars.V38_PRICE_PROVIDER }}
@@ -101,6 +124,10 @@ jobs:
       V38_FMP_PRICE_URL_TEMPLATE: ${{ vars.V38_FMP_PRICE_URL_TEMPLATE }}
       V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
       V38_PORTFOLIO_CSV_B64: ${{ secrets.V38_PORTFOLIO_CSV_B64 }}
+      RESEARCH_MODE: ${{ inputs.research_mode || 'incremental' }}
+      RESEARCH_YEAR: ${{ inputs.research_year || '' }}
+      RESEARCH_PRICE_BATCH: ${{ inputs.research_price_batch || 120 }}
+      RESEARCH_STRIDE: ${{ inputs.research_stride || 1 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,7 +138,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install -e '.[test]'
-      - name: Restore encrypted operational state
+      - name: Restore encrypted operational and research state
         shell: bash
         run: |
           set -u
@@ -120,13 +147,44 @@ jobs:
               && tar -xzf /tmp/intelligence-state.tar.gz; then
               echo "Encrypted intelligence state restored"
             else
-              echo "::warning::Encrypted state could not be restored; continuing from fresh observations"
+              echo "::warning::Encrypted operational state could not be restored; continuing from fresh observations"
               rm -f /tmp/intelligence-state.tar.gz
               rm -rf data/intelligence/history data/intelligence/observations data/external
             fi
           else
-            echo "No decryptable private state; starting from available inputs"
+            echo "No decryptable operational state; starting from available inputs"
           fi
+
+          if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
+            shopt -s nullglob
+            restored=0
+            for encrypted in private/research-*-year-*.enc.json; do
+              name="$(basename "$encrypted")"
+              if [[ "$name" =~ ^research-([a-z_]+)-year-([0-9]{4})\.enc\.json$ ]]; then
+                dataset="${BASH_REMATCH[1]}"
+                year="${BASH_REMATCH[2]}"
+                target="data/intelligence/research/${dataset}/year=${year}.jsonl.gz"
+                mkdir -p "$(dirname "$target")"
+                if node scripts/private_crypto.mjs decrypt "$encrypted" "$target"; then
+                  restored=$((restored + 1))
+                else
+                  echo "::warning::Could not restore ${name}; keeping the remaining research partitions"
+                  rm -f "$target"
+                fi
+              fi
+            done
+            if [[ -f private/research-summary.enc.json ]]; then
+              if node scripts/private_crypto.mjs decrypt private/research-summary.enc.json /tmp/research-summary.tar.gz \
+                && tar -xzf /tmp/research-summary.tar.gz; then
+                restored=$((restored + 1))
+              else
+                echo "::warning::Could not restore research summary; it will be rebuilt"
+                rm -f /tmp/research-summary.tar.gz
+              fi
+            fi
+            echo "Restored research bundles: ${restored}"
+          fi
+
           if [[ -n "${V38_PORTFOLIO_CSV_B64:-}" ]]; then
             if printf '%s' "$V38_PORTFOLIO_CSV_B64" | base64 --decode > portfolio.csv; then
               chmod 600 portfolio.csv
@@ -162,8 +220,17 @@ jobs:
             fi
           fi
       - name: Ensure resumable price cache
-        timeout-minutes: 40
-        run: python -m intelligence_engine.ensure_prices --universe universe.csv --prices prices.pkl --min-coverage 0.60
+        timeout-minutes: 55
+        shell: bash
+        run: |
+          set -euo pipefail
+          command=(python -m intelligence_engine.ensure_prices --universe universe.csv --prices prices.pkl --min-coverage 0.60)
+          if [[ "${RESEARCH_MODE:-incremental}" == "backfill" ]]; then
+            batch="${RESEARCH_PRICE_BATCH:-120}"
+            if ! [[ "$batch" =~ ^[0-9]+$ ]]; then batch=120; fi
+            command+=(--history-years 5 --max-history-tickers "$batch")
+          fi
+          "${command[@]}"
       - name: Persist price cache immediately
         if: always() && hashFiles('prices.pkl') != ''
         uses: actions/cache/save@v4
@@ -228,6 +295,26 @@ jobs:
       - name: Build operational intelligence and settle observations
         timeout-minutes: 25
         run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv --external-root data/external
+      - name: Build five-year point-in-time research
+        timeout-minutes: 45
+        shell: bash
+        run: |
+          set -u
+          mode="${RESEARCH_MODE:-incremental}"
+          [[ "$mode" == "backfill" ]] || mode="incremental"
+          stride="${RESEARCH_STRIDE:-1}"
+          if ! [[ "$stride" =~ ^[0-9]+$ ]] || (( stride < 1 )); then stride=1; fi
+          command=(python -m intelligence_engine.research_pipeline --universe universe.csv --prices prices.pkl --sec-dir data/sec_companyfacts --root data/intelligence/research --mode "$mode" --years 5 --stride "$stride" --max-daily-signals 300 --min-samples 40)
+          if [[ -n "${RESEARCH_YEAR:-}" ]]; then
+            if [[ "$RESEARCH_YEAR" =~ ^20[0-9]{2}$ ]]; then
+              command+=(--year "$RESEARCH_YEAR")
+            else
+              echo "::warning::Ignoring invalid research year: ${RESEARCH_YEAR}"
+            fi
+          fi
+          if ! "${command[@]}"; then
+            echo "::warning::Historical research did not complete; core intelligence remains publishable and the next run will resume"
+          fi
       - name: Validate generated contract
         timeout-minutes: 5
         run: python -m intelligence_engine.validate_outputs --root data/intelligence
@@ -272,11 +359,35 @@ jobs:
             else
               echo "::warning::No operational history was available to persist"
             fi
+
+            if [[ -d data/intelligence/research ]]; then
+              rm -f private/research-*-year-*.enc.json private/research-summary.enc.json
+              shopt -s nullglob
+              encrypted_count=0
+              for dataset in facts signals outcomes rankings; do
+                for source in data/intelligence/research/${dataset}/year=*.jsonl.gz; do
+                  year="$(basename "$source" .jsonl.gz)"
+                  year="${year#year=}"
+                  target="private/research-${dataset}-year-${year}.enc.json"
+                  node scripts/private_crypto.mjs encrypt "$source" "$target"
+                  test -s "$target"
+                  encrypted_count=$((encrypted_count + 1))
+                done
+              done
+              summary_files=(data/intelligence/research/*.json)
+              if (( ${#summary_files[@]} )); then
+                tar -czf /tmp/research-summary.tar.gz "${summary_files[@]}"
+                node scripts/private_crypto.mjs encrypt /tmp/research-summary.tar.gz private/research-summary.enc.json
+                test -s private/research-summary.enc.json
+                encrypted_count=$((encrypted_count + 1))
+              fi
+              echo "Encrypted research bundles: ${encrypted_count}"
+            fi
           else
             echo "Private passphrase is not configured; publishing a locked placeholder only"
             node scripts/private_crypto.mjs placeholder-html ignored intelligence-dashboard.html
           fi
-          rm -f /tmp/intelligence-dashboard.full.html /tmp/intelligence-state.tar.gz portfolio.csv
+          rm -f /tmp/intelligence-dashboard.full.html /tmp/intelligence-state.tar.gz /tmp/research-summary.tar.gz portfolio.csv
       - name: Remove plaintext private data from the public repository
         shell: bash
         run: |
@@ -297,7 +408,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add intelligence-dashboard.html
-          git add private/intelligence-state.enc.json 2>/dev/null || true
+          git add -A private 2>/dev/null || true
           git add -A -- data/intelligence data/external portfolio.csv 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No encrypted intelligence changes"
