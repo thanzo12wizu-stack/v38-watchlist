@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from intelligence_engine.market import build_market_state
 
@@ -12,8 +13,8 @@ def _qqq_uptrend() -> pd.DataFrame:
 def test_empty_cross_section_cannot_authorize_full_exposure() -> None:
     state = build_market_state(pd.DataFrame(), _qqq_uptrend(), [])
 
-    assert state["score_market"] == 1.0
-    assert state["score_confidence"] == 0.30
+    assert state["score_market"] == pytest.approx(1.0)
+    assert state["score_confidence"] == pytest.approx(0.30)
     assert state["regime"] == "UNKNOWN"
     assert state["entry_gate"] == "NO_NEW"
     assert state["recommended_exposure"] == 0.0
@@ -34,7 +35,7 @@ def test_missing_breadth_cannot_authorize_full_exposure() -> None:
     )
     state = build_market_state(frame, _qqq_uptrend(), [])
 
-    assert state["score_confidence"] == 0.30
+    assert state["score_confidence"] == pytest.approx(0.30)
     assert state["regime"] == "UNKNOWN"
     assert state["entry_gate"] == "NO_NEW"
     assert state["recommended_exposure_pct"] == 0.0
@@ -56,7 +57,7 @@ def test_sufficient_evidence_can_still_classify_blue() -> None:
     sectors = [{"sector": "Technology", "breadth_positive_63d": 1.0}]
     state = build_market_state(frame, _qqq_uptrend(), sectors)
 
-    assert state["score_confidence"] == 1.0
+    assert state["score_confidence"] == pytest.approx(1.0)
     assert state["regime"] == "BLUE"
     assert state["entry_gate"] == "ALLOW"
     assert state["recommended_exposure"] == 1.0
