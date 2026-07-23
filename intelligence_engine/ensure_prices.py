@@ -20,6 +20,15 @@ def _latest_date(frame: pd.DataFrame | None) -> pd.Timestamp | None:
     return pd.Timestamp(index.max()).normalize()
 
 
+def _earliest_date(frame: pd.DataFrame | None) -> pd.Timestamp | None:
+    if frame is None or frame.empty or not isinstance(frame.index, pd.DatetimeIndex):
+        return None
+    index = frame.index
+    if index.tz is not None:
+        index = index.tz_convert(None)
+    return pd.Timestamp(index.min()).normalize()
+
+
 def _merge_frame(existing: pd.DataFrame | None, update: pd.DataFrame) -> pd.DataFrame:
     if existing is None or existing.empty:
         return update.sort_index().loc[~update.index.duplicated(keep="last")]
@@ -28,10 +37,7 @@ def _merge_frame(existing: pd.DataFrame | None, update: pd.DataFrame) -> pd.Data
     return combined
 
 
-def _apply_download(
-    existing: dict[str, pd.DataFrame],
-    downloaded: dict[str, pd.DataFrame],
-) -> None:
+def _apply_download(existing: dict[str, pd.DataFrame], downloaded: dict[str, pd.DataFrame]) -> None:
     for ticker, frame in downloaded.items():
         if frame is None or frame.empty:
             continue
@@ -44,6 +50,8 @@ def run(
     *,
     min_coverage: float = 0.70,
     provider_name: str | None = None,
+    history_years: int | None = None,
+    max_history_tickers: int = 0,
 ) -> dict:
     universe = load_universe(universe_path)
     requested = sorted(set(universe["ticker"].astype(str)) | {"QQQ"})
@@ -59,7 +67,8 @@ def run(
 
     missing = [ticker for ticker in requested if ticker not in existing]
     if missing:
-        downloaded, diagnostics = provider.download(missing, period="18mo")
+        missing_period = f"{max(1, int(history_years))}y" if history_years else "18mo"
+        downloaded, diagnostics = provider.download(missing, period=missing_period)
         phases.append({"phase": "missing_backfill", **diagnostics})
         _apply_download(existing, downloaded)
         if downloaded:
@@ -81,6 +90,40 @@ def run(
         if downloaded:
             save_price_map(cache_path, existing)
 
+    history_requested = history_batch = history_received = 0
+    if history_years and benchmark_date is not None:
+        target_start = benchmark_date - pd.DateOffset(years=max(1, int(history_years)))
+        tolerance = target_start + pd.Timedelta(days=45)
+        short = [
+            ticker
+            for ticker in requested
+            if _earliest_date(existing.get(ticker)) is None
+            or _earliest_date(existing.get(ticker)) > tolerance
+        ]
+        short.sort(
+            key=lambda ticker: (
+                ticker != "QQQ",
+                _earliest_date(existing.get(ticker)) or pd.Timestamp.max,
+                ticker,
+            )
+        )
+        history_requested = len(short)
+        selected = (
+            short[:max_history_tickers]
+            if max_history_tickers and max_history_tickers > 0
+            else short
+        )
+        history_batch = len(selected)
+        if selected:
+            downloaded, diagnostics = provider.download(
+                selected, period=f"{max(1, int(history_years))}y"
+            )
+            phases.append({"phase": "research_history_backfill", **diagnostics})
+            _apply_download(existing, downloaded)
+            history_received = len(downloaded)
+            if downloaded:
+                save_price_map(cache_path, existing)
+
     covered = sum(ticker in existing and not existing[ticker].empty for ticker in requested)
     coverage = covered / len(requested) if requested else 0.0
     still_stale = []
@@ -90,18 +133,27 @@ def run(
             for ticker in requested
             if ticker in existing
             and ticker != "QQQ"
-            and (_latest_date(existing.get(ticker)) is None or _latest_date(existing.get(ticker)) < benchmark_date)
+            and (
+                _latest_date(existing.get(ticker)) is None
+                or _latest_date(existing.get(ticker)) < benchmark_date
+            )
         ]
     result = {
         "requested": len(requested),
         "covered": covered,
         "coverage": coverage,
         "qqq_available": "QQQ" in existing and not existing["QQQ"].empty,
-        "qqq_latest_date": benchmark_date.date().isoformat() if benchmark_date is not None else None,
+        "qqq_latest_date": benchmark_date.date().isoformat()
+        if benchmark_date is not None
+        else None,
         "provider": provider.name,
         "missing_requested": len(missing),
         "stale_requested": len(stale),
         "still_stale": len(still_stale),
+        "history_years": history_years,
+        "history_requested": history_requested,
+        "history_batch": history_batch,
+        "history_received": history_received,
         "phases": phases,
     }
     if not result["qqq_available"]:
@@ -119,6 +171,8 @@ def main() -> None:
     parser.add_argument("--prices", default="prices.pkl")
     parser.add_argument("--min-coverage", type=float, default=.70)
     parser.add_argument("--provider", default=None)
+    parser.add_argument("--history-years", type=int, default=None)
+    parser.add_argument("--max-history-tickers", type=int, default=0)
     args = parser.parse_args()
     print(
         json.dumps(
@@ -127,6 +181,8 @@ def main() -> None:
                 Path(args.prices),
                 min_coverage=args.min_coverage,
                 provider_name=args.provider,
+                history_years=args.history_years,
+                max_history_tickers=max(0, args.max_history_tickers),
             ),
             ensure_ascii=False,
             indent=2,
