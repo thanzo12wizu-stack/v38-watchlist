@@ -1,11 +1,14 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "research_status": "PASS",
-  "completed_at": "2026-07-23T09:32:37.806172Z",
+  "completed_at": "2026-07-23T11:25:39.865145Z",
   "manifest_present": true,
   "summary_present": true,
+  "model_audit_present": true,
+  "model_audit_status": "BUILDING",
   "signal_partition_count": 1,
   "ranking_partition_count": 1,
   "years_retained": 10,
+  "learning_event_rows": 300,
   "privacy": "No ticker, price, portfolio, financial or ranking values are included."
 }
