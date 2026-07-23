@@ -1,20 +1,21 @@
 {
-  "schema_version": "1.4",
-  "updated_at": "2026-07-23T22:09:53.197116Z",
+  "schema_version": "1.5",
+  "updated_at": "2026-07-23T22:34:55.350700Z",
   "research_pipeline_ready": true,
   "ten_year_backfill_complete": false,
   "sec_user_agent_configured": true,
   "sec_cache_file_count": 0,
   "sec_fact_partition_count": 0,
   "sec_data_ready": false,
-  "portfolio_configured": false,
+  "portfolio_configured": true,
+  "portfolio_mode": "FLAT",
+  "portfolio_secret_configured": false,
   "fmp_provider_configured": false,
   "price_provider": "default",
   "full_operational_ready": false,
   "blockers": [
     "ten_year_backfill_in_progress",
-    "sec_data_not_ingested",
-    "portfolio_not_configured"
+    "sec_data_not_ingested"
   ],
   "privacy": "Only configuration booleans and aggregate status are included; no secret values or holdings are stored."
 }
