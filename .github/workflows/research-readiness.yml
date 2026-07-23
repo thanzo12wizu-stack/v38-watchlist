@@ -1,0 +1,99 @@
+name: Publish research readiness
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "research-run-status.json"
+      - ".github/workflows/research-readiness.yml"
+      - "portfolio.example.csv"
+  schedule:
+    - cron: "40 11 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: research-readiness
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SEC_USER_AGENT_VALUE: ${{ secrets.SEC_USER_AGENT }}
+      PORTFOLIO_VALUE: ${{ secrets.V38_PORTFOLIO_CSV_B64 }}
+      FMP_KEY_VALUE: ${{ secrets.FMP_API_KEY }}
+      FMP_TEMPLATE_VALUE: ${{ vars.V38_FMP_PRICE_URL_TEMPLATE }}
+      PRICE_PROVIDER_VALUE: ${{ vars.V38_PRICE_PROVIDER }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Build privacy-safe readiness report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          run_status_path = Path('research-run-status.json')
+          run_status = json.loads(run_status_path.read_text()) if run_status_path.exists() else {}
+          sec_ready = bool(os.environ.get('SEC_USER_AGENT_VALUE', '').strip())
+          portfolio_ready = bool(os.environ.get('PORTFOLIO_VALUE', '').strip())
+          fmp_ready = bool(os.environ.get('FMP_KEY_VALUE', '').strip()) and bool(os.environ.get('FMP_TEMPLATE_VALUE', '').strip())
+          configured_provider = os.environ.get('PRICE_PROVIDER_VALUE', '').strip() or 'default'
+
+          blockers = []
+          if run_status.get('research_status') != 'PASS':
+              blockers.append('research_pipeline_not_passed')
+          if run_status.get('backfill_status') != 'COMPLETE':
+              blockers.append('ten_year_backfill_in_progress')
+          if not sec_ready:
+              blockers.append('sec_user_agent_not_configured')
+          if not portfolio_ready:
+              blockers.append('portfolio_not_configured')
+
+          research_ready = run_status.get('research_status') == 'PASS'
+          full_operational = research_ready and run_status.get('backfill_status') == 'COMPLETE' and sec_ready and portfolio_ready
+          payload = {
+              'schema_version': '1.0',
+              'updated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'research_pipeline_ready': research_ready,
+              'ten_year_backfill_complete': run_status.get('backfill_status') == 'COMPLETE',
+              'sec_user_agent_configured': sec_ready,
+              'portfolio_configured': portfolio_ready,
+              'fmp_provider_configured': fmp_ready,
+              'price_provider': configured_provider,
+              'full_operational_ready': full_operational,
+              'blockers': blockers,
+              'privacy': 'Only configuration booleans and aggregate status are included; no secret values or holdings are stored.',
+          }
+          Path('research-readiness.json').write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(payload, ensure_ascii=False))
+          PY
+      - name: Commit readiness report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research-readiness.json
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Update research readiness"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((attempt * 2))
+          done
+          exit 1
