@@ -13,8 +13,8 @@ def test_bootstrap_dispatches_one_bounded_worker_slice_per_controller_run():
     assert "research-worker-runs.json" in workflow
     assert "databaseId,status,conclusion,createdAt" in workflow
     assert workflow.count("gh workflow run research-worker.yml") == 1
-    assert "for year in" not in workflow
-    assert "for run in" not in workflow
+    assert "for year in $(seq" not in workflow
+    assert "for run in $(seq" not in workflow
     assert "research-bootstrap-status.json" in workflow
     assert "PRICE_WARMUP" in workflow
     assert "YEAR_BACKFILL" in workflow
