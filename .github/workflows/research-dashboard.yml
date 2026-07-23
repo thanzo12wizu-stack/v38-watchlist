@@ -7,7 +7,7 @@ on:
     paths:
       - "private/research-summary.enc.json"
       - "private/research-rankings-year-*.enc.json"
-      - "intelligence_engine/research_dashboard.py"
+      - "intelligence_engine/research_decision_dashboard.py"
       - "intelligence_engine/research_expectancy.py"
       - "intelligence_engine/research_engine.py"
       - "intelligence_engine/research_contracts.py"
@@ -59,7 +59,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m intelligence_engine.research_dashboard --root data/intelligence/research --output /tmp/research-dashboard.full.html
+          python -m intelligence_engine.research_decision_dashboard --root data/intelligence/research --output /tmp/research-dashboard.full.html
           if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
             node scripts/private_crypto.mjs lock-html /tmp/research-dashboard.full.html research-dashboard.html
             test -s research-dashboard.html
