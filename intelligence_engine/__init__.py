@@ -21,11 +21,19 @@ __all__ = ["__version__"]
 __version__ = "0.1.0"
 
 
-_RESEARCH_COMMAND = any(
-    str(argument).endswith("intelligence_engine.research_pipeline")
-    or "research_pipeline" in str(argument)
-    for argument in sys.argv
-)
+def _is_research_command(arguments: list[str]) -> bool:
+    for argument in arguments:
+        text = str(argument).replace("\\", "/")
+        name = Path(text).name
+        stem = Path(text).stem
+        if "intelligence_engine.research_pipeline" in text:
+            return True
+        if name == "research_pipeline.py" or stem == "research_pipeline":
+            return True
+    return False
+
+
+_RESEARCH_COMMAND = _is_research_command(list(sys.argv))
 _RESEARCH_FAILED = False
 _RESEARCH_ERROR_PATH = Path("private/research-error-detail.json")
 _ORIGINAL_EXCEPTOOK = sys.excepthook
