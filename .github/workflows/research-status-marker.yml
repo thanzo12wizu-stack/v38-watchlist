@@ -1,13 +1,14 @@
 name: Publish research process status
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "private/research-success.json"
-      - "private/research-error-detail.json"
-      - "private/research-summary.enc.json"
-      - "private/research-*-year-*.enc.json"
+  workflow_run:
+    workflows:
+      - Intelligence Engine (sidecar)
+    types:
+      - completed
+  schedule:
+    - cron: "35 11 * * 1-5"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,14 +19,21 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event != 'pull_request')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
+    env:
+      SEC_USER_AGENT_VALUE: ${{ secrets.SEC_USER_AGENT }}
+      PORTFOLIO_VALUE: ${{ secrets.V38_PORTFOLIO_CSV_B64 }}
+      FMP_KEY_VALUE: ${{ secrets.FMP_API_KEY }}
+      FMP_TEMPLATE_VALUE: ${{ vars.V38_FMP_PRICE_URL_TEMPLATE }}
+      PRICE_PROVIDER_VALUE: ${{ vars.V38_PRICE_PROVIDER }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
-      - name: Build privacy-safe status and coverage
+      - name: Build authoritative privacy-safe status
         shell: bash
         run: |
           set -euo pipefail
@@ -48,24 +56,20 @@ jobs:
           bundles = []
           for path in private.glob('research-*-year-*.enc.json'):
               match = pattern.match(path.name)
-              if not match:
-                  continue
-              datasets[match.group(1)].add(int(match.group(2)))
-              bundles.append(path)
+              if match:
+                  datasets[match.group(1)].add(int(match.group(2)))
+                  bundles.append(path)
 
-          current_year = datetime.now(timezone.utc).year
-          target_years = set(range(current_year - 9, current_year + 1))
+          now = datetime.now(timezone.utc)
+          target_years = set(range(now.year - 9, now.year + 1))
           completed_years = datasets['signals'] & datasets['rankings'] & target_years
           missing_years = sorted(target_years - completed_years)
           passed = bool(success) and not error and summary.exists() and bool(bundles)
-          backfill_status = 'COMPLETE' if not missing_years else 'IN_PROGRESS'
-
-          payload = {
-              'schema_version': '2.2',
+          status = {
+              'schema_version': '2.3',
               'research_status': 'PASS' if passed else 'FAIL',
-              'backfill_status': backfill_status,
-              'updated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-              'head_sha': os.environ.get('GITHUB_SHA'),
+              'backfill_status': 'COMPLETE' if not missing_years else 'IN_PROGRESS',
+              'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'encrypted_bundle_count': len(bundles) + int(summary.exists()),
               'summary_present': summary.exists(),
               'success_marker_present': bool(success),
@@ -75,25 +79,54 @@ jobs:
               'missing_years': missing_years,
               'dataset_partition_counts': {name: len(years) for name, years in datasets.items()},
               'model_audit_status': (success or {}).get('model_audit_status'),
+              'learning_event_rows': (success or {}).get('learning_event_rows'),
               'error_type': None if passed else (error or {}).get('error_type', 'MissingSuccessMarker'),
               'error_message': None if passed else (error or {}).get('error_template', 'Research process did not complete cleanly.'),
               'privacy': 'No ticker, portfolio, price, financial or ranking values are included.',
           }
           Path('research-run-status.json').write_text(
-              json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + '\n',
-              encoding='utf-8',
+              json.dumps(status, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8'
           )
-          print(json.dumps(payload, ensure_ascii=False))
+
+          sec_ready = bool(os.environ.get('SEC_USER_AGENT_VALUE', '').strip())
+          portfolio_ready = bool(os.environ.get('PORTFOLIO_VALUE', '').strip())
+          fmp_ready = bool(os.environ.get('FMP_KEY_VALUE', '').strip()) and bool(os.environ.get('FMP_TEMPLATE_VALUE', '').strip())
+          blockers = []
+          if not passed:
+              blockers.append('research_pipeline_not_passed')
+          if missing_years:
+              blockers.append('ten_year_backfill_in_progress')
+          if not sec_ready:
+              blockers.append('sec_user_agent_not_configured')
+          if not portfolio_ready:
+              blockers.append('portfolio_not_configured')
+          readiness = {
+              'schema_version': '1.1',
+              'updated_at': now.isoformat().replace('+00:00', 'Z'),
+              'research_pipeline_ready': passed,
+              'ten_year_backfill_complete': not missing_years,
+              'sec_user_agent_configured': sec_ready,
+              'portfolio_configured': portfolio_ready,
+              'fmp_provider_configured': fmp_ready,
+              'price_provider': os.environ.get('PRICE_PROVIDER_VALUE', '').strip() or 'default',
+              'full_operational_ready': passed and not missing_years and sec_ready and portfolio_ready,
+              'blockers': blockers,
+              'privacy': 'Only configuration booleans and aggregate status are included; no secret values or holdings are stored.',
+          }
+          Path('research-readiness.json').write_text(
+              json.dumps(readiness, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8'
+          )
+          print(json.dumps({'status': status, 'readiness': readiness}, ensure_ascii=False))
           PY
-      - name: Commit status
+      - name: Commit aggregate status
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add research-run-status.json
+          git add research-run-status.json research-readiness.json
           if git diff --staged --quiet; then exit 0; fi
-          git commit -m "Update research run status"
+          git commit -m "Update authoritative research status"
           for attempt in 1 2 3; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
