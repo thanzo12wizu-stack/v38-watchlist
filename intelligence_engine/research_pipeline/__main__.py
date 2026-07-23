@@ -69,6 +69,7 @@ def _run(command: list[str], log_path: Path, *, append: bool = False) -> int:
 def main() -> None:
     arguments = list(sys.argv[1:])
     root = Path(_argument_value(arguments, "--root", "data/intelligence/research"))
+    sec_dir = Path(_argument_value(arguments, "--sec-dir", "data/sec_companyfacts"))
     private = Path("private")
     success_path = private / "research-success.json"
     error_path = private / "research-error-detail.json"
@@ -94,8 +95,11 @@ def main() -> None:
         root / "current_rankings.json",
         root / "model-audit.json",
     ]
+    fact_partitions = list((root / "facts").glob("year=*.jsonl.gz"))
     signal_partitions = list((root / "signals").glob("year=*.jsonl.gz"))
+    outcome_partitions = list((root / "outcomes").glob("year=*.jsonl.gz"))
     ranking_partitions = list((root / "rankings").glob("year=*.jsonl.gz"))
+    sec_cache_files = list(sec_dir.glob("*.json")) if sec_dir.exists() else []
     missing = [path.name for path in required if not path.exists()]
     if missing or not signal_partitions or not ranking_partitions:
         _write_json(
@@ -118,18 +122,26 @@ def main() -> None:
     except (OSError, json.JSONDecodeError):
         manifest = {}
         audit = {}
+
+    sec_cache_file_count = len(sec_cache_files)
+    fact_partition_count = len(fact_partitions)
+    sec_data_present = sec_cache_file_count > 0 and fact_partition_count > 0
     _write_json(
         success_path,
         {
-            "schema_version": "2.1",
+            "schema_version": "2.2",
             "research_status": "PASS",
             "completed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "manifest_present": True,
             "summary_present": True,
             "model_audit_present": True,
             "model_audit_status": audit.get("status"),
+            "fact_partition_count": fact_partition_count,
             "signal_partition_count": len(signal_partitions),
+            "outcome_partition_count": len(outcome_partitions),
             "ranking_partition_count": len(ranking_partitions),
+            "sec_cache_file_count": sec_cache_file_count,
+            "sec_data_present": sec_data_present,
             "years_retained": manifest.get("years_retained"),
             "learning_event_rows": (audit.get("sampling") or {}).get("learning_event_rows"),
             "privacy": "No ticker, price, portfolio, financial or ranking values are included.",
@@ -140,8 +152,12 @@ def main() -> None:
         json.dumps(
             {
                 "research_status": "PASS",
+                "fact_partitions": fact_partition_count,
                 "signal_partitions": len(signal_partitions),
+                "outcome_partitions": len(outcome_partitions),
                 "ranking_partitions": len(ranking_partitions),
+                "sec_cache_files": sec_cache_file_count,
+                "sec_data_present": sec_data_present,
                 "years_retained": manifest.get("years_retained"),
                 "model_audit_status": audit.get("status"),
             },
