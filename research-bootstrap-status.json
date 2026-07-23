@@ -1,13 +1,13 @@
 {
-  "schema_version": "1.2",
-  "updated_at": "2026-07-23T20:18:23.457876Z",
-  "status": "PRICE_WARMUP",
+  "schema_version": "1.3",
+  "updated_at": "2026-07-23T22:08:33.383374Z",
+  "status": "WAITING_ENGINE",
   "years_retained": 10,
   "warmup_runs_target": 14,
   "warmup_runs_dispatched": 3,
   "warmup_runs_completed": 0,
   "failed_dispatches": 0,
-  "dispatch_timeouts": 1,
+  "dispatch_timeouts": 2,
   "price_batch": 250,
   "stride": 5,
   "target_years": [
@@ -37,12 +37,13 @@
     2025
   ],
   "next_year": 2026,
-  "awaiting_result": true,
-  "awaiting_action": "PRICE_WARMUP",
-  "awaiting_year": 2026,
-  "awaiting_since": "2026-07-23T20:18:23.457876Z",
-  "last_result": "TIMEOUT_RETRY",
+  "awaiting_result": false,
+  "awaiting_action": null,
+  "awaiting_year": null,
+  "awaiting_since": null,
+  "last_result": "WAITING_FOR_ENGINE_SLOT",
   "last_workflow_run_id": null,
   "last_workflow_conclusion": null,
-  "privacy": "Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored."
+  "privacy": "Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.",
+  "sec_data_ready": false
 }
