@@ -28,6 +28,9 @@ jobs:
       FMP_KEY_VALUE: ${{ secrets.FMP_API_KEY }}
       FMP_TEMPLATE_VALUE: ${{ vars.V38_FMP_PRICE_URL_TEMPLATE }}
       PRICE_PROVIDER_VALUE: ${{ vars.V38_PRICE_PROVIDER }}
+      WORKFLOW_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      WORKFLOW_RUN_EVENT: ${{ github.event.workflow_run.event }}
+      WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,9 +67,54 @@ jobs:
           target_years = set(range(now.year - 9, now.year + 1))
           completed_years = datasets['signals'] & datasets['rankings'] & target_years
           missing_years = sorted(target_years - completed_years)
+
+          bootstrap_path = Path('research-bootstrap-status.json')
+          try:
+              bootstrap = json.loads(bootstrap_path.read_text()) if bootstrap_path.exists() else {}
+          except (OSError, json.JSONDecodeError):
+              bootstrap = {}
+          conclusion = os.environ.get('WORKFLOW_RUN_CONCLUSION', '').strip()
+          run_event = os.environ.get('WORKFLOW_RUN_EVENT', '').strip()
+          run_id = os.environ.get('WORKFLOW_RUN_ID', '').strip()
+          if run_event == 'workflow_dispatch' and conclusion and bootstrap.get('awaiting_result'):
+              action = str(bootstrap.get('awaiting_action') or '')
+              if conclusion == 'success':
+                  if action == 'PRICE_WARMUP':
+                      target = int(bootstrap.get('warmup_runs_target') or 14)
+                      completed = int(bootstrap.get('warmup_runs_completed') or 0)
+                      bootstrap['warmup_runs_completed'] = min(target, completed + 1)
+                  bootstrap['last_result'] = 'SUCCESS'
+              else:
+                  bootstrap['failed_dispatches'] = int(bootstrap.get('failed_dispatches') or 0) + 1
+                  bootstrap['last_result'] = f'FAILURE:{conclusion}'
+              bootstrap['awaiting_result'] = False
+              bootstrap['awaiting_action'] = None
+              bootstrap['awaiting_year'] = None
+              bootstrap['awaiting_since'] = None
+              bootstrap['last_workflow_run_id'] = run_id or None
+              bootstrap['last_workflow_conclusion'] = conclusion
+              bootstrap['updated_at'] = now.isoformat().replace('+00:00', 'Z')
+              bootstrap['completed_years'] = sorted(completed_years)
+              bootstrap['missing_years'] = missing_years
+              warmup_completed = int(bootstrap.get('warmup_runs_completed') or 0)
+              warmup_target = int(bootstrap.get('warmup_runs_target') or 14)
+              if warmup_completed < warmup_target:
+                  bootstrap['status'] = 'PRICE_WARMUP'
+                  bootstrap['next_year'] = now.year
+              elif missing_years:
+                  bootstrap['status'] = 'YEAR_BACKFILL'
+                  bootstrap['next_year'] = missing_years[0]
+              else:
+                  bootstrap['status'] = 'COMPLETE'
+                  bootstrap['next_year'] = None
+              bootstrap_path.write_text(
+                  json.dumps(bootstrap, ensure_ascii=False, indent=2, allow_nan=False) + '\n',
+                  encoding='utf-8',
+              )
+
           passed = bool(success) and not error and summary.exists() and bool(bundles)
           status = {
-              'schema_version': '2.3',
+              'schema_version': '2.4',
               'research_status': 'PASS' if passed else 'FAIL',
               'backfill_status': 'COMPLETE' if not missing_years else 'IN_PROGRESS',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
@@ -80,6 +128,9 @@ jobs:
               'dataset_partition_counts': {name: len(years) for name, years in datasets.items()},
               'model_audit_status': (success or {}).get('model_audit_status'),
               'learning_event_rows': (success or {}).get('learning_event_rows'),
+              'warmup_runs_completed': int(bootstrap.get('warmup_runs_completed') or 0),
+              'warmup_runs_target': int(bootstrap.get('warmup_runs_target') or 14),
+              'bootstrap_last_result': bootstrap.get('last_result'),
               'error_type': None if passed else (error or {}).get('error_type', 'MissingSuccessMarker'),
               'error_message': None if passed else (error or {}).get('error_template', 'Research process did not complete cleanly.'),
               'privacy': 'No ticker, portfolio, price, financial or ranking values are included.',
@@ -101,7 +152,7 @@ jobs:
           if not portfolio_ready:
               blockers.append('portfolio_not_configured')
           readiness = {
-              'schema_version': '1.1',
+              'schema_version': '1.2',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'research_pipeline_ready': passed,
               'ten_year_backfill_complete': not missing_years,
@@ -116,7 +167,7 @@ jobs:
           Path('research-readiness.json').write_text(
               json.dumps(readiness, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8'
           )
-          print(json.dumps({'status': status, 'readiness': readiness}, ensure_ascii=False))
+          print(json.dumps({'status': status, 'readiness': readiness, 'bootstrap': bootstrap}, ensure_ascii=False))
           PY
       - name: Commit aggregate status
         shell: bash
@@ -124,7 +175,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add research-run-status.json research-readiness.json
+          git add research-run-status.json research-readiness.json research-bootstrap-status.json
           if git diff --staged --quiet; then exit 0; fi
           git commit -m "Update authoritative research status"
           for attempt in 1 2 3; do

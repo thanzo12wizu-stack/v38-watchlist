@@ -17,6 +17,13 @@ def test_bootstrap_dispatches_one_bounded_slice_per_controller_run():
     assert "research-bootstrap-status.json" in workflow
     assert "PRICE_WARMUP" in workflow
     assert "YEAR_BACKFILL" in workflow
+    assert "awaiting_result" in workflow
+    assert "warmup_runs_completed" in workflow
+    assert "TIMEOUT_RETRY" in workflow
+
+
+def test_superseded_rotating_backfill_is_removed():
+    assert not Path(".github/workflows/research-backfill.yml").exists()
 
 
 def test_status_is_published_from_workflow_completion_not_bot_push_chain():
@@ -24,10 +31,13 @@ def test_status_is_published_from_workflow_completion_not_bot_push_chain():
 
     assert "workflow_run:" in workflow
     assert "Intelligence Engine (sidecar)" in workflow
-    assert "research-run-status.json research-readiness.json" in workflow
+    assert "research-run-status.json research-readiness.json research-bootstrap-status.json" in workflow
     assert "backfill_status" in workflow
     assert "missing_years" in workflow
     assert "SEC_USER_AGENT_VALUE" in workflow
+    assert "WORKFLOW_RUN_CONCLUSION" in workflow
+    assert "warmup_runs_completed" in workflow
+    assert "failed_dispatches" in workflow
     assert not Path(".github/workflows/research-readiness.yml").exists()
 
 

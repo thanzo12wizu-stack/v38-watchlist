@@ -15,7 +15,7 @@ on:
         default: false
         type: boolean
       warmup_runs:
-        description: Bounded ten-year price-history warmup runs
+        description: Successful bounded ten-year price-history warmups required
         required: false
         default: 14
         type: number
@@ -69,7 +69,7 @@ jobs:
           import json
           import os
           import re
-          from datetime import datetime, timezone
+          from datetime import datetime, timedelta, timezone
           from pathlib import Path
 
           now = datetime.now(timezone.utc)
@@ -89,10 +89,32 @@ jobs:
                   value = default
               return max(low, min(high, value))
 
+          def parse_time(value):
+              try:
+                  return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+              except (TypeError, ValueError):
+                  return None
+
           warmup_target = bounded_int('REQUESTED_WARMUPS', 14, 1, 20)
           batch = bounded_int('REQUESTED_BATCH', 250, 20, 250)
           stride = bounded_int('REQUESTED_STRIDE', 5, 1, 10)
-          warmups = int(state.get('warmup_runs_dispatched') or 0)
+          warmup_dispatched = int(state.get('warmup_runs_dispatched') or 0)
+          warmup_completed = int(state.get('warmup_runs_completed') or 0)
+          failures = int(state.get('failed_dispatches') or 0)
+          timeouts = int(state.get('dispatch_timeouts') or 0)
+
+          awaiting = bool(state.get('awaiting_result'))
+          awaiting_since = parse_time(state.get('awaiting_since'))
+          stale = awaiting and (awaiting_since is None or now - awaiting_since > timedelta(hours=4))
+          if awaiting and not stale:
+              with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as handle:
+                  handle.write('dispatch=false\n')
+              print(json.dumps({'status': 'WAITING_RESULT', 'awaiting_action': state.get('awaiting_action')}, ensure_ascii=False))
+              raise SystemExit(0)
+          if stale:
+              awaiting = False
+              timeouts += 1
+              state['last_result'] = 'TIMEOUT_RETRY'
 
           signal_years = set()
           ranking_years = set()
@@ -111,11 +133,11 @@ jobs:
           action = None
           year = None
           refresh_sec = False
-          if warmups < warmup_target:
+          if warmup_completed < warmup_target:
               action = 'PRICE_WARMUP'
               year = current_year
-              refresh_sec = warmups == 0
-              warmups += 1
+              refresh_sec = warmup_completed == 0
+              warmup_dispatched += 1
           elif missing:
               action = 'YEAR_BACKFILL'
               year = missing[0]
@@ -123,18 +145,28 @@ jobs:
               action = 'COMPLETE'
 
           state = {
-              'schema_version': '1.1',
+              'schema_version': '1.2',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'status': action,
               'years_retained': 10,
               'warmup_runs_target': warmup_target,
-              'warmup_runs_dispatched': warmups,
+              'warmup_runs_dispatched': warmup_dispatched,
+              'warmup_runs_completed': warmup_completed,
+              'failed_dispatches': failures,
+              'dispatch_timeouts': timeouts,
               'price_batch': batch,
               'stride': stride,
               'target_years': target_years,
               'completed_years': completed,
               'missing_years': missing,
               'next_year': year,
+              'awaiting_result': action != 'COMPLETE',
+              'awaiting_action': action if action != 'COMPLETE' else None,
+              'awaiting_year': year,
+              'awaiting_since': now.isoformat().replace('+00:00', 'Z') if action != 'COMPLETE' else None,
+              'last_result': state.get('last_result'),
+              'last_workflow_run_id': state.get('last_workflow_run_id'),
+              'last_workflow_conclusion': state.get('last_workflow_conclusion'),
               'privacy': 'Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.',
           }
           state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8')
