@@ -113,8 +113,19 @@ jobs:
               )
 
           passed = bool(success) and not error and summary.exists() and bool(bundles)
+          sec_configured = bool(os.environ.get('SEC_USER_AGENT_VALUE', '').strip())
+          sec_cache_file_count = int((success or {}).get('sec_cache_file_count') or 0)
+          sec_fact_partition_count = max(
+              len(datasets['facts']),
+              int((success or {}).get('fact_partition_count') or 0),
+          )
+          sec_data_present = bool((success or {}).get('sec_data_present')) or (
+              sec_cache_file_count > 0 and sec_fact_partition_count > 0
+          )
+          sec_data_ready = sec_configured and sec_data_present
+
           status = {
-              'schema_version': '2.4',
+              'schema_version': '2.5',
               'research_status': 'PASS' if passed else 'FAIL',
               'backfill_status': 'COMPLETE' if not missing_years else 'IN_PROGRESS',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
@@ -131,6 +142,9 @@ jobs:
               'warmup_runs_completed': int(bootstrap.get('warmup_runs_completed') or 0),
               'warmup_runs_target': int(bootstrap.get('warmup_runs_target') or 14),
               'bootstrap_last_result': bootstrap.get('last_result'),
+              'sec_cache_file_count': sec_cache_file_count,
+              'sec_fact_partition_count': sec_fact_partition_count,
+              'sec_data_ready': sec_data_ready,
               'error_type': None if passed else (error or {}).get('error_type', 'MissingSuccessMarker'),
               'error_message': None if passed else (error or {}).get('error_template', 'Research process did not complete cleanly.'),
               'privacy': 'No ticker, portfolio, price, financial or ranking values are included.',
@@ -139,7 +153,6 @@ jobs:
               json.dumps(status, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8'
           )
 
-          sec_ready = bool(os.environ.get('SEC_USER_AGENT_VALUE', '').strip())
           portfolio_ready = bool(os.environ.get('PORTFOLIO_VALUE', '').strip())
           fmp_ready = bool(os.environ.get('FMP_KEY_VALUE', '').strip()) and bool(os.environ.get('FMP_TEMPLATE_VALUE', '').strip())
           blockers = []
@@ -147,20 +160,25 @@ jobs:
               blockers.append('research_pipeline_not_passed')
           if missing_years:
               blockers.append('ten_year_backfill_in_progress')
-          if not sec_ready:
+          if not sec_configured:
               blockers.append('sec_user_agent_not_configured')
+          elif not sec_data_ready:
+              blockers.append('sec_data_not_ingested')
           if not portfolio_ready:
               blockers.append('portfolio_not_configured')
           readiness = {
-              'schema_version': '1.2',
+              'schema_version': '1.3',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'research_pipeline_ready': passed,
               'ten_year_backfill_complete': not missing_years,
-              'sec_user_agent_configured': sec_ready,
+              'sec_user_agent_configured': sec_configured,
+              'sec_cache_file_count': sec_cache_file_count,
+              'sec_fact_partition_count': sec_fact_partition_count,
+              'sec_data_ready': sec_data_ready,
               'portfolio_configured': portfolio_ready,
               'fmp_provider_configured': fmp_ready,
               'price_provider': os.environ.get('PRICE_PROVIDER_VALUE', '').strip() or 'default',
-              'full_operational_ready': passed and not missing_years and sec_ready and portfolio_ready,
+              'full_operational_ready': passed and not missing_years and sec_data_ready and portfolio_ready,
               'blockers': blockers,
               'privacy': 'Only configuration booleans and aggregate status are included; no secret values or holdings are stored.',
           }
