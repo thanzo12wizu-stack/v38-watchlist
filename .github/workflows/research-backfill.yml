@@ -17,9 +17,9 @@ on:
         default: 160
         type: number
       stride:
-        description: Trading-day signal sampling stride
+        description: Trading-day signal sampling stride; 5 is the production default
         required: false
-        default: 1
+        default: 5
         type: number
   schedule:
     - cron: "15 12 * * 3,6"
@@ -50,9 +50,9 @@ jobs:
           selected=$(( current_year - 9 + index ))
           [[ "$selected" =~ ^20[0-9]{2}$ ]]
           batch=160
-          stride=1
+          stride=5
           (( batch >= 20 && batch <= 250 ))
-          (( stride >= 1 && stride <= 5 ))
+          (( stride >= 1 && stride <= 10 ))
           echo "Validated year=${selected} batch=${batch} stride=${stride}"
 
   dispatch:
@@ -65,7 +65,7 @@ jobs:
         env:
           REQUESTED_YEAR: ${{ inputs.research_year || '' }}
           REQUESTED_BATCH: ${{ inputs.price_batch || 160 }}
-          REQUESTED_STRIDE: ${{ inputs.stride || 1 }}
+          REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
         run: |
           set -euo pipefail
           current_year="$(date -u +%Y)"
@@ -89,10 +89,10 @@ jobs:
           (( batch < 20 )) && batch=20
           (( batch > 250 )) && batch=250
 
-          stride="${REQUESTED_STRIDE:-1}"
-          if ! [[ "$stride" =~ ^[0-9]+$ ]]; then stride=1; fi
+          stride="${REQUESTED_STRIDE:-5}"
+          if ! [[ "$stride" =~ ^[0-9]+$ ]]; then stride=5; fi
           (( stride < 1 )) && stride=1
-          (( stride > 5 )) && stride=5
+          (( stride > 10 )) && stride=10
 
           echo "year=$year" >> "$GITHUB_OUTPUT"
           echo "batch=$batch" >> "$GITHUB_OUTPUT"
