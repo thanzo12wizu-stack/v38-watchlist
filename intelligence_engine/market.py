@@ -6,7 +6,8 @@ from typing import Any
 import pandas as pd
 
 
-MARKET_POLICY_VERSION = "1.0.1"
+MARKET_POLICY_VERSION = "1.1.0"
+MIN_MARKET_CONFIDENCE = 0.60
 
 
 def _finite(value: Any) -> float | None:
@@ -67,7 +68,12 @@ def _index_state(frame: pd.DataFrame) -> dict[str, Any]:
 
 
 def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rotation: list[dict]) -> dict[str, Any]:
-    """Build a transparent market regime from index trend and cross-sectional breadth."""
+    """Build a transparent market regime from index trend and cross-sectional breadth.
+
+    The component score is informational when evidence coverage is low. Entry permission and
+    recommended exposure remain conservative until the benchmark is available and at least
+    ``MIN_MARKET_CONFIDENCE`` of the configured evidence weight is present.
+    """
     qqq = _index_state(qqq_frame)
     work = frame.copy()
     price = _numeric_series(work, "price")
@@ -109,7 +115,13 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
     score = sum(value * weights[name] for name, value in available) / total_weight if total_weight else None
     confidence = total_weight
 
-    if score is None:
+    warnings: list[str] = []
+    if not qqq.get("available"):
+        warnings.append("qqq_unavailable")
+    if confidence < MIN_MARKET_CONFIDENCE:
+        warnings.append("low_confidence")
+
+    if score is None or not qqq.get("available") or confidence < MIN_MARKET_CONFIDENCE:
         regime, gate, exposure = "UNKNOWN", "NO_NEW", 0.0
     elif score >= .72:
         regime, gate, exposure = "BLUE", "ALLOW", 1.0
@@ -120,7 +132,6 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
     else:
         regime, gate, exposure = "RED", "DEFENSIVE", 0.0
 
-    warnings: list[str] = []
     if breadth["above_sma50"] is not None and breadth["above_sma50"] < .40:
         warnings.append("weak_medium_breadth")
     if breadth["above_sma10"] is not None and breadth["above_sma50"] is not None and breadth["above_sma10"] < breadth["above_sma50"] - .15:
@@ -138,11 +149,12 @@ def build_market_state(frame: pd.DataFrame, qqq_frame: pd.DataFrame, sector_rota
         "recommended_exposure_pct": exposure * 100.0,
         "score_market": score,
         "score_confidence": confidence,
+        "minimum_confidence": MIN_MARKET_CONFIDENCE,
         "qqq": qqq,
         "breadth": breadth,
         "components": components,
         "top_sector": top_sector.get("sector") if top_sector else None,
-        "warnings": warnings,
+        "warnings": sorted(set(warnings)),
     }
 
 
