@@ -1,15 +1,47 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.3",
   "research_status": "PASS",
-  "updated_at": "2026-07-23T09:32:37.806172Z",
-  "head_sha": "ac4aac11471c093df28d3a86201c3eb88f2bf52c",
-  "encrypted_bundle_count": 3,
+  "backfill_status": "IN_PROGRESS",
+  "updated_at": "2026-07-23T12:16:00.519439Z",
+  "encrypted_bundle_count": 4,
   "summary_present": true,
   "success_marker_present": true,
+  "years_retained": 10,
+  "target_years": [
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "completed_years": [
+    2026
+  ],
+  "missing_years": [
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "dataset_partition_counts": {
+    "facts": 0,
+    "signals": 1,
+    "outcomes": 1,
+    "rankings": 1
+  },
+  "model_audit_status": "PASS",
+  "learning_event_rows": 8594,
   "error_type": null,
   "error_message": null,
-  "years_retained": 10,
-  "signal_partition_count": 1,
-  "ranking_partition_count": 1,
   "privacy": "No ticker, portfolio, price, financial or ranking values are included."
 }
