@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-07-23T11:21:27.349609Z",
+  "current_tree_status": "PASS",
+  "forbidden_path_count": 0,
+  "missing_public_entrypoint_count": 0,
+  "locked_dashboard_error_count": 0,
+  "public_plaintext_marker_count": 0,
+  "private_plaintext_file_count": 0,
+  "details": {
+    "forbidden_paths": [],
+    "missing_public_entrypoints": [],
+    "dashboard_errors": [],
+    "public_marker_hits": [],
+    "private_plaintext_files": []
+  },
+  "privacy": "The report contains paths and aggregate counts only; no holdings, tickers, prices or financial values are included.",
+  "historical_private_path_count": 222,
+  "historical_exposure_status": "REVIEW_REQUIRED",
+  "overall_status": "CURRENT_TREE_PASS_HISTORY_REVIEW_REQUIRED",
+  "history_note": "Current main is clean, but old public Git history contains former private-data paths. Use the clean public mirror and make the source repository private, or perform a separately approved history purge."
+}
