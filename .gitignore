@@ -3,9 +3,11 @@
 /data/external/
 /portfolio.csv
 
-# Only encrypted private state may be versioned
+# Only encrypted private state and privacy-safe status markers may be versioned
 /private/*
 !/private/*.enc.json
+!/private/research-success.json
+!/private/research-error-detail.json
 
 # Local generated plaintext
 *.full.html
