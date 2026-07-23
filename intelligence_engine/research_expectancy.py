@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
+
+from .research_contracts import (
+    RESEARCH_COMPARISON_WINDOWS,
+    RESEARCH_PRIMARY_WINDOW_YEARS,
+)
 
 
 def _bootstrap_ci(values: pd.Series, *, samples: int = 300, seed: int = 38) -> list[float] | None:
@@ -40,7 +45,9 @@ def _qualification(
 ) -> str:
     stable_years = year_count < 3 or (positive_year_rate is not None and positive_year_rate >= .60)
     stable_loyo = year_count < 3 or (loyo_positive_rate is not None and loyo_positive_rate >= .60)
-    diversified = (max_ticker_share is None or max_ticker_share <= .25) and (max_year_share is None or max_year_share <= .50)
+    diversified = (max_ticker_share is None or max_ticker_share <= .25) and (
+        max_year_share is None or max_year_share <= .50
+    )
     if (
         count >= max(50, min_samples)
         and mean is not None
@@ -86,6 +93,8 @@ def _summary(
             "positive_year_rate": None,
             "loyo_positive_rate": None,
             "year_count": 0,
+            "max_ticker_share": None,
+            "max_year_share": None,
         }
     subset = group.loc[excess.index]
     mean = float(excess.mean())
@@ -129,13 +138,21 @@ def _summary(
         max_year_share=max_year_share,
     )
     for source, target in ((f"mfe_{horizon}", "mean_mfe"), (f"mae_{horizon}", "mean_mae")):
-        result[target] = float(pd.to_numeric(subset.get(source), errors="coerce").mean()) if source in subset else None
+        result[target] = (
+            float(pd.to_numeric(subset.get(source), errors="coerce").mean())
+            if source in subset
+            else None
+        )
     for source, target in (
         (f"stop_hit_{horizon}", "stop_rate"),
         (f"target25_hit_{horizon}", "target25_rate"),
         (f"target25_before_stop_{horizon}", "target25_before_stop_rate"),
     ):
-        result[target] = float(pd.Series(subset.get(source), dtype="boolean").mean()) if source in subset else None
+        result[target] = (
+            float(pd.Series(subset.get(source), dtype="boolean").mean())
+            if source in subset
+            else None
+        )
     return result
 
 
@@ -147,10 +164,26 @@ def _numeric_column(frame: pd.DataFrame, name: str) -> pd.Series:
 
 def _add_buckets(frame: pd.DataFrame) -> pd.DataFrame:
     out = frame.copy()
-    out["rs63_bucket"] = pd.cut(_numeric_column(out, "pct_rs_raw_63"), [-np.inf, 50, 70, 85, np.inf], labels=["LT50", "50TO70", "70TO85", "GE85"])
-    out["eps_growth_bucket"] = pd.cut(_numeric_column(out, "eps_yoy"), [-np.inf, 0, .15, .30, np.inf], labels=["NEG", "0TO15", "15TO30", "GE30"])
-    out["stop_bucket"] = pd.cut(_numeric_column(out, "stop_risk_pct"), [-np.inf, 4, 7, 10, np.inf], labels=["LE4", "4TO7", "7TO10", "GT10"])
-    out["rr_bucket"] = pd.cut(_numeric_column(out, "reward_risk_raw"), [-np.inf, 1.5, 2.5, 4, np.inf], labels=["LT1.5", "1.5TO2.5", "2.5TO4", "GE4"])
+    out["rs63_bucket"] = pd.cut(
+        _numeric_column(out, "pct_rs_raw_63"),
+        [-np.inf, 50, 70, 85, np.inf],
+        labels=["LT50", "50TO70", "70TO85", "GE85"],
+    )
+    out["eps_growth_bucket"] = pd.cut(
+        _numeric_column(out, "eps_yoy"),
+        [-np.inf, 0, .15, .30, np.inf],
+        labels=["NEG", "0TO15", "15TO30", "GE30"],
+    )
+    out["stop_bucket"] = pd.cut(
+        _numeric_column(out, "stop_risk_pct"),
+        [-np.inf, 4, 7, 10, np.inf],
+        labels=["LE4", "4TO7", "7TO10", "GT10"],
+    )
+    out["rr_bucket"] = pd.cut(
+        _numeric_column(out, "reward_risk_raw"),
+        [-np.inf, 1.5, 2.5, 4, np.inf],
+        labels=["LT1.5", "1.5TO2.5", "2.5TO4", "GE4"],
+    )
     return out
 
 
@@ -165,6 +198,51 @@ def _group_specs() -> list[tuple[str, list[str]]]:
         ("eps_bucket_setup", ["eps_growth_bucket", "setup"]),
         ("risk_bucket", ["stop_bucket", "rr_bucket"]),
     ]
+
+
+def _groups(
+    data: pd.DataFrame,
+    horizons: tuple[int, ...],
+    *,
+    min_samples: int,
+    bootstrap_samples: int,
+    seed: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for group_type, columns in _group_specs():
+        if any(column not in data for column in columns):
+            continue
+        for values, group in data.groupby(columns, dropna=False, observed=True):
+            if not isinstance(values, tuple):
+                values = (values,)
+            dimensions = {
+                column: (None if pd.isna(value) else str(value))
+                for column, value in zip(columns, values)
+            }
+            for horizon in horizons:
+                rows.append(
+                    {
+                        "group_type": group_type,
+                        **dimensions,
+                        "horizon": horizon,
+                        **_summary(
+                            group,
+                            horizon,
+                            min_samples=min_samples,
+                            bootstrap_samples=bootstrap_samples,
+                            seed=seed,
+                        ),
+                    }
+                )
+    rows.sort(
+        key=lambda row: (
+            row["group_type"],
+            row["horizon"],
+            -(row.get("mean_excess_return") or -999),
+            -row.get("samples", 0),
+        )
+    )
+    return rows
 
 
 def _walk_forward(data: pd.DataFrame, horizons: tuple[int, ...], min_samples: int) -> list[dict[str, Any]]:
@@ -232,6 +310,40 @@ def _leave_one_year_out(data: pd.DataFrame, horizons: tuple[int, ...]) -> list[d
     return results
 
 
+def _window_subset(data: pd.DataFrame, window_years: int) -> pd.DataFrame:
+    dates = pd.to_datetime(data["date"], errors="coerce")
+    latest = dates.max()
+    if pd.isna(latest):
+        return data.iloc[0:0].copy()
+    cutoff = pd.Timestamp(latest).normalize() - pd.DateOffset(years=int(window_years))
+    return data[dates >= cutoff].copy()
+
+
+def _window_payload(
+    data: pd.DataFrame,
+    window_years: int,
+    horizons: tuple[int, ...],
+    *,
+    min_samples: int,
+    bootstrap_samples: int,
+    seed: int,
+) -> dict[str, Any]:
+    dates = pd.to_datetime(data.get("date"), errors="coerce")
+    return {
+        "window_years": int(window_years),
+        "sample_count": int(len(data)),
+        "ticker_count": int(data["ticker"].nunique()) if "ticker" in data else 0,
+        "years": sorted(int(value) for value in dates.dt.year.dropna().unique()),
+        "groups": _groups(
+            data,
+            horizons,
+            min_samples=min_samples,
+            bootstrap_samples=bootstrap_samples,
+            seed=seed + int(window_years) * 100,
+        ),
+    }
+
+
 def build_research_expectancy(
     outcomes: pd.DataFrame,
     *,
@@ -239,43 +351,34 @@ def build_research_expectancy(
     min_samples: int = 40,
     bootstrap_samples: int = 300,
     seed: int = 38,
+    analysis_windows: Iterable[int] = RESEARCH_COMPARISON_WINDOWS,
+    primary_window_years: int = RESEARCH_PRIMARY_WINDOW_YEARS,
 ) -> dict[str, Any]:
     if outcomes is None or outcomes.empty:
-        return {"status": "NO_SAMPLES", "groups": [], "walk_forward": [], "leave_one_year_out": [], "excluding_2020": []}
+        return {
+            "status": "NO_SAMPLES",
+            "groups": [],
+            "windows": [],
+            "walk_forward": [],
+            "leave_one_year_out": [],
+            "excluding_2020": [],
+        }
     data = _add_buckets(outcomes)
-    groups = []
-    for group_type, columns in _group_specs():
-        if any(column not in data for column in columns):
-            continue
-        for values, group in data.groupby(columns, dropna=False, observed=True):
-            if not isinstance(values, tuple):
-                values = (values,)
-            dimensions = {
-                column: (None if pd.isna(value) else str(value))
-                for column, value in zip(columns, values)
-            }
-            for horizon in horizons:
-                groups.append(
-                    {
-                        "group_type": group_type,
-                        **dimensions,
-                        "horizon": horizon,
-                        **_summary(
-                            group,
-                            horizon,
-                            min_samples=min_samples,
-                            bootstrap_samples=bootstrap_samples,
-                            seed=seed,
-                        ),
-                    }
-                )
-    groups.sort(
-        key=lambda row: (
-            row["group_type"],
-            row["horizon"],
-            -(row.get("mean_excess_return") or -999),
-            -row.get("samples", 0),
+    windows = []
+    for value in sorted({max(1, int(item)) for item in analysis_windows}, reverse=True):
+        windows.append(
+            _window_payload(
+                _window_subset(data, value),
+                value,
+                horizons,
+                min_samples=min_samples,
+                bootstrap_samples=bootstrap_samples,
+                seed=seed,
+            )
         )
+    primary = next(
+        (item for item in windows if item["window_years"] == int(primary_window_years)),
+        windows[0] if windows else {"groups": [], "sample_count": 0, "ticker_count": 0, "years": []},
     )
     years = pd.to_datetime(data["date"], errors="coerce").dt.year
     filtered = data[years != 2020]
@@ -294,10 +397,15 @@ def build_research_expectancy(
     ]
     return {
         "status": "OK",
-        "sample_count": int(len(data)),
-        "ticker_count": int(data["ticker"].nunique()) if "ticker" in data else 0,
-        "years": sorted(int(value) for value in years.dropna().unique()),
-        "groups": groups,
+        "primary_window_years": int(primary_window_years),
+        "comparison_windows_years": [item["window_years"] for item in windows],
+        "sample_count": primary.get("sample_count", 0),
+        "ticker_count": primary.get("ticker_count", 0),
+        "years": primary.get("years", []),
+        "retained_sample_count": int(len(data)),
+        "retained_years": sorted(int(value) for value in years.dropna().unique()),
+        "groups": primary.get("groups", []),
+        "windows": windows,
         "walk_forward": _walk_forward(data, horizons, min_samples),
         "leave_one_year_out": _leave_one_year_out(data, horizons),
         "excluding_2020": excluding_2020,
