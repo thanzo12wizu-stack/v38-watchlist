@@ -1,13 +1,13 @@
 {
   "schema_version": "1.2",
-  "updated_at": "2026-07-23T14:27:02.716884Z",
+  "updated_at": "2026-07-23T20:18:23.457876Z",
   "status": "PRICE_WARMUP",
   "years_retained": 10,
   "warmup_runs_target": 14,
-  "warmup_runs_dispatched": 2,
+  "warmup_runs_dispatched": 3,
   "warmup_runs_completed": 0,
   "failed_dispatches": 0,
-  "dispatch_timeouts": 0,
+  "dispatch_timeouts": 1,
   "price_batch": 250,
   "stride": 5,
   "target_years": [
@@ -40,8 +40,8 @@
   "awaiting_result": true,
   "awaiting_action": "PRICE_WARMUP",
   "awaiting_year": 2026,
-  "awaiting_since": "2026-07-23T14:27:02.716884Z",
-  "last_result": null,
+  "awaiting_since": "2026-07-23T20:18:23.457876Z",
+  "last_result": "TIMEOUT_RETRY",
   "last_workflow_run_id": null,
   "last_workflow_conclusion": null,
   "privacy": "Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored."
