@@ -11,6 +11,12 @@ PUBLIC_FILES = (
     "index.html",
     "command-center.html",
     "intelligence-dashboard.html",
+    "research-dashboard.html",
+)
+
+LOCKED_DASHBOARDS = (
+    "intelligence-dashboard.html",
+    "research-dashboard.html",
 )
 
 
@@ -33,6 +39,9 @@ def _validate_locked_dashboard(path: Path) -> None:
         "candidate-grid",
         '"entry_candidates"',
         '"portfolio_doctor"',
+        "Research Decision</h1>",
+        '"current_rankings"',
+        '"model_audit"',
     )
     leaked = [token for token in forbidden if token in text]
     if leaked:
@@ -46,7 +55,8 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
     if missing:
         raise FileNotFoundError(f"missing public site files: {missing}")
 
-    _validate_locked_dashboard(root / "intelligence-dashboard.html")
+    for name in LOCKED_DASHBOARDS:
+        _validate_locked_dashboard(root / name)
 
     if output.exists():
         shutil.rmtree(output)
@@ -67,10 +77,11 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
 
     (output / ".nojekyll").write_text("", encoding="utf-8")
     manifest = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source_commit": source_commit,
         "allowlist": list(PUBLIC_FILES),
+        "locked_dashboards": list(LOCKED_DASHBOARDS),
         "files": files,
     }
     (output / "public-site-manifest.json").write_text(
@@ -78,13 +89,13 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
         encoding="utf-8",
     )
 
-    unexpected = sorted(
+    expected = set(PUBLIC_FILES) | {".nojekyll", "public-site-manifest.json"}
+    actual = {
         str(path.relative_to(output))
         for path in output.rglob("*")
         if path.is_file()
-        and path.name not in {".nojekyll", "public-site-manifest.json"}
-        and str(path.relative_to(output)) not in PUBLIC_FILES
-    )
+    }
+    unexpected = sorted(actual - expected)
     if unexpected:
         raise RuntimeError(f"unexpected files entered public export: {unexpected}")
     return manifest

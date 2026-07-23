@@ -1,0 +1,94 @@
+name: Bootstrap complete ten-year research
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/research-bootstrap.yml"
+  workflow_dispatch:
+    inputs:
+      warmup_runs:
+        description: Price-history warmup runs before yearly research
+        required: false
+        default: 14
+        type: number
+      price_batch:
+        description: Tickers extended to ten-year history per run
+        required: false
+        default: 250
+        type: number
+      stride:
+        description: Trading-session stride for historical signal generation
+        required: false
+        default: 5
+        type: number
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: bootstrap-complete-ten-year-research
+  cancel-in-progress: false
+
+jobs:
+  queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Queue price warmup and all ten research years
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_WARMUPS: ${{ inputs.warmup_runs || 14 }}
+          REQUESTED_BATCH: ${{ inputs.price_batch || 250 }}
+          REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
+        run: |
+          set -euo pipefail
+          current_year="$(date -u +%Y)"
+          minimum_year=$(( current_year - 9 ))
+
+          warmups="${REQUESTED_WARMUPS:-14}"
+          [[ "$warmups" =~ ^[0-9]+$ ]] || warmups=14
+          (( warmups < 1 )) && warmups=1
+          (( warmups > 20 )) && warmups=20
+
+          batch="${REQUESTED_BATCH:-250}"
+          [[ "$batch" =~ ^[0-9]+$ ]] || batch=250
+          (( batch < 20 )) && batch=20
+          (( batch > 250 )) && batch=250
+
+          stride="${REQUESTED_STRIDE:-5}"
+          [[ "$stride" =~ ^[0-9]+$ ]] || stride=5
+          (( stride < 1 )) && stride=1
+          (( stride > 10 )) && stride=10
+
+          echo "Queueing ${warmups} price-history warmups at batch=${batch}."
+          for run in $(seq 1 "$warmups"); do
+            refresh=false
+            [[ "$run" == "1" ]] && refresh=true
+            gh workflow run intelligence-engine.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main \
+              -f refresh_sec="$refresh" \
+              -f research_mode=backfill \
+              -f research_year="$current_year" \
+              -f research_price_batch="$batch" \
+              -f research_stride="$stride"
+            sleep 2
+          done
+
+          echo "Queueing complete point-in-time years ${minimum_year}-${current_year}."
+          for year in $(seq "$minimum_year" "$current_year"); do
+            gh workflow run intelligence-engine.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main \
+              -f refresh_sec=false \
+              -f research_mode=backfill \
+              -f research_year="$year" \
+              -f research_price_batch="$batch" \
+              -f research_stride="$stride"
+            sleep 2
+          done
+
+          echo "Queued warmups=${warmups}, years=10, total=$((warmups + 10))."

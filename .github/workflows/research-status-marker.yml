@@ -7,6 +7,7 @@ on:
       - "private/research-success.json"
       - "private/research-error-detail.json"
       - "private/research-summary.enc.json"
+      - "private/research-*-year-*.enc.json"
 
 permissions:
   contents: write
@@ -24,32 +25,56 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Build privacy-safe status
+      - name: Build privacy-safe status and coverage
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import json
           import os
+          import re
           from datetime import datetime, timezone
           from pathlib import Path
 
           private = Path('private')
           success_path = private / 'research-success.json'
           error_path = private / 'research-error-detail.json'
-          bundles = list(private.glob('research-*-year-*.enc.json'))
           summary = private / 'research-summary.enc.json'
           success = json.loads(success_path.read_text()) if success_path.exists() else None
           error = json.loads(error_path.read_text()) if error_path.exists() else None
-          passed = bool(success) and not error and summary.exists() and len(bundles) > 0
+
+          datasets = {name: set() for name in ('facts', 'signals', 'outcomes', 'rankings')}
+          pattern = re.compile(r'^research-(facts|signals|outcomes|rankings)-year-(20\d{2})\.enc\.json$')
+          bundles = []
+          for path in private.glob('research-*-year-*.enc.json'):
+              match = pattern.match(path.name)
+              if not match:
+                  continue
+              datasets[match.group(1)].add(int(match.group(2)))
+              bundles.append(path)
+
+          current_year = datetime.now(timezone.utc).year
+          target_years = set(range(current_year - 9, current_year + 1))
+          completed_years = datasets['signals'] & datasets['rankings'] & target_years
+          missing_years = sorted(target_years - completed_years)
+          passed = bool(success) and not error and summary.exists() and bool(bundles)
+          backfill_status = 'COMPLETE' if not missing_years else 'IN_PROGRESS'
+
           payload = {
-              'schema_version': '2.0',
+              'schema_version': '2.2',
               'research_status': 'PASS' if passed else 'FAIL',
+              'backfill_status': backfill_status,
               'updated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
               'head_sha': os.environ.get('GITHUB_SHA'),
               'encrypted_bundle_count': len(bundles) + int(summary.exists()),
               'summary_present': summary.exists(),
               'success_marker_present': bool(success),
+              'years_retained': 10,
+              'target_years': sorted(target_years),
+              'completed_years': sorted(completed_years),
+              'missing_years': missing_years,
+              'dataset_partition_counts': {name: len(years) for name, years in datasets.items()},
+              'model_audit_status': (success or {}).get('model_audit_status'),
               'error_type': None if passed else (error or {}).get('error_type', 'MissingSuccessMarker'),
               'error_message': None if passed else (error or {}).get('error_template', 'Research process did not complete cleanly.'),
               'privacy': 'No ticker, portfolio, price, financial or ranking values are included.',
