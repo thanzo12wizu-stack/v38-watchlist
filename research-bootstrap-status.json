@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.1",
+  "updated_at": "2026-07-23T11:38:00.919189Z",
+  "status": "PRICE_WARMUP",
+  "years_retained": 10,
+  "warmup_runs_target": 14,
+  "warmup_runs_dispatched": 1,
+  "price_batch": 250,
+  "stride": 5,
+  "target_years": [
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "completed_years": [
+    2026
+  ],
+  "missing_years": [
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "next_year": 2026,
+  "privacy": "Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored."
+}
