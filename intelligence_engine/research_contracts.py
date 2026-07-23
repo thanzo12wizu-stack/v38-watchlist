@@ -7,7 +7,7 @@ from typing import Any, Protocol, Sequence
 
 import pandas as pd
 
-RESEARCH_SCHEMA_VERSION = "2.1"
+RESEARCH_SCHEMA_VERSION = "2.0"
 RESEARCH_POLICY_VERSION = "1.1.0"
 DEFAULT_HORIZONS = (5, 10, 21, 63)
 RESEARCH_RETENTION_YEARS = 10
