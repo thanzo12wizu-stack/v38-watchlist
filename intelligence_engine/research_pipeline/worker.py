@@ -80,9 +80,9 @@ def _fact_frames(provider: SecCompanyFactsProvider, tickers: Iterable[str]) -> I
 
 
 def _naive_utc_datetime(values: pd.Series) -> pd.Series:
-    """Normalize mixed naive/aware timestamps to merge-safe datetime64[ns]."""
-    normalized = pd.to_datetime(values, errors="coerce", utc=True)
-    return normalized.dt.tz_convert(None)
+    """Normalize mixed timestamps to timezone-naive datetime64[ns]."""
+    normalized = pd.to_datetime(values, errors="coerce", utc=True, format="mixed")
+    return normalized.dt.tz_convert(None).astype("datetime64[ns]")
 
 
 def _merge_snapshots_indexed(price_panel: pd.DataFrame, snapshots: pd.DataFrame) -> pd.DataFrame:
