@@ -1,0 +1,34 @@
+name: Resume ten-year research after code changes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/research-bootstrap-kick.yml"
+      - "intelligence_engine/sec_bulk.py"
+      - "intelligence_engine/ensure_prices.py"
+      - "intelligence_engine/research_pipeline.py"
+      - "intelligence_engine/research_worker_status.py"
+      - "universe.csv"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: resume-ten-year-research-after-code-change
+  cancel-in-progress: true
+
+jobs:
+  resume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch the serial bootstrap controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run research-bootstrap.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main
