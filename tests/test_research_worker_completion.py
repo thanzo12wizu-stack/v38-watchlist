@@ -7,7 +7,7 @@ def test_successful_or_failed_worker_completion_rechecks_serial_bootstrap():
     assert 'workflow_run:' in workflow
     assert '- Ten-year research worker' in workflow
     assert "github.event.workflow_run.event == 'workflow_dispatch'" in workflow
-    assert 'github.event.workflow_run.head_repository.full_name == github.repository' in workflow
+    assert 'head_repository.full_name' not in workflow
     assert 'actions: write' in workflow
     assert 'contents: read' in workflow
     assert 'gh workflow run research-bootstrap.yml' in workflow
