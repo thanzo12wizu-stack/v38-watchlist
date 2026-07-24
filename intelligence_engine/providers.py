@@ -26,6 +26,15 @@ class PriceProvider(Protocol):
         ...
 
 
+def _normalized_tickers(tickers: Sequence[str]) -> list[str]:
+    return sorted({str(ticker).strip().upper() for ticker in tickers if str(ticker).strip()})
+
+
+def _yfinance_symbol(ticker: str) -> str:
+    """Translate US share-class punctuation to Yahoo Finance notation."""
+    return str(ticker).strip().upper().replace(".", "-")
+
+
 @dataclass
 class YFinancePriceProvider:
     name: str = "yfinance"
@@ -36,9 +45,38 @@ class YFinancePriceProvider:
         *,
         period: str = "18mo",
     ) -> tuple[dict[str, pd.DataFrame], dict[str, Any]]:
-        prices, diagnostics = download_price_map(tickers, period=period)
-        diagnostics["provider"] = self.name
-        diagnostics["license_scope"] = "personal_research_only"
+        requested = _normalized_tickers(tickers)
+        vendor_by_original = {ticker: _yfinance_symbol(ticker) for ticker in requested}
+        originals_by_vendor: dict[str, list[str]] = {}
+        for original, vendor in vendor_by_original.items():
+            originals_by_vendor.setdefault(vendor, []).append(original)
+
+        vendor_prices, vendor_diagnostics = download_price_map(
+            sorted(originals_by_vendor), period=period
+        )
+        prices: dict[str, pd.DataFrame] = {}
+        for vendor, frame in vendor_prices.items():
+            originals = originals_by_vendor.get(str(vendor).upper(), [str(vendor).upper()])
+            for original in originals:
+                prices[original] = frame
+
+        missing = [ticker for ticker in requested if ticker not in prices]
+        diagnostics = dict(vendor_diagnostics)
+        diagnostics.update(
+            {
+                "source": self.name,
+                "provider": self.name,
+                "requested": len(requested),
+                "received": len(prices),
+                "coverage": len(prices) / len(requested) if requested else 0.0,
+                "qqq_received": "QQQ" in prices,
+                "symbol_aliases_used": sum(
+                    original != vendor for original, vendor in vendor_by_original.items()
+                ),
+                "missing": missing,
+                "license_scope": "personal_research_only",
+            }
+        )
         return prices, diagnostics
 
 
@@ -137,7 +175,7 @@ class FMPPriceProvider:
             except ValueError:
                 months = 18
         start = end - timedelta(days=int(months * 31.0 + 30))
-        normalized = sorted({str(ticker).upper().strip() for ticker in tickers if str(ticker).strip()})
+        normalized = _normalized_tickers(tickers)
         prices: dict[str, pd.DataFrame] = {}
         failures: list[dict[str, str]] = []
         for ticker in normalized:
