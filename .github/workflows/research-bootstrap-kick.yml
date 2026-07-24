@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/research-bootstrap-kick.yml"
+      - ".github/workflows/research-worker-completion.yml"
       - "intelligence_engine/sec_bulk.py"
       - "intelligence_engine/ensure_prices.py"
       - "intelligence_engine/research_*.py"
