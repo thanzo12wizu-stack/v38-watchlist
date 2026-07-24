@@ -6,6 +6,11 @@ on:
     paths:
       - ".github/workflows/research-bootstrap.yml"
       - ".github/workflows/research-worker.yml"
+  workflow_run:
+    workflows:
+      - Ten-year research worker
+    types:
+      - completed
   schedule:
     - cron: "12 * * * *"
   workflow_dispatch:
@@ -41,6 +46,7 @@ concurrency:
 
 jobs:
   advance:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -48,6 +54,7 @@ jobs:
       REQUESTED_WARMUPS: ${{ inputs.warmup_runs || 14 }}
       REQUESTED_BATCH: ${{ inputs.price_batch || 250 }}
       REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
+      TRIGGER_EVENT: ${{ github.event_name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,6 +107,13 @@ jobs:
           except (OSError, json.JSONDecodeError):
               state = {}
 
+          def read_json(path):
+              try:
+                  payload = json.loads(Path(path).read_text()) if Path(path).exists() else {}
+              except (OSError, json.JSONDecodeError):
+                  return {}
+              return payload if isinstance(payload, dict) else {}
+
           def bounded_int(name, default, low, high):
               try:
                   value = int(os.environ.get(name, default))
@@ -117,9 +131,11 @@ jobs:
           batch = bounded_int('REQUESTED_BATCH', 250, 20, 250)
           stride = bounded_int('REQUESTED_STRIDE', 5, 1, 10)
           active_runs = bounded_int('ACTIVE_RUNS', 0, 0, 100)
+          trigger_event = str(os.environ.get('TRIGGER_EVENT') or '')
           warmup_dispatched = int(state.get('warmup_runs_dispatched') or 0)
           warmup_completed = int(state.get('warmup_runs_completed') or 0)
           failures = int(state.get('failed_dispatches') or 0)
+          consecutive_failures = int(state.get('consecutive_failures') or 0)
           timeouts = int(state.get('dispatch_timeouts') or 0)
 
           try:
@@ -130,7 +146,10 @@ jobs:
           awaiting = bool(state.get('awaiting_result'))
           awaiting_since = parse_time(state.get('awaiting_since'))
           awaiting_action = str(state.get('awaiting_action') or '')
+          awaiting_year = state.get('awaiting_year')
           selected_run = None
+          completed_this_run = False
+          completed_conclusion = ''
           if awaiting:
               expected_id = str(state.get('last_workflow_run_id') or '')
               if expected_id:
@@ -146,23 +165,34 @@ jobs:
                       selected_run = sorted(candidates, key=lambda item: item[0])[0][1]
 
               if selected_run is not None:
-                  state['last_workflow_run_id'] = selected_run.get('databaseId')
+                  selected_id = selected_run.get('databaseId')
+                  state['last_workflow_run_id'] = selected_id
                   status = str(selected_run.get('status') or '')
                   conclusion = str(selected_run.get('conclusion') or '')
                   if status != 'completed':
                       state['last_result'] = f'RUNNING:{status}'
                   else:
-                      state['last_workflow_conclusion'] = conclusion
+                      completed_this_run = True
+                      completed_conclusion = conclusion
+                      state['last_completed_workflow_run_id'] = selected_id
+                      state['last_completed_workflow_conclusion'] = conclusion
+                      state['last_completed_action'] = awaiting_action or None
+                      state['last_completed_year'] = awaiting_year
                       if conclusion == 'success':
                           if awaiting_action == 'PRICE_WARMUP':
                               warmup_completed = min(warmup_target, warmup_completed + 1)
+                          consecutive_failures = 0
                           state['last_result'] = 'SUCCESS'
                       else:
                           failures += 1
+                          consecutive_failures += 1
+                          state['last_failed_workflow_run_id'] = selected_id
+                          state['last_failed_workflow_conclusion'] = conclusion or 'unknown'
                           state['last_result'] = f'FAILURE:{conclusion or "unknown"}'
                       awaiting = False
               elif awaiting_since is None or now - awaiting_since >= timedelta(minutes=30):
                   timeouts += 1
+                  consecutive_failures += 1
                   state['last_result'] = 'DISPATCH_NOT_FOUND_RETRY'
                   awaiting = False
               else:
@@ -170,32 +200,44 @@ jobs:
 
           signal_years = set()
           ranking_years = set()
+          fact_years = set()
           signal_re = re.compile(r'^research-signals-year-(20\d{2})\.enc\.json$')
           ranking_re = re.compile(r'^research-rankings-year-(20\d{2})\.enc\.json$')
+          fact_re = re.compile(r'^research-facts-year-(20\d{2})\.enc\.json$')
           for path in Path('private').glob('research-*-year-*.enc.json'):
               signal = signal_re.match(path.name)
               ranking = ranking_re.match(path.name)
+              fact = fact_re.match(path.name)
               if signal:
                   signal_years.add(int(signal.group(1)))
               if ranking:
                   ranking_years.add(int(ranking.group(1)))
+              if fact:
+                  fact_years.add(int(fact.group(1)))
           completed = sorted(set(target_years) & signal_years & ranking_years)
           missing = sorted(set(target_years) - set(completed))
 
-          success_path = Path('private/research-success.json')
-          try:
-              success = json.loads(success_path.read_text()) if success_path.exists() else {}
-          except (OSError, json.JSONDecodeError):
-              success = {}
-          sec_data_ready = bool(success.get('sec_data_present')) and int(success.get('sec_cache_file_count') or 0) > 0
+          success = read_json('private/research-success.json')
+          worker_result = read_json('private/research-worker-result.json')
+          sec_cache_file_count = max(
+              int(success.get('sec_cache_file_count') or 0),
+              int(worker_result.get('sec_cache_file_count') or 0),
+          )
+          fact_partition_count = max(
+              len(fact_years),
+              int(success.get('fact_partition_count') or 0),
+              int(worker_result.get('fact_partition_count') or 0),
+          )
+          sec_data_ready = bool(success.get('sec_data_present')) or bool(worker_result.get('sec_data_ready')) or (
+              sec_cache_file_count > 0 and fact_partition_count > 0
+          )
 
           action = None
           year = None
-          refresh_sec = not sec_data_ready
           dispatch = False
           if awaiting:
               action = awaiting_action or 'PRICE_WARMUP'
-              year = state.get('awaiting_year') or current_year
+              year = awaiting_year or current_year
           elif warmup_completed < warmup_target:
               action = 'PRICE_WARMUP'
               year = current_year
@@ -205,25 +247,42 @@ jobs:
           else:
               action = 'COMPLETE'
 
-          if not awaiting and action != 'COMPLETE' and active_runs == 0:
+          # Successful workers chain immediately. Two consecutive failures stop
+          # workflow_run-triggered retries; the hourly schedule remains the recovery path.
+          retry_deferred = (
+              trigger_event == 'workflow_run'
+              and completed_this_run
+              and completed_conclusion != 'success'
+              and consecutive_failures >= 2
+          )
+          if not awaiting and action != 'COMPLETE' and active_runs == 0 and not retry_deferred:
               dispatch = True
               warmup_dispatched += int(action == 'PRICE_WARMUP')
               awaiting = True
               state['awaiting_since'] = now.isoformat().replace('+00:00', 'Z')
               state['last_workflow_run_id'] = None
               state['last_workflow_conclusion'] = None
+          elif retry_deferred:
+              state['last_result'] = 'RETRY_DEFERRED_AFTER_FAILURE'
           elif not awaiting and action != 'COMPLETE' and active_runs > 0:
               state['last_result'] = 'WAITING_FOR_ENGINE_SLOT'
 
+          status_name = action
+          if active_runs > 0:
+              status_name = 'WAITING_ENGINE'
+          elif retry_deferred:
+              status_name = 'RETRY_BACKOFF'
+
           state.update({
-              'schema_version': '1.3',
+              'schema_version': '1.4',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
-              'status': action if active_runs == 0 else 'WAITING_ENGINE',
+              'status': status_name,
               'years_retained': 10,
               'warmup_runs_target': warmup_target,
               'warmup_runs_dispatched': warmup_dispatched,
               'warmup_runs_completed': warmup_completed,
               'failed_dispatches': failures,
+              'consecutive_failures': consecutive_failures,
               'dispatch_timeouts': timeouts,
               'price_batch': batch,
               'stride': stride,
@@ -235,6 +294,8 @@ jobs:
               'awaiting_action': action if awaiting else None,
               'awaiting_year': year if awaiting else None,
               'awaiting_since': state.get('awaiting_since') if awaiting else None,
+              'sec_cache_file_count': sec_cache_file_count,
+              'sec_fact_partition_count': fact_partition_count,
               'sec_data_ready': sec_data_ready,
               'privacy': 'Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.',
           })
@@ -245,7 +306,9 @@ jobs:
               handle.write(f"dispatch={'true' if dispatch else 'false'}\n")
               handle.write(f"action={action or ''}\n")
               handle.write(f"year={year or ''}\n")
-              handle.write(f"refresh_sec={'true' if refresh_sec else 'false'}\n")
+              # A cached SEC directory is authoritative inside the worker. The
+              # controller does not force a large re-download on every retry.
+              handle.write('refresh_sec=false\n')
               handle.write(f"batch={batch}\n")
               handle.write(f"stride={stride}\n")
           print(json.dumps(state, ensure_ascii=False))
