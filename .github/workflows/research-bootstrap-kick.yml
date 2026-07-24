@@ -25,11 +25,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Dispatch the serial bootstrap controller
+      - name: Dispatch and recheck the serial bootstrap controller
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh workflow run research-bootstrap.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref main
+          for attempt in 1 2; do
+            gh workflow run research-bootstrap.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main
+            if (( attempt == 1 )); then
+              sleep 30
+            fi
+          done
