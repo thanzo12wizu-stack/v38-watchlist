@@ -56,6 +56,9 @@ jobs:
       REQUESTED_BATCH: ${{ inputs.price_batch || 250 }}
       REQUESTED_STRIDE: ${{ inputs.stride || 5 }}
       TRIGGER_EVENT: ${{ github.event_name }}
+      TRIGGER_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+      TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name || '' }}
+      TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,6 +136,9 @@ jobs:
           stride = bounded_int('REQUESTED_STRIDE', 5, 1, 10)
           active_runs = bounded_int('ACTIVE_RUNS', 0, 0, 100)
           trigger_event = str(os.environ.get('TRIGGER_EVENT') or '')
+          trigger_run_id = str(os.environ.get('TRIGGER_RUN_ID') or '')
+          trigger_workflow = str(os.environ.get('TRIGGER_WORKFLOW') or '')
+          trigger_conclusion = str(os.environ.get('TRIGGER_CONCLUSION') or '')
           warmup_dispatched = int(state.get('warmup_runs_dispatched') or 0)
           warmup_completed = int(state.get('warmup_runs_completed') or 0)
           failures = int(state.get('failed_dispatches') or 0)
@@ -143,6 +149,7 @@ jobs:
               worker_runs = json.loads(Path('/tmp/research-worker-runs.json').read_text())
           except (OSError, json.JSONDecodeError):
               worker_runs = []
+          worker_result = read_json('private/research-worker-result.json')
 
           awaiting = bool(state.get('awaiting_result'))
           awaiting_since = parse_time(state.get('awaiting_since'))
@@ -151,6 +158,36 @@ jobs:
           selected_run = None
           completed_this_run = False
           completed_conclusion = ''
+
+          # GitHub re-runs keep the original workflow run ID. A previously failed
+          # run can therefore succeed while the controller is no longer awaiting
+          # that ID. Reconcile the committed aggregate worker result explicitly.
+          rerun_success = (
+              not awaiting
+              and trigger_event == 'workflow_run'
+              and trigger_workflow == 'Ten-year research worker'
+              and trigger_conclusion == 'success'
+              and str(worker_result.get('workflow_run_id') or '') == trigger_run_id
+              and str(worker_result.get('status') or '') == 'PASS'
+              and str(state.get('last_completed_workflow_conclusion') or '') != 'success'
+          )
+          if rerun_success:
+              reconciled_id = int(trigger_run_id) if trigger_run_id.isdigit() else trigger_run_id
+              reconciled_action = str(worker_result.get('action') or '').upper()
+              reconciled_year = worker_result.get('research_year')
+              state['last_workflow_run_id'] = reconciled_id
+              state['last_workflow_conclusion'] = 'success'
+              state['last_completed_workflow_run_id'] = reconciled_id
+              state['last_completed_workflow_conclusion'] = 'success'
+              state['last_completed_action'] = reconciled_action or None
+              state['last_completed_year'] = reconciled_year
+              if reconciled_action == 'PRICE_WARMUP':
+                  warmup_completed = min(warmup_target, warmup_completed + 1)
+              consecutive_failures = 0
+              completed_this_run = True
+              completed_conclusion = 'success'
+              state['last_result'] = 'SUCCESS:RERUN_RECONCILED'
+
           if awaiting:
               expected_id = str(state.get('last_workflow_run_id') or '')
               if expected_id:
@@ -219,7 +256,6 @@ jobs:
           missing = sorted(set(target_years) - set(completed))
 
           success = read_json('private/research-success.json')
-          worker_result = read_json('private/research-worker-result.json')
           sec_cache_file_count = max(
               int(success.get('sec_cache_file_count') or 0),
               int(worker_result.get('sec_cache_file_count') or 0),
@@ -232,6 +268,18 @@ jobs:
           sec_data_ready = bool(success.get('sec_data_present')) or bool(worker_result.get('sec_data_ready')) or (
               sec_cache_file_count > 0 and fact_partition_count > 0
           )
+
+          raw_remaining = worker_result.get('price_history_remaining')
+          try:
+              price_history_remaining = int(raw_remaining) if raw_remaining is not None else None
+          except (TypeError, ValueError):
+              price_history_remaining = None
+          price_history_complete = bool(worker_result.get('price_history_complete')) or (
+              str(worker_result.get('action') or '').upper() == 'PRICE_WARMUP'
+              and price_history_remaining == 0
+          )
+          if price_history_complete:
+              warmup_completed = warmup_target
 
           action = None
           year = None
@@ -275,7 +323,7 @@ jobs:
               status_name = 'RETRY_BACKOFF'
 
           state.update({
-              'schema_version': '1.4',
+              'schema_version': '1.5',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'status': status_name,
               'years_retained': 10,
@@ -286,6 +334,8 @@ jobs:
               'consecutive_failures': consecutive_failures,
               'dispatch_timeouts': timeouts,
               'price_batch': batch,
+              'price_history_remaining': price_history_remaining,
+              'price_history_complete': price_history_complete,
               'stride': stride,
               'target_years': target_years,
               'completed_years': completed,
