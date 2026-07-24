@@ -25,6 +25,17 @@ def test_bootstrap_chains_successes_and_keeps_failed_run_ids():
     assert 'RETRY_DEFERRED_AFTER_FAILURE' in workflow
 
 
+def test_bootstrap_reconciles_successful_reruns_and_exact_history_completion():
+    workflow = Path('.github/workflows/research-bootstrap.yml').read_text(encoding='utf-8')
+
+    assert 'TRIGGER_RUN_ID' in workflow
+    assert "SUCCESS:RERUN_RECONCILED" in workflow
+    assert "worker_result.get('workflow_run_id')" in workflow
+    assert "price_history_remaining" in workflow
+    assert "price_history_complete" in workflow
+    assert "warmup_completed = warmup_target" in workflow
+
+
 def test_status_marker_reads_aggregate_worker_result():
     workflow = Path('.github/workflows/research-status-marker.yml').read_text(encoding='utf-8')
 
