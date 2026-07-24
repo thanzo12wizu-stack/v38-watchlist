@@ -1,7 +1,7 @@
 {
   "schema_version": "1.5",
-  "updated_at": "2026-07-24T07:46:14.225062Z",
-  "status": "WAITING_ENGINE",
+  "updated_at": "2026-07-24T09:29:25.006949Z",
+  "status": "YEAR_BACKFILL",
   "years_retained": 10,
   "warmup_runs_target": 14,
   "warmup_runs_dispatched": 9,
@@ -23,10 +23,10 @@
     2026
   ],
   "completed_years": [
+    2017,
     2026
   ],
   "missing_years": [
-    2017,
     2018,
     2019,
     2020,
@@ -36,25 +36,25 @@
     2024,
     2025
   ],
-  "next_year": 2017,
+  "next_year": 2018,
   "awaiting_result": true,
   "awaiting_action": "YEAR_BACKFILL",
-  "awaiting_year": 2017,
-  "awaiting_since": "2026-07-24T07:45:43.026877Z",
-  "last_result": "RUNNING:in_progress",
-  "last_workflow_run_id": 30076543147,
+  "awaiting_year": 2018,
+  "awaiting_since": "2026-07-24T09:29:25.006949Z",
+  "last_result": "SUCCESS",
+  "last_workflow_run_id": null,
   "last_workflow_conclusion": null,
   "privacy": "Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.",
   "sec_data_ready": true,
-  "last_completed_workflow_run_id": 30072876371,
+  "last_completed_workflow_run_id": 30076543147,
   "last_completed_workflow_conclusion": "success",
-  "last_completed_action": "PRICE_WARMUP",
-  "last_completed_year": 2026,
+  "last_completed_action": "YEAR_BACKFILL",
+  "last_completed_year": 2017,
   "last_failed_workflow_run_id": 30064744440,
   "last_failed_workflow_conclusion": "failure",
   "consecutive_failures": 0,
   "sec_cache_file_count": 2726,
-  "sec_fact_partition_count": 10,
+  "sec_fact_partition_count": 18,
   "price_history_remaining": 0,
   "price_history_complete": true
 }
