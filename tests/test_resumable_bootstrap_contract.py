@@ -11,6 +11,12 @@ def test_research_worker_persists_partial_price_progress_and_skips_research_duri
     assert 'V38_PRICE_PROVIDER' in workflow
 
 
+def test_privacy_safe_worker_result_is_versionable():
+    ignore = Path('.gitignore').read_text(encoding='utf-8')
+
+    assert '!/private/research-worker-result.json' in ignore
+
+
 def test_research_worker_processes_bounded_price_slices_until_complete():
     workflow = Path('.github/workflows/research-worker.yml').read_text(encoding='utf-8')
 
