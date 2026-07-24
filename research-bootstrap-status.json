@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.4",
-  "updated_at": "2026-07-24T05:05:53.951437Z",
+  "schema_version": "1.5",
+  "updated_at": "2026-07-24T05:10:52.011350Z",
   "status": "WAITING_ENGINE",
   "years_retained": 10,
   "warmup_runs_target": 14,
@@ -54,5 +54,7 @@
   "last_failed_workflow_conclusion": "failure",
   "consecutive_failures": 3,
   "sec_cache_file_count": 0,
-  "sec_fact_partition_count": 0
+  "sec_fact_partition_count": 0,
+  "price_history_remaining": null,
+  "price_history_complete": false
 }
