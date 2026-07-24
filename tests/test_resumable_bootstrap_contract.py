@@ -16,6 +16,8 @@ def test_bootstrap_chains_successes_and_keeps_failed_run_ids():
 
     assert 'workflow_run:' in workflow
     assert '- Ten-year research worker' in workflow
+    assert '- Intelligence Engine (sidecar)' in workflow
+    assert "github.event.workflow_run.event != 'pull_request'" in workflow
     assert "last_completed_workflow_run_id" in workflow
     assert "last_failed_workflow_run_id" in workflow
     assert "consecutive_failures" in workflow
