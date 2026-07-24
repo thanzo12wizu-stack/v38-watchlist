@@ -112,7 +112,7 @@ def load_universe_tickers(path: Path) -> set[str]:
             "universe CSV requires ticker/symbol/シンボル/ティッカー column; "
             f"available columns: {available}"
         )
-    values = universe[source].astype(str).str.upper().str.strip()
+    values = universe[source].dropna().astype(str).str.upper().str.strip()
     return {ticker for ticker in values if ticker and ticker != "NAN"}
 
 
