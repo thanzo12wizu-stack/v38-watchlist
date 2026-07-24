@@ -7,8 +7,8 @@ on:
       - ".github/workflows/research-bootstrap-kick.yml"
       - "intelligence_engine/sec_bulk.py"
       - "intelligence_engine/ensure_prices.py"
-      - "intelligence_engine/research_pipeline.py"
-      - "intelligence_engine/research_worker_status.py"
+      - "intelligence_engine/research_*.py"
+      - "intelligence_engine/research_pipeline/**"
       - "universe.csv"
 
 permissions:
