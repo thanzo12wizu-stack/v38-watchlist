@@ -6,6 +6,9 @@ on:
       - Ten-year research worker
     types:
       - completed
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
 
 permissions:
   actions: write
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   continue:
-    if: github.event.workflow_run.event == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
