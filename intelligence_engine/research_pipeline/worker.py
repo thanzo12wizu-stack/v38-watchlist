@@ -79,8 +79,14 @@ def _fact_frames(provider: SecCompanyFactsProvider, tickers: Iterable[str]) -> I
             yield history
 
 
+def _naive_utc_datetime(values: pd.Series) -> pd.Series:
+    """Normalize mixed naive/aware timestamps to merge-safe datetime64[ns]."""
+    normalized = pd.to_datetime(values, errors="coerce", utc=True)
+    return normalized.dt.tz_convert(None)
+
+
 def _merge_snapshots_indexed(price_panel: pd.DataFrame, snapshots: pd.DataFrame) -> pd.DataFrame:
-    """Merge point-in-time snapshots with O(1) ticker lookup instead of rescanning the full table."""
+    """Merge point-in-time snapshots with indexed, timezone-stable ticker lookups."""
     if price_panel.empty:
         return price_panel.copy()
     if snapshots is None or snapshots.empty:
@@ -89,13 +95,22 @@ def _merge_snapshots_indexed(price_panel: pd.DataFrame, snapshots: pd.DataFrame)
         return out
 
     left = price_panel.copy()
-    left["date"] = pd.to_datetime(left["date"], errors="coerce")
+    left["ticker"] = left["ticker"].astype(str)
+    left["date"] = _naive_utc_datetime(left["date"])
+    invalid_left = left[left["date"].isna()].copy()
+    left = left.dropna(subset=["date"])
+
     right = snapshots.copy()
-    right["available_at"] = pd.to_datetime(right["available_at"], errors="coerce")
+    right["ticker"] = right["ticker"].astype(str)
+    right["available_at"] = _naive_utc_datetime(right["available_at"])
+    right = right.dropna(subset=["ticker", "available_at"])
     histories = {
-        str(ticker): group.drop(columns=["ticker"], errors="ignore").sort_values("available_at")
+        str(ticker): group.drop(columns=["ticker"], errors="ignore")
+        .sort_values("available_at")
+        .drop_duplicates("available_at", keep="last")
         for ticker, group in right.groupby("ticker", sort=False)
     }
+
     pieces: list[pd.DataFrame] = []
     for ticker, group in left.groupby("ticker", sort=False):
         history = histories.get(str(ticker))
@@ -111,8 +126,18 @@ def _merge_snapshots_indexed(price_panel: pd.DataFrame, snapshots: pd.DataFrame)
                 direction="backward",
                 allow_exact_matches=True,
             )
+            if "fundamental_confidence" not in enriched:
+                enriched["fundamental_confidence"] = 0.0
+            else:
+                enriched["fundamental_confidence"] = pd.to_numeric(
+                    enriched["fundamental_confidence"], errors="coerce"
+                ).fillna(0.0)
         pieces.append(enriched)
-    return _concat_bounded(pieces, batch_size=128) if pieces else left
+
+    if not invalid_left.empty:
+        invalid_left["fundamental_confidence"] = 0.0
+        pieces.append(invalid_left)
+    return _concat_bounded(pieces, batch_size=128) if pieces else price_panel.copy()
 
 
 def build_streaming(
