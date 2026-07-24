@@ -1,7 +1,7 @@
 {
   "schema_version": "1.6",
-  "updated_at": "2026-07-24T01:41:43.193566Z",
-  "research_pipeline_ready": true,
+  "updated_at": "2026-07-24T05:02:55.304863Z",
+  "research_pipeline_ready": false,
   "ten_year_backfill_complete": false,
   "sec_user_agent_configured": true,
   "sec_cache_file_count": 0,
@@ -14,6 +14,7 @@
   "price_provider": "default",
   "full_operational_ready": false,
   "blockers": [
+    "research_pipeline_not_passed",
     "ten_year_backfill_in_progress",
     "sec_data_not_ingested"
   ],
