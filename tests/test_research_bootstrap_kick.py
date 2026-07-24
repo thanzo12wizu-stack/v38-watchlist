@@ -7,8 +7,8 @@ def test_research_code_changes_resume_the_serial_bootstrap_controller():
     for path in (
         'intelligence_engine/sec_bulk.py',
         'intelligence_engine/ensure_prices.py',
-        'intelligence_engine/research_pipeline.py',
-        'intelligence_engine/research_worker_status.py',
+        'intelligence_engine/research_*.py',
+        'intelligence_engine/research_pipeline/**',
         'universe.csv',
     ):
         assert f'- "{path}"' in workflow
