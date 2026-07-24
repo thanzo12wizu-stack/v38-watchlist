@@ -1,0 +1,31 @@
+name: Chain ten-year research after worker completion
+
+on:
+  workflow_run:
+    workflows:
+      - Ten-year research worker
+    types:
+      - completed
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: chain-ten-year-research-after-worker-completion
+  cancel-in-progress: false
+
+jobs:
+  continue:
+    if: github.event.workflow_run.event == 'workflow_dispatch' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch the serial bootstrap controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run research-bootstrap.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main
