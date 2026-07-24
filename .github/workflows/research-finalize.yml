@@ -1,0 +1,167 @@
+name: Finalize ten-year research status
+
+on:
+  workflow_run:
+    workflows:
+      - Bootstrap complete ten-year research
+    types:
+      - completed
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/research-finalize.yml"
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-ten-year-research-status
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Reconcile authoritative aggregate status
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          def read(path):
+              target = Path(path)
+              if not target.exists():
+                  return {}
+              try:
+                  value = json.loads(target.read_text(encoding='utf-8'))
+              except (OSError, json.JSONDecodeError):
+                  return {}
+              return value if isinstance(value, dict) else {}
+
+          def write(path, payload):
+              Path(path).write_text(
+                  json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + '\n',
+                  encoding='utf-8',
+              )
+
+          bootstrap = read('research-bootstrap-status.json')
+          success = read('private/research-success.json')
+          worker = read('private/research-worker-result.json')
+          if bootstrap.get('status') != 'COMPLETE' or bootstrap.get('missing_years'):
+              print('Bootstrap is not complete; no finalization required')
+              raise SystemExit(0)
+
+          target_years = list(bootstrap.get('target_years') or [])
+          completed_years = list(bootstrap.get('completed_years') or [])
+          required_years = list(range(2017, 2027))
+          checks = {
+              'years': target_years == required_years and completed_years == required_years,
+              'research': success.get('research_status') == 'PASS',
+              'model_audit': success.get('model_audit_status') == 'PASS',
+              'manifest': bool(success.get('manifest_present')),
+              'summary': bool(success.get('summary_present')),
+              'signals': int(success.get('signal_partition_count') or 0) >= 10,
+              'rankings': int(success.get('ranking_partition_count') or 0) >= 10,
+              'outcomes': int(success.get('outcome_partition_count') or 0) >= 10,
+              'price': bool(bootstrap.get('price_history_complete')) and int(bootstrap.get('price_history_remaining') or 0) == 0,
+              'sec': bool(bootstrap.get('sec_data_ready')) and bool(success.get('sec_data_present')),
+              'worker': worker.get('status') == 'PASS' and int(worker.get('research_year') or 0) == 2025,
+              'failures': int(bootstrap.get('consecutive_failures') or 0) == 0,
+          }
+          failed = [name for name, passed in checks.items() if not passed]
+          if failed:
+              raise SystemExit('Final acceptance failed: ' + ', '.join(failed))
+
+          now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+          run_status = read('research-run-status.json')
+          run_status.update({
+              'schema_version': '2.9',
+              'research_status': 'PASS',
+              'backfill_status': 'COMPLETE',
+              'updated_at': now,
+              'encrypted_bundle_count': len(list(Path('private').glob('research-*-year-*.enc.json'))) + int(Path('private/research-summary.enc.json').exists()),
+              'summary_present': True,
+              'success_marker_present': True,
+              'years_retained': 10,
+              'target_years': required_years,
+              'completed_years': required_years,
+              'missing_years': [],
+              'dataset_partition_counts': {
+                  'facts': int(success.get('fact_partition_count') or 0),
+                  'signals': int(success.get('signal_partition_count') or 0),
+                  'outcomes': int(success.get('outcome_partition_count') or 0),
+                  'rankings': int(success.get('ranking_partition_count') or 0),
+              },
+              'model_audit_status': 'PASS',
+              'learning_event_rows': int(success.get('learning_event_rows') or 0),
+              'warmup_runs_completed': int(bootstrap.get('warmup_runs_completed') or 0),
+              'warmup_runs_target': int(bootstrap.get('warmup_runs_target') or 0),
+              'bootstrap_status': 'COMPLETE',
+              'bootstrap_last_result': str(bootstrap.get('last_result') or 'SUCCESS'),
+              'bootstrap_last_run_id': bootstrap.get('last_completed_workflow_run_id'),
+              'bootstrap_last_conclusion': bootstrap.get('last_completed_workflow_conclusion'),
+              'bootstrap_consecutive_failures': 0,
+              'worker_last_action': worker.get('action'),
+              'worker_last_year': worker.get('research_year'),
+              'worker_last_completed_at': worker.get('completed_at'),
+              'price_history_requested': worker.get('price_history_requested'),
+              'price_history_batch': worker.get('price_history_batch'),
+              'price_history_received': worker.get('price_history_received'),
+              'sec_cache_file_count': int(success.get('sec_cache_file_count') or 0),
+              'sec_fact_partition_count': int(success.get('fact_partition_count') or 0),
+              'sec_data_ready': True,
+              'error_type': None,
+              'error_message': None,
+              'privacy': 'No ticker, portfolio, price, financial or ranking values are included.',
+          })
+          write('research-run-status.json', run_status)
+
+          readiness = read('research-readiness.json')
+          readiness.update({
+              'schema_version': '1.7',
+              'updated_at': now,
+              'research_pipeline_ready': True,
+              'ten_year_backfill_complete': True,
+              'sec_cache_file_count': int(success.get('sec_cache_file_count') or 0),
+              'sec_fact_partition_count': int(success.get('fact_partition_count') or 0),
+              'sec_data_ready': True,
+              'full_operational_ready': True,
+              'blockers': [],
+              'privacy': 'Only configuration booleans and aggregate status are included; no secret values or holdings are stored.',
+          })
+          write('research-readiness.json', readiness)
+          print('Ten-year research final acceptance PASS')
+          PY
+
+      - name: Commit finalized aggregate status
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research-run-status.json research-readiness.json
+          if git diff --staged --quiet; then
+            echo "Aggregate research status already finalized"
+            exit 0
+          fi
+          git commit -m "Finalize ten-year research status"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((attempt * 2))
+          done
+          exit 1
