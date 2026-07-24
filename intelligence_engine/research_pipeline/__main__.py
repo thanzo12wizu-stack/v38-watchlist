@@ -25,19 +25,30 @@ def _argument_value(arguments: list[str], name: str, default: str) -> str:
     return arguments[index + 1] if index + 1 < len(arguments) else default
 
 
-def _exception_type_from_log(path: Path) -> str | None:
+def _exception_from_log(path: Path) -> tuple[str | None, str | None]:
     try:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()[-80:]
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()[-120:]
     except OSError:
-        return None
+        return None, None
     for line in reversed(lines):
-        match = re.match(r"^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception))(?::|$)", line.strip())
-        if match:
-            return match.group(1).split(".")[-1]
-    return None
+        match = re.match(
+            r"^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception))(?::\s*(.*))?$",
+            line.strip(),
+        )
+        if not match:
+            continue
+        error_type = match.group(1).split(".")[-1]
+        detail = (match.group(2) or "").strip()
+        # Persist detailed text only for pandas MergeError. Its messages describe
+        # column/dtype contracts, not ticker, price, financial, or ranking values.
+        if error_type != "MergeError":
+            detail = ""
+        return error_type, detail[:500] or None
+    return None, None
 
 
 def _failure_payload(returncode: int, log_path: Path, *, stage: str = "worker") -> dict:
+    detail: str | None = None
     if returncode in (-9, 137):
         error_type = "ProcessMemoryLimit"
         template = f"Research {stage} was killed by SIGKILL, usually because the runner exceeded memory."
@@ -45,10 +56,11 @@ def _failure_payload(returncode: int, log_path: Path, *, stage: str = "worker") 
         error_type = "ProcessTerminated"
         template = f"Research {stage} was terminated before a clean exit."
     else:
-        error_type = _exception_type_from_log(log_path) or "ResearchWorkerExit"
+        parsed_type, detail = _exception_from_log(log_path)
+        error_type = parsed_type or "ResearchWorkerExit"
         template = f"Research {stage} returned exit code {returncode}."
-    return {
-        "schema_version": "2.1",
+    payload = {
+        "schema_version": "2.2",
         "failure_kind": "process_exit",
         "stage": stage,
         "error_type": error_type,
@@ -57,6 +69,9 @@ def _failure_payload(returncode: int, log_path: Path, *, stage: str = "worker") 
         "updated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "privacy": "No ticker, price, portfolio, financial or ranking values are persisted.",
     }
+    if detail:
+        payload["error_detail"] = detail
+    return payload
 
 
 def _run(command: list[str], log_path: Path, *, append: bool = False) -> int:
