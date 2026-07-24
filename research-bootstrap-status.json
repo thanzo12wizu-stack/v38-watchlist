@@ -1,6 +1,6 @@
 {
   "schema_version": "1.5",
-  "updated_at": "2026-07-24T06:00:59.797251Z",
+  "updated_at": "2026-07-24T06:18:45.219844Z",
   "status": "WAITING_ENGINE",
   "years_retained": 10,
   "warmup_runs_target": 14,
@@ -45,7 +45,7 @@
   "last_workflow_run_id": 30064744440,
   "last_workflow_conclusion": null,
   "privacy": "Only aggregate bootstrap progress is included; no ticker, price, financial or portfolio values are stored.",
-  "sec_data_ready": false,
+  "sec_data_ready": true,
   "last_completed_workflow_run_id": 30064744440,
   "last_completed_workflow_conclusion": "failure",
   "last_completed_action": "PRICE_WARMUP",
@@ -53,8 +53,8 @@
   "last_failed_workflow_run_id": 30064744440,
   "last_failed_workflow_conclusion": "failure",
   "consecutive_failures": 3,
-  "sec_cache_file_count": 0,
-  "sec_fact_partition_count": 0,
+  "sec_cache_file_count": 2726,
+  "sec_fact_partition_count": 10,
   "price_history_remaining": null,
   "price_history_complete": false
 }
