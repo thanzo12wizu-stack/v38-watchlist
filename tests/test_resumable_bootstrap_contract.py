@@ -7,8 +7,24 @@ def test_research_worker_persists_partial_price_progress_and_skips_research_duri
     assert "if: always() && hashFiles('prices.pkl') != ''" in workflow
     assert "if: inputs.action == 'YEAR_BACKFILL'" in workflow
     assert 'research-worker-result.json' in workflow
-    assert '| tee /tmp/price-warmup-report.json' in workflow
+    assert '/tmp/price-warmup-report.json' in workflow
     assert 'V38_PRICE_PROVIDER' in workflow
+
+
+def test_privacy_safe_worker_result_is_versionable():
+    ignore = Path('.gitignore').read_text(encoding='utf-8')
+
+    assert '!/private/research-worker-result.json' in ignore
+
+
+def test_research_worker_processes_bounded_price_slices_until_complete():
+    workflow = Path('.github/workflows/research-worker.yml').read_text(encoding='utf-8')
+
+    assert 'max_slices=14' in workflow
+    assert 'for slice in $(seq 1 "$max_slices")' in workflow
+    assert 'history_remaining' in workflow
+    assert 'No long-history responses in this slice' in workflow
+    assert 'timeout-minutes: 140' in workflow
 
 
 def test_bootstrap_chains_successes_and_keeps_failed_run_ids():
