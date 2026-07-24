@@ -130,12 +130,18 @@ jobs:
         run: |
           set -euo pipefail
           printf '{"stage":"SEC_INGESTION","action":"%s","year":"%s"}\n' "$RESEARCH_ACTION" "$RESEARCH_YEAR" > /tmp/research-worker-stage.json
-          existing="$(find data/sec_companyfacts -maxdepth 1 -name '*.json' -type f -size +0c 2>/dev/null | wc -l | tr -d ' ')"
+          existing=0
+          if [[ -d data/sec_companyfacts ]]; then
+            existing="$(find data/sec_companyfacts -maxdepth 1 -name '*.json' -type f -size +0c | wc -l | tr -d ' ')"
+          fi
           if [[ "${REFRESH_SEC}" == "true" || "$existing" == "0" ]]; then
             test -n "${SEC_USER_AGENT:-}" || { echo "SEC_USER_AGENT is required until SEC data is cached"; exit 1; }
             python -m intelligence_engine.sec_bulk --universe universe.csv --report /tmp/sec-bulk-report.json
           fi
-          count="$(find data/sec_companyfacts -maxdepth 1 -name '*.json' -type f -size +0c 2>/dev/null | wc -l | tr -d ' ')"
+          count=0
+          if [[ -d data/sec_companyfacts ]]; then
+            count="$(find data/sec_companyfacts -maxdepth 1 -name '*.json' -type f -size +0c | wc -l | tr -d ' ')"
+          fi
           if (( count <= 0 )); then
             echo "SEC Company Facts ingestion produced zero files"
             exit 1
