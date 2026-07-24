@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
+from pandas.api.types import is_datetime64_any_dtype
 
 from intelligence_engine.research_pipeline.worker import _merge_snapshots_indexed
 
@@ -30,7 +31,8 @@ def test_snapshot_merge_normalizes_aware_and_naive_timestamps():
     aaa = merged[merged["ticker"] == "AAA"].sort_values("date")
     bbb = merged[merged["ticker"] == "BBB"]
 
-    assert str(merged["date"].dtype) == "datetime64[ns]"
+    assert is_datetime64_any_dtype(merged["date"])
+    assert merged["date"].dt.tz is None
     assert aaa["revenue_yoy"].tolist() == [0.10, 0.20]
     assert aaa["fundamental_confidence"].tolist() == [0.5, 0.8]
     assert bbb["fundamental_confidence"].tolist() == [0.0]
