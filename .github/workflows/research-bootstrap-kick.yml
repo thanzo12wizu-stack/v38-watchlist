@@ -9,6 +9,7 @@ on:
       - "intelligence_engine/ensure_prices.py"
       - "intelligence_engine/research_*.py"
       - "intelligence_engine/research_pipeline/**"
+      - "private/research-worker-result.json"
       - "universe.csv"
   workflow_dispatch:
 
