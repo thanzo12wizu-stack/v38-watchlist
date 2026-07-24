@@ -52,7 +52,7 @@ def build_status(
     ranking_partition_count = _partition_count(research_root, "rankings")
 
     result = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "completed_at": now,
         "workflow_run_id": os.environ.get("GITHUB_RUN_ID") or None,
         "action": action,
@@ -61,8 +61,14 @@ def build_status(
         "price_provider": price.get("provider"),
         "price_coverage": price.get("coverage"),
         "price_history_requested": price.get("history_requested"),
+        "price_history_eligible": price.get("history_eligible"),
         "price_history_batch": price.get("history_batch"),
         "price_history_received": price.get("history_received"),
+        "price_history_attempted": price.get("history_attempted"),
+        "price_history_remaining": price.get("history_remaining"),
+        "price_history_complete": price.get("history_remaining") == 0
+        if price.get("history_remaining") is not None
+        else False,
         "sec_cache_file_count": sec_cache_file_count,
         "sec_cache_ready": sec_cache_file_count > 0,
         "fact_partition_count": fact_partition_count,

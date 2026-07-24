@@ -44,6 +44,56 @@ def _apply_download(existing: dict[str, pd.DataFrame], downloaded: dict[str, pd.
         existing[ticker] = _merge_frame(existing.get(ticker), frame)
 
 
+def _load_history_attempts(path: Path | None) -> set[str]:
+    if path is None or not path.exists():
+        return set()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    raw = payload.get("attempted", []) if isinstance(payload, dict) else []
+    return {str(ticker).strip().upper() for ticker in raw if str(ticker).strip()}
+
+
+def _save_history_attempts(path: Path | None, attempted: set[str]) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(
+            {"schema_version": "1.0", "attempted": sorted(attempted)},
+            ensure_ascii=False,
+            indent=2,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _short_history_tickers(
+    requested: list[str],
+    existing: dict[str, pd.DataFrame],
+    tolerance: pd.Timestamp,
+) -> list[str]:
+    short = [
+        ticker
+        for ticker in requested
+        if _earliest_date(existing.get(ticker)) is None
+        or _earliest_date(existing.get(ticker)) > tolerance
+    ]
+    short.sort(
+        key=lambda ticker: (
+            ticker != "QQQ",
+            _earliest_date(existing.get(ticker)) or pd.Timestamp.max,
+            ticker,
+        )
+    )
+    return short
+
+
 def run(
     universe_path: Path,
     cache_path: Path,
@@ -52,12 +102,16 @@ def run(
     provider_name: str | None = None,
     history_years: int | None = None,
     max_history_tickers: int = 0,
+    history_attempts_path: Path | None = None,
 ) -> dict:
     universe = load_universe(universe_path)
     requested = sorted(set(universe["ticker"].astype(str)) | {"QQQ"})
     existing = load_price_map(cache_path) if cache_path.exists() else {}
     provider = get_price_provider(provider_name)
     phases: list[dict] = []
+    attempted = _load_history_attempts(history_attempts_path)
+    requested_set = set(requested)
+    attempted &= requested_set
     resolved_history_years = (
         max(RESEARCH_RETENTION_YEARS, int(history_years)) if history_years else None
     )
@@ -96,28 +150,19 @@ def run(
         if downloaded:
             save_price_map(cache_path, existing)
 
-    history_requested = history_batch = history_received = 0
+    history_requested = history_eligible = history_batch = history_received = 0
+    history_remaining = 0
     if resolved_history_years and benchmark_date is not None:
         target_start = benchmark_date - pd.DateOffset(years=resolved_history_years)
         tolerance = target_start + pd.Timedelta(days=45)
-        short = [
-            ticker
-            for ticker in requested
-            if _earliest_date(existing.get(ticker)) is None
-            or _earliest_date(existing.get(ticker)) > tolerance
-        ]
-        short.sort(
-            key=lambda ticker: (
-                ticker != "QQQ",
-                _earliest_date(existing.get(ticker)) or pd.Timestamp.max,
-                ticker,
-            )
-        )
+        short = _short_history_tickers(requested, existing, tolerance)
+        eligible = [ticker for ticker in short if ticker not in attempted]
         history_requested = len(short)
+        history_eligible = len(eligible)
         selected = (
-            short[:max_history_tickers]
+            eligible[:max_history_tickers]
             if max_history_tickers and max_history_tickers > 0
-            else short
+            else eligible
         )
         history_batch = len(selected)
         if selected:
@@ -126,9 +171,26 @@ def run(
             )
             phases.append({"phase": "research_history_backfill", **diagnostics})
             _apply_download(existing, downloaded)
-            history_received = len(downloaded)
+            received = {
+                ticker
+                for ticker in selected
+                if ticker in downloaded
+                and downloaded[ticker] is not None
+                and not downloaded[ticker].empty
+            }
+            history_received = len(received)
             if downloaded:
                 save_price_map(cache_path, existing)
+            # A non-empty response proves the provider has supplied all history it
+            # currently has. Newly listed companies may legitimately remain below
+            # ten years and must not consume every subsequent warmup slice.
+            attempted.update(received)
+            _save_history_attempts(history_attempts_path, attempted)
+        elif history_attempts_path is not None:
+            _save_history_attempts(history_attempts_path, attempted)
+
+        short_after = _short_history_tickers(requested, existing, tolerance)
+        history_remaining = sum(ticker not in attempted for ticker in short_after)
 
     covered = sum(ticker in existing and not existing[ticker].empty for ticker in requested)
     coverage = covered / len(requested) if requested else 0.0
@@ -159,8 +221,11 @@ def run(
         "history_years_requested": history_years,
         "history_years": resolved_history_years,
         "history_requested": history_requested,
+        "history_eligible": history_eligible,
         "history_batch": history_batch,
         "history_received": history_received,
+        "history_attempted": len(attempted),
+        "history_remaining": history_remaining,
         "phases": phases,
     }
     if not result["qqq_available"]:
@@ -180,6 +245,7 @@ def main() -> None:
     parser.add_argument("--provider", default=None)
     parser.add_argument("--history-years", type=int, default=None)
     parser.add_argument("--max-history-tickers", type=int, default=0)
+    parser.add_argument("--history-attempts", default="")
     args = parser.parse_args()
     print(
         json.dumps(
@@ -190,6 +256,7 @@ def main() -> None:
                 provider_name=args.provider,
                 history_years=args.history_years,
                 max_history_tickers=max(0, args.max_history_tickers),
+                history_attempts_path=Path(args.history_attempts) if args.history_attempts else None,
             ),
             ensure_ascii=False,
             indent=2,

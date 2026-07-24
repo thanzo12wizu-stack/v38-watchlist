@@ -109,7 +109,9 @@ jobs:
       - name: Restore price cache
         uses: actions/cache/restore@v4
         with:
-          path: prices.pkl
+          path: |
+            prices.pkl
+            data/price-history-attempts.json
           key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             intelligence-prices-${{ runner.os }}-
@@ -117,9 +119,7 @@ jobs:
       - name: Restore SEC cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            data/sec_companyfacts
-            data/sec/companyfacts.zip
+          path: data/sec_companyfacts
           key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             sec-companyfacts-${{ runner.os }}-
@@ -146,15 +146,17 @@ jobs:
             echo "SEC Company Facts ingestion produced zero files"
             exit 1
           fi
+          # The selected JSON files are sufficient for every later year slice.
+          # Keeping the full bulk ZIP in Actions cache is unnecessary and can
+          # exceed cache/storage limits.
+          rm -f data/sec/companyfacts.zip
           echo "SEC company-fact files: ${count}"
 
       - name: Persist verified SEC cache
         if: always() && hashFiles('data/sec_companyfacts/*.json') != ''
         uses: actions/cache/save@v4
         with:
-          path: |
-            data/sec_companyfacts
-            data/sec/companyfacts.zip
+          path: data/sec_companyfacts
           key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
 
       - name: Extend resumable price cache to ten years
@@ -173,13 +175,16 @@ jobs:
             --min-coverage 0.60 \
             --history-years 10 \
             --max-history-tickers "$batch" \
+            --history-attempts data/price-history-attempts.json \
             | tee /tmp/price-warmup-report.json
 
       - name: Persist price cache immediately
         if: always() && hashFiles('prices.pkl') != ''
         uses: actions/cache/save@v4
         with:
-          path: prices.pkl
+          path: |
+            prices.pkl
+            data/price-history-attempts.json
           key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
 
       - name: Build bounded ten-year point-in-time research
