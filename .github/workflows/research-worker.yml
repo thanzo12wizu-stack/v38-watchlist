@@ -160,7 +160,7 @@ jobs:
           key: sec-companyfacts-${{ runner.os }}-${{ github.run_id }}
 
       - name: Extend resumable price cache to ten years
-        timeout-minutes: 65
+        timeout-minutes: 140
         shell: bash
         run: |
           set -euo pipefail
@@ -169,14 +169,34 @@ jobs:
           [[ "$batch" =~ ^[0-9]+$ ]] || batch=250
           (( batch < 20 )) && batch=20
           (( batch > 250 )) && batch=250
-          python -m intelligence_engine.ensure_prices \
-            --universe universe.csv \
-            --prices prices.pkl \
-            --min-coverage 0.60 \
-            --history-years 10 \
-            --max-history-tickers "$batch" \
-            --history-attempts data/price-history-attempts.json \
-            | tee /tmp/price-warmup-report.json
+          max_slices=1
+          if [[ "$RESEARCH_ACTION" == "PRICE_WARMUP" ]]; then
+            max_slices=14
+          fi
+          for slice in $(seq 1 "$max_slices"); do
+            echo "Price-history slice ${slice}/${max_slices}, batch=${batch}"
+            python -m intelligence_engine.ensure_prices \
+              --universe universe.csv \
+              --prices prices.pkl \
+              --min-coverage 0.60 \
+              --history-years 10 \
+              --max-history-tickers "$batch" \
+              --history-attempts data/price-history-attempts.json \
+              | tee /tmp/price-warmup-slice.json
+            cp /tmp/price-warmup-slice.json /tmp/price-warmup-report.json
+            read -r remaining slice_batch slice_received <<< "$(python -c 'import json; d=json.load(open("/tmp/price-warmup-report.json")); print(d.get("history_remaining", -1), d.get("history_batch", 0), d.get("history_received", 0))')"
+            echo "Price-history progress: remaining=${remaining}, batch=${slice_batch}, received=${slice_received}"
+            if [[ "$remaining" == "0" || "$slice_batch" == "0" ]]; then
+              break
+            fi
+            # Do not hammer a temporarily unavailable provider. The cache and
+            # attempt marker are persisted and the next worker resumes safely.
+            if [[ "$slice_received" == "0" ]]; then
+              echo "No long-history responses in this slice; defer remaining work."
+              break
+            fi
+            sleep 2
+          done
 
       - name: Persist price cache immediately
         if: always() && hashFiles('prices.pkl') != ''
