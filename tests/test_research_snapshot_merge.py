@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-from pandas.api.types import is_datetime64_any_dtype
 
 from intelligence_engine.research_pipeline.worker import _merge_snapshots_indexed
 
@@ -31,11 +30,34 @@ def test_snapshot_merge_normalizes_aware_and_naive_timestamps():
     aaa = merged[merged["ticker"] == "AAA"].sort_values("date")
     bbb = merged[merged["ticker"] == "BBB"]
 
-    assert is_datetime64_any_dtype(merged["date"])
+    assert str(merged["date"].dtype) == "datetime64[ns]"
     assert merged["date"].dt.tz is None
     assert aaa["revenue_yoy"].tolist() == [0.10, 0.20]
     assert aaa["fundamental_confidence"].tolist() == [0.5, 0.8]
     assert bbb["fundamental_confidence"].tolist() == [0.0]
+
+
+def test_snapshot_merge_forces_matching_datetime_resolutions():
+    price_panel = pd.DataFrame(
+        {
+            "ticker": ["AAA"],
+            "date": pd.Series(["2026-01-05"], dtype="datetime64[ns]"),
+            "price": [10.0],
+        }
+    )
+    snapshots = pd.DataFrame(
+        {
+            "ticker": ["AAA"],
+            "available_at": pd.Series(["2026-01-01"], dtype="datetime64[us]"),
+            "fundamental_confidence": [0.7],
+        }
+    )
+
+    merged = _merge_snapshots_indexed(price_panel, snapshots)
+
+    assert str(merged["date"].dtype) == "datetime64[ns]"
+    assert str(merged["available_at"].dtype) == "datetime64[ns]"
+    assert merged["fundamental_confidence"].tolist() == [0.7]
 
 
 def test_snapshot_merge_ignores_invalid_snapshot_dates_without_merge_error():
