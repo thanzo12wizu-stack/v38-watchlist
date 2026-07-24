@@ -10,6 +10,7 @@ on:
       - "intelligence_engine/research_*.py"
       - "intelligence_engine/research_pipeline/**"
       - "universe.csv"
+  workflow_dispatch:
 
 permissions:
   contents: read
