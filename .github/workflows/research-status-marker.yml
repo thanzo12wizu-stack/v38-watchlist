@@ -48,16 +48,19 @@ jobs:
 
           private = Path('private')
           success_path = private / 'research-success.json'
+          worker_result_path = private / 'research-worker-result.json'
           error_path = private / 'research-error-detail.json'
           summary = private / 'research-summary.enc.json'
 
           def read_json(path):
               try:
-                  return json.loads(path.read_text()) if path.exists() else {}
+                  payload = json.loads(path.read_text()) if path.exists() else {}
               except (OSError, json.JSONDecodeError):
                   return {}
+              return payload if isinstance(payload, dict) else {}
 
           success = read_json(success_path)
+          worker_result = read_json(worker_result_path)
           error = read_json(error_path)
           bootstrap = read_json(Path('research-bootstrap-status.json'))
 
@@ -77,12 +80,18 @@ jobs:
           passed = bool(success) and not error and summary.exists() and bool(bundles)
 
           sec_configured = bool(os.environ.get('SEC_USER_AGENT_VALUE', '').strip())
-          sec_cache_file_count = int(success.get('sec_cache_file_count') or 0)
+          sec_cache_file_count = max(
+              int(success.get('sec_cache_file_count') or 0),
+              int(worker_result.get('sec_cache_file_count') or 0),
+              int(bootstrap.get('sec_cache_file_count') or 0),
+          )
           sec_fact_partition_count = max(
               len(datasets['facts']),
               int(success.get('fact_partition_count') or 0),
+              int(worker_result.get('fact_partition_count') or 0),
+              int(bootstrap.get('sec_fact_partition_count') or 0),
           )
-          sec_data_present = bool(success.get('sec_data_present')) or (
+          sec_data_present = bool(success.get('sec_data_present')) or bool(worker_result.get('sec_data_ready')) or (
               sec_cache_file_count > 0 and sec_fact_partition_count > 0
           )
           sec_data_ready = sec_configured and sec_data_present
@@ -91,7 +100,7 @@ jobs:
           portfolio_mode = 'POSITIONS' if portfolio_secret_configured else 'FLAT'
 
           status = {
-              'schema_version': '2.7',
+              'schema_version': '2.8',
               'research_status': 'PASS' if passed else 'FAIL',
               'backfill_status': 'COMPLETE' if not missing_years else 'IN_PROGRESS',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
@@ -109,7 +118,15 @@ jobs:
               'warmup_runs_target': int(bootstrap.get('warmup_runs_target') or 14),
               'bootstrap_status': bootstrap.get('status'),
               'bootstrap_last_result': bootstrap.get('last_result'),
-              'bootstrap_last_run_id': bootstrap.get('last_workflow_run_id'),
+              'bootstrap_last_run_id': bootstrap.get('last_completed_workflow_run_id') or bootstrap.get('last_workflow_run_id'),
+              'bootstrap_last_conclusion': bootstrap.get('last_completed_workflow_conclusion'),
+              'bootstrap_consecutive_failures': int(bootstrap.get('consecutive_failures') or 0),
+              'worker_last_action': worker_result.get('action'),
+              'worker_last_year': worker_result.get('research_year'),
+              'worker_last_completed_at': worker_result.get('completed_at'),
+              'price_history_requested': worker_result.get('price_history_requested'),
+              'price_history_batch': worker_result.get('price_history_batch'),
+              'price_history_received': worker_result.get('price_history_received'),
               'sec_cache_file_count': sec_cache_file_count,
               'sec_fact_partition_count': sec_fact_partition_count,
               'sec_data_ready': sec_data_ready,
@@ -133,7 +150,7 @@ jobs:
           elif not sec_data_ready:
               blockers.append('sec_data_not_ingested')
           readiness = {
-              'schema_version': '1.5',
+              'schema_version': '1.6',
               'updated_at': now.isoformat().replace('+00:00', 'Z'),
               'research_pipeline_ready': passed,
               'ten_year_backfill_complete': not missing_years,
