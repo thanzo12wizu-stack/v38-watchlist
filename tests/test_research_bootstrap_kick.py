@@ -13,6 +13,7 @@ def test_research_code_changes_resume_the_serial_bootstrap_controller():
     ):
         assert f'- "{path}"' in workflow
 
+    assert 'workflow_dispatch:' in workflow
     assert 'actions: write' in workflow
     assert 'gh workflow run research-bootstrap.yml' in workflow
     assert '--ref main' in workflow
