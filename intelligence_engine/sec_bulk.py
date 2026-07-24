@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -11,6 +12,7 @@ from pathlib import Path
 
 SEC_BULK_URL = "https://www.sec.gov/Archives/edgar/daily-index/xbrl/companyfacts.zip"
 TICKER_MAP_URL = "https://www.sec.gov/files/company_tickers.json"
+TICKER_COLUMN_ALIASES = ("ticker", "symbol", "シンボル", "ティッカー")
 
 
 def _request(url: str) -> urllib.request.Request:
@@ -39,7 +41,10 @@ def _open_with_retry(url: str, *, timeout: int, attempts: int = 4):
             if attempt == attempts:
                 break
             time.sleep(min(30, 2**attempt))
-    raise RuntimeError(f"SEC request failed after {attempts} attempts: {type(last_error).__name__}") from last_error
+    detail = type(last_error).__name__
+    if isinstance(last_error, urllib.error.HTTPError):
+        detail = f"HTTPError:{last_error.code}"
+    raise RuntimeError(f"SEC request failed after {attempts} attempts: {detail}") from last_error
 
 
 def download(url: str, target: Path) -> dict[str, int | str]:
@@ -94,9 +99,32 @@ def extract_selected(zip_path: Path, output_dir: Path, tickers: set[str]) -> dic
     return {"requested": len(tickers), "matched": len(reverse), "written": written}
 
 
-def main() -> None:
+def load_universe_tickers(path: Path) -> set[str]:
+    """Load tickers from either normalized or TradingView-export universe CSVs."""
     import pandas as pd
 
+    universe = pd.read_csv(path)
+    columns = {str(column).strip().lower(): column for column in universe.columns}
+    source = next((columns[name.lower()] for name in TICKER_COLUMN_ALIASES if name.lower() in columns), None)
+    if source is None:
+        available = ", ".join(str(column) for column in universe.columns[:12])
+        raise ValueError(
+            "universe CSV requires ticker/symbol/シンボル/ティッカー column; "
+            f"available columns: {available}"
+        )
+    values = universe[source].astype(str).str.upper().str.strip()
+    return {ticker for ticker in values if ticker and ticker != "NAN"}
+
+
+def _write_report(path: str, payload: dict) -> None:
+    if not path:
+        return
+    report_path = Path(path)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--universe", default="universe.csv")
     parser.add_argument("--zip", default="data/sec/companyfacts.zip")
@@ -105,27 +133,43 @@ def main() -> None:
     parser.add_argument("--skip-download", action="store_true")
     arguments = parser.parse_args()
 
-    universe = pd.read_csv(arguments.universe)
-    column = "ticker" if "ticker" in universe.columns else "symbol"
-    tickers = set(universe[column].astype(str).str.upper().str.strip())
-    zip_path = Path(arguments.zip)
+    stage = "LOAD_UNIVERSE"
+    try:
+        tickers = load_universe_tickers(Path(arguments.universe))
+        if not tickers:
+            raise RuntimeError("universe CSV produced zero usable tickers")
+        zip_path = Path(arguments.zip)
 
-    download_report: dict[str, int | str] | None = None
-    if not arguments.skip_download:
-        download_report = download(SEC_BULK_URL, zip_path)
-    elif not zip_path.exists():
-        raise FileNotFoundError(zip_path)
+        download_report: dict[str, int | str] | None = None
+        stage = "DOWNLOAD_BULK_ZIP"
+        if not arguments.skip_download:
+            download_report = download(SEC_BULK_URL, zip_path)
+        elif not zip_path.exists():
+            raise FileNotFoundError(zip_path)
 
-    extraction = extract_selected(zip_path, Path(arguments.output), tickers)
-    if extraction["written"] <= 0:
-        raise RuntimeError("SEC extraction produced zero company-fact files")
+        stage = "EXTRACT_SELECTED"
+        extraction = extract_selected(zip_path, Path(arguments.output), tickers)
+        if extraction["written"] <= 0:
+            raise RuntimeError("SEC extraction produced zero company-fact files")
 
-    payload = {"download": download_report, "extraction": extraction}
-    if arguments.report:
-        report_path = Path(arguments.report)
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    print(json.dumps(payload, indent=2, allow_nan=False))
+        payload = {
+            "status": "success",
+            "stage": "COMPLETE",
+            "download": download_report,
+            "extraction": extraction,
+        }
+        _write_report(arguments.report, payload)
+        print(json.dumps(payload, indent=2, allow_nan=False))
+    except Exception as exc:
+        failure = {
+            "status": "failure",
+            "stage": stage,
+            "error_type": type(exc).__name__,
+            "error_message": str(exc)[:500],
+        }
+        _write_report(arguments.report, failure)
+        print(json.dumps(failure, indent=2, allow_nan=False), file=sys.stderr)
+        raise
 
 
 if __name__ == "__main__":
