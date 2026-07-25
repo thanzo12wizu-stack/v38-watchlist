@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: research-adoption-validation
+  group: intelligence-engine-main
   cancel-in-progress: false
 
 jobs:
@@ -85,12 +85,12 @@ jobs:
           fi
           git commit -m "Publish research adoption validation"
           for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
             if git push origin HEAD:main; then
               exit 0
             fi
-            echo "Push raced with another main writer; rebasing attempt ${attempt}/3"
-            git fetch origin main
-            git rebase origin/main
+            echo "Push raced with another main writer; retrying ${attempt}/3"
             sleep $((attempt * 2))
           done
           echo "Failed to publish adoption report after retries"
