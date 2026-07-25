@@ -12,8 +12,10 @@ on:
 permissions:
   contents: write
 
+# Serialize with research workers so encrypted input partitions cannot change
+# between report generation and publication.
 concurrency:
-  group: research-adoption-validation
+  group: intelligence-engine-main
   cancel-in-progress: false
 
 jobs:
@@ -84,13 +86,13 @@ jobs:
             exit 0
           fi
           git commit -m "Publish research adoption validation"
-          for attempt in 1 2 3; do
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git rebase origin/main
             if git push origin HEAD:main; then
               exit 0
             fi
-            echo "Push raced with another main writer; rebasing attempt ${attempt}/3"
-            git fetch origin main
-            git rebase origin/main
+            echo "Push raced with another main writer; retry ${attempt}/4"
             sleep $((attempt * 2))
           done
           echo "Failed to publish adoption report after retries"
