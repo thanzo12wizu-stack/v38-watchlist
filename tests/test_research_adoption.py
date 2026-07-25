@@ -62,8 +62,9 @@ def test_negative_strategy_is_rejected() -> None:
     assert "block_ci" in reasons
 
 
-def test_report_publisher_recovers_from_concurrent_main_updates() -> None:
+def test_report_publisher_is_serialized_and_retries_after_rebase() -> None:
     workflow = Path(".github/workflows/research-adoption-validation.yml").read_text(encoding="utf-8")
-    assert "git rebase origin/main" in workflow
-    assert "for attempt in 1 2 3" in workflow
+    assert "group: intelligence-engine-main" in workflow
+    assert "for attempt in 1 2 3 4" in workflow
+    assert workflow.index("git rebase origin/main") < workflow.index("git push origin HEAD:main")
     assert "Failed to publish adoption report after retries" in workflow
