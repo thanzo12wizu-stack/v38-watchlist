@@ -1,0 +1,371 @@
+{
+  "schema_version": "1.0",
+  "method": "next-open; two-stage entry; 5/10-session progress exits; 25% partial at +25%; EMA21-low or SMA10 trail; four-position cap",
+  "policy": {
+    "round_trip_cost": 0.002,
+    "max_positions": 4,
+    "first_leg_weight": 0.5,
+    "add_leg_weight": 0.5,
+    "add_deadline_sessions": 5,
+    "progress_exit_sessions": 5,
+    "hard_exit_sessions": 10,
+    "progress_threshold": 0.05,
+    "partial_target": 0.25,
+    "partial_fraction": 0.25,
+    "max_holding_sessions": 63,
+    "min_trades": 100,
+    "min_positive_year_rate": 0.7,
+    "min_oos_positive_rate": 0.6,
+    "bootstrap_samples": 1000,
+    "seed": 38
+  },
+  "results": [
+    {
+      "strategy": "EDGE_CONFIRMED",
+      "trail": "EMA21_LOW",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 471,
+        "mean_return": -0.01421436994486799,
+        "median_return": -0.025798775688923414,
+        "win_rate": 0.2760084925690021,
+        "positive_year_rate": 0.2222222222222222,
+        "oos_positive_rate": 0.2222222222222222,
+        "years": {
+          "2018": -0.015480443426963031,
+          "2019": -0.022160160690819386,
+          "2020": 0.033572316791639786,
+          "2021": 0.008890982708898102,
+          "2022": -0.02244293755677285,
+          "2023": -0.02981337275608684,
+          "2024": -0.036783927356095626,
+          "2025": -0.0022086314500108714,
+          "2026": -0.009426342149010003
+        },
+        "add_rate": 0.31634819532908703,
+        "partial_rate": 0.03397027600849257,
+        "mean_holding_sessions": 6.6050955414012735,
+        "date_block_ci95": [
+          -0.026158769423111797,
+          -0.005211880726605807
+        ]
+      }
+    },
+    {
+      "strategy": "BASELINE",
+      "trail": "EMA21_LOW",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 1103,
+        "mean_return": -0.01766642042168186,
+        "median_return": -0.015353595715492663,
+        "win_rate": 0.2873980054397099,
+        "positive_year_rate": 0.1,
+        "oos_positive_rate": 0.1,
+        "years": {
+          "2017": -0.027232945006097603,
+          "2018": -0.0038587834199074445,
+          "2019": -0.019194566553241955,
+          "2020": -0.04974369881706488,
+          "2021": -0.014509748603519348,
+          "2022": -0.028233558582825575,
+          "2023": 0.005420594804632289,
+          "2024": -0.015782300648833895,
+          "2025": -0.010628323487466833,
+          "2026": -0.01331974157269935
+        },
+        "add_rate": 0.23118766999093382,
+        "partial_rate": 0.024478694469628286,
+        "mean_holding_sessions": 5.0752493200362645,
+        "date_block_ci95": [
+          -0.02587842682519623,
+          -0.0087573755737709
+        ]
+      }
+    },
+    {
+      "strategy": "ARCHETYPE",
+      "trail": "EMA21_LOW",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 972,
+        "mean_return": -0.017737166769562995,
+        "median_return": -0.01732215381354285,
+        "win_rate": 0.26851851851851855,
+        "positive_year_rate": 0.1,
+        "oos_positive_rate": 0.1,
+        "years": {
+          "2017": -0.0278194031585976,
+          "2018": -0.011465219607696909,
+          "2019": -0.00873798750116122,
+          "2020": -0.017725490626716855,
+          "2021": -0.01949338907689404,
+          "2022": -0.04209158467088301,
+          "2023": 0.008635754778742396,
+          "2024": -0.01738467960884759,
+          "2025": -0.017918532871812668,
+          "2026": -0.03514568304925192
+        },
+        "add_rate": 0.25617283950617287,
+        "partial_rate": 0.023662551440329218,
+        "mean_holding_sessions": 5.525720164609053,
+        "date_block_ci95": [
+          -0.02787888052451133,
+          -0.01034450051365626
+        ]
+      }
+    },
+    {
+      "strategy": "EDGE_CONFIRMED",
+      "trail": "SMA10",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 580,
+        "mean_return": -0.023964754372947122,
+        "median_return": -0.01336094781911934,
+        "win_rate": 0.31551724137931036,
+        "positive_year_rate": 0.0,
+        "oos_positive_rate": 0.0,
+        "years": {
+          "2018": -0.013980407551815788,
+          "2019": -0.0009486026106370801,
+          "2020": -0.020709037392766222,
+          "2021": -0.027061218995921076,
+          "2022": -0.029650018968403073,
+          "2023": -0.05317928955183458,
+          "2024": -0.019498541795548153,
+          "2025": -0.005341464097225731,
+          "2026": -0.009426342149010003
+        },
+        "add_rate": 0.2672413793103448,
+        "partial_rate": 0.015517241379310345,
+        "mean_holding_sessions": 4.606896551724138,
+        "date_block_ci95": [
+          -0.03626319368974234,
+          -0.017056855256611724
+        ]
+      }
+    },
+    {
+      "strategy": "HARD_BLOCKS",
+      "trail": "EMA21_LOW",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 1059,
+        "mean_return": -0.02435986437574348,
+        "median_return": -0.01785925433706026,
+        "win_rate": 0.27101038715769593,
+        "positive_year_rate": 0.1,
+        "oos_positive_rate": 0.1,
+        "years": {
+          "2017": -0.04323781248571111,
+          "2018": -0.020453807382272596,
+          "2019": -0.02776733895047265,
+          "2020": -0.046484676753512824,
+          "2021": -0.028278444669949804,
+          "2022": -0.04402745532661191,
+          "2023": 0.009702313217971534,
+          "2024": -0.01155647787179119,
+          "2025": -0.017588223400709996,
+          "2026": -0.01946201794875502
+        },
+        "add_rate": 0.24268177525967893,
+        "partial_rate": 0.025495750708215296,
+        "mean_holding_sessions": 5.431539187913126,
+        "date_block_ci95": [
+          -0.036949928994496554,
+          -0.017886746272150082
+        ]
+      }
+    },
+    {
+      "strategy": "BASELINE",
+      "trail": "SMA10",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 832,
+        "mean_return": -0.03770232058210281,
+        "median_return": -0.014509387385382266,
+        "win_rate": 0.2980769230769231,
+        "positive_year_rate": 0.0,
+        "oos_positive_rate": 0.0,
+        "years": {
+          "2017": -0.06014029306056267,
+          "2018": -0.04292659004501354,
+          "2019": -0.005153205965270869,
+          "2020": -0.09684643676310557,
+          "2021": -0.1518576810939091,
+          "2022": -0.08387212979565346,
+          "2023": -0.009499894579390988,
+          "2024": -0.019843263425741945,
+          "2025": -0.016670529152972822,
+          "2026": -0.00309065506850052
+        },
+        "add_rate": 0.22596153846153846,
+        "partial_rate": 0.02283653846153846,
+        "mean_holding_sessions": 7.847355769230769,
+        "date_block_ci95": [
+          -0.05655887622552135,
+          -0.03368545638110272
+        ]
+      }
+    },
+    {
+      "strategy": "HARD_BLOCKS",
+      "trail": "SMA10",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 719,
+        "mean_return": -0.04634685682861149,
+        "median_return": -0.017466333326302985,
+        "win_rate": 0.2726008344923505,
+        "positive_year_rate": 0.0,
+        "oos_positive_rate": 0.0,
+        "years": {
+          "2017": -0.10651712913212921,
+          "2018": -0.055308951216463766,
+          "2019": -0.016928234595331833,
+          "2020": -0.09291726242354349,
+          "2021": -0.17575526208982092,
+          "2022": -0.1281828934828516,
+          "2023": -0.020187973312005753,
+          "2024": -0.019530070644336785,
+          "2025": -0.011540911130058768,
+          "2026": -0.006179358722660772
+        },
+        "add_rate": 0.24756606397774686,
+        "partial_rate": 0.016689847009735744,
+        "mean_holding_sessions": 9.794158553546593,
+        "date_block_ci95": [
+          -0.058085303095908224,
+          -0.0348447548911559
+        ]
+      }
+    },
+    {
+      "strategy": "ARCHETYPE",
+      "trail": "SMA10",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 628,
+        "mean_return": -0.051419915750798996,
+        "median_return": -0.021369777071501006,
+        "win_rate": 0.25,
+        "positive_year_rate": 0.0,
+        "oos_positive_rate": 0.0,
+        "years": {
+          "2017": -0.10752136629639485,
+          "2018": -0.05353815194413105,
+          "2019": -0.05478100895987381,
+          "2020": -0.09263045458716603,
+          "2021": -0.16144707206826817,
+          "2022": -0.11173858779934599,
+          "2023": -0.012476495945527506,
+          "2024": -0.025951531739073823,
+          "2025": -0.012300314814721228,
+          "2026": -0.03514568304925192
+        },
+        "add_rate": 0.2627388535031847,
+        "partial_rate": 0.009554140127388535,
+        "mean_holding_sessions": 10.703821656050955,
+        "date_block_ci95": [
+          -0.07038199926562955,
+          -0.0427037541241126
+        ]
+      }
+    },
+    {
+      "strategy": "RESEARCH_QUALIFIED",
+      "trail": "EMA21_LOW",
+      "decision": "REJECT",
+      "reasons": [
+        "trades",
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 0,
+        "mean_return": null,
+        "win_rate": null,
+        "positive_year_rate": null,
+        "oos_positive_rate": null,
+        "date_block_ci95": null
+      }
+    },
+    {
+      "strategy": "RESEARCH_QUALIFIED",
+      "trail": "SMA10",
+      "decision": "REJECT",
+      "reasons": [
+        "trades",
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "trades": 0,
+        "mean_return": null,
+        "win_rate": null,
+        "positive_year_rate": null,
+        "oos_positive_rate": null,
+        "date_block_ci95": null
+      }
+    }
+  ],
+  "implementation": {
+    "adopted": [],
+    "command_center_integration": "SIDECAR_ONLY",
+    "command_center_modified": false
+  }
+}
