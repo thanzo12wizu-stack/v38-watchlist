@@ -1,0 +1,103 @@
+name: Research execution validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - intelligence_engine/research_execution.py
+      - tests/test_research_execution.py
+      - .github/workflows/research-execution-validation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: intelligence-engine-main
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - name: Run focused execution tests
+        run: pytest -q tests/test_research_execution.py
+      - name: Restore price cache
+        uses: actions/cache/restore@v4
+        with:
+          path: prices.pkl
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            intelligence-prices-${{ runner.os }}-
+      - name: Verify private inputs
+        run: |
+          test -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}"
+          test -s prices.pkl
+      - name: Restore encrypted research rankings
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          restored=0
+          for encrypted in private/research-rankings-year-*.enc.json; do
+            year="$(basename "$encrypted" .enc.json)"
+            year="${year##*-}"
+            target="data/intelligence/research/rankings/year=${year}.jsonl.gz"
+            mkdir -p "$(dirname "$target")"
+            node scripts/private_crypto.mjs decrypt "$encrypted" "$target"
+            restored=$((restored + 1))
+          done
+          test "$restored" -eq 10
+          echo "Restored ${restored} ranking partitions"
+      - name: Build execution-grade report
+        run: python -m intelligence_engine.research_execution --root data/intelligence/research --prices prices.pkl --output research-execution-report.json
+      - name: Validate aggregate contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('research-execution-report.json').read_text())
+          assert p['schema_version']=='1.0'
+          assert len(p['results'])==10
+          assert p['implementation']['command_center_integration']=='SIDECAR_ONLY'
+          assert p['implementation']['command_center_modified'] is False
+          assert all(x['decision'] in {'ADOPT','DISPLAY_ONLY','REJECT'} for x in p['results'])
+          print(json.dumps({'decisions': [{"strategy":x['strategy'],"trail":x['trail'],"decision":x['decision']} for x in p['results']]}, indent=2))
+          PY
+      - name: Remove plaintext research data and price cache
+        if: always()
+        run: rm -rf data/intelligence prices.pkl
+      - name: Commit aggregate execution report only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research-execution-report.json
+          if git diff --staged --quiet; then
+            echo "Execution report unchanged"
+            exit 0
+          fi
+          git commit -m "Publish execution-grade research validation"
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push raced with another main writer; retry ${attempt}/4"
+            sleep $((attempt * 2))
+          done
+          exit 1
