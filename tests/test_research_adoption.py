@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
 from intelligence_engine.research_adoption import AdoptionPolicy, _candidate_masks, _decision, _summary, _walk_forward
@@ -58,3 +60,10 @@ def test_negative_strategy_is_rejected() -> None:
     assert decision == "REJECT"
     assert "mean" in reasons
     assert "block_ci" in reasons
+
+
+def test_report_publisher_recovers_from_concurrent_main_updates() -> None:
+    workflow = Path(".github/workflows/research-adoption-validation.yml").read_text(encoding="utf-8")
+    assert "git rebase origin/main" in workflow
+    assert "for attempt in 1 2 3" in workflow
+    assert "Failed to publish adoption report after retries" in workflow
