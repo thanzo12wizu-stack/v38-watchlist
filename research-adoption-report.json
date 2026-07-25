@@ -1,0 +1,397 @@
+{
+  "schema_version": "1.0",
+  "method": "point-in-time rankings; QQQ excess returns; date-block bootstrap; annual walk-forward",
+  "limitations": [
+    "Primary return labels use signal-date close and fixed holding horizons.",
+    "Execution-grade next-open/two-stage/trailing-stop validation requires retained price cache.",
+    "No Command Center files are modified by this report."
+  ],
+  "policy": {
+    "horizon": 10,
+    "round_trip_cost": 0.002,
+    "max_positions": 4,
+    "position_weight": 0.08,
+    "min_samples": 100,
+    "min_positive_year_rate": 0.7,
+    "min_oos_positive_rate": 0.6,
+    "max_ticker_share": 0.25,
+    "max_year_share": 0.5,
+    "bootstrap_samples": 1000,
+    "seed": 38
+  },
+  "strategies": [
+    {
+      "strategy": "EDGE_CONFIRMED",
+      "decision": "REJECT",
+      "reasons": [
+        "block_ci",
+        "positive_year_rate"
+      ],
+      "summary": {
+        "samples": 2285,
+        "mean": 0.0004783065682043908,
+        "median": -0.00345113899475602,
+        "win_rate": 0.4713347921225383,
+        "positive_year_rate": 0.625,
+        "years": [
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025
+        ],
+        "max_ticker_share": 0.01225382932166302,
+        "max_year_share": 0.29277899343544855,
+        "date_block_ci95": [
+          -0.002490528498603551,
+          0.01036126622119292
+        ]
+      },
+      "walk_forward": {
+        "strategy": "EDGE_CONFIRMED",
+        "years": [
+          {
+            "year": 2018,
+            "samples": 36,
+            "mean": 0.0029718396321928822
+          },
+          {
+            "year": 2019,
+            "samples": 100,
+            "mean": -0.010429204092065079
+          },
+          {
+            "year": 2020,
+            "samples": 227,
+            "mean": 0.015460971293003715
+          },
+          {
+            "year": 2021,
+            "samples": 409,
+            "mean": 0.0053311032117859675
+          },
+          {
+            "year": 2022,
+            "samples": 322,
+            "mean": 0.011960073467237585
+          },
+          {
+            "year": 2023,
+            "samples": 669,
+            "mean": -0.011629221714153228
+          },
+          {
+            "year": 2024,
+            "samples": 282,
+            "mean": -0.009669145367343797
+          },
+          {
+            "year": 2025,
+            "samples": 240,
+            "mean": 0.012476281906546888
+          }
+        ],
+        "positive_rate": 0.625
+      }
+    },
+    {
+      "strategy": "BASELINE",
+      "decision": "REJECT",
+      "reasons": [
+        "block_ci",
+        "positive_year_rate"
+      ],
+      "summary": {
+        "samples": 148187,
+        "mean": 0.0002342990072740663,
+        "median": -0.004595764752271636,
+        "win_rate": 0.4690492418363284,
+        "positive_year_rate": 0.6,
+        "years": [
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ],
+        "max_ticker_share": 0.001626323496663,
+        "max_year_share": 0.10324792323213237,
+        "date_block_ci95": [
+          -0.002128844002428932,
+          0.003176692471267267
+        ]
+      },
+      "walk_forward": {
+        "strategy": "BASELINE",
+        "years": [
+          {
+            "year": 2017,
+            "samples": 15300,
+            "mean": -0.0019936170855395143
+          },
+          {
+            "year": 2018,
+            "samples": 15300,
+            "mean": 0.0004089991684563852
+          },
+          {
+            "year": 2019,
+            "samples": 15300,
+            "mean": -0.0031267309288978188
+          },
+          {
+            "year": 2020,
+            "samples": 15300,
+            "mean": 0.0029134047408760485
+          },
+          {
+            "year": 2021,
+            "samples": 15296,
+            "mean": 0.0028488954668300084
+          },
+          {
+            "year": 2022,
+            "samples": 15296,
+            "mean": 0.009412637035907081
+          },
+          {
+            "year": 2023,
+            "samples": 14996,
+            "mean": -0.01196084723908573
+          },
+          {
+            "year": 2024,
+            "samples": 15300,
+            "mean": 0.0017850335127802262
+          },
+          {
+            "year": 2025,
+            "samples": 15000,
+            "mean": 0.0038023889965749535
+          },
+          {
+            "year": 2026,
+            "samples": 11099,
+            "mean": -0.0027304957076918334
+          }
+        ],
+        "positive_rate": 0.6
+      }
+    },
+    {
+      "strategy": "HARD_BLOCKS",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "samples": 62368,
+        "mean": -0.00033317596765910156,
+        "median": -0.004946736575928257,
+        "win_rate": 0.4652866854797332,
+        "positive_year_rate": 0.5,
+        "years": [
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ],
+        "max_ticker_share": 0.0020363006670087226,
+        "max_year_share": 0.13101269881990765,
+        "date_block_ci95": [
+          -0.0028752466720810177,
+          0.0027148960675774103
+        ]
+      },
+      "walk_forward": {
+        "strategy": "HARD_BLOCKS",
+        "years": [
+          {
+            "year": 2017,
+            "samples": 8171,
+            "mean": -0.00371933649820553
+          },
+          {
+            "year": 2018,
+            "samples": 7888,
+            "mean": 0.000212641288843141
+          },
+          {
+            "year": 2019,
+            "samples": 7191,
+            "mean": -0.0033223892638190866
+          },
+          {
+            "year": 2020,
+            "samples": 5303,
+            "mean": 0.005470392851331199
+          },
+          {
+            "year": 2021,
+            "samples": 6206,
+            "mean": 0.003490970865093458
+          },
+          {
+            "year": 2022,
+            "samples": 5888,
+            "mean": 0.012284944908141637
+          },
+          {
+            "year": 2023,
+            "samples": 5555,
+            "mean": -0.015998314068315575
+          },
+          {
+            "year": 2024,
+            "samples": 5478,
+            "mean": -0.0029967893802660558
+          },
+          {
+            "year": 2025,
+            "samples": 5254,
+            "mean": 0.003296538770568699
+          },
+          {
+            "year": 2026,
+            "samples": 5434,
+            "mean": -0.0005918320645733979
+          }
+        ],
+        "positive_rate": 0.5
+      }
+    },
+    {
+      "strategy": "ARCHETYPE",
+      "decision": "REJECT",
+      "reasons": [
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "samples": 27750,
+        "mean": -0.0013106459685744108,
+        "median": -0.004546515691539854,
+        "win_rate": 0.46313513513513516,
+        "positive_year_rate": 0.3333333333333333,
+        "years": [
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025
+        ],
+        "max_ticker_share": 0.003171171171171171,
+        "max_year_share": 0.15715315315315315,
+        "date_block_ci95": [
+          -0.004736733269821485,
+          0.001194034346214296
+        ]
+      },
+      "walk_forward": {
+        "strategy": "ARCHETYPE",
+        "years": [
+          {
+            "year": 2017,
+            "samples": 4361,
+            "mean": -0.006764946822135781
+          },
+          {
+            "year": 2018,
+            "samples": 4284,
+            "mean": -0.001040989835776453
+          },
+          {
+            "year": 2019,
+            "samples": 3502,
+            "mean": -0.004490430944939209
+          },
+          {
+            "year": 2020,
+            "samples": 2340,
+            "mean": 0.006618980522981142
+          },
+          {
+            "year": 2021,
+            "samples": 3536,
+            "mean": 0.00457863153107196
+          },
+          {
+            "year": 2022,
+            "samples": 2472,
+            "mean": 0.011479314078340144
+          },
+          {
+            "year": 2023,
+            "samples": 2448,
+            "mean": -0.012473055547072112
+          },
+          {
+            "year": 2024,
+            "samples": 2805,
+            "mean": -0.005580431820346644
+          },
+          {
+            "year": 2025,
+            "samples": 2002,
+            "mean": -0.00027551028719313524
+          }
+        ],
+        "positive_rate": 0.3333333333333333
+      }
+    },
+    {
+      "strategy": "RESEARCH_QUALIFIED",
+      "decision": "REJECT",
+      "reasons": [
+        "samples",
+        "mean",
+        "block_ci",
+        "positive_year_rate",
+        "oos_positive_rate"
+      ],
+      "summary": {
+        "samples": 0,
+        "mean": null,
+        "win_rate": null,
+        "positive_year_rate": null,
+        "max_ticker_share": null,
+        "max_year_share": null,
+        "date_block_ci95": null
+      },
+      "walk_forward": {
+        "strategy": "RESEARCH_QUALIFIED",
+        "years": [],
+        "positive_rate": null
+      }
+    }
+  ],
+  "implementation": {
+    "execution_filters": [],
+    "dashboard_fields": [],
+    "market_regime": "ANALYSIS_ONLY",
+    "command_center_integration": "SIDECAR_ONLY"
+  }
+}
