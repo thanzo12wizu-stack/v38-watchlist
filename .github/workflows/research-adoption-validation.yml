@@ -8,15 +8,17 @@ on:
       - intelligence_engine/research_adoption.py
       - tests/test_research_adoption.py
       - .github/workflows/research-adoption-validation.yml
+      - private/research-*-year-*.enc.json
+      - private/research-summary.enc.json
 
 permissions:
   contents: write
 
-# Serialize with research workers so encrypted input partitions cannot change
-# between report generation and publication.
+# Keep only the newest adoption build. Research-input commits trigger this workflow,
+# so replacing an older pending/running build is safe and prevents stale publication.
 concurrency:
-  group: intelligence-engine-main
-  cancel-in-progress: false
+  group: research-adoption-validation
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -89,6 +91,14 @@ jobs:
           for attempt in 1 2 3 4; do
             git fetch origin main
             git rebase origin/main
+            # If encrypted inputs changed since this run was triggered, do not
+            # publish a stale report. Their commit triggers a newer validation run.
+            if ! git diff --quiet "$GITHUB_SHA" HEAD^ -- \
+              'private/research-*-year-*.enc.json' \
+              private/research-summary.enc.json; then
+              echo "Research inputs advanced; defer publication to the newer run"
+              exit 0
+            fi
             if git push origin HEAD:main; then
               exit 0
             fi
