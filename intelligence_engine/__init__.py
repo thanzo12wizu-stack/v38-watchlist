@@ -34,7 +34,29 @@ def _is_research_command(arguments: list[str]) -> bool:
     return False
 
 
+def _is_legacy_dashboard_command(arguments: list[str]) -> bool:
+    """Detect the old module CLI without affecting normal imports or pytest."""
+    for argument in arguments:
+        text = str(argument).replace("\\", "/")
+        name = Path(text).name
+        if "intelligence_engine.intelligence_dashboard" in text:
+            return True
+        if name == "intelligence_dashboard.py":
+            return True
+    return False
+
+
 _RESEARCH_COMMAND = _is_research_command(list(sys.argv))
+
+# The production workflow still invokes the historical module name. Route only
+# that CLI invocation to the Stage Matrix implementation; regular imports remain
+# compatible with older research/presentation tests.
+if _is_legacy_dashboard_command(list(sys.argv)):
+    from .stage_dashboard import main as _stage_dashboard_main
+
+    _stage_dashboard_main()
+    raise SystemExit(0)
+
 _RESEARCH_FAILED = False
 _RESEARCH_ERROR_PATH = Path("private/research-error-detail.json")
 _RESEARCH_SUCCESS_PATH = Path("private/research-success.json")
