@@ -96,13 +96,17 @@ jobs:
           PY
 
       - name: Run all ten specifications and seven walk-forward folds
+        shell: bash
         run: |
-          python -m intelligence_engine.ab_stage_walkforward \
+          set -o pipefail
+          mkdir -p artifacts/ab-stage-walkforward
+          python -u -m intelligence_engine.ab_stage_walkforward \
             --research-root data/intelligence/research \
             --prices prices.pkl \
             --output artifacts/ab-stage-walkforward \
             --start-year 2017 \
-            --cooldown 5
+            --cooldown 5 \
+            2>&1 | tee artifacts/ab-stage-walkforward/run.log
 
       - name: Publish research summary
         if: always()
@@ -110,13 +114,18 @@ jobs:
         run: |
           if [[ -f artifacts/ab-stage-walkforward/REPORT_JA.md ]]; then
             cat artifacts/ab-stage-walkforward/REPORT_JA.md >> "$GITHUB_STEP_SUMMARY"
+          elif [[ -f artifacts/ab-stage-walkforward/run.log ]]; then
+            echo '## Research failure tail' >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 120 artifacts/ab-stage-walkforward/run.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Upload complete research outputs
-        if: success()
+      - name: Upload complete research outputs and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ab-stage-walkforward-results
           path: artifacts/ab-stage-walkforward
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
