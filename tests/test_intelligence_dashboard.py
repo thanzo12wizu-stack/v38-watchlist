@@ -1,6 +1,6 @@
 import json
 
-from intelligence_engine.intelligence_dashboard import build_html, generate, load_payload
+from intelligence_engine.stage_dashboard import build_html, generate, load_payload
 
 
 def sample_matrix():
