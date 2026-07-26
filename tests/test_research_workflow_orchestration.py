@@ -5,23 +5,17 @@ def _text(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def test_bootstrap_dispatches_one_bounded_worker_slice_per_controller_run():
+def test_completed_bootstrap_controller_is_archived_and_manual_only():
     workflow = _text(".github/workflows/research-bootstrap.yml")
 
-    assert 'cron: "12 * * * *"' in workflow
-    assert "research-worker.yml" in workflow
-    assert "research-worker-runs.json" in workflow
-    assert "databaseId,status,conclusion,createdAt" in workflow
-    assert workflow.count("gh workflow run research-worker.yml") == 1
-    assert "for year in $(seq" not in workflow
-    assert "for run in $(seq" not in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "schedule:" not in workflow
+    assert "workflow_run:" not in workflow
+    assert "actions: write" not in workflow
+    assert "contents: write" not in workflow
     assert "research-bootstrap-status.json" in workflow
-    assert "PRICE_WARMUP" in workflow
-    assert "YEAR_BACKFILL" in workflow
-    assert "awaiting_result" in workflow
-    assert "warmup_runs_completed" in workflow
-    assert "DISPATCH_NOT_FOUND_RETRY" in workflow
-    assert "sec_data_ready" in workflow
+    assert "gh workflow run research-worker.yml" not in workflow
+    assert "git commit" not in workflow
 
 
 def test_ten_year_worker_uses_hard_ten_year_contract_and_verified_sec():
