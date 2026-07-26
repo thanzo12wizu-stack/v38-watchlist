@@ -61,9 +61,9 @@ def tile(x: dict) -> str:
     action = str(x.get("action") or "NA")
     badges = "".join(f'<i>{esc(b)}</i>' for b in (x.get("badges") or [])[:5])
     return f'''<article class="stock {action.lower()}" data-action="{esc(action)}" data-stage="{esc(x.get('stage'))}" data-text="{esc(str(x.get('ticker'))+' '+str(x.get('sector'))+' '+str(x.get('industry')))}">
-    <div class="stock-top"><b>{esc(x.get('ticker'))}</b><span>{esc(x.get('grade') or x.get('leader_grade'))}</span><em>{esc(action)}</em></div>
-    <div class="meta"><span>RS {num(x.get('rs') if x.get('rs') is not None else x.get('rs_composite'),0)}</span><span>Q {num(x.get('quality') if x.get('quality') is not None else x.get('entry_quality_rank'),0)}</span><span>G {num(x.get('group_score'),0)}</span></div>
-    <div class="meta"><span>ATR× {num(x.get('extension') if x.get('extension') is not None else x.get('extension_atr'))}</span><span>R/R {num(x.get('rr') if x.get('rr') is not None else x.get('reward_risk'))}</span><span>ADR {pct(x.get('adr') if x.get('adr') is not None else x.get('adr_pct'))}</span></div>
+    <div class="stock-top"><b>{esc(x.get('ticker'))}</b><span>{esc(x.get('grade'))}</span><em>{esc(action)}</em></div>
+    <div class="meta"><span>RS {num(x.get('rs'),0)}</span><span>Q {num(x.get('quality'),0)}</span><span>G {num(x.get('group_score'),0)}</span></div>
+    <div class="meta"><span>ATR× {num(x.get('extension'))}</span><span>R/R {num(x.get('rr'))}</span><span>ADR {pct(x.get('adr'))}</span></div>
     <div class="badges">{badges}</div><small>{esc((x.get('reasons') or ['—'])[0])}</small></article>'''
 
 
@@ -73,19 +73,13 @@ def board(matrix: dict) -> str:
         groups = []
         for n, group in enumerate(items(col.get("groups"))):
             content = "".join(tile(x) for x in items(group.get("items")))
-            score = group.get("score") if group.get("score") is not None else group.get("group_score")
-            groups.append(f'''<details {'open' if n < 2 and col.get('stage') in {'1A','1B','2A','2B'} else ''}><summary><b>{esc(group.get('industry'))}</b><span>{len(items(group.get('items')))} · G{num(score,0)}</span></summary><small class="sector">{esc(group.get('sector'))}</small><div class="list">{content}</div></details>''')
+            groups.append(f'''<details {'open' if n < 2 and col.get('stage') in {'1A','1B','2A','2B'} else ''}><summary><b>{esc(group.get('industry'))}</b><span>{len(items(group.get('items')))} · G{num(group.get('score'),0)}</span></summary><small class="sector">{esc(group.get('sector'))}</small><div class="list">{content}</div></details>''')
         cols.append(f'''<section class="stage tone-{esc(col.get('tone'))}" data-col="{esc(col.get('stage'))}"><header><b>{esc(col.get('stage'))}</b><span>{esc(col.get('label_ja'))}</span><strong>{esc(col.get('count'))}</strong></header>{''.join(groups) or '<div class="empty">該当なし</div>'}</section>''')
     return '<div id="board" class="board">'+''.join(cols)+'</div>'
 
 
 def group_table(rows: list[dict], key: str, limit: int) -> str:
-    output = []
-    for x in rows[:limit]:
-        score = x.get("score") if x.get("score") is not None else x.get("group_score")
-        rs = x.get("rs") if x.get("rs") is not None else x.get("rs_composite")
-        output.append(f'''<div class="group-row {'top' if x.get('top_half') else ''}"><b>#{esc(x.get('rank'))} {esc(x.get(key))}</b><span>Score {num(score,0)}</span><span>RS {num(rs,0)}</span><span>Stage2 {pct(x.get('stage2_share'),decimal=True)}</span></div>''')
-    return '<div class="group-table">'+''.join(output)+'</div>'
+    return '<div class="group-table">'+''.join(f'''<div class="group-row {'top' if x.get('top_half') else ''}"><b>#{esc(x.get('rank'))} {esc(x.get(key))}</b><span>Score {num(x.get('score'),0)}</span><span>RS {num(x.get('rs'),0)}</span><span>Stage2 {pct(x.get('stage2_share'),decimal=True)}</span></div>''' for x in rows[:limit])+'</div>'
 
 
 def build_html(payload: dict) -> str:

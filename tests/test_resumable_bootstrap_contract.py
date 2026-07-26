@@ -27,29 +27,25 @@ def test_research_worker_processes_bounded_price_slices_until_complete():
     assert 'timeout-minutes: 140' in workflow
 
 
-def test_bootstrap_chains_successes_and_keeps_failed_run_ids():
+def test_completed_bootstrap_no_longer_chains_workers_or_rewrites_progress():
     workflow = Path('.github/workflows/research-bootstrap.yml').read_text(encoding='utf-8')
 
-    assert 'workflow_run:' in workflow
-    assert '- Ten-year research worker' in workflow
-    assert '- Intelligence Engine (sidecar)' in workflow
-    assert "github.event.workflow_run.event != 'pull_request'" in workflow
-    assert "last_completed_workflow_run_id" in workflow
-    assert "last_failed_workflow_run_id" in workflow
-    assert "consecutive_failures" in workflow
-    assert "handle.write('refresh_sec=false\\n')" in workflow
-    assert 'RETRY_DEFERRED_AFTER_FAILURE' in workflow
+    assert 'workflow_dispatch:' in workflow
+    assert 'workflow_run:' not in workflow
+    assert 'schedule:' not in workflow
+    assert 'gh workflow run research-worker.yml' not in workflow
+    assert 'git commit' not in workflow
+    assert 'contents: write' not in workflow
+    assert 'actions: write' not in workflow
 
 
-def test_bootstrap_reconciles_successful_reruns_and_exact_history_completion():
+def test_archived_bootstrap_confirms_exact_completion_state():
     workflow = Path('.github/workflows/research-bootstrap.yml').read_text(encoding='utf-8')
 
-    assert 'TRIGGER_RUN_ID' in workflow
-    assert "SUCCESS:RERUN_RECONCILED" in workflow
-    assert "worker_result.get('workflow_run_id')" in workflow
-    assert "price_history_remaining" in workflow
-    assert "price_history_complete" in workflow
-    assert "warmup_completed = warmup_target" in workflow
+    assert 'research-bootstrap-status.json' in workflow
+    assert "payload.get('status') != 'COMPLETE'" in workflow
+    assert "payload.get('missing_years')" in workflow
+    assert 'No worker will be dispatched' in workflow
 
 
 def test_status_marker_reads_aggregate_worker_result():

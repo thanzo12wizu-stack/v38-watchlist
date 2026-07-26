@@ -1,42 +1,14 @@
-name: Resume ten-year research after code changes
+name: Archived research bootstrap restart hook
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/research-bootstrap-kick.yml"
-      - ".github/workflows/research-worker-completion.yml"
-      - "intelligence_engine/sec_bulk.py"
-      - "intelligence_engine/ensure_prices.py"
-      - "intelligence_engine/research_*.py"
-      - "intelligence_engine/research_pipeline/**"
-      - "private/research-worker-result.json"
-      - "universe.csv"
   workflow_dispatch:
 
 permissions:
   contents: read
-  actions: write
-
-concurrency:
-  group: resume-ten-year-research-after-code-change
-  cancel-in-progress: true
 
 jobs:
-  resume:
+  status:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     steps:
-      - name: Dispatch and recheck the serial bootstrap controller
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          for attempt in 1 2; do
-            gh workflow run research-bootstrap.yml \
-              --repo "$GITHUB_REPOSITORY" \
-              --ref main
-            if (( attempt == 1 )); then
-              sleep 30
-            fi
-          done
+      - run: echo "Ten-year research is complete; automatic restart is disabled."
