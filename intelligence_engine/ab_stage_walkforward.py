@@ -9,7 +9,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .ab_stage_data import ExperimentConfig, POLICY_VERSION, prepare_dataset
+from . import ab_stage_data
+from .ab_stage_data import ExperimentConfig, POLICY_VERSION
 from .ab_stage_models import SPEC_NAMES, aggregate, incremental_verdicts, run_walk_forward
 
 
@@ -43,6 +44,31 @@ def write_json(path: Path, payload: Any) -> None:
         json.dumps(sanitize(payload), ensure_ascii=False, indent=2, allow_nan=False) + "\n",
         encoding="utf-8",
     )
+
+
+def normalize_dimension_columns(frame: pd.DataFrame) -> pd.DataFrame:
+    """Prevent real-universe blank/NaN dimension keys from becoming mixed merge dtypes."""
+    out = frame.copy()
+    for column in ("sector", "industry"):
+        if column not in out:
+            out[column] = "Unclassified"
+            continue
+        values = out[column].astype("string").str.strip()
+        out[column] = values.mask(values.eq(""), pd.NA).fillna("Unclassified")
+    return out
+
+
+def prepare_dataset(config: ExperimentConfig):
+    original = ab_stage_data.attach_group_features
+
+    def normalized_attach(frame: pd.DataFrame, market_stage: pd.DataFrame) -> pd.DataFrame:
+        return original(normalize_dimension_columns(frame), market_stage)
+
+    ab_stage_data.attach_group_features = normalized_attach
+    try:
+        return ab_stage_data.prepare_dataset(config)
+    finally:
+        ab_stage_data.attach_group_features = original
 
 
 def pct(value: Any) -> str:
