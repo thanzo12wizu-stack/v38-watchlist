@@ -13,22 +13,36 @@ from .ab_stage_data import ExperimentConfig, POLICY_VERSION, prepare_dataset
 from .ab_stage_models import SPEC_NAMES, aggregate, incremental_verdicts, run_walk_forward
 
 
-def json_default(value: Any) -> Any:
+def sanitize(value: Any) -> Any:
+    """Recursively convert pandas/numpy values to strict finite JSON values."""
+    if isinstance(value, dict):
+        return {str(key): sanitize(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [sanitize(item) for item in value]
     if isinstance(value, (np.integer,)):
         return int(value)
-    if isinstance(value, (np.floating,)):
-        value = float(value)
-        return value if math.isfinite(value) else None
+    if isinstance(value, (np.floating, float)):
+        number = float(value)
+        return number if math.isfinite(number) else None
     if isinstance(value, pd.Timestamp):
         return value.isoformat()
     if isinstance(value, Path):
         return str(value)
-    raise TypeError(type(value).__name__)
+    try:
+        missing = pd.isna(value)
+    except (TypeError, ValueError):
+        missing = False
+    if isinstance(missing, (bool, np.bool_)) and missing:
+        return None
+    return value
 
 
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False, default=json_default) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(sanitize(payload), ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
 
 
 def pct(value: Any) -> str:
@@ -37,6 +51,14 @@ def pct(value: Any) -> str:
     except (TypeError, ValueError):
         return "—"
     return f"{value * 100:.2f}%" if math.isfinite(value) else "—"
+
+
+def finite_or_zero(value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return number if math.isfinite(number) else 0.0
 
 
 def report(summary: pd.DataFrame, verdicts: list[dict[str, Any]], metadata: dict[str, Any]) -> str:
@@ -53,10 +75,10 @@ def report(summary: pd.DataFrame, verdicts: list[dict[str, Any]], metadata: dict
     ]
     for _, row in summary.iterrows():
         lines.append(
-            f"|{int(row['spec'])}. {row['spec_name']}|{float(row['mean_daily_spearman_ic'] or 0):.4f}|"
+            f"|{int(row['spec'])}. {row['spec_name']}|{finite_or_zero(row['mean_daily_spearman_ic']):.4f}|"
             f"{pct(row['mean_top10_excess_return'])}|{pct(row['mean_hit_3r_rate'])}|"
-            f"{pct(row['mean_early_failure_rate'])}|{float(row['mean_brier_score'] or 0):.4f}|"
-            f"{float(row['mean_profit_factor'] or 0):.2f}|{pct(row['worst_max_drawdown'])}|"
+            f"{pct(row['mean_early_failure_rate'])}|{finite_or_zero(row['mean_brier_score']):.4f}|"
+            f"{finite_or_zero(row['mean_profit_factor']):.2f}|{pct(row['worst_max_drawdown'])}|"
             f"{int(row['qqq_excess_years'])}/{int(row['folds'])}|{int(row['total_trades'])}|"
         )
     lines.extend(["", "## 増分採否", ""])
@@ -69,7 +91,7 @@ def report(summary: pd.DataFrame, verdicts: list[dict[str, Any]], metadata: dict
         "- 現在の研究母集団は既存リサーチ・シグナルプール。全上場銘柄の無条件日次母集団ではない。",
         "- 最高リターンだけでは採用せず、増分改善・年別安定性・QQQ超過年数を併用する。",
         "", "## 実行メタデータ", "", "```json",
-        json.dumps(metadata, ensure_ascii=False, indent=2, default=json_default), "```", "",
+        json.dumps(sanitize(metadata), ensure_ascii=False, indent=2, allow_nan=False), "```", "",
     ])
     return "\n".join(lines)
 
@@ -99,7 +121,7 @@ def run(config: ExperimentConfig) -> dict[str, Any]:
     }
     write_json(config.output_dir / "results.json", payload)
     (config.output_dir / "REPORT_JA.md").write_text(report(summary, verdicts, metadata), encoding="utf-8")
-    return payload
+    return sanitize(payload)
 
 
 def main() -> None:
