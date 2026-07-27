@@ -65,18 +65,24 @@ jobs:
           restore-keys: |
             intelligence-prices-${{ runner.os }}-
       - name: Build latest defensive snapshot
+        shell: bash
         run: |
+          set -o pipefail
           test -s prices.pkl
+          mkdir -p artifacts/defensive-risk
           python -m intelligence_engine.defensive_risk_run \
             --research-root data/intelligence/research \
             --prices prices.pkl \
             --output artifacts/defensive-risk \
-            --account-equity-jpy 8000000
+            --account-equity-jpy 8000000 \
+            2>&1 | tee artifacts/defensive-risk/run.log
       - name: Publish summary
         if: always()
         run: |
           if [[ -f artifacts/defensive-risk/REPORT_JA.md ]]; then
             cat artifacts/defensive-risk/REPORT_JA.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Defensive snapshot was not produced. See run.log artifact." >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Upload results
         if: always()
