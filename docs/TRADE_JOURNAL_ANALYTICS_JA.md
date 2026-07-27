@@ -1,147 +1,147 @@
-# Trade Journal & Portfolio Analytics
+# Trade Journal Analytics
 
 ## 目的
+既存Command Centerの候補選定、Portfolio、NQゲート、運用ルールを正本として利用し、実際の取引・資産・保有・規律・見送った候補を一つの運用実績システムで照合する。
 
-Command Centerが出した候補と、実際に行った取引・保有・資産推移を同じ正本で管理するサイドカーです。取引履歴を見栄えよく並べるだけでなく、どの地合い・セットアップ・ルールで利益と損失が発生したかを検証します。
+既存Command Center本体は変更しない。Trade Journal Analyticsは独立サイドカーとしてHTML、PNG、CSV、JSON、Markdownを生成する。
 
-既存Command Centerの生成処理や本番HTMLは変更しません。入力CSV/JSONと保存済みresearch signalsを読み、独立した静的HTML・PNG・CSV・Markdownを生成します。
+## 画面構成
 
-## 実装済み
+### 1. 今日
+朝晩の確認を一画面で完結する。
 
-### Phase 1
+- 本日、月初来、年初来リターン
+- 総損益、PF、最大DD
+- 相関調整Heat、名目Heat、Gross Exposure、最大リスククラスター
+- NQ色に基づく新規可否
+- 現金比率、保有数、ルール逸脱件数
+- 日次確認用の保有一覧
 
-- Trade Journal
-- 入出金調整後の資産推移
-- 月次ヒートマップ
-- 現在保有一覧
-- セクター・テーマ配分
-- 勝率、平均利益、平均損失、PF、期待値、平均R、CAGR、Sharpe、最大DD、Recovery Factor、ルール遵守率
-- 1200×675の日次投稿カード
+### 2. 資産
+長期の結果と下方リスクを確認する。
 
-### Phase 2
-
-- 保有評価額×含み損益Treemap
+- 入出金調整後資産曲線
 - ドローダウン曲線
-- セットアップ別分析
-- NQ色別分析
-- 買った候補と見送った候補の10日後比較
-- 1200×675のポートフォリオ投稿カード
+- 月次ヒートマップ
+- 勝率、平均利益、平均損失、Payoff、期待値、平均保有日数
+- CAGR、Sharpe、Recovery Factor、規律遵守率
 
-### Phase 3
+### 3. ポートフォリオ
+現在の建玉と集中リスクを確認する。
 
-- 直近60観測の銘柄相関を使った相関調整後Portfolio Heat
-- RED/YELLOW新規、ストップ過大、低RR、決算接近、3ATR超、ギャップ追い、含み損追加、過大リスクの検知
-- 数値根拠から生成する週次レビュー
-- Command Center候補と実際のエントリーの照合
-- 投稿文、日次カード、ポートフォリオカードの自動生成
+- Treemap（面積＝評価額、色＝含み損益）
+- セクター配分
+- テーマ配分
+- 相関調整Portfolio Heat
+- 保有一覧、Stop、Heat、保有日数、Setup
+
+### 4. 取引履歴
+Trade Journalの実データを確認する。
+
+- Entry、Exit、Ticker、Setup、NQ色
+- 損益率、R、円損益、保有日数、Exit理由、規律
+- Ticker・Setup・Exit理由の検索
+- Setup、NQ色、勝敗によるフィルター
+- フィルター後件数の表示
+
+### 5. エッジ分析
+自分の期待値が残る条件を確認する。
+
+- セットアップ別の件数、勝率、PF、平均R、平均騰落、平均日数、損益
+- NQ色別の同指標
+- Missed Trade集計
+- Command Center候補と実売買の照合
+- 候補の10日後リターン、QQQ超過、実現リターン、Capture差
+
+### 6. 振り返り
+重大なルール違反と改善点を確認する。
+
+- 赤・黄地合いエントリー
+- ストップ過大、予定RR不足
+- 決算接近、過熱、ギャップ追い
+- 含み損への追加、1トレードリスク超過
+- 自己申告のルール逸脱
+- 数値根拠だけから生成するAI週次レビュー
+- 入力ソースとフォールバックの明示
+
+### 7. 共有
+分析画面とは分離した投稿用出力を確認する。
+
+- 1200×675の日次成績カード
+- 1200×675のポートフォリオカード
+- 投稿文プレビュー
+- 投稿文コピー
+- PNGと生成済みテキストの保存
+
+## タブ操作
+
+- タブは画面上部に固定し、スマートフォンでは横スクロールする。
+- 選択タブはURLハッシュへ保存される。
+- 再読み込みや共有URLでも同じタブを復元する。
+- すべてのタブ内容を一枚に縦積みしない。
 
 ## 入力
 
-`data/trade_journal/` に以下を置きます。空テンプレートはコマンドで生成できます。
+### 取引履歴
+`data/trade_journal/trades.csv`
 
-```bash
-python -m intelligence_engine.trade_journal_run --init-templates
-```
+主要項目:
 
-### trades.csv
-
-必須に近い項目:
-
+- `trade_id`
 - `ticker`
+- `side`
 - `entry_date`, `exit_date`
-- `entry_price`, `exit_price`
-- `quantity`
-
-精度を上げる項目:
-
-- `point_value`, `fx_to_jpy`, `fees_jpy`, `taxes_jpy`
+- `entry_price`, `exit_price`, `quantity`
+- `fx_to_jpy`, `point_value`
+- `fees_jpy`, `tax_jpy`
 - `stop_price`, `target_price`
 - `setup`, `nq_color`, `sector`, `theme`
-- `rule_followed`, `mistake_type`
-- `mfe_pct`, `mae_pct`
+- `exit_reason`, `rule_followed`, `mistake_type`
 
-米国株は`fx_to_jpy`に約定時または集計用のドル円を入れます。先物等は`point_value`も入れます。損益額を直接持っている場合は`net_pnl_jpy`を追加すると、その値を正本として使います。
-
-### equity.csv
+### 資産履歴
+`data/trade_journal/equity.csv`
 
 - `date`
 - `equity_jpy`
 - `cash_jpy`
-- `deposits_jpy`
-- `withdrawals_jpy`
+- `deposit_jpy`
+- `withdrawal_jpy`
 
-資産曲線は入出金を差し引いた`adjusted_equity_jpy`で評価します。equity.csvがない場合は、開始資産と決済済みトレードから簡易曲線を作ります。
+### 保有
+`data/trade_journal/holdings.csv`または既存Portfolio JSON。
 
-### holdings.csv または既存Portfolio JSON
+### 候補履歴
+`data/trade_journal/candidates.csv`または`data/intelligence/research/signals`。
 
-- `ticker`, `quantity`
-- `entry_price`, `current_price`, `fx_to_jpy`
-- `stop_price`
-- `sector`, `theme`
-- `entry_date`, `setup`, `nq_color`
-
-既存のDefensive Risk形式にある`account_equity_jpy`、`available_cash_jpy`、`holdings[].market_value_jpy`、`holdings[].stop_fraction`も読めます。`stop_fraction × market_value_jpy`を予定損失としてHeatへ接続します。
-
-### candidates.csv またはresearch signals
-
-- `date`, `ticker`, `rank`
-- `forward_10d_return`, `qqq_excess_10d`
-- `setup`, `nq_color`, `sector`, `theme`
-
-CSVがない場合は`data/intelligence/research/signals/*.jsonl.gz`の最新日を候補として読みます。実際の`trades.entry_date + ticker`と一致した候補を「買った候補」と判定します。
-
-### 価格履歴
-
-`prices.pkl`が存在する場合、保有銘柄の直近60観測リターン相関を計算します。ない場合は相関を仮定せず、独立ケースとして表示し、レポートに注記します。
-
-## 実行
-
-```bash
-python -m intelligence_engine.trade_journal_run \
-  --input data/trade_journal \
-  --output artifacts/trade-journal \
-  --starting-equity-jpy 7300000 \
-  --portfolio config/portfolio.json \
-  --rules config/trade_journal.example.json \
-  --research-root data/intelligence/research \
-  --prices prices.pkl
-```
-
-動作確認用:
-
-```bash
-python -m intelligence_engine.trade_journal_run --demo
-```
+### 相関
+`prices.pkl`から直近60観測のリターン相関を使用する。取得できない場合は独立仮定とし、その旨をデータソース欄に表示する。
 
 ## 出力
 
-- `index.html`: スマホ対応の分析ダッシュボード
-- `daily_card.png`: 日次投稿カード
-- `portfolio_card.png`: ポートフォリオTreemapカード
-- `social_post_ja.txt`: 投稿文
-- `weekly_review.md`: 週次コーチ
-- `summary.json`: KPIとHeat
-- `equity_curve.csv`, `monthly_returns.csv`
-- `setup_analysis.csv`, `regime_analysis.csv`
-- `missed_trade_analysis.csv`, `candidate_vs_actual.csv`
+- `index.html`
+- `daily_card.png`
+- `portfolio_card.png`
+- `social_post_ja.txt`
+- `weekly_review.md`
+- `summary.json`
+- `trades_normalized.csv`
+- `holdings_normalized.csv`
+- `equity_curve.csv`
+- `monthly_returns.csv`
+- `setup_analysis.csv`
+- `regime_analysis.csv`
+- `missed_trade_analysis.csv`
+- `candidate_vs_actual.csv`
 - `rule_violations.csv`
-- `sector_allocation.csv`, `theme_allocation.csv`
+- `sector_allocation.csv`
+- `theme_allocation.csv`
 - `holding_correlations.csv`
 
-## 計算上の注意
+## 安全性
 
-- PFは実現損益の正の合計÷負の合計絶対値です。
-- Rは`net_pnl_jpy ÷ planned_risk_jpy`です。
-- planned riskは`|entry-stop| × quantity × point_value × fx_to_jpy`です。
-- 相関調整Heatは、各銘柄Heatベクトルを`h`、相関行列を`C`として`sqrt(h' C h)`です。全銘柄が完全相関なら名目Heatと一致します。
-- ルール項目が未記録の場合、逸脱と断定しません。明示されたデータだけを検査します。
-- 週次レビューは外部LLMを使わない決定論的生成です。数値が同じなら文章も同じになり、捏造を避けます。
-
-## 既存Command Centerとの役割分担
-
-- Command Center: 市場、セクター、候補、エントリー適性
-- Trade Journal: 実際に何を買い、どう終わり、何が再現性を持ったか
-- Portfolio Analytics: 現在の集中、Heat、相関、含み損益
-- Share Studio: 投稿カードと投稿文
-
-銘柄選定ロジックを二重化せず、既存候補を実績検証へ戻すことを優先します。
+- 重要入力がない場合に架空の口座残高や損益を表示しない。
+- デモはCI・表示確認用で、実績として扱わない。
+- 損益はPoint Value、FX、手数料、税を反映する。
+- 資産曲線は入出金を運用益として数えない。
+- 重大なルール違反を好条件で相殺しない。
+- 自動売買や注文発注は行わない。
