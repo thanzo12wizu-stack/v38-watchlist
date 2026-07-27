@@ -6,6 +6,7 @@ on:
     paths:
       - "intelligence_engine/ab_stage_v2_models.py"
       - "intelligence_engine/ab_stage_v2_walkforward.py"
+      - "intelligence_engine/ab_stage_v2_policy.py"
       - "tests/test_ab_stage_v2_walkforward.py"
       - ".github/workflows/ab-stage-v2-walkforward.yml"
       - "pyproject.toml"
