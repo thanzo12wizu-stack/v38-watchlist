@@ -1,20 +1,13 @@
 name: A-B Stage Exposure Validation V3
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "intelligence_engine/ab_stage_v3_exposure.py"
-      - "intelligence_engine/ab_stage_v3_walkforward.py"
-      - "tests/test_ab_stage_v3_exposure.py"
-      - ".github/workflows/ab-stage-v3-exposure.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ab-stage-v3-exposure-${{ github.event.pull_request.number || github.ref }}
+  group: ab-stage-v3-exposure-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
