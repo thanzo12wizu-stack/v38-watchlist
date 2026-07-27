@@ -1,0 +1,96 @@
+name: A-B Stage Exposure Validation V3
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "intelligence_engine/ab_stage_v3_exposure.py"
+      - "intelligence_engine/ab_stage_v3_walkforward.py"
+      - "tests/test_ab_stage_v3_exposure.py"
+      - ".github/workflows/ab-stage-v3-exposure.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ab-stage-v3-exposure-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - run: pytest -q tests/test_ab_stage_v3_exposure.py
+
+  research:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[test]'
+      - name: Restore encrypted signals
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}"
+          mkdir -p data/intelligence/research/signals
+          restored=0
+          for encrypted in private/research-signals-year-*.enc.json; do
+            year="$(basename "$encrypted" .enc.json)"
+            year="${year##*-}"
+            node scripts/private_crypto.mjs decrypt "$encrypted" "data/intelligence/research/signals/year=${year}.jsonl.gz"
+            restored=$((restored + 1))
+          done
+          test "$restored" -ge 10
+      - name: Restore prices
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            prices.pkl
+            data/price-history-attempts.json
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            intelligence-prices-${{ runner.os }}-
+      - name: Run exposure-normalized validation
+        shell: bash
+        run: |
+          set -o pipefail
+          test -s prices.pkl
+          mkdir -p artifacts/ab-stage-v3-walkforward
+          python -m intelligence_engine.ab_stage_v3_walkforward \
+            --research-root data/intelligence/research \
+            --prices prices.pkl \
+            --output artifacts/ab-stage-v3-walkforward \
+            --start-year 2017 \
+            --cooldown 5 \
+            2>&1 | tee artifacts/ab-stage-v3-walkforward/run.log
+      - name: Publish V3 summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f artifacts/ab-stage-v3-walkforward/REPORT_V3_JA.md ]]; then
+            cat artifacts/ab-stage-v3-walkforward/REPORT_V3_JA.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload V3 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ab-stage-v3-exposure-results
+          path: artifacts/ab-stage-v3-walkforward
+          if-no-files-found: error
+          retention-days: 30
