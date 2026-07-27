@@ -197,6 +197,8 @@ def run(*, research_root: Path, prices_path: Path, output_dir: Path, account_equ
     policy = RiskPolicy(account_equity_jpy=equity)
     candidates = _candidate_rows(latest, available_cash)
     recommendations = allocate_candidates(candidates, holdings, policy=policy)
+    decision_order = {"NORMAL": 0, "FIRST_TRANCHE": 0, "WATCH": 1, "REJECT": 2}
+    recommendations = sorted(recommendations, key=lambda item: decision_order[item.decision.value])
     rows = [item.to_dict() for item in recommendations]
     pd.DataFrame(rows).to_csv(output_dir / "defensive_risk_recommendations.csv", index=False)
     alpha_available = any(candidate.alpha_rank is not None for candidate in candidates)
