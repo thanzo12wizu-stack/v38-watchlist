@@ -42,7 +42,7 @@ jobs:
       - name: Install Japanese fonts
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: python -m pip install -e '.[test]'
-      - name: Test journal engine and multipage UI
+      - name: Test journal engine and single-file UI
         run: pytest -q tests/test_trade_journal*.py
       - name: Build analytics artifact
         shell: bash
@@ -58,19 +58,22 @@ jobs:
             --output artifacts/trade-journal \
             --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}" \
             "${EXTRA[@]}"
-      - name: Verify no-JavaScript navigation and share assets
+      - name: Verify single self-contained dashboard and share assets
         shell: bash
         run: |
           set -euo pipefail
-          for page in index.html assets.html portfolio.html trades.html edge.html review.html share.html; do
-            test -s "artifacts/trade-journal/${page}"
-            grep -q 'href="assets.html"' "artifacts/trade-journal/${page}"
-            grep -q 'href="trades.html"' "artifacts/trade-journal/${page}"
-            ! grep -q 'history.replaceState' "artifacts/trade-journal/${page}"
+          test -s artifacts/trade-journal/index.html
+          for section in today performance portfolio journal edge review share; do
+            grep -q "id=\"${section}\"" artifacts/trade-journal/index.html
+            grep -q "href=\"#${section}\"" artifacts/trade-journal/index.html
           done
-          grep -q 'class="tab-panel active" id="journal"' artifacts/trade-journal/trades.html
-          grep -q 'id="trade-search"' artifacts/trade-journal/trades.html
-          grep -q 'class="tab-panel active" id="share"' artifacts/trade-journal/share.html
+          for legacy in assets.html portfolio.html trades.html edge.html review.html share.html; do
+            test ! -e "artifacts/trade-journal/${legacy}"
+            ! grep -q "href=\"${legacy}\"" artifacts/trade-journal/index.html
+          done
+          grep -q 'Single-file, no-JS readable mode' artifacts/trade-journal/index.html
+          grep -q 'src="data:image/png;base64,' artifacts/trade-journal/index.html
+          grep -q 'id="trade-search"' artifacts/trade-journal/index.html
           test -s artifacts/trade-journal/daily_card.png
           test -s artifacts/trade-journal/portfolio_card.png
       - name: Publish weekly review
