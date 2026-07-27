@@ -7,6 +7,8 @@ on:
       - "intelligence_engine/ab_stage_v2_models.py"
       - "intelligence_engine/ab_stage_v2_walkforward.py"
       - "intelligence_engine/ab_stage_v2_policy.py"
+      - "intelligence_engine/ab_stage_v2_data.py"
+      - "intelligence_engine/ab_stage_v2_entrypoint.py"
       - "tests/test_ab_stage_v2_walkforward.py"
       - ".github/workflows/ab-stage-v2-walkforward.yml"
       - "pyproject.toml"
@@ -101,7 +103,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p artifacts/ab-stage-v2-walkforward
-          python -m intelligence_engine.ab_stage_v2_walkforward \
+          python -m intelligence_engine.ab_stage_v2_entrypoint \
             --research-root data/intelligence/research \
             --prices prices.pkl \
             --output artifacts/ab-stage-v2-walkforward \
