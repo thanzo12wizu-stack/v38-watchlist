@@ -136,8 +136,9 @@ def correlation_adjusted_heat(holdings: pd.DataFrame, price_returns: pd.DataFram
         available = [ticker for ticker in tickers if ticker in work.columns]
         corr = work[available].tail(60).corr(min_periods=15) if available else pd.DataFrame()
         corr = corr.reindex(index=tickers, columns=tickers)
-        corr = corr.fillna(0.0)
-        np.fill_diagonal(corr.values, 1.0)
+        corr = corr.fillna(0.0).copy()
+        for ticker in tickers:
+            corr.loc[ticker, ticker] = 1.0
         note = "直近60観測の相関"
     vector = heat.reindex(tickers).to_numpy(dtype=float)
     matrix = corr.to_numpy(dtype=float)
