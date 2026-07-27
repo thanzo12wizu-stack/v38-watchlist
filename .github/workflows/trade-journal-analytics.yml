@@ -16,7 +16,7 @@ on:
     branches: [main]
     paths:
       - "intelligence_engine/trade_journal*.py"
-      - "tests/test_trade_journal.py"
+      - "tests/test_trade_journal*.py"
       - "config/trade_journal.example.json"
       - "docs/TRADE_JOURNAL_ANALYTICS_JA.md"
       - ".github/workflows/trade-journal-analytics.yml"
@@ -42,7 +42,8 @@ jobs:
       - name: Install Japanese fonts
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: python -m pip install -e '.[test]'
-      - run: pytest -q tests/test_trade_journal.py
+      - name: Test journal engine and tabbed UI
+        run: pytest -q tests/test_trade_journal*.py
       - name: Build analytics artifact
         shell: bash
         run: |
@@ -57,6 +58,15 @@ jobs:
             --output artifacts/trade-journal \
             --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}" \
             "${EXTRA[@]}"
+      - name: Verify dashboard navigation and share assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'data-tab="today"' artifacts/trade-journal/index.html
+          grep -q 'data-tab="journal"' artifacts/trade-journal/index.html
+          grep -q 'id="trade-search"' artifacts/trade-journal/index.html
+          test -s artifacts/trade-journal/daily_card.png
+          test -s artifacts/trade-journal/portfolio_card.png
       - name: Publish weekly review
         if: always()
         run: |
