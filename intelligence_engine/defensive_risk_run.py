@@ -184,7 +184,10 @@ def run(*, research_root: Path, prices_path: Path, output_dir: Path, account_equ
     if staged.empty:
         raise RuntimeError("stage enrichment produced no rows")
     enriched = attach_group_features(_normalize_dimensions(staged), build_market_stage(prices))
-    scored = add_research_scores(enriched)
+    enriched = enriched.loc[:, ~enriched.columns.duplicated()].copy()
+    required_scores = {"base_composite", "leadership_quality", "entry_quality"}
+    scored = enriched.copy() if required_scores.issubset(enriched.columns) else add_research_scores(enriched)
+    scored = scored.loc[:, ~scored.columns.duplicated()].copy()
     as_of = pd.to_datetime(scored["date"], errors="coerce").max().normalize()
     latest = scored[pd.to_datetime(scored["date"], errors="coerce").dt.normalize() == as_of].copy()
     holdings, portfolio_payload = _load_portfolio(portfolio_path)
