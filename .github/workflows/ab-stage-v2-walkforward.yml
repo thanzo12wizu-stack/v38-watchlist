@@ -1,0 +1,128 @@
+name: A-B Stage Walk-Forward V2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "intelligence_engine/ab_stage_v2_models.py"
+      - "intelligence_engine/ab_stage_v2_walkforward.py"
+      - "tests/test_ab_stage_v2_walkforward.py"
+      - ".github/workflows/ab-stage-v2-walkforward.yml"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ab-stage-v2-walkforward-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install research dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Run V2 focused tests
+        run: pytest -q tests/test_ab_stage_v2_walkforward.py
+
+  research:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install research dependencies
+        run: python -m pip install -e '.[test]'
+
+      - name: Validate encrypted research access
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" || { echo "V38_PRIVATE_DASHBOARD_PASSPHRASE is required"; exit 1; }
+          compgen -G 'private/research-signals-year-*.enc.json' >/dev/null || { echo "Encrypted signal partitions are missing"; exit 1; }
+
+      - name: Restore encrypted signal partitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/intelligence/research/signals
+          restored=0
+          for encrypted in private/research-signals-year-*.enc.json; do
+            year="$(basename "$encrypted" .enc.json)"
+            year="${year##*-}"
+            target="data/intelligence/research/signals/year=${year}.jsonl.gz"
+            node scripts/private_crypto.mjs decrypt "$encrypted" "$target"
+            test -s "$target"
+            restored=$((restored + 1))
+          done
+          echo "Restored signal partitions: ${restored}"
+          test "$restored" -ge 10
+
+      - name: Restore ten-year price cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            prices.pkl
+            data/price-history-attempts.json
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            intelligence-prices-${{ runner.os }}-
+
+      - name: Verify price cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s prices.pkl || { echo "Ten-year prices.pkl was not restored"; exit 1; }
+          python - <<'PY'
+          from intelligence_engine.prices import load_price_map
+          prices = load_price_map('prices.pkl')
+          assert 'QQQ' in prices and len(prices['QQQ']) >= 1000
+          print({'tickers': len(prices), 'qqq_rows': len(prices['QQQ'])})
+          PY
+
+      - name: Run B2, stage interaction, full MTM walk-forward
+        id: research
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/ab-stage-v2-walkforward
+          python -m intelligence_engine.ab_stage_v2_walkforward \
+            --research-root data/intelligence/research \
+            --prices prices.pkl \
+            --output artifacts/ab-stage-v2-walkforward \
+            --start-year 2017 \
+            --cooldown 5 \
+            2>&1 | tee artifacts/ab-stage-v2-walkforward/run.log
+
+      - name: Publish V2 research summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f artifacts/ab-stage-v2-walkforward/REPORT_V2_JA.md ]]; then
+            cat artifacts/ab-stage-v2-walkforward/REPORT_V2_JA.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "V2 report was not produced. See run.log artifact." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload V2 outputs and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ab-stage-v2-walkforward-results
+          path: artifacts/ab-stage-v2-walkforward
+          if-no-files-found: error
+          retention-days: 30
