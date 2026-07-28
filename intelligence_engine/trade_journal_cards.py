@@ -138,8 +138,8 @@ def render_daily_card(report: JournalReport, path: Path) -> None:
     _draw_header(draw, "Trade Journal Almanac", report.as_of.date().isoformat())
 
     draw.text((48, 126), "TOTAL EQUITY", font=_font(12, True), fill=MUTED)
-    draw.text((48, 149), _yen(report.account_equity_jpy), font=_font(49, True, serif=True), fill=TEXT)
-    draw.text((48, 207), "入出金調整後の日次口座評価額", font=_font(12), fill=MUTED)
+    draw.text((48, 145), _yen(report.account_equity_jpy), font=_font(45, True, serif=True), fill=TEXT)
+    draw.text((48, 211), "入出金調整後の日次口座評価額", font=_font(10), fill=MUTED)
 
     gate_fill = {"BLUE": ACCENT_SOFT, "GREEN": GOOD_SOFT, "YELLOW": WARN_SOFT, "RED": BAD_SOFT}.get(report.nq_color, PANEL_2)
     gate_tone = {"BLUE": ACCENT, "GREEN": GOOD, "YELLOW": WARN, "RED": BAD}.get(report.nq_color, MUTED)
