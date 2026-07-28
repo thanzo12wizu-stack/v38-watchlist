@@ -82,15 +82,17 @@ _ENHANCEMENT_JS = r'''
     const current = Number(h.current_price || 0), stop = Number(h.stop_price || 0);
     return [String(h.ticker), current ? (current - stop) / current : 0];
   }));
+  const tickerKeys = [...distances.keys()].sort((a, b) => b.length - a.length);
+  const tickerOf = card => {
+    const text = card.querySelector('.holding-title')?.textContent.trim() || '';
+    return tickerKeys.find(ticker => text.startsWith(ticker)) || '';
+  };
   const cards = [...root.querySelectorAll('.holding-card')];
-  cards.sort((a, b) => {
-    const at = a.querySelector('.holding-title')?.textContent.trim().split(/\s/)[0] || '';
-    const bt = b.querySelector('.holding-title')?.textContent.trim().split(/\s/)[0] || '';
-    return Number(distances.get(at) || 0) - Number(distances.get(bt) || 0);
-  }).forEach(card => root.appendChild(card));
+  cards.sort((a, b) => Number(distances.get(tickerOf(a)) || 0) - Number(distances.get(tickerOf(b)) || 0))
+    .forEach(card => root.appendChild(card));
   cards.forEach(card => {
     const title = card.querySelector('.holding-title');
-    const ticker = title?.textContent.trim().split(/\s/)[0] || '';
+    const ticker = tickerOf(card);
     if (Number(distances.get(ticker) || 0) < 0 && title && !title.querySelector('.stop-breach')) {
       const badge = document.createElement('span');
       badge.className = 'risk-badge stop-breach';
