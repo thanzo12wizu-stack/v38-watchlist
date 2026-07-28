@@ -15,10 +15,14 @@ def test_mobile_almanac_and_fifteen_position_stress_case(tmp_path: Path) -> None
     assert holdings["ticker"].nunique() == 15
     assert html.count('<a class="tab" href="#') == 7
     assert '<button class="tab"' not in html
-    assert "grid-template-columns:repeat(4,minmax(0,1fr))" in html
+    assert "grid-template-columns:repeat(12,minmax(0,1fr))" in html
+    assert ".tab:nth-child(-n+4){grid-column:span 3}" in html
     assert "overflow-x:hidden" in html
     assert "<details class=\"holding-card\"" in html
+    assert 'id="holdings-more"' in html
+    assert "残り${remaining}銘柄を表示" in html
     assert "Stop距離" in html
+    assert "Stop逸脱" in html
     assert "相関調整Heat" in html
     assert "さらに20件表示" in html
     assert "Setup × NQ" in html
