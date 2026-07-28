@@ -5,7 +5,7 @@ import urllib.parse
 from pathlib import Path
 
 from .trade_journal import JournalReport
-from .trade_journal_almanac import render_dashboard as _render_dashboard
+from .trade_journal_almanac_best import render_dashboard as _render_dashboard
 from .trade_journal_cards import render_daily_card, render_portfolio_card, write_social_copy
 
 
