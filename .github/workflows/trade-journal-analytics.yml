@@ -43,7 +43,7 @@ jobs:
       - name: Install Japanese fonts
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: python -m pip install -e '.[test]'
-      - name: Test journal engine and single-file UI
+      - name: Test journal engine and tabbed UI
         run: pytest -q tests/test_trade_journal*.py
       - name: Build analytics artifact
         shell: bash
@@ -59,22 +59,24 @@ jobs:
             --output artifacts/trade-journal \
             --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}" \
             "${EXTRA[@]}"
-      - name: Verify Signal Ledger single-file dashboard and share assets
+      - name: Verify Command Center style tab pages and share assets
         shell: bash
         run: |
           set -euo pipefail
           test -s artifacts/trade-journal/index.html
           for section in today performance portfolio journal edge review share; do
             grep -q "id=\"${section}\"" artifacts/trade-journal/index.html
-            grep -q "href=\"#${section}\"" artifacts/trade-journal/index.html
+            grep -q "data-tab=\"${section}\"" artifacts/trade-journal/index.html
           done
           for legacy in assets.html portfolio.html trades.html edge.html review.html share.html; do
             test ! -e "artifacts/trade-journal/${legacy}"
             ! grep -q "href=\"${legacy}\"" artifacts/trade-journal/index.html
           done
-          grep -q 'V38 SIGNAL LEDGER' artifacts/trade-journal/index.html
-          grep -q '01 / OPERATIONS' artifacts/trade-journal/index.html
-          grep -q -- '--acid:#d7ff38' artifacts/trade-journal/index.html
+          grep -q 'V38 TRADE JOURNAL' artifacts/trade-journal/index.html
+          grep -q '.tab-panel{display:none' artifacts/trade-journal/index.html
+          grep -q '.tab-panel.active{display:block' artifacts/trade-journal/index.html
+          grep -q 'history.replaceState' artifacts/trade-journal/index.html
+          grep -q -- '--bg:#080c12' artifacts/trade-journal/index.html
           grep -q 'src="data:image/png;base64,' artifacts/trade-journal/index.html
           grep -q 'id="trade-search"' artifacts/trade-journal/index.html
           test -s artifacts/trade-journal/daily_card.png
