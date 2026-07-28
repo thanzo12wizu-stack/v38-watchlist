@@ -17,7 +17,10 @@ def test_dashboard_is_single_html_with_real_almanac_tab_links(tmp_path: Path) ->
     assert html.count('<a class="tab" href="#') == 7
     assert '<button class="tab"' not in html
     assert "window.addEventListener('hashchange'" in html
-    assert ".tab-panel.active,.tab-panel:target{display:block}" in html
+    assert 'document.documentElement.classList.add("js")' in html
+    assert "html.js .tab-panel.active{display:block}" in html
+    assert "html:not(.js) .tab-panel:target{display:block}" in html
+    assert "html:not(.js):has(.tab-panel:target) .tab-panel.active:not(:target){display:none}" in html
 
     for legacy in ("assets.html", "portfolio.html", "trades.html", "edge.html", "review.html", "share.html"):
         assert not (output / legacy).exists(), legacy
@@ -30,6 +33,7 @@ def test_dashboard_is_single_html_with_real_almanac_tab_links(tmp_path: Path) ->
     assert "overflow-x:hidden" in html
     assert 'class="holding-card"' in html
     assert 'id="holdings-more"' in html
+    assert "tickerKeys" in html
     assert "STOP逸脱" in html
     assert "window.V38_DATA=" in html
     assert 'id="j-search"' in html
