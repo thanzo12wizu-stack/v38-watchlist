@@ -14,7 +14,9 @@ def test_dashboard_is_single_html_with_all_sections(tmp_path: Path) -> None:
     for legacy in ("assets.html", "portfolio.html", "trades.html", "edge.html", "review.html", "share.html"):
         assert not (output / legacy).exists(), legacy
         assert f'href="{legacy}"' not in html
-    assert "Single-file, no-JS readable mode" in html
+    assert "V38 SIGNAL LEDGER" in html
+    assert "01 / OPERATIONS" in html
+    assert "--acid:#d7ff38" in html
     assert 'src="data:image/png;base64,' in html
     assert 'id="trade-search"' in html
     assert 'id="trade-setup"' in html
