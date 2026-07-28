@@ -15,7 +15,6 @@ _TAB_BUTTON_RE = re.compile(
     re.DOTALL,
 )
 
-
 _TAB_FALLBACK_CSS = r'''
 .tabs .tab{display:inline-flex;align-items:center;text-decoration:none}
 html:not(.js) .tab-panel{display:none}
@@ -24,6 +23,38 @@ html:not(.js):has(.tab-panel:target) .tab-panel.active:not(:target){display:none
 html:not(.js) .tabs .tab:focus,html:not(.js) .tabs .tab:hover{color:var(--text);border-color:var(--accent)}
 '''
 
+_MOBILE_CSS = r'''
+@media(max-width:680px){
+  html,body,.app{max-width:100%;overflow-x:hidden}
+  .tabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;overflow:visible!important;margin:0!important;padding:6px 0!important}
+  .tabs .tab{min-width:0!important;width:100%;justify-content:center;padding:8px 4px!important;font-size:10px!important;text-align:center}
+  .tabs .tab em{display:none}
+  .metrics,.metrics.compact{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .risk-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid,.grid.equal,.share-grid{grid-template-columns:minmax(0,1fr)!important}
+  .panel,.table-wrap,.table-wrap.tall{max-width:100%;overflow:visible!important;max-height:none!important}
+  .chart,.treemap,svg{max-width:100%;height:auto}
+  table.mobile-cards{display:block;width:100%;white-space:normal!important;background:transparent}
+  table.mobile-cards thead{display:none}
+  table.mobile-cards tbody{display:grid;gap:7px}
+  table.mobile-cards tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  table.mobile-cards td{display:grid;grid-template-columns:minmax(62px,.8fr) minmax(0,1.2fr);align-items:center;gap:7px;width:auto!important;padding:0!important;border:0!important;text-align:right!important;white-space:normal;overflow-wrap:anywhere;font-size:10px!important}
+  table.mobile-cards td:before{content:attr(data-label);color:var(--muted);font-size:8px;font-weight:700;text-align:left}
+  table.mobile-cards td[data-priority="primary"]{grid-column:1/-1;font-size:12px!important;font-weight:850;padding-bottom:5px!important;border-bottom:1px solid var(--line)!important}
+  table.mobile-cards td[data-priority="secondary"]{grid-column:1/-1}
+  table.mobile-cards tr[hidden]{display:none!important}
+  .heatmap{min-width:0!important;width:100%!important;display:block!important;white-space:normal!important}
+  .heatmap thead{display:none}
+  .heatmap tbody{display:grid;gap:8px}
+  .heatmap tr{display:grid;grid-template-columns:52px repeat(3,minmax(0,1fr));gap:4px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
+  .heatmap td{display:block!important;padding:7px 2px!important;border-radius:5px;text-align:center;font-size:8px!important;min-width:0}
+  .heatmap td:nth-child(n+5){display:none!important}
+  .journal-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .journal-toolbar>*{min-width:0!important}
+  .journal-toolbar input,.journal-toolbar select{width:100%}
+  .bar-row{grid-template-columns:84px minmax(0,1fr) 44px!important}
+}
+'''
 
 _TAB_CLICK_SCRIPT = r'''tabs.forEach(tab => tab.addEventListener('click', event => {
     event.preventDefault();
@@ -32,6 +63,20 @@ _TAB_CLICK_SCRIPT = r'''tabs.forEach(tab => tab.addEventListener('click', event 
     else location.hash = targetHash;
   }));'''
 
+_MOBILE_JS = r'''
+  const responsiveTables = [...document.querySelectorAll('.table-wrap table')].filter(table => !table.classList.contains('heatmap'));
+  responsiveTables.forEach(table => {
+    table.classList.add('mobile-cards');
+    const labels = [...table.querySelectorAll('thead th')].map(cell => cell.textContent.trim());
+    [...table.querySelectorAll('tbody tr')].forEach(row => {
+      [...row.children].forEach((cell, index) => {
+        cell.dataset.label = labels[index] || '';
+        if (index === 0 || /Ticker|銘柄/.test(labels[index] || '')) cell.dataset.priority = 'primary';
+        else if (/Setup|テーマ|Sector|内容|Exit理由/.test(labels[index] || '')) cell.dataset.priority = 'secondary';
+      });
+    });
+  });
+'''
 
 _OLD_TAB_CLICK_SCRIPT = "tabs.forEach(tab => tab.addEventListener('click', () => activate(tab.dataset.tab)));"
 
@@ -56,12 +101,6 @@ def _embed_artifacts(document: str, output_dir: Path) -> str:
 
 
 def _restore_tab_links(document: str) -> str:
-    """Convert cosmetic tab buttons into durable same-file hash links.
-
-    JavaScript enhances the links into page-state tabs. When scripts are blocked,
-    the same href targets remain usable through the CSS :target fallback.
-    """
-
     def replace_button(match: re.Match[str]) -> str:
         tab_id, selected, label = match.groups()
         return (
@@ -72,16 +111,12 @@ def _restore_tab_links(document: str) -> str:
     document, count = _TAB_BUTTON_RE.subn(replace_button, document)
     if count != 7:
         raise ValueError(f"expected 7 trade journal tabs, converted {count}")
-
-    document = document.replace(
-        "<head>",
-        "<head><script>document.documentElement.classList.add('js')</script>",
-        1,
-    )
-    document = document.replace("</style>", _TAB_FALLBACK_CSS + "</style>", 1)
+    document = document.replace("<head>", "<head><script>document.documentElement.classList.add('js')</script>", 1)
+    document = document.replace("</style>", _TAB_FALLBACK_CSS + _MOBILE_CSS + "</style>", 1)
     if _OLD_TAB_CLICK_SCRIPT not in document:
         raise ValueError("trade journal tab click handler was not found")
     document = document.replace(_OLD_TAB_CLICK_SCRIPT, _TAB_CLICK_SCRIPT, 1)
+    document = document.replace("  filterTrades();\n", "  filterTrades();\n" + _MOBILE_JS, 1)
     document = re.sub(
         r'<noscript><div class="noscript">.*?</div></noscript>',
         '<noscript><div class="noscript">JavaScriptなしでも上のタブリンクから各画面を開けます。</div></noscript>',
@@ -93,7 +128,7 @@ def _restore_tab_links(document: str) -> str:
 
 
 def render_dashboard(report: JournalReport, path: Path) -> None:
-    """Render one self-contained HTML with linked tab page states."""
+    """Render one self-contained HTML with durable tabs and mobile-native content."""
     path.parent.mkdir(parents=True, exist_ok=True)
     render_daily_card(report, path.parent / "daily_card.png")
     render_portfolio_card(report, path.parent / "portfolio_card.png")
