@@ -87,7 +87,7 @@ jobs:
           grep -q 'table.mobile-cards' artifacts/trade-journal/index.html
           grep -q 'overflow-x:hidden' artifacts/trade-journal/index.html
           grep -q 'grid-template-columns:repeat(4,minmax(0,1fr))' artifacts/trade-journal/index.html
-          ! grep -q 'min-width:760px' artifacts/trade-journal/index.html
+          grep -q '.heatmap{min-width:0!important' artifacts/trade-journal/index.html
           test "$(($(wc -l < artifacts/trade-journal/holdings_normalized.csv) - 1))" -eq 15
           grep -q -- '--bg:#080c12' artifacts/trade-journal/index.html
           grep -q 'src="data:image/png;base64,' artifacts/trade-journal/index.html
