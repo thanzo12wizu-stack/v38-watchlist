@@ -46,9 +46,10 @@ _MOBILE_CSS = r'''
   .heatmap{min-width:0!important;width:100%!important;display:block!important;white-space:normal!important}
   .heatmap thead{display:none}
   .heatmap tbody{display:grid;gap:8px}
-  .heatmap tr{display:grid;grid-template-columns:52px repeat(3,minmax(0,1fr));gap:4px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
+  .heatmap tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
   .heatmap td{display:block!important;padding:7px 2px!important;border-radius:5px;text-align:center;font-size:8px!important;min-width:0}
-  .heatmap td:nth-child(n+5){display:none!important}
+  .heatmap td:first-child{grid-column:1/-1;text-align:left!important;background:transparent!important;color:var(--text)!important;font-size:10px!important;font-weight:800}
+  .heatmap td:not(:first-child):before{content:attr(data-label);display:block;margin-bottom:2px;color:var(--muted);font-size:7px;font-weight:700}
   .journal-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   .journal-toolbar>*{min-width:0!important}
   .journal-toolbar input,.journal-toolbar select{width:100%}
@@ -74,6 +75,12 @@ _MOBILE_JS = r'''
         if (index === 0 || /Ticker|銘柄/.test(labels[index] || '')) cell.dataset.priority = 'primary';
         else if (/Setup|テーマ|Sector|内容|Exit理由/.test(labels[index] || '')) cell.dataset.priority = 'secondary';
       });
+    });
+  });
+  document.querySelectorAll('.heatmap').forEach(table => {
+    const labels = [...table.querySelectorAll('thead th')].map(cell => cell.textContent.trim());
+    [...table.querySelectorAll('tbody tr')].forEach(row => {
+      [...row.children].forEach((cell, index) => { cell.dataset.label = labels[index] || ''; });
     });
   });
 '''
