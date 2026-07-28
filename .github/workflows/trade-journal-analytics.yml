@@ -79,10 +79,13 @@ jobs:
           done
           grep -q 'Trade Journal Almanac' artifacts/trade-journal/index.html
           grep -q -- '--bg:#f5f2ea' artifacts/trade-journal/index.html
-          grep -q 'grid-template-columns:repeat(4,minmax(0,1fr))' artifacts/trade-journal/index.html
+          grep -q 'grid-template-columns:repeat(12,minmax(0,1fr))' artifacts/trade-journal/index.html
+          grep -q '.tab:nth-child(n+5){grid-column:span 4}' artifacts/trade-journal/index.html
           grep -q 'overflow-x:hidden' artifacts/trade-journal/index.html
           grep -q '<details class="holding-card"' artifacts/trade-journal/index.html
+          grep -q 'id="holdings-more"' artifacts/trade-journal/index.html
           grep -q 'Stop距離' artifacts/trade-journal/index.html
+          grep -q 'Stop逸脱' artifacts/trade-journal/index.html
           grep -q '相関調整Heat' artifacts/trade-journal/index.html
           grep -q 'さらに20件表示' artifacts/trade-journal/index.html
           grep -q 'Setup × NQ' artifacts/trade-journal/index.html
