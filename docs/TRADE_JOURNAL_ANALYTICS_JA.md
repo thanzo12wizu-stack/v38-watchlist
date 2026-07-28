@@ -1,148 +1,111 @@
-# Trade Journal Analytics
+# V38 Signal Ledger — Trade Journal & Portfolio Analytics
 
 ## 目的
-既存Command Centerの候補選定、Portfolio、NQゲート、運用ルールを正本として利用し、実際の取引・資産・保有・規律・見送った候補を一つの運用実績システムで照合する。
+既存Command Centerの候補選定、Portfolio Doctor、NQゲート、セクター・テーマ、価格データと、実際の取引・資産推移・規律を一つの運用台帳で照合する。
 
-既存Command Center本体は変更しない。Trade Journal Analyticsは独立サイドカーとしてHTML、PNG、CSV、JSON、Markdownを生成する。
+出力の中心は外部CSS・外部画像・別ページを必要としない`index.html`。今日、資産、ポートフォリオ、取引履歴、エッジ分析、振り返り、共有を一つのHTML内に収録する。
 
-## 画面構成
+## デザイン
+一般的な黒背景・紫グラデーション・丸いカード型ダッシュボードは使用しない。
 
-### 1. 今日
-朝晩の確認を一画面で完結する。
+- コンセプト: **Editorial Trading Terminal / 専用運用台帳**
+- 暖色の紙面、黒い罫線、コバルトブルー、アシッドライム
+- セクション番号付きの明確な視線導線
+- 丸いカード、ガラス表現、過剰な影を撤去
+- 数字、表、リスク表示を優先した高密度レイアウト
+- 日次カードとポートフォリオカードも同一デザイン言語で生成
 
-- 本日、月初来、年初来リターン
-- 総損益、PF、最大DD
-- 相関調整Heat、名目Heat、Gross Exposure、最大リスククラスター
-- NQ色に基づく新規可否
-- 現金比率、保有数、ルール逸脱件数
-- 日次確認用の保有一覧
+## 1ファイル構成
+上部ナビゲーションは同じHTML内のアンカーへ移動する。
 
-### 2. 資産
-長期の結果と下方リスクを確認する。
+1. 今日 / OPERATIONS
+2. 資産 / EQUITY LEDGER
+3. ポートフォリオ / POSITION BOOK
+4. 取引履歴 / TRADE TAPE
+5. エッジ分析 / EDGE LAB
+6. 振り返り / CONTROL ROOM
+7. 共有 / PUBLISH
 
-- 入出金調整後資産曲線
-- ドローダウン曲線
-- 月次ヒートマップ
-- 勝率、平均利益、平均損失、Payoff、期待値、平均保有日数
-- CAGR、Sharpe、Recovery Factor、規律遵守率
+JavaScriptが無効なファイルプレビューでも全セクションを閲覧できる。日次カードとポートフォリオカードはBase64で`index.html`内にも埋め込む。
 
-### 3. ポートフォリオ
-現在の建玉と集中リスクを確認する。
+## 既存Command Centerとの自動連携
+### 自動で同期するもの
+`Private Trade Journal`ワークフローは`Intelligence Engine (sidecar)`の正常終了後に実行される。
 
-- Treemap（面積＝評価額、色＝含み損益）
-- セクター配分
-- テーマ配分
-- 相関調整Portfolio Heat
-- 保有一覧、Stop、Heat、保有日数、Setup
+- NQ色・市場状態
+- Entry Candidates
+- 現在の保有とPortfolio Doctor診断
+- セクター・テーマ
+- Stop、保有日数、含み損益、リスク寄与
+- `prices.pkl`による相関
+- Command Center更新日時
 
-### 4. 取引履歴
-Trade Journalの実データを確認する。
+同期元は`data/intelligence/index.json`および互換コンポーネントJSON。公開リポジトリへ平文を残さず、最終HTMLは既存の秘密鍵でロックし、履歴は`private/trade-journal-state.enc.json`へ暗号化して保存する。
 
-- Entry、Exit、Ticker、Setup、NQ色
-- 損益率、R、円損益、保有日数、Exit理由、規律
-- Ticker・Setup・Exit理由の検索
-- Setup、NQ色、勝敗によるフィルター
-- フィルター後件数の表示
+### 自動では推定しないもの
+Command Centerの候補情報だけから、実際に約定した取引を推測しない。
 
-### 5. エッジ分析
-自分の期待値が残る条件を確認する。
+以下は証券口座データまたはCSVが必要。
 
-- セットアップ別の件数、勝率、PF、平均R、平均騰落、平均日数、損益
-- NQ色別の同指標
-- Missed Trade集計
-- Command Center候補と実売買の照合
-- 候補の10日後リターン、QQQ超過、実現リターン、Capture差
+- 実際のEntry・Exit・株数・約定価格
+- 手数料・税
+- 部分利確
+- 入出金
+- 実口座の総資産
 
-### 6. 振り返り
-重大なルール違反と改善点を確認する。
+任意のGitHub Secrets:
 
-- 赤・黄地合いエントリー
-- ストップ過大、予定RR不足
-- 決算接近、過熱、ギャップ追い
-- 含み損への追加、1トレードリスク超過
-- 自己申告のルール逸脱
-- 数値根拠だけから生成するAI週次レビュー
-- 入力ソースとフォールバックの明示
+- `V38_ACCOUNT_EQUITY_JPY`: 現在の実口座資産
+- `V38_TRADE_JOURNAL_CSV_B64`: Base64化した取引履歴CSV
+- `V38_EQUITY_HISTORY_CSV_B64`: Base64化した資産履歴CSV
 
-### 7. 共有
-分析画面とは分離した投稿用出力を確認する。
+口座資産が未接続で過去の暗号化資産履歴もない場合、架空の円金額で本番版を作らず、セットアップ待ちとして扱う。
 
-- 1200×675の日次成績カード
-- 1200×675のポートフォリオカード
-- 投稿文プレビュー
-- 投稿文コピー
-- PNGと生成済みテキストの保存
+## 画面内容
+### 今日
+本日・月初来・年初来、総損益、PF、最大DD、NQゲート、相関調整Heat、Gross Exposure、保有一覧。
 
-## タブ操作
+### 資産
+入出金調整後資産曲線、ドローダウン、月次ヒートマップ、勝率、平均利益・損失、Payoff、期待値、CAGR、Sharpe、Recovery Factor。
 
-- タブは画面上部に固定し、スマートフォンでは横スクロールする。
-- 選択タブはURLハッシュへ保存される。
-- 再読み込みや共有URLでも同じタブを復元する。
-- すべてのタブ内容を一枚に縦積みしない。
-- 「今日」は日次運用、「資産」「ポートフォリオ」「取引履歴」「エッジ分析」は検証、「振り返り」は改善、「共有」は投稿に役割を限定する。
-
-## 入力
+### ポートフォリオ
+Treemap、セクター・テーマ配分、名目Heat、相関調整Heat、Stop、保有日数、Setup、含み損益。
 
 ### 取引履歴
-`data/trade_journal/trades.csv`
+Entry、Exit、Ticker、Setup、NQ色、損益率、R、円損益、保有日数、Exit理由、規律。Ticker・Setup・NQ・勝敗で検索・絞り込みできる。
 
-主要項目:
+### エッジ分析
+セットアップ別、NQ色別、Missed Trade、Command Center候補と実売買、10日後QQQ超過、Capture差。
 
-- `trade_id`
-- `ticker`
-- `side`
-- `entry_date`, `exit_date`
-- `entry_price`, `exit_price`, `quantity`
-- `fx_to_jpy`, `point_value`
-- `fees_jpy`, `tax_jpy`
-- `stop_price`, `target_price`
-- `setup`, `nq_color`, `sector`, `theme`
-- `exit_reason`, `rule_followed`, `mistake_type`
+### 振り返り
+ルール逸脱、決算接近、過熱、ギャップ追い、含み損追加、リスク超過、AI週次レビュー、データソース。
 
-### 資産履歴
-`data/trade_journal/equity.csv`
+### 共有
+1200×675の日次カード、ポートフォリオカード、投稿文プレビューとコピー。
 
-- `date`
-- `equity_jpy`
-- `cash_jpy`
-- `deposit_jpy`
-- `withdrawal_jpy`
+## 入力ファイル
+- `data/trade_journal/trades.csv`
+- `data/trade_journal/equity.csv`
+- `data/trade_journal/holdings.csv`
+- `data/trade_journal/candidates.csv`
+- `data/trade_journal/market_context.csv`
+- `data/intelligence/index.json`
+- `prices.pkl`
 
-### 保有
-`data/trade_journal/holdings.csv`または既存Portfolio JSON。
-
-### 候補履歴
-`data/trade_journal/candidates.csv`または`data/intelligence/research/signals`。
-
-### 相関
-`prices.pkl`から直近60観測のリターン相関を使用する。取得できない場合は独立仮定とし、その旨をデータソース欄に表示する。
-
-## 出力
-
+## 主な出力
 - `index.html`
 - `daily_card.png`
 - `portfolio_card.png`
 - `social_post_ja.txt`
 - `weekly_review.md`
 - `summary.json`
-- `trades_normalized.csv`
-- `holdings_normalized.csv`
-- `equity_curve.csv`
-- `monthly_returns.csv`
-- `setup_analysis.csv`
-- `regime_analysis.csv`
-- `missed_trade_analysis.csv`
-- `candidate_vs_actual.csv`
-- `rule_violations.csv`
-- `sector_allocation.csv`
-- `theme_allocation.csv`
-- `holding_correlations.csv`
+- 正規化取引・保有・資産・月次・Setup・地合い・候補比較・逸脱・配分・相関CSV
 
 ## 安全性
-
-- 重要入力がない場合に架空の口座残高や損益を表示しない。
-- デモはCI・表示確認用で、実績として扱わない。
+- デモデータを実績として扱わない。
+- 架空の口座残高や約定を本番データへ混ぜない。
 - 損益はPoint Value、FX、手数料、税を反映する。
 - 資産曲線は入出金を運用益として数えない。
-- 重大なルール違反を好条件で相殺しない。
+- 重大なルール違反を他の好条件で相殺しない。
 - 自動売買や注文発注は行わない。
+- 平文の取引・資産・保有データを公開リポジトリへ保存しない。
