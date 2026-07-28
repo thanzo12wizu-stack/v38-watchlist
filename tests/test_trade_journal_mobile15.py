@@ -14,7 +14,7 @@ def test_mobile_layout_and_fifteen_position_stress_case(tmp_path: Path) -> None:
     assert len(holdings) == 15
     assert holdings["ticker"].nunique() == 15
     assert "table.mobile-cards" in html
-    assert "data-label" in html
+    assert "cell.dataset.label" in html
     assert "grid-template-columns:repeat(4,minmax(0,1fr))" in html
     assert "overflow-x:hidden" in html
     assert "min-width:760px" not in html
