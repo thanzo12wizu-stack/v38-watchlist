@@ -20,6 +20,7 @@ on:
       - "config/trade_journal.example.json"
       - "docs/TRADE_JOURNAL_ANALYTICS_JA.md"
       - ".github/workflows/trade-journal-analytics.yml"
+      - ".github/workflows/trade-journal-private.yml"
       - "pyproject.toml"
 
 permissions:
@@ -58,7 +59,7 @@ jobs:
             --output artifacts/trade-journal \
             --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}" \
             "${EXTRA[@]}"
-      - name: Verify single self-contained dashboard and share assets
+      - name: Verify Signal Ledger single-file dashboard and share assets
         shell: bash
         run: |
           set -euo pipefail
@@ -71,7 +72,9 @@ jobs:
             test ! -e "artifacts/trade-journal/${legacy}"
             ! grep -q "href=\"${legacy}\"" artifacts/trade-journal/index.html
           done
-          grep -q 'Single-file, no-JS readable mode' artifacts/trade-journal/index.html
+          grep -q 'V38 SIGNAL LEDGER' artifacts/trade-journal/index.html
+          grep -q '01 / OPERATIONS' artifacts/trade-journal/index.html
+          grep -q -- '--acid:#d7ff38' artifacts/trade-journal/index.html
           grep -q 'src="data:image/png;base64,' artifacts/trade-journal/index.html
           grep -q 'id="trade-search"' artifacts/trade-journal/index.html
           test -s artifacts/trade-journal/daily_card.png
