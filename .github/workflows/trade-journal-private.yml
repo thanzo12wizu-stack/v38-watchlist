@@ -1,0 +1,200 @@
+name: Private Trade Journal
+
+on:
+  workflow_run:
+    workflows: ["Intelligence Engine (sidecar)"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: private-trade-journal-main
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
+      V38_PORTFOLIO_CSV_B64: ${{ secrets.V38_PORTFOLIO_CSV_B64 }}
+      V38_TRADE_JOURNAL_CSV_B64: ${{ secrets.V38_TRADE_JOURNAL_CSV_B64 }}
+      V38_EQUITY_HISTORY_CSV_B64: ${{ secrets.V38_EQUITY_HISTORY_CSV_B64 }}
+      V38_ACCOUNT_EQUITY_JPY: ${{ secrets.V38_ACCOUNT_EQUITY_JPY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: python -m pip install -e '.[test]'
+
+      - name: Restore private Command Center and journal state
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/trade_journal
+          if [[ -z "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
+            echo "::error::V38_PRIVATE_DASHBOARD_PASSPHRASE is required"
+            exit 1
+          fi
+          if [[ -f private/intelligence-state.enc.json ]]; then
+            node scripts/private_crypto.mjs decrypt private/intelligence-state.enc.json /tmp/intelligence-state.tar.gz
+            tar -xzf /tmp/intelligence-state.tar.gz
+          fi
+          if [[ -f private/trade-journal-state.enc.json ]]; then
+            node scripts/private_crypto.mjs decrypt private/trade-journal-state.enc.json /tmp/trade-journal-state.tar.gz
+            tar -xzf /tmp/trade-journal-state.tar.gz
+          fi
+          if [[ -n "${V38_PORTFOLIO_CSV_B64:-}" ]]; then
+            printf '%s' "$V38_PORTFOLIO_CSV_B64" | base64 --decode > portfolio.csv
+            chmod 600 portfolio.csv
+          fi
+          if [[ -n "${V38_TRADE_JOURNAL_CSV_B64:-}" ]]; then
+            printf '%s' "$V38_TRADE_JOURNAL_CSV_B64" | base64 --decode > data/trade_journal/trades.csv
+            chmod 600 data/trade_journal/trades.csv
+          fi
+          if [[ -n "${V38_EQUITY_HISTORY_CSV_B64:-}" ]]; then
+            printf '%s' "$V38_EQUITY_HISTORY_CSV_B64" | base64 --decode > data/trade_journal/equity.csv
+            chmod 600 data/trade_journal/equity.csv
+          fi
+
+      - name: Restore price cache
+        uses: actions/cache/restore@v4
+        with:
+          path: prices.pkl
+          key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            intelligence-prices-${{ runner.os }}-
+
+      - name: Ensure current Command Center snapshot
+        timeout-minutes: 45
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f prices.pkl ]]; then
+            python -m intelligence_engine.ensure_prices --universe universe.csv --prices prices.pkl --min-coverage 0.60
+          fi
+          python -m intelligence_engine.command_layer \
+            --root data/intelligence \
+            --prices prices.pkl \
+            --portfolio portfolio.csv \
+            --external-root data/external
+
+      - name: Synchronize current dashboard state
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            python -m intelligence_engine.trade_journal_sync
+            --intelligence-root data/intelligence
+            --output data/trade_journal
+          )
+          if [[ "${V38_ACCOUNT_EQUITY_JPY:-}" =~ ^[0-9]+([.][0-9]+)?$ ]] && [[ "${V38_ACCOUNT_EQUITY_JPY}" != "0" ]]; then
+            args+=(--account-equity-jpy "$V38_ACCOUNT_EQUITY_JPY")
+          fi
+          "${args[@]}"
+          cat data/trade_journal/connection_status.json
+
+      - name: Build and lock one-file Trade Journal
+        shell: bash
+        run: |
+          set -euo pipefail
+          account="$(python - <<'PY'
+          import os
+          from pathlib import Path
+          import pandas as pd
+          raw = os.environ.get('V38_ACCOUNT_EQUITY_JPY', '').strip()
+          if raw:
+              try:
+                  value = float(raw)
+                  if value > 0:
+                      print(value)
+                      raise SystemExit
+              except ValueError:
+                  pass
+          path = Path('data/trade_journal/equity.csv')
+          if path.exists():
+              frame = pd.read_csv(path)
+              values = pd.to_numeric(frame.get('equity_jpy'), errors='coerce').dropna()
+              if len(values) and float(values.iloc[-1]) > 0:
+                  print(float(values.iloc[-1]))
+          PY
+          )"
+          if [[ -z "$account" ]]; then
+            echo "::warning::Account equity is not connected; publishing a locked setup notice"
+            node scripts/private_crypto.mjs placeholder-html ignored trade-journal-dashboard.html
+            exit 0
+          fi
+          rm -rf /tmp/trade-journal
+          mkdir -p /tmp/trade-journal
+          python -m intelligence_engine.trade_journal_run \
+            --input data/trade_journal \
+            --output /tmp/trade-journal \
+            --starting-equity-jpy "$account" \
+            --research-root data/intelligence/research \
+            --prices prices.pkl
+          test -s /tmp/trade-journal/index.html
+          node scripts/private_crypto.mjs lock-html /tmp/trade-journal/index.html trade-journal-dashboard.html
+          test -s trade-journal-dashboard.html
+          grep -q 'V38 Private Intelligence' trade-journal-dashboard.html
+          if grep -q 'PERFORMANCE LEDGER' trade-journal-dashboard.html; then
+            echo "plaintext Trade Journal leaked into locked HTML"
+            exit 1
+          fi
+
+      - name: Persist encrypted journal history
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p private
+          tar -czf /tmp/trade-journal-state.tar.gz data/trade_journal
+          node scripts/private_crypto.mjs encrypt /tmp/trade-journal-state.tar.gz private/trade-journal-state.enc.json
+          test -s private/trade-journal-state.enc.json
+
+      - name: Remove plaintext private data
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf data/intelligence data/external data/trade_journal portfolio.csv /tmp/trade-journal
+          rm -f /tmp/intelligence-state.tar.gz /tmp/trade-journal-state.tar.gz
+          git rm -r -f --ignore-unmatch -- data/intelligence data/external data/trade_journal portfolio.csv || true
+          if [[ -e portfolio.csv || -d data/intelligence || -d data/trade_journal ]]; then
+            echo "plaintext private Trade Journal data remains"
+            exit 1
+          fi
+
+      - name: Commit encrypted private dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add trade-journal-dashboard.html private/trade-journal-state.enc.json
+          git add -A -- data/intelligence data/external data/trade_journal portfolio.csv 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No private Trade Journal changes"
+            exit 0
+          fi
+          git commit -m "Update encrypted private trade journal"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
