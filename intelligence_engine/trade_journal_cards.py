@@ -8,16 +8,16 @@ from PIL import Image, ImageDraw, ImageFont
 from .trade_journal import JournalReport
 from .trade_journal_html import _num, _pct, _treemap_rects, _yen
 
-
-PAPER = "#F2EEE3"
-PAPER_2 = "#FFFDF6"
-INK = "#101216"
-BLUE = "#1547FF"
-ACID = "#D7FF38"
-CORAL = "#FF5B61"
-GREEN = "#009B72"
-MUTED = "#737570"
-GRID = "#C9C4B9"
+BG = "#080C12"
+PANEL = "#111927"
+PANEL_2 = "#0D1420"
+LINE = "#26344A"
+TEXT = "#EEF4FB"
+MUTED = "#8E9CB0"
+ACCENT = "#83B7FF"
+GOOD = "#42D67F"
+BAD = "#FF6868"
+WARN = "#F5C34F"
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -36,25 +36,18 @@ def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.I
     return ImageFont.load_default()
 
 
-def _label(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, *, fill: str = INK, inverse: bool = False) -> None:
-    x, y = xy
-    font = _font(17, True)
-    bbox = draw.textbbox((x, y), text, font=font)
-    width = bbox[2] - bbox[0]
-    background = INK if inverse else ACID
-    foreground = PAPER_2 if inverse else fill
-    draw.rectangle((x, y, x + width + 22, y + 30), fill=background)
-    draw.text((x + 11, y + 4), text, font=font, fill=foreground)
+def _rounded(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], *, fill: str = PANEL, outline: str = LINE, radius: int = 18) -> None:
+    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=1)
 
 
 def _draw_grid(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], columns: int = 8, rows: int = 4) -> None:
     x0, y0, x1, y1 = box
     for i in range(columns + 1):
         x = x0 + (x1 - x0) * i / columns
-        draw.line((x, y0, x, y1), fill=GRID, width=1)
+        draw.line((x, y0, x, y1), fill="#1B2637", width=1)
     for i in range(rows + 1):
         y = y0 + (y1 - y0) * i / rows
-        draw.line((x0, y, x1, y), fill=GRID, width=1)
+        draw.line((x0, y, x1, y), fill="#1B2637", width=1)
 
 
 def _draw_sparkline(draw: ImageDraw.ImageDraw, values: list[float], box: tuple[int, int, int, int]) -> None:
@@ -68,115 +61,116 @@ def _draw_sparkline(draw: ImageDraw.ImageDraw, values: list[float], box: tuple[i
         x = x0 + (x1 - x0) * i / (len(values) - 1)
         y = y1 - (y1 - y0) * (value - low) / span
         points.append((x, y))
-    draw.polygon([(x0, y1), *points, (x1, y1)], fill="#CCD6FF")
-    draw.line(points, fill=BLUE, width=5, joint="curve")
-    draw.ellipse((points[-1][0] - 7, points[-1][1] - 7, points[-1][0] + 7, points[-1][1] + 7), fill=ACID, outline=INK, width=2)
+    draw.polygon([(x0, y1), *points, (x1, y1)], fill="#16243B")
+    draw.line(points, fill=ACCENT, width=4, joint="curve")
+    px, py = points[-1]
+    draw.ellipse((px - 5, py - 5, px + 5, py + 5), fill=ACCENT)
 
 
-def _metric(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], label: str, value: str, sub: str, tone: str = INK, *, accent: str | None = None) -> None:
+def _metric(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], label: str, value: str, sub: str, tone: str = TEXT) -> None:
     x0, y0, x1, y1 = box
-    draw.rectangle(box, fill=accent or PAPER_2, outline=INK, width=2)
-    draw.text((x0 + 16, y0 + 12), label, font=_font(15, True), fill=MUTED if accent is None else INK)
-    draw.text((x0 + 16, y0 + 39), value, font=_font(32, True), fill=tone)
-    draw.text((x0 + 16, y1 - 28), sub, font=_font(14), fill=MUTED if accent is None else INK)
+    _rounded(draw, box, fill=PANEL)
+    draw.text((x0 + 16, y0 + 13), label, font=_font(14, True), fill=MUTED)
+    draw.text((x0 + 16, y0 + 42), value, font=_font(31, True), fill=tone)
+    draw.text((x0 + 16, y1 - 27), sub, font=_font(13), fill=MUTED)
 
 
 def render_daily_card(report: JournalReport, path: Path) -> None:
-    image = Image.new("RGB", (1200, 675), PAPER)
+    image = Image.new("RGB", (1200, 675), BG)
     draw = ImageDraw.Draw(image)
-    draw.rectangle((0, 0, 18, 675), fill=BLUE)
-    draw.rectangle((18, 0, 1200, 12), fill=INK)
-    _label(draw, (52, 36), "V38 / DAILY LEDGER", inverse=True)
-    draw.text((52, 82), report.as_of.date().isoformat(), font=_font(18), fill=MUTED)
-    draw.text((52, 112), _yen(report.account_equity_jpy), font=_font(59, True), fill=INK)
-    draw.text((55, 202), "TOTAL EQUITY / 入出金調整後", font=_font(15, True), fill=MUTED)
+    draw.rectangle((0, 0, 1200, 7), fill=ACCENT)
 
-    nq_fill = {"BLUE": BLUE, "GREEN": GREEN, "YELLOW": "#E9B82C", "RED": CORAL}.get(report.nq_color, INK)
-    draw.rectangle((958, 36, 1148, 104), fill=nq_fill, outline=INK, width=2)
-    draw.text((978, 48), "MARKET GATE", font=_font(14, True), fill=PAPER_2)
-    draw.text((978, 72), f"NQ {report.nq_color}", font=_font(23, True), fill=PAPER_2)
+    draw.text((48, 35), "V38 TRADE JOURNAL", font=_font(21, True), fill=ACCENT)
+    draw.text((48, 68), report.as_of.date().isoformat(), font=_font(15), fill=MUTED)
+    draw.text((48, 104), _yen(report.account_equity_jpy), font=_font(56, True), fill=TEXT)
+    draw.text((50, 170), "TOTAL EQUITY / 入出金調整後", font=_font(14, True), fill=MUTED)
+
+    nq_fill = {"BLUE": "#285A9D", "GREEN": "#16664D", "YELLOW": "#7A5B16", "RED": "#762D3D"}.get(report.nq_color, PANEL_2)
+    _rounded(draw, (956, 34, 1148, 102), fill=nq_fill, outline=nq_fill, radius=16)
+    draw.text((976, 48), "MARKET GATE", font=_font(13, True), fill="#D9E3F1")
+    draw.text((976, 71), f"NQ {report.nq_color}", font=_font(22, True), fill=TEXT)
 
     k = report.kpis
-    _metric(draw, (52, 238, 316, 356), "TODAY", _pct(k.get("daily_return"), signed=True), _yen(report.account_equity_jpy * (k.get("daily_return") or 0)), GREEN if (k.get("daily_return") or 0) >= 0 else CORAL, accent=ACID)
-    _metric(draw, (316, 238, 580, 356), "MONTH TO DATE", _pct(k.get("mtd_return"), signed=True), f"PF {_num(k.get('profit_factor'))}", GREEN if (k.get("mtd_return") or 0) >= 0 else CORAL)
-    _metric(draw, (580, 238, 844, 356), "YEAR TO DATE", _pct(k.get("ytd_return"), signed=True), f"MAX DD {_pct(k.get('max_drawdown'))}", GREEN if (k.get("ytd_return") or 0) >= 0 else CORAL)
-    _metric(draw, (844, 238, 1148, 356), "CORRELATION HEAT", _pct(report.portfolio_risk.get("correlation_adjusted_heat")), f"CASH {_pct(k.get('cash_fraction'))}", INK, accent="#C8D3FF")
+    widths = [(48, 222, 310, 340), (324, 222, 586, 340), (600, 222, 862, 340), (876, 222, 1148, 340)]
+    _metric(draw, widths[0], "TODAY", _pct(k.get("daily_return"), signed=True), _yen(report.account_equity_jpy * (k.get("daily_return") or 0)), GOOD if (k.get("daily_return") or 0) >= 0 else BAD)
+    _metric(draw, widths[1], "MONTH TO DATE", _pct(k.get("mtd_return"), signed=True), f"PF {_num(k.get('profit_factor'))}", GOOD if (k.get("mtd_return") or 0) >= 0 else BAD)
+    _metric(draw, widths[2], "YEAR TO DATE", _pct(k.get("ytd_return"), signed=True), f"MAX DD {_pct(k.get('max_drawdown'))}", GOOD if (k.get("ytd_return") or 0) >= 0 else BAD)
+    _metric(draw, widths[3], "CORRELATION HEAT", _pct(report.portfolio_risk.get("correlation_adjusted_heat")), f"CASH {_pct(k.get('cash_fraction'))}", WARN)
 
-    draw.rectangle((52, 384, 786, 626), fill=PAPER_2, outline=INK, width=2)
-    _label(draw, (72, 400), "EQUITY TAPE")
-    _draw_grid(draw, (72, 448, 764, 600))
+    _rounded(draw, (48, 360, 786, 626), fill=PANEL)
+    draw.text((68, 382), "EQUITY CURVE", font=_font(16, True), fill=TEXT)
+    draw.text((68, 407), "直近90営業日", font=_font(12), fill=MUTED)
+    _draw_grid(draw, (68, 446, 766, 598))
     values = report.equity["adjusted_equity_jpy"].tail(90).astype(float).tolist() if not report.equity.empty else []
-    _draw_sparkline(draw, values, (72, 448, 764, 600))
+    _draw_sparkline(draw, values, (68, 446, 766, 598))
 
-    draw.rectangle((808, 384, 1148, 626), fill=INK)
-    draw.text((830, 403), "POSITION BOOK", font=_font(18, True), fill=ACID)
-    draw.text((830, 431), "WEIGHT / P&L", font=_font(12, True), fill="#A7AAA5")
-    y = 465
-    for index, (_, row) in enumerate(report.holdings.head(4).iterrows(), start=1):
+    _rounded(draw, (804, 360, 1148, 626), fill=PANEL)
+    draw.text((826, 382), "TOP POSITIONS", font=_font(16, True), fill=TEXT)
+    draw.text((826, 407), "WEIGHT / P&L", font=_font(12), fill=MUTED)
+    y = 452
+    for _, row in report.holdings.head(4).iterrows():
         pnl = float(row.get("unrealized_pct") or 0)
-        tone = ACID if pnl >= 0 else CORAL
-        draw.text((830, y), f"0{index}", font=_font(14, True), fill="#70746F")
-        draw.text((867, y - 4), str(row["ticker"]), font=_font(24, True), fill=PAPER_2)
-        draw.text((1020, y), _pct(row.get("allocation")), font=_font(16), fill="#C8CBC5", anchor="ra")
-        draw.text((1124, y), _pct(pnl, signed=True), font=_font(16, True), fill=tone, anchor="ra")
-        draw.line((830, y + 31, 1124, y + 31), fill="#404349", width=1)
-        y += 42
+        tone = GOOD if pnl >= 0 else BAD
+        draw.text((826, y), str(row["ticker"]), font=_font(22, True), fill=TEXT)
+        draw.text((1010, y + 3), _pct(row.get("allocation")), font=_font(15), fill=MUTED, anchor="ra")
+        draw.text((1122, y + 3), _pct(pnl, signed=True), font=_font(15, True), fill=tone, anchor="ra")
+        draw.line((826, y + 31, 1122, y + 31), fill=LINE, width=1)
+        y += 43
 
-    draw.text((52, 646), "PRIVATE OPERATING RECORD", font=_font(12, True), fill=MUTED)
-    draw.text((1148, 646), "V38", font=_font(14, True), fill=BLUE, anchor="ra")
+    draw.text((48, 646), "PRIVATE PERFORMANCE RECORD", font=_font(11, True), fill=MUTED)
+    draw.text((1148, 646), "V38", font=_font(12, True), fill=ACCENT, anchor="ra")
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path, quality=95)
 
 
 def render_portfolio_card(report: JournalReport, path: Path) -> None:
-    image = Image.new("RGB", (1200, 675), PAPER)
+    image = Image.new("RGB", (1200, 675), BG)
     draw = ImageDraw.Draw(image)
-    draw.rectangle((0, 0, 1200, 14), fill=BLUE)
-    draw.rectangle((40, 38, 1160, 106), fill=INK)
-    draw.text((62, 52), "V38 / POSITION BOOK", font=_font(25, True), fill=ACID)
-    draw.text((62, 82), f"{report.as_of.date().isoformat()}  /  {_yen(report.account_equity_jpy)}  /  CASH {_pct(report.kpis.get('cash_fraction'))}", font=_font(16), fill=PAPER_2)
+    draw.rectangle((0, 0, 1200, 7), fill=ACCENT)
+    draw.text((48, 34), "V38 PORTFOLIO", font=_font(22, True), fill=ACCENT)
+    draw.text((48, 68), f"{report.as_of.date().isoformat()}  |  {_yen(report.account_equity_jpy)}  |  CASH {_pct(report.kpis.get('cash_fraction'))}", font=_font(15), fill=MUTED)
 
-    draw.rectangle((40, 128, 832, 628), fill=PAPER_2, outline=INK, width=2)
-    _label(draw, (60, 146), "ALLOCATION MAP")
+    _rounded(draw, (48, 112, 830, 626), fill=PANEL)
+    draw.text((68, 134), "ALLOCATION MAP", font=_font(16, True), fill=TEXT)
+    draw.text((68, 159), "面積＝評価額 / 色＝含み損益", font=_font(12), fill=MUTED)
     if not report.holdings.empty:
         values = report.holdings["market_value_jpy"].astype(float).clip(lower=0).tolist()
         labels = report.holdings["ticker"].astype(str).tolist()
         total = sum(values) or 1.0
-        rects = _treemap_rects(values, labels, 60, 192, 752, 414)
+        rects = _treemap_rects(values, labels, 68, 198, 742, 402)
         lookup = report.holdings.set_index("ticker")
         for x, y, w, h, label, value in rects:
             pnl = float(lookup.loc[label, "unrealized_pct"]) if pd.notna(lookup.loc[label, "unrealized_pct"]) else 0.0
-            fill = "#BCEED2" if pnl > 0 else "#FFC9CB" if pnl < 0 else "#DDD8CE"
-            draw.rectangle((int(x + 2), int(y + 2), int(x + w - 2), int(y + h - 2)), fill=fill, outline=INK, width=2)
-            if w > 92 and h > 56:
-                draw.text((x + 11, y + 8), label, font=_font(23, True), fill=INK)
-                draw.text((x + 11, y + 38), f"{value / total:.1%}  {pnl:+.1%}", font=_font(15, True), fill=GREEN if pnl >= 0 else "#D72D39")
+            fill = "#173E31" if pnl > 0 else "#4B2029" if pnl < 0 else "#263246"
+            draw.rounded_rectangle((int(x + 2), int(y + 2), int(x + w - 2), int(y + h - 2)), radius=10, fill=fill, outline=LINE, width=1)
+            if w > 95 and h > 58:
+                draw.text((x + 11, y + 8), label, font=_font(21, True), fill=TEXT)
+                draw.text((x + 11, y + 37), f"{value / total:.1%}  {pnl:+.1%}", font=_font(14, True), fill=GOOD if pnl >= 0 else BAD)
 
-    draw.rectangle((854, 128, 1160, 628), fill=INK)
-    draw.text((878, 150), "RISK / CONTROL", font=_font(18, True), fill=ACID)
+    _rounded(draw, (848, 112, 1152, 626), fill=PANEL)
+    draw.text((870, 134), "RISK SNAPSHOT", font=_font(16, True), fill=TEXT)
     items = [
         ("GROSS", _pct(report.portfolio_risk.get("gross_exposure"))),
         ("NOMINAL HEAT", _pct(report.portfolio_risk.get("nominal_heat"))),
         ("CORR. HEAT", _pct(report.portfolio_risk.get("correlation_adjusted_heat"))),
         ("UNREALIZED", _yen(report.kpis.get("unrealized_pnl_jpy"), compact=True)),
     ]
-    y = 198
-    for number, (label, value) in enumerate(items, start=1):
-        draw.text((878, y), f"0{number}  {label}", font=_font(13, True), fill="#969A95")
-        draw.text((878, y + 25), value, font=_font(31, True), fill=PAPER_2 if number != 3 else ACID)
-        draw.line((878, y + 64, 1135, y + 64), fill="#46494F", width=1)
-        y += 82
+    y = 180
+    for label, value in items:
+        draw.text((870, y), label, font=_font(12, True), fill=MUTED)
+        draw.text((870, y + 24), value, font=_font(28, True), fill=TEXT if label != "CORR. HEAT" else WARN)
+        draw.line((870, y + 62, 1130, y + 62), fill=LINE, width=1)
+        y += 78
 
-    draw.text((878, 530), "TOP SECTORS", font=_font(14, True), fill="#969A95")
-    y = 556
-    for index, (_, row) in enumerate(report.sector_allocation.head(3).iterrows(), start=1):
-        draw.text((878, y), f"{index:02d}", font=_font(13, True), fill=ACID)
-        draw.text((912, y), str(row["sector"])[:18], font=_font(14, True), fill=PAPER_2)
-        draw.text((1132, y), _pct(row["allocation"]), font=_font(14, True), fill=PAPER_2, anchor="ra")
-        y += 23
+    draw.text((870, 504), "TOP SECTORS", font=_font(13, True), fill=MUTED)
+    y = 534
+    for _, row in report.sector_allocation.head(3).iterrows():
+        draw.text((870, y), str(row["sector"])[:18], font=_font(14, True), fill=TEXT)
+        draw.text((1128, y), _pct(row["allocation"]), font=_font(14, True), fill=ACCENT, anchor="ra")
+        y += 25
 
-    draw.text((40, 650), "SIZE = MARKET VALUE / COLOR = UNREALIZED RETURN", font=_font(12, True), fill=MUTED)
-    draw.text((1160, 650), "V38 SIGNAL LEDGER", font=_font(12, True), fill=BLUE, anchor="ra")
+    draw.text((48, 646), "SIZE = MARKET VALUE / COLOR = UNREALIZED RETURN", font=_font(11, True), fill=MUTED)
+    draw.text((1152, 646), "V38 TRADE JOURNAL", font=_font(11, True), fill=ACCENT, anchor="ra")
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path, quality=95)
 
