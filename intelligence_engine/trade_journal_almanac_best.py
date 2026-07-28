@@ -70,6 +70,12 @@ _ENHANCEMENT_CSS = r'''
 .tabs{grid-template-columns:repeat(12,minmax(0,1fr))}
 .tab:nth-child(-n+4){grid-column:span 3}
 .tab:nth-child(n+5){grid-column:span 4}
+html.js .tab-panel{display:none}
+html.js .tab-panel.active{display:block}
+html:not(.js) .tab-panel{display:none}
+html:not(.js) .tab-panel.active{display:block}
+html:not(.js) .tab-panel:target{display:block}
+html:not(.js):has(.tab-panel:target) .tab-panel.active:not(:target){display:none}
 #holdings-more[hidden]{display:none}
 '''
 
@@ -159,6 +165,7 @@ def _enhance(document: str, report: JournalReport) -> str:
     if marker not in document:
         raise ValueError("Almanac holdings container was not found")
     document = document.replace(marker, replacement, 1)
+    document = document.replace('<head>', '<head><script>document.documentElement.classList.add("js")</script>', 1)
     document = document.replace('</style>', _ENHANCEMENT_CSS + '</style>', 1)
     document = document.replace('</body>', f'<script>{_ENHANCEMENT_JS}</script></body>', 1)
     return document
