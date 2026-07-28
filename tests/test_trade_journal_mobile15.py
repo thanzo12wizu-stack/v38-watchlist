@@ -17,7 +17,7 @@ def test_mobile_layout_and_fifteen_position_stress_case(tmp_path: Path) -> None:
     assert "cell.dataset.label" in html
     assert "grid-template-columns:repeat(4,minmax(0,1fr))" in html
     assert "overflow-x:hidden" in html
-    assert "min-width:760px" not in html
+    assert ".heatmap{min-width:0!important" in html
     assert html.count('class="tab" href="#') == 7
     assert '<button class="tab"' not in html
     assert output.joinpath("daily_card.png").stat().st_size > 0
