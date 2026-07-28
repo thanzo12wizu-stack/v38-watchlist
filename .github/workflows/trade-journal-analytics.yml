@@ -8,7 +8,7 @@ on:
         required: false
         default: "7300000"
       demo:
-        description: Build with deterministic demo data
+        description: Build with deterministic 15-position demo data
         required: false
         type: boolean
         default: true
@@ -43,23 +43,24 @@ jobs:
       - name: Install Japanese fonts
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: python -m pip install -e '.[test]'
-      - name: Test journal engine and linked tab UI
+      - name: Test journal engine, linked tabs, mobile layout, and 15 holdings
         run: pytest -q tests/test_trade_journal*.py
       - name: Build analytics artifact
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/trade-journal
-          EXTRA=()
           if [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.demo }}" == "true" ]]; then
-            EXTRA+=(--demo)
+            python -m intelligence_engine.trade_journal_demo15 \
+              --output artifacts/trade-journal \
+              --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}"
+          else
+            python -m intelligence_engine.trade_journal_run \
+              --input data/trade_journal \
+              --output artifacts/trade-journal \
+              --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}"
           fi
-          python -m intelligence_engine.trade_journal_run \
-            --input data/trade_journal \
-            --output artifacts/trade-journal \
-            --starting-equity-jpy "${{ inputs.starting_equity_jpy || '7300000' }}" \
-            "${EXTRA[@]}"
-      - name: Verify Command Center style linked tab pages and share assets
+      - name: Verify mobile-native linked tab pages and share assets
         shell: bash
         run: |
           set -euo pipefail
@@ -83,6 +84,11 @@ jobs:
           grep -q "window.addEventListener('hashchange'" artifacts/trade-journal/index.html
           grep -q 'event.preventDefault()' artifacts/trade-journal/index.html
           grep -q 'location.hash = targetHash' artifacts/trade-journal/index.html
+          grep -q 'table.mobile-cards' artifacts/trade-journal/index.html
+          grep -q 'overflow-x:hidden' artifacts/trade-journal/index.html
+          grep -q 'grid-template-columns:repeat(4,minmax(0,1fr))' artifacts/trade-journal/index.html
+          ! grep -q 'min-width:760px' artifacts/trade-journal/index.html
+          test "$(($(wc -l < artifacts/trade-journal/holdings_normalized.csv) - 1))" -eq 15
           grep -q -- '--bg:#080c12' artifacts/trade-journal/index.html
           grep -q 'src="data:image/png;base64,' artifacts/trade-journal/index.html
           grep -q 'id="trade-search"' artifacts/trade-journal/index.html
