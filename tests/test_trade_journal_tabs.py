@@ -25,9 +25,12 @@ def test_dashboard_is_single_html_with_real_almanac_tab_links(tmp_path: Path) ->
 
     assert "Trade Journal Almanac" in html
     assert "--bg:#f5f2ea" in html
-    assert "grid-template-columns:repeat(4,minmax(0,1fr))" in html
+    assert "grid-template-columns:repeat(12,minmax(0,1fr))" in html
+    assert ".tab:nth-child(n+5){grid-column:span 4}" in html
     assert "overflow-x:hidden" in html
     assert 'class="holding-card"' in html
+    assert 'id="holdings-more"' in html
+    assert "STOP逸脱" in html
     assert "window.V38_DATA=" in html
     assert 'id="j-search"' in html
     assert 'id="edge-axis"' in html
