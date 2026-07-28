@@ -88,8 +88,8 @@ def render_daily_card(report: JournalReport, path: Path) -> None:
     draw.rectangle((18, 0, 1200, 12), fill=INK)
     _label(draw, (52, 36), "V38 / DAILY LEDGER", inverse=True)
     draw.text((52, 82), report.as_of.date().isoformat(), font=_font(18), fill=MUTED)
-    draw.text((52, 118), _yen(report.account_equity_jpy), font=_font(61, True), fill=INK)
-    draw.text((55, 186), "TOTAL EQUITY / 入出金調整後", font=_font(16, True), fill=MUTED)
+    draw.text((52, 112), _yen(report.account_equity_jpy), font=_font(59, True), fill=INK)
+    draw.text((55, 202), "TOTAL EQUITY / 入出金調整後", font=_font(15, True), fill=MUTED)
 
     nq_fill = {"BLUE": BLUE, "GREEN": GREEN, "YELLOW": "#E9B82C", "RED": CORAL}.get(report.nq_color, INK)
     draw.rectangle((958, 36, 1148, 104), fill=nq_fill, outline=INK, width=2)
@@ -117,8 +117,8 @@ def render_daily_card(report: JournalReport, path: Path) -> None:
         tone = ACID if pnl >= 0 else CORAL
         draw.text((830, y), f"0{index}", font=_font(14, True), fill="#70746F")
         draw.text((867, y - 4), str(row["ticker"]), font=_font(24, True), fill=PAPER_2)
-        draw.text((995, y), _pct(row.get("allocation")), font=_font(16), fill="#C8CBC5")
-        draw.text((1080, y), _pct(pnl, signed=True), font=_font(16, True), fill=tone, anchor="ra")
+        draw.text((1020, y), _pct(row.get("allocation")), font=_font(16), fill="#C8CBC5", anchor="ra")
+        draw.text((1124, y), _pct(pnl, signed=True), font=_font(16, True), fill=tone, anchor="ra")
         draw.line((830, y + 31, 1124, y + 31), fill="#404349", width=1)
         y += 42
 
