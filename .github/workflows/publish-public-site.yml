@@ -7,12 +7,10 @@ on:
       - "index.html"
       - "command-center.html"
       - "intelligence-dashboard.html"
-      - "research-dashboard.html"
       - "scripts/export_public_site.py"
+      - "scripts/privacy_audit.py"
       - ".github/workflows/publish-public-site.yml"
   workflow_dispatch: {}
-  schedule:
-    - cron: "45 11 * * 1-5"
 
 permissions:
   contents: read
@@ -36,6 +34,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Audit privacy boundary
+        run: |
+          python scripts/privacy_audit.py --root . --output /tmp/privacy-audit-status.json
+          cat /tmp/privacy-audit-status.json
       - name: Export allowlisted public artifacts
         run: python scripts/export_public_site.py --root . --output /tmp/v38-public-site --source-commit "${GITHUB_SHA}"
       - name: Validate deployment configuration
