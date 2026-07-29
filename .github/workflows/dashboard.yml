@@ -56,12 +56,19 @@ jobs:
               ".github/workflows/intelligence-engine.yml",
               ".github/workflows/publish-public-site.yml",
           }
+          report = {
+              "generated_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+              "repository": repository,
+              "kept_workflows": [],
+              "obsolete_workflows_found": 0,
+              "obsolete_workflow_runs_deleted": 0,
+              "cleaned_workflows": [],
+              "errors": [],
+          }
 
           def call(path, method="GET", tolerate=()):
-              data = b"" if method in {"PUT", "POST", "PATCH"} else None
               request = urllib.request.Request(
                   api_root + path,
-                  data=data,
                   method=method,
                   headers={
                       "Authorization": f"Bearer {token}",
@@ -80,105 +87,97 @@ jobs:
                   detail = exc.read().decode("utf-8", errors="replace")
                   raise RuntimeError(f"GitHub API {method} {path} failed: {exc.code} {detail}") from exc
 
-          workflows = []
-          page = 1
-          while True:
-              payload = call(f"/repos/{repository}/actions/workflows?per_page=100&page={page}")
-              batch = payload.get("workflows", [])
-              workflows.extend(batch)
-              if len(batch) < 100:
-                  break
-              page += 1
-
-          kept = []
-          obsolete = []
-          for workflow in workflows:
-              path = str(workflow.get("path") or "")
-              item = {
-                  "id": workflow.get("id"),
-                  "name": workflow.get("name"),
-                  "path": path,
-                  "state": workflow.get("state"),
-              }
-              if path in keep_paths or path.startswith("dynamic/pages/"):
-                  kept.append(item)
-                  print(f"KEEP {workflow.get('name')} [{path}]")
-              else:
-                  obsolete.append((workflow, item))
-
-          total_deleted = 0
-          cleaned = []
-          for workflow, item in obsolete:
-              workflow_id = workflow["id"]
-              name = workflow.get("name") or str(workflow_id)
-              path = workflow.get("path") or ""
-              print(f"CLEAN {name} [{path}] id={workflow_id}")
-              call(
-                  f"/repos/{repository}/actions/workflows/{workflow_id}/disable",
-                  method="PUT",
-                  tolerate=(404, 409, 422),
-              )
-
-              workflow_deleted = 0
-              for _ in range(200):
-                  payload = call(
-                      f"/repos/{repository}/actions/workflows/{workflow_id}/runs?per_page=100&page=1"
-                  )
-                  runs = payload.get("workflow_runs", [])
-                  deletable = [
-                      run for run in runs
-                      if int(run.get("id") or 0) != current_run_id
-                      and run.get("status") == "completed"
-                  ]
-                  if not deletable:
+          try:
+              workflows = []
+              page = 1
+              while True:
+                  payload = call(f"/repos/{repository}/actions/workflows?per_page=100&page={page}")
+                  batch = payload.get("workflows", [])
+                  workflows.extend(batch)
+                  if len(batch) < 100:
                       break
-                  for run in deletable:
-                      call(
-                          f"/repos/{repository}/actions/runs/{run['id']}",
-                          method="DELETE",
-                          tolerate=(404,),
-                      )
-                      workflow_deleted += 1
-                      total_deleted += 1
-                      time.sleep(0.03)
-              else:
-                  raise RuntimeError(f"Cleanup safety limit reached for workflow {name}")
+                  page += 1
 
-              item["deleted_runs"] = workflow_deleted
-              cleaned.append(item)
-              print(f"DELETED {workflow_deleted} runs from {name}")
+              obsolete = []
+              for workflow in workflows:
+                  path = str(workflow.get("path") or "")
+                  item = {
+                      "id": workflow.get("id"),
+                      "name": workflow.get("name"),
+                      "path": path,
+                      "state": workflow.get("state"),
+                  }
+                  if path in keep_paths or path.startswith("dynamic/pages/"):
+                      report["kept_workflows"].append(item)
+                      print(f"KEEP {workflow.get('name')} [{path}]")
+                  else:
+                      obsolete.append((workflow, item))
 
-          report = {
-              "generated_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
-              "repository": repository,
-              "kept_workflows": kept,
-              "obsolete_workflows_found": len(obsolete),
-              "obsolete_workflow_runs_deleted": total_deleted,
-              "cleaned_workflows": cleaned,
-          }
-          Path("actions-cleanup-report.json").write_text(
-              json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          print(json.dumps(report, ensure_ascii=False))
+              report["obsolete_workflows_found"] = len(obsolete)
+              for workflow, item in obsolete:
+                  workflow_id = workflow["id"]
+                  name = workflow.get("name") or str(workflow_id)
+                  print(f"CLEAN {name} [{item['path']}] id={workflow_id}")
+                  deleted = 0
+                  try:
+                      for _ in range(200):
+                          payload = call(
+                              f"/repos/{repository}/actions/workflows/{workflow_id}/runs?per_page=100&page=1"
+                          )
+                          runs = payload.get("workflow_runs", [])
+                          deletable = [
+                              run for run in runs
+                              if int(run.get("id") or 0) != current_run_id
+                              and run.get("status") == "completed"
+                          ]
+                          if not deletable:
+                              break
+                          for run in deletable:
+                              call(
+                                  f"/repos/{repository}/actions/runs/{run['id']}",
+                                  method="DELETE",
+                                  tolerate=(404,),
+                              )
+                              deleted += 1
+                              report["obsolete_workflow_runs_deleted"] += 1
+                              time.sleep(0.03)
+                      else:
+                          raise RuntimeError("cleanup safety limit reached")
+                  except Exception as exc:
+                      report["errors"].append({"workflow": name, "error": str(exc)})
+                  item["deleted_runs"] = deleted
+                  report["cleaned_workflows"].append(item)
+                  print(f"DELETED {deleted} runs from {name}")
+          except Exception as exc:
+              report["errors"].append({"workflow": None, "error": str(exc)})
+          finally:
+              Path("actions-cleanup-report.json").write_text(
+                  json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+                  encoding="utf-8",
+              )
+              print(json.dumps(report, ensure_ascii=False))
           PY
       - name: Commit cleanup report
         shell: bash
         run: |
           set -euo pipefail
+          test -s actions-cleanup-report.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add actions-cleanup-report.json
           if ! git diff --staged --quiet; then
             git commit -m "Record Actions cleanup result"
+            pushed=false
             for attempt in 1 2 3; do
               if git push origin HEAD:main; then
+                pushed=true
                 break
               fi
               git fetch origin main
               git rebase origin/main || { git rebase --abort || true; exit 1; }
               sleep $((attempt * 2))
             done
+            test "$pushed" = true
           fi
       - run: pip install pandas numpy yfinance
       - name: Build dashboard
