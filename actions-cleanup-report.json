@@ -1,0 +1,80 @@
+{
+  "generated_at_utc": "2026-07-29T06:35:29.418098+00:00",
+  "repository": "thanzo12wizu-stack/v38-watchlist",
+  "kept_workflows": [
+    {
+      "id": 301370159,
+      "name": "pages-build-deployment",
+      "path": "dynamic/pages/pages-build-deployment",
+      "state": "active"
+    },
+    {
+      "id": 301374717,
+      "name": "Dashboard daily build",
+      "path": ".github/workflows/dashboard.yml",
+      "state": "active"
+    },
+    {
+      "id": 317861575,
+      "name": "Intelligence Engine (sidecar)",
+      "path": ".github/workflows/intelligence-engine.yml",
+      "state": "active"
+    },
+    {
+      "id": 318528705,
+      "name": "Publish safe public site mirror",
+      "path": ".github/workflows/publish-public-site.yml",
+      "state": "active"
+    }
+  ],
+  "obsolete_workflows_found": 4,
+  "obsolete_workflow_runs_deleted": 88,
+  "cleaned_workflows": [
+    {
+      "id": 321046785,
+      "name": "A-B Stage Exposure Validation V3",
+      "path": ".github/workflows/ab-stage-v3-exposure.yml",
+      "state": "active",
+      "deleted_runs": 10
+    },
+    {
+      "id": 321097238,
+      "name": "Defensive Risk Engine",
+      "path": ".github/workflows/defensive-risk.yml",
+      "state": "active",
+      "deleted_runs": 6
+    },
+    {
+      "id": 321483643,
+      "name": "Trade Journal Analytics",
+      "path": ".github/workflows/trade-journal-analytics.yml",
+      "state": "active",
+      "deleted_runs": 69
+    },
+    {
+      "id": 322736567,
+      "name": "Trade Journal Almanac Sidecar",
+      "path": ".github/workflows/trade-journal-almanac-sidecar.yml",
+      "state": "active",
+      "deleted_runs": 3
+    }
+  ],
+  "errors": [
+    {
+      "workflow": "A-B Stage Exposure Validation V3",
+      "error": "GitHub API GET /repos/thanzo12wizu-stack/v38-watchlist/actions/workflows/321046785/runs?per_page=100&page=1 failed: 404 {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow\",\"status\":\"404\"}"
+    },
+    {
+      "workflow": "Defensive Risk Engine",
+      "error": "GitHub API GET /repos/thanzo12wizu-stack/v38-watchlist/actions/workflows/321097238/runs?per_page=100&page=1 failed: 404 {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow\",\"status\":\"404\"}"
+    },
+    {
+      "workflow": "Trade Journal Analytics",
+      "error": "GitHub API GET /repos/thanzo12wizu-stack/v38-watchlist/actions/workflows/321483643/runs?per_page=100&page=1 failed: 404 {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow\",\"status\":\"404\"}"
+    },
+    {
+      "workflow": "Trade Journal Almanac Sidecar",
+      "error": "GitHub API GET /repos/thanzo12wizu-stack/v38-watchlist/actions/workflows/322736567/runs?per_page=100&page=1 failed: 404 {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow\",\"status\":\"404\"}"
+    }
+  ]
+}
