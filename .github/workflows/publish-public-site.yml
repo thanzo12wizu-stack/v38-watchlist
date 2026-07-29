@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: publish-safe-public-site
@@ -22,7 +23,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
       PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
@@ -34,6 +35,112 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Remove obsolete Actions history
+        env:
+          ACTIONS_CLEANUP_TOKEN: ${{ github.token }}
+          ACTIONS_CLEANUP_REPOSITORY: ${{ github.repository }}
+          ACTIONS_CLEANUP_RUN_ID: ${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          api_root = "https://api.github.com"
+          repository = os.environ["ACTIONS_CLEANUP_REPOSITORY"]
+          token = os.environ["ACTIONS_CLEANUP_TOKEN"]
+          current_run_id = int(os.environ["ACTIONS_CLEANUP_RUN_ID"])
+          keep_paths = {
+              ".github/workflows/dashboard.yml",
+              ".github/workflows/intelligence-engine.yml",
+              ".github/workflows/publish-public-site.yml",
+          }
+
+          def call(path, method="GET", tolerate=()):
+              data = b"" if method in {"PUT", "POST", "PATCH"} else None
+              request = urllib.request.Request(
+                  api_root + path,
+                  data=data,
+                  method=method,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      "User-Agent": "v38-actions-history-cleanup",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=45) as response:
+                      raw = response.read()
+                      return json.loads(raw) if raw else {}
+              except urllib.error.HTTPError as exc:
+                  if exc.code in tolerate:
+                      return None
+                  detail = exc.read().decode("utf-8", errors="replace")
+                  raise RuntimeError(f"GitHub API {method} {path} failed: {exc.code} {detail}") from exc
+
+          workflows = []
+          page = 1
+          while True:
+              payload = call(f"/repos/{repository}/actions/workflows?per_page=100&page={page}")
+              batch = payload.get("workflows", [])
+              workflows.extend(batch)
+              if len(batch) < 100:
+                  break
+              page += 1
+
+          obsolete = []
+          for workflow in workflows:
+              path = str(workflow.get("path") or "")
+              if path in keep_paths or path.startswith("dynamic/pages/"):
+                  print(f"KEEP {workflow.get('name')} [{path}]")
+              else:
+                  obsolete.append(workflow)
+
+          total_deleted = 0
+          for workflow in obsolete:
+              workflow_id = workflow["id"]
+              name = workflow.get("name") or str(workflow_id)
+              path = workflow.get("path") or ""
+              print(f"CLEAN {name} [{path}] id={workflow_id}")
+              call(
+                  f"/repos/{repository}/actions/workflows/{workflow_id}/disable",
+                  method="PUT",
+                  tolerate=(404, 409, 422),
+              )
+
+              workflow_deleted = 0
+              for _ in range(200):
+                  payload = call(
+                      f"/repos/{repository}/actions/workflows/{workflow_id}/runs?per_page=100&page=1"
+                  )
+                  runs = payload.get("workflow_runs", [])
+                  deletable = [
+                      run for run in runs
+                      if int(run.get("id") or 0) != current_run_id
+                      and run.get("status") == "completed"
+                  ]
+                  if not deletable:
+                      break
+                  for run in deletable:
+                      call(
+                          f"/repos/{repository}/actions/runs/{run['id']}",
+                          method="DELETE",
+                          tolerate=(404,),
+                      )
+                      workflow_deleted += 1
+                      total_deleted += 1
+                      time.sleep(0.03)
+              else:
+                  raise RuntimeError(f"Cleanup safety limit reached for workflow {name}")
+
+              print(f"DELETED {workflow_deleted} runs from {name}")
+
+          print(f"Obsolete workflows found: {len(obsolete)}")
+          print(f"Obsolete workflow runs deleted: {total_deleted}")
+          PY
       - name: Audit privacy boundary
         run: |
           python scripts/privacy_audit.py --root . --output /tmp/privacy-audit-status.json
