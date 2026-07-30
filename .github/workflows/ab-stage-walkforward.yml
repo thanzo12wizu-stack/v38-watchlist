@@ -1,0 +1,13 @@
+name: Archived A-B Stage Walk-Forward V1
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "V1 research completed successfully. Use the V2 workflow for ongoing experiments."
