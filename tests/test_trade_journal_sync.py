@@ -60,3 +60,63 @@ def test_sync_is_partial_without_account_equity(tmp_path: Path) -> None:
     assert not (output / "holdings.csv").exists()
     assert (output / "candidates.csv").exists()
     assert status["trade_history_source"] == "NOT_CONNECTED"
+
+
+def test_sync_does_not_relabel_historical_equity_as_current(tmp_path: Path) -> None:
+    root = tmp_path / "intelligence"
+    output = tmp_path / "journal"
+    _write_index(root)
+    output.mkdir()
+    pd.DataFrame(
+        [{"date": "2026-07-01", "equity_jpy": 9_800_000}]
+    ).to_csv(output / "equity.csv", index=False)
+
+    status = sync_command_center(intelligence_root=root, output_dir=output)
+
+    assert status["account_equity_source"] == "ENCRYPTED_EQUITY_HISTORY"
+    equity = pd.read_csv(output / "equity.csv")
+    assert equity["date"].tolist() == ["2026-07-01"]
+
+
+def test_sync_appends_history_and_preserves_broker_holdings_and_cash_flow(tmp_path: Path) -> None:
+    root = tmp_path / "intelligence"
+    output = tmp_path / "journal"
+    _write_index(root)
+    output.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "ticker": "BROKER", "quantity": 1, "entry_price": 100, "current_price": 110,
+                "fx_to_jpy": 150, "stop_price": 105,
+            }
+        ]
+    ).to_csv(output / "holdings.csv", index=False)
+    pd.DataFrame(
+        [
+            {
+                "date": "2026-07-28", "equity_jpy": 9_900_000, "cash_jpy": 2_000_000,
+                "deposits_jpy": 500_000, "withdrawals_jpy": 0,
+            }
+        ]
+    ).to_csv(output / "equity.csv", index=False)
+
+    sync_command_center(
+        intelligence_root=root,
+        output_dir=output,
+        account_equity_jpy=10_000_000,
+        preserve_existing_holdings=True,
+    )
+    sync_command_center(
+        intelligence_root=root,
+        output_dir=output,
+        account_equity_jpy=10_000_000,
+        preserve_existing_holdings=True,
+    )
+
+    holdings = pd.read_csv(output / "holdings.csv")
+    assert holdings.loc[0, "ticker"] == "BROKER"
+    equity = pd.read_csv(output / "equity.csv")
+    assert len(equity) == 1
+    assert equity.loc[0, "deposits_jpy"] == 500_000
+    candidates = pd.read_csv(output / "candidates.csv")
+    assert len(candidates) == 1

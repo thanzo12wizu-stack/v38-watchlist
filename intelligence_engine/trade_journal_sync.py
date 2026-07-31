@@ -117,7 +117,7 @@ def _positions_to_holdings(positions: list[dict[str, Any]], account_equity: floa
             "entry_date": entry_date.date().isoformat() if pd.notna(entry_date) else "",
             "setup": item.get("setup") or item.get("entry_stage") or item.get("strategy") or "UNKNOWN",
             "nq_color": nq_color,
-            "event_risk": bool(item.get("event_risk", False)),
+            "event_risk": item.get("event_risk", ""),
         })
     return pd.DataFrame(rows)
 
@@ -152,24 +152,63 @@ def _candidates_frame(value: Any, as_of: pd.Timestamp, nq_color: str) -> pd.Data
 
 def _append_equity(path: Path, date: pd.Timestamp, account_equity: float, gross_exposure: float | None) -> None:
     cash = account_equity * max(0.0, 1.0 - gross_exposure) if gross_exposure is not None else None
-    row = pd.DataFrame([{
-        "date": date.date().isoformat(), "equity_jpy": account_equity,
-        "cash_jpy": cash, "deposits_jpy": 0.0, "withdrawals_jpy": 0.0,
-    }])
+    deposits = 0.0
+    withdrawals = 0.0
+    history = pd.DataFrame()
     if path.exists():
         try:
             history = pd.read_csv(path)
-            row = pd.concat([history, row], ignore_index=True)
+            history_dates = pd.to_datetime(history.get("date"), errors="coerce").dt.normalize()
+            same_day = history[history_dates.eq(date.normalize())]
+            if not same_day.empty:
+                deposits_series = pd.to_numeric(
+                    same_day["deposits_jpy"] if "deposits_jpy" in same_day else pd.Series([0.0]),
+                    errors="coerce",
+                ).fillna(0)
+                withdrawals_series = pd.to_numeric(
+                    same_day["withdrawals_jpy"] if "withdrawals_jpy" in same_day else pd.Series([0.0]),
+                    errors="coerce",
+                ).fillna(0)
+                deposits = float(deposits_series.iloc[-1])
+                withdrawals = float(withdrawals_series.iloc[-1])
         except Exception:
-            pass
+            history = pd.DataFrame()
+    row = pd.DataFrame([{
+        "date": date.date().isoformat(), "equity_jpy": account_equity,
+        "cash_jpy": cash, "deposits_jpy": deposits, "withdrawals_jpy": withdrawals,
+    }])
+    if not history.empty:
+        row = pd.concat([history, row], ignore_index=True)
     row["date"] = pd.to_datetime(row["date"], errors="coerce")
     row = row.dropna(subset=["date"]).sort_values("date").drop_duplicates("date", keep="last")
     row["date"] = row["date"].dt.date.astype(str)
     row.to_csv(path, index=False)
 
 
+def _append_snapshot(path: Path, incoming: pd.DataFrame, keys: list[str]) -> None:
+    if incoming.empty:
+        return
+    frames = []
+    if path.exists():
+        try:
+            frames.append(pd.read_csv(path))
+        except Exception:
+            pass
+    frames.append(incoming)
+    combined = pd.concat(frames, ignore_index=True, sort=False)
+    if "date" in combined:
+        dates = pd.to_datetime(combined["date"], errors="coerce")
+        combined["date"] = dates.dt.date.astype("string")
+    combined = combined.drop_duplicates(keys, keep="last")
+    sort_columns = [column for column in ("date", "rank", "ticker") if column in combined]
+    if sort_columns:
+        combined = combined.sort_values(sort_columns, kind="stable", na_position="last")
+    combined.to_csv(path, index=False)
+
+
 def sync_command_center(
     *, intelligence_root: Path, output_dir: Path, account_equity_jpy: float | None = None,
+    preserve_existing_holdings: bool = False,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     index = _read_json(intelligence_root / "index.json")
@@ -186,19 +225,35 @@ def sync_command_center(
 
     candidate_frame = _candidates_frame(candidates, date, nq_color)
     if not candidate_frame.empty:
-        candidate_frame.to_csv(output_dir / "candidates.csv", index=False)
-    pd.DataFrame([{
+        _append_snapshot(
+            output_dir / "candidates.csv",
+            candidate_frame,
+            ["date", "ticker"],
+        )
+    context_frame = pd.DataFrame([{
         "date": date.date().isoformat(), "nq_color": nq_color,
         "vix": market.get("vix"), "breadth": market.get("breadth"),
         "distribution_days": market.get("distribution_days"),
-    }]).to_csv(output_dir / "market_context.csv", index=False)
+    }])
+    _append_snapshot(output_dir / "market_context.csv", context_frame, ["date"])
 
     positions = portfolio.get("positions") or []
     holdings_written = False
-    if account_equity is not None and isinstance(positions, list):
+    existing_holdings = output_dir / "holdings.csv"
+    if (
+        account_equity is not None
+        and isinstance(positions, list)
+        and not (preserve_existing_holdings and existing_holdings.exists() and existing_holdings.stat().st_size > 0)
+    ):
         holdings = _positions_to_holdings(positions, account_equity, date, nq_color)
-        holdings.to_csv(output_dir / "holdings.csv", index=False)
+        holdings.to_csv(existing_holdings, index=False)
         holdings_written = not holdings.empty
+    elif preserve_existing_holdings and existing_holdings.exists():
+        try:
+            holdings_written = not pd.read_csv(existing_holdings).empty
+        except Exception:
+            holdings_written = False
+    if account_equity is not None and equity_source != "ENCRYPTED_EQUITY_HISTORY":
         gross = _positive_float(portfolio.get("gross_exposure"))
         _append_equity(output_dir / "equity.csv", date, account_equity, gross)
 
@@ -209,7 +264,11 @@ def sync_command_center(
         "account_equity_source": equity_source,
         "holdings_written": holdings_written,
         "candidate_count": int(len(candidate_frame)),
-        "trade_history_source": "data/trade_journal/trades.csv" if (output_dir / "trades.csv").exists() else "NOT_CONNECTED",
+        "trade_history_source": (
+            "EXECUTIONS"
+            if (output_dir / "executions.csv").exists()
+            else ("TRADES" if (output_dir / "trades.csv").exists() else "NOT_CONNECTED")
+        ),
         "notes": [
             "Market, candidates and portfolio diagnostics are synchronized from Command Center.",
             "Executed trades and deposits/withdrawals require broker or CSV history; they are not inferred from candidates.",
@@ -224,10 +283,12 @@ def main() -> None:
     parser.add_argument("--intelligence-root", default="data/intelligence")
     parser.add_argument("--output", default="data/trade_journal")
     parser.add_argument("--account-equity-jpy", type=float)
+    parser.add_argument("--preserve-existing-holdings", action="store_true")
     args = parser.parse_args()
     result = sync_command_center(
         intelligence_root=Path(args.intelligence_root), output_dir=Path(args.output),
         account_equity_jpy=args.account_equity_jpy,
+        preserve_existing_holdings=args.preserve_existing_holdings,
     )
     print(json.dumps(result, ensure_ascii=False, allow_nan=False))
 

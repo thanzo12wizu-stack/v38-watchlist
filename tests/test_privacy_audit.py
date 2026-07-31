@@ -12,11 +12,16 @@ def _safe_tree(root: Path) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command</h1>", encoding="utf-8")
     (root / "intelligence-dashboard.html").write_text(LOCKED_HTML, encoding="utf-8")
+    (root / "trade-journal-almanac.html").write_text(LOCKED_HTML, encoding="utf-8")
     (root / "research-dashboard.html").write_text(LOCKED_HTML, encoding="utf-8")
     private = root / "private"
     private.mkdir()
     (private / "research-summary.enc.json").write_text('{"ciphertext":"abc"}', encoding="utf-8")
     (private / "research-success.json").write_text('{"research_status":"PASS"}', encoding="utf-8")
+    (private / "research-worker-result.json").write_text(
+        '{"status":"PASS","privacy":"aggregate only"}',
+        encoding="utf-8",
+    )
 
 
 def test_current_tree_privacy_passes_for_locked_allowlist(tmp_path: Path):

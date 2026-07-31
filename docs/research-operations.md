@@ -62,6 +62,7 @@ The public export allowlist contains only:
 - `index.html`
 - `command-center.html`
 - `intelligence-dashboard.html`
+- `trade-journal-almanac.html`
 - `research-dashboard.html`
 - `.nojekyll`
 - `public-site-manifest.json`

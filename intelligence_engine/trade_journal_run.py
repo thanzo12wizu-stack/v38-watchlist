@@ -50,6 +50,31 @@ def _read_json(path: Path | None) -> dict[str, Any]:
     return payload
 
 
+def _status_notes(input_dir: Path) -> list[str]:
+    notes: list[str] = []
+    ingestion = _read_json(input_dir / "ingestion_status.json")
+    executions = ingestion.get("executions")
+    if isinstance(executions, dict):
+        notes.append(
+            "約定取込: "
+            f"{int(executions.get('execution_rows') or 0)}行 / "
+            f"完結{int(executions.get('closed_positions') or 0)} / "
+            f"未決済{int(executions.get('open_positions') or 0)} / "
+            f"部分Exit{int(executions.get('partial_exit_positions') or 0)}"
+        )
+    warnings = ingestion.get("warnings")
+    if isinstance(warnings, list):
+        notes.extend(f"取込警告: {warning}" for warning in warnings if warning)
+    connection = _read_json(input_dir / "connection_status.json")
+    if connection:
+        notes.append(
+            "同期元: "
+            f"資産={connection.get('account_equity_source') or 'UNKNOWN'} / "
+            f"取引={connection.get('trade_history_source') or 'NOT_CONNECTED'}"
+        )
+    return notes
+
+
 def _discover(base: Path, names: Iterable[str]) -> Path | None:
     for name in names:
         path = base / name
@@ -106,6 +131,76 @@ def _load_signal_candidates(research_root: Path | None) -> tuple[pd.DataFrame, p
     context_cols = [c for c in ("date", "nq_color", "market_state", "nq_gate", "gate_color", "regime_color", "vix", "breadth", "distribution_days") if c in latest]
     context = latest[context_cols].head(1).copy() if context_cols else pd.DataFrame()
     return latest, context, nq, [f"Signals: {signal_root} / as_of={as_of.date().isoformat()}"]
+
+
+def _enrich_candidates_from_outcomes(
+    candidates: pd.DataFrame,
+    research_root: Path | None,
+) -> tuple[pd.DataFrame, list[str]]:
+    if candidates.empty or research_root is None:
+        return candidates, []
+    if "date" not in candidates or "ticker" not in candidates:
+        return candidates, []
+    work = candidates.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    work["ticker"] = work["ticker"].fillna("").astype(str).str.strip().str.upper()
+    years = sorted(set(work["date"].dropna().dt.year.astype(int)))
+    outcome_root = research_root / "outcomes"
+    files = [
+        path
+        for year in years
+        for path in (
+            outcome_root / f"year={year}.jsonl.gz",
+            outcome_root / f"year={year}.jsonl",
+        )
+        if path.exists()
+    ]
+    if not files:
+        return work, []
+    frames = [_read_table(path) for path in files]
+    outcomes = pd.concat(frames, ignore_index=True, sort=False) if frames else pd.DataFrame()
+    required = {"date", "ticker"}
+    if outcomes.empty or not required.issubset(outcomes.columns):
+        return work, [f"Research outcomes: {outcome_root}（候補照合列なし）"]
+    outcomes["date"] = pd.to_datetime(outcomes["date"], errors="coerce").dt.normalize()
+    outcomes["ticker"] = outcomes["ticker"].fillna("").astype(str).str.strip().str.upper()
+    candidate_keys = work[["date", "ticker"]].copy()
+    candidate_keys["ticker"] = candidate_keys["ticker"].fillna("").astype(str).str.strip().str.upper()
+    outcomes = outcomes.merge(candidate_keys.drop_duplicates(), on=["date", "ticker"], how="inner")
+    aliases = {
+        "return_5": "forward_5d_return",
+        "return_10": "forward_10d_return",
+        "excess_10": "qqq_excess_10d",
+        "mfe_10": "mfe_10d",
+        "mae_10": "mae_10d",
+    }
+    available = {source: target for source, target in aliases.items() if source in outcomes}
+    if not available:
+        return work, [f"Research outcomes: {outcome_root}（10日結果未確定）"]
+    outcome_columns = ["date", "ticker", *available]
+    ready = outcomes[outcome_columns].rename(columns=available)
+    ready = ready.sort_values(["date", "ticker"]).drop_duplicates(["date", "ticker"], keep="last")
+    original_columns = list(work.columns)
+    merged = work.merge(ready, on=["date", "ticker"], how="left", suffixes=("", "_research"))
+    for target in available.values():
+        research_column = f"{target}_research"
+        if target not in merged:
+            merged[target] = merged[research_column]
+        elif research_column in merged:
+            merged[target] = pd.to_numeric(merged[target], errors="coerce").where(
+                pd.to_numeric(merged[target], errors="coerce").notna(),
+                pd.to_numeric(merged[research_column], errors="coerce"),
+            )
+        if research_column in merged:
+            merged = merged.drop(columns=research_column)
+    ordered = [column for column in original_columns if column in merged]
+    ordered.extend(column for column in merged.columns if column not in ordered)
+    enriched = (
+        int(pd.to_numeric(merged["forward_10d_return"], errors="coerce").notna().sum())
+        if "forward_10d_return" in merged
+        else 0
+    )
+    return merged[ordered], [f"Research outcomes: {outcome_root} / 10d_ready={enriched}"]
 
 
 def _load_price_returns(path: Path | None) -> pd.DataFrame:
@@ -183,8 +278,10 @@ def write_templates(input_dir: Path) -> None:
     input_dir.mkdir(parents=True, exist_ok=True)
     templates = {
         "trades.csv": "trade_id,ticker,side,entry_date,exit_date,entry_price,exit_price,quantity,point_value,fx_to_jpy,fees_jpy,taxes_jpy,stop_price,target_price,setup,nq_color,sector,industry,theme,entry_reason,exit_reason,rule_followed,mistake_type,notes,mfe_pct,mae_pct\n",
+        "executions.csv": "execution_id,position_id,ticker,side,action,executed_at,price,quantity,point_value,fx_to_jpy,fees_jpy,taxes_jpy,stop_price,target_price,setup,nq_color,sector,industry,theme,entry_reason,exit_reason,rule_followed,mistake_type,notes\n",
         "holdings.csv": "ticker,quantity,entry_price,current_price,fx_to_jpy,sector,industry,theme,stop_price,entry_date,setup,nq_color,event_risk\n",
         "equity.csv": "date,equity_jpy,cash_jpy,deposits_jpy,withdrawals_jpy\n",
+        "cash_flows.csv": "flow_id,date,type,amount_jpy,notes\n",
         "candidates.csv": "date,ticker,rank,setup,nq_color,sector,theme,selected,forward_5d_return,forward_10d_return,qqq_excess_10d,mfe_10d,mae_10d\n",
         "market_context.csv": "date,nq_color,vix,breadth,distribution_days\n",
     }
@@ -217,7 +314,6 @@ def load_input(
         portfolio_candidates = [
             input_dir / "portfolio.json", input_dir.parent / "portfolio.json", Path("portfolio.json"),
             Path("config/portfolio.json"), Path("config/defensive_risk_portfolio.json"),
-            Path("config/defensive_risk_portfolio.example.json"), Path("config/trade_journal.example.json"),
         ]
         auto_portfolio = next((path for path in portfolio_candidates if path.exists()), None)
     portfolio_holdings, account, cash, nq, notes = _portfolio_from_json(auto_portfolio)
@@ -233,13 +329,14 @@ def load_input(
     if "rules" in rules_payload and isinstance(rules_payload["rules"], dict):
         rules_payload = rules_payload["rules"]
     rules = JournalRules.from_mapping(rules_payload)
-    source_notes = notes + signal_notes
+    candidates, outcome_notes = _enrich_candidates_from_outcomes(candidates, research_root)
+    source_notes = notes + signal_notes + outcome_notes + _status_notes(input_dir)
     for label, path in (("Trades", trades_path), ("Holdings", holdings_path), ("Equity", equity_path), ("Candidates", candidates_path), ("Market context", context_path), ("Rules", rules_path)):
         if path:
             source_notes.append(f"{label}: {path}")
     return JournalInput(
         trades=trades, holdings=holdings, equity=equity, candidates=candidates, market_context=context,
-        account_equity_jpy=account or starting_equity_jpy, cash_jpy=cash, nq_color=nq, rules=rules,
+        account_equity_jpy=account, cash_jpy=cash, nq_color=nq, rules=rules,
         price_returns=_load_price_returns(prices_path), source_notes=source_notes,
     )
 
@@ -268,7 +365,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="V38 Trade Journal & Portfolio Analytics")
     parser.add_argument("--input", default="data/trade_journal")
     parser.add_argument("--output", default="artifacts/trade-journal")
-    parser.add_argument("--starting-equity-jpy", type=float, default=7_300_000)
+    parser.add_argument("--starting-equity-jpy", type=float)
     parser.add_argument("--portfolio")
     parser.add_argument("--rules", default="config/trade_journal.example.json")
     parser.add_argument("--research-root", default="data/intelligence/research")
@@ -280,8 +377,13 @@ def main() -> None:
         write_templates(Path(args.input))
         print(json.dumps({"status": "PASS", "templates": str(Path(args.input))}, ensure_ascii=False))
         return
+    starting_equity_jpy = (
+        args.starting_equity_jpy
+        if args.starting_equity_jpy is not None
+        else (7_300_000 if args.demo else 0)
+    )
     result = run(
-        input_dir=Path(args.input), output_dir=Path(args.output), starting_equity_jpy=args.starting_equity_jpy,
+        input_dir=Path(args.input), output_dir=Path(args.output), starting_equity_jpy=starting_equity_jpy,
         portfolio_path=Path(args.portfolio) if args.portfolio else None,
         rules_path=Path(args.rules) if args.rules and Path(args.rules).exists() else None,
         research_root=Path(args.research_root) if args.research_root and Path(args.research_root).exists() else None,

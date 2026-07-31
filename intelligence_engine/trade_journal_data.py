@@ -28,11 +28,24 @@ def normalise_trades(frame: pd.DataFrame) -> pd.DataFrame:
     out["side"] = out["side"].map(lambda x: "SHORT" if _text(x, "LONG").upper() in {"SHORT", "SELL", "S"} else "LONG")
     out["entry_date"] = pd.to_datetime(out["entry_date"], errors="coerce").dt.normalize()
     out["exit_date"] = pd.to_datetime(out["exit_date"], errors="coerce").dt.normalize()
-    for col, default in (("entry_price", 0), ("exit_price", 0), ("quantity", 0), ("point_value", 1), ("fx_to_jpy", 1), ("fees_jpy", 0), ("taxes_jpy", 0), ("stop_price", np.nan), ("target_price", np.nan), ("mfe_pct", np.nan), ("mae_pct", np.nan)):
+    for col, default in (
+        ("entry_price", 0), ("exit_price", 0), ("quantity", 0), ("point_value", 1),
+        ("fx_to_jpy", 1), ("fees_jpy", 0), ("taxes_jpy", 0), ("stop_price", np.nan),
+        ("target_price", np.nan), ("mfe_pct", np.nan), ("mae_pct", np.nan),
+        ("closed_quantity", np.nan), ("entry_tranches", 1), ("exit_tranches", 1),
+    ):
         out[col] = pd.to_numeric(out[col], errors="coerce").fillna(default) if not (isinstance(default, float) and math.isnan(default)) else pd.to_numeric(out[col], errors="coerce")
     direction = np.where(out["side"].eq("SHORT"), -1.0, 1.0)
     move = (out["exit_price"] - out["entry_price"]) * direction
-    out["gross_pnl_jpy"] = move * out["quantity"] * out["point_value"] * out["fx_to_jpy"]
+    computed_gross = move * out["quantity"] * out["point_value"] * out["fx_to_jpy"]
+    supplied_gross = pd.to_numeric(
+        frame.get("gross_pnl_jpy", pd.Series(index=frame.index, dtype=float)),
+        errors="coerce",
+    )
+    out["gross_pnl_jpy"] = supplied_gross.reindex(out.index).where(
+        supplied_gross.reindex(out.index).notna(),
+        computed_gross,
+    )
     supplied_net = pd.to_numeric(frame.get("net_pnl_jpy", pd.Series(index=frame.index, dtype=float)), errors="coerce")
     out["net_pnl_jpy"] = supplied_net.reindex(out.index).where(supplied_net.reindex(out.index).notna(), out["gross_pnl_jpy"] - out["fees_jpy"] - out["taxes_jpy"])
     invested = (out["entry_price"].abs() * out["quantity"] * out["point_value"] * out["fx_to_jpy"]).replace(0, np.nan)
@@ -49,8 +62,11 @@ def normalise_trades(frame: pd.DataFrame) -> pd.DataFrame:
     out["hold_days"] = (out["exit_date"] - out["entry_date"]).dt.days.clip(lower=0)
     for column in ("setup", "sector", "industry", "theme", "entry_reason", "exit_reason", "mistake_type", "notes"):
         out[column] = out[column].map(lambda x: _text(x, "UNKNOWN"))
+    for column in ("source", "position_id"):
+        out[column] = out[column].map(lambda x: _text(x, ""))
     out["nq_color"] = out["nq_color"].map(_normalise_color)
     out["rule_followed"] = out["rule_followed"].map(lambda x: True if pd.isna(x) or str(x).strip() == "" else _bool(x))
+    out["partial_exit"] = out["partial_exit"].map(_bool)
     if out["trade_id"].isna().all():
         out["trade_id"] = [f"T{i+1:05d}" for i in range(len(out))]
     else:
@@ -88,7 +104,13 @@ def normalise_holdings(frame: pd.DataFrame, account_equity_jpy: float) -> pd.Dat
     for column in ("sector", "industry", "theme", "setup"):
         out[column] = out[column].map(lambda x: _text(x, "UNKNOWN"))
     out["nq_color"] = out["nq_color"].map(_normalise_color)
-    out["event_risk"] = out["event_risk"].map(_bool)
+    event_text = out["event_risk"].map(lambda x: _text(x, ""))
+    false_values = {"", "0", "false", "none", "nan", "unknown", "なし"}
+    out["event_risk_label"] = event_text.where(
+        ~event_text.str.strip().str.lower().isin(false_values),
+        "",
+    )
+    out["event_risk"] = out["event_risk_label"].ne("")
     return out.sort_values("market_value_jpy", ascending=False).reset_index(drop=True)
 
 
@@ -101,6 +123,17 @@ def build_equity_curve(equity_frame: pd.DataFrame, trades: pd.DataFrame, startin
         out["deposits_jpy"] = _num(out["deposits_jpy"])
         out["withdrawals_jpy"] = _num(out["withdrawals_jpy"])
         out = out.dropna(subset=["date", "equity_jpy"]).sort_values("date").drop_duplicates("date", keep="last")
+        if out.empty:
+            today = pd.Timestamp.now().normalize()
+            out = pd.DataFrame(
+                {
+                    "date": [today],
+                    "equity_jpy": [float(starting_equity_jpy)],
+                    "cash_jpy": [np.nan],
+                    "deposits_jpy": [0.0],
+                    "withdrawals_jpy": [0.0],
+                }
+            )
     elif not trades.empty and trades["exit_date"].notna().any():
         daily = trades.dropna(subset=["exit_date"]).groupby("exit_date", as_index=False)["net_pnl_jpy"].sum().sort_values("exit_date")
         start = daily["exit_date"].min()
@@ -116,8 +149,14 @@ def build_equity_curve(equity_frame: pd.DataFrame, trades: pd.DataFrame, startin
         today = pd.Timestamp.now().normalize()
         out = pd.DataFrame({"date": [today], "equity_jpy": [float(starting_equity_jpy)], "cash_jpy": [np.nan], "deposits_jpy": [0.0], "withdrawals_jpy": [0.0]})
     out["net_flow_jpy"] = out["deposits_jpy"].fillna(0) - out["withdrawals_jpy"].fillna(0)
-    out["adjusted_equity_jpy"] = out["equity_jpy"] - out["net_flow_jpy"].cumsum()
-    out["daily_return"] = out["adjusted_equity_jpy"].pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).fillna(0)
+    previous_equity = out["equity_jpy"].shift(1)
+    out["daily_return"] = (
+        (out["equity_jpy"] - out["net_flow_jpy"]) / previous_equity.replace(0, np.nan) - 1.0
+    ).replace([np.inf, -np.inf], np.nan)
+    out.loc[out.index[0], "daily_return"] = 0.0
+    out["daily_return"] = out["daily_return"].fillna(0.0)
+    first_equity = float(out["equity_jpy"].iloc[0])
+    out["adjusted_equity_jpy"] = first_equity * (1.0 + out["daily_return"]).cumprod()
     out["peak_jpy"] = out["adjusted_equity_jpy"].cummax()
     out["drawdown"] = out["adjusted_equity_jpy"] / out["peak_jpy"].replace(0, np.nan) - 1.0
     return out.reset_index(drop=True)

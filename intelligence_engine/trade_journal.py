@@ -10,7 +10,8 @@ from .trade_journal_types import JournalInput, JournalReport, JournalRules, _nor
 from .trade_journal_data import build_equity_curve, monthly_return_table, normalise_holdings, normalise_trades
 from .trade_journal_analysis import (
     _group_analysis, _period_return, allocation_table, analyse_candidates,
-    build_weekly_review, compute_kpis, correlation_adjusted_heat, detect_rule_violations,
+    build_weekly_review, compute_kpis, correlation_adjusted_heat, correlation_pair_table,
+    detect_rule_violations, drawdown_episode_table,
 )
 
 __all__ = [
@@ -21,19 +22,31 @@ __all__ = [
 
 
 def analyse_journal(data: JournalInput, *, starting_equity_jpy: float = 0.0) -> JournalReport:
-    account_equity = float(data.account_equity_jpy or starting_equity_jpy or 0)
     trades = normalise_trades(data.trades)
-    equity = build_equity_curve(data.equity, trades, account_equity)
-    if account_equity <= 0 and not equity.empty:
-        account_equity = float(equity["equity_jpy"].iloc[-1])
+    seed_equity = float(data.account_equity_jpy or starting_equity_jpy or 0)
+    equity = build_equity_curve(data.equity, trades, seed_equity)
+    if data.account_equity_jpy is not None and float(data.account_equity_jpy) > 0:
+        account_equity = float(data.account_equity_jpy)
+    elif not equity.empty and equity["equity_jpy"].notna().any():
+        account_equity = float(equity["equity_jpy"].dropna().iloc[-1])
+    else:
+        account_equity = seed_equity
     holdings = normalise_holdings(data.holdings, account_equity)
     cash = float(data.cash_jpy) if data.cash_jpy is not None else (
         float(equity["cash_jpy"].dropna().iloc[-1]) if not equity.empty and equity["cash_jpy"].notna().any() else max(0.0, account_equity - float(holdings["market_value_jpy"].sum() if not holdings.empty else 0))
     )
     as_of_candidates: list[pd.Timestamp] = []
-    for frame, col in ((equity, "date"), (trades, "exit_date"), (trades, "entry_date")):
+    for frame, col in (
+        (equity, "date"),
+        (trades, "exit_date"),
+        (trades, "entry_date"),
+        (data.market_context, "date"),
+        (data.candidates, "date"),
+    ):
         if not frame.empty and col in frame and frame[col].notna().any():
-            as_of_candidates.append(pd.to_datetime(frame[col], errors="coerce").max().normalize())
+            parsed = pd.to_datetime(frame[col], errors="coerce").dropna()
+            if len(parsed):
+                as_of_candidates.append(pd.Timestamp(parsed.max()).normalize())
     as_of = max(as_of_candidates) if as_of_candidates else pd.Timestamp.now().normalize()
     nq_color = _normalise_color(data.nq_color)
     if nq_color == "UNKNOWN" and not data.market_context.empty:
@@ -50,11 +63,30 @@ def analyse_journal(data: JournalInput, *, starting_equity_jpy: float = 0.0) -> 
     sector = allocation_table(holdings, "sector")
     theme = allocation_table(holdings, "theme")
     corr, portfolio_risk = correlation_adjusted_heat(holdings, data.price_returns)
+    corr_pairs = correlation_pair_table(corr)
+    drawdowns = drawdown_episode_table(equity)
     kpis = compute_kpis(trades, equity, violations)
+    equity_as_of = pd.Timestamp(equity["date"].max()).normalize() if not equity.empty else pd.NaT
+    equity_age_days = (
+        max(0, int((as_of - equity_as_of).days))
+        if pd.notna(equity_as_of)
+        else None
+    )
+    equity_is_fresh = equity_age_days is not None and equity_age_days <= 7
     kpis.update({
-        "daily_return": float(equity["daily_return"].iloc[-1]) if not equity.empty else np.nan,
-        "mtd_return": _period_return(equity, as_of.replace(day=1)),
-        "ytd_return": _period_return(equity, pd.Timestamp(year=as_of.year, month=1, day=1)),
+        "daily_return": (
+            float(equity["daily_return"].iloc[-1])
+            if not equity.empty and equity_is_fresh
+            else np.nan
+        ),
+        "mtd_return": _period_return(equity, as_of.replace(day=1)) if equity_is_fresh else np.nan,
+        "ytd_return": (
+            _period_return(equity, pd.Timestamp(year=as_of.year, month=1, day=1))
+            if equity_is_fresh
+            else np.nan
+        ),
+        "equity_as_of": equity_as_of,
+        "equity_age_days": equity_age_days,
         "unrealized_pnl_jpy": float(holdings["unrealized_pnl_jpy"].sum()) if not holdings.empty else 0.0,
         "cash_fraction": cash / account_equity if account_equity else np.nan,
     })
@@ -72,9 +104,11 @@ def analyse_journal(data: JournalInput, *, starting_equity_jpy: float = 0.0) -> 
         missed_analysis=missed,
         candidate_comparison=candidate_comparison,
         rule_violations=violations,
+        drawdown_episodes=drawdowns,
         sector_allocation=sector,
         theme_allocation=theme,
         correlation=corr,
+        correlation_pairs=corr_pairs,
         kpis=kpis,
         portfolio_risk=portfolio_risk,
         weekly_review="",
@@ -95,8 +129,10 @@ def write_report_data(report: JournalReport, output_dir: Path) -> None:
     report.missed_analysis.to_csv(output_dir / "missed_trade_analysis.csv", index=False)
     report.candidate_comparison.to_csv(output_dir / "candidate_vs_actual.csv", index=False)
     report.rule_violations.to_csv(output_dir / "rule_violations.csv", index=False)
+    report.drawdown_episodes.to_csv(output_dir / "drawdown_episodes.csv", index=False)
     report.sector_allocation.to_csv(output_dir / "sector_allocation.csv", index=False)
     report.theme_allocation.to_csv(output_dir / "theme_allocation.csv", index=False)
     report.correlation.to_csv(output_dir / "holding_correlations.csv")
+    report.correlation_pairs.to_csv(output_dir / "holding_correlation_pairs.csv", index=False)
     (output_dir / "weekly_review.md").write_text(report.weekly_review, encoding="utf-8")
     (output_dir / "summary.json").write_text(json.dumps(report.to_summary_dict(), ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")

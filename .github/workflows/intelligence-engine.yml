@@ -8,9 +8,10 @@ on:
       - "scripts/private_crypto.mjs"
       - "data/theme_taxonomy.csv"
       - "portfolio.example.csv"
+      - "equity.csv"
+      - "config/trade_journal.example.json"
       - "pyproject.toml"
       - ".github/workflows/intelligence-engine.yml"
-      - ".github/workflows/intelligence-dashboard.yml"
   push:
     branches:
       - main
@@ -19,9 +20,10 @@ on:
       - "scripts/private_crypto.mjs"
       - "data/theme_taxonomy.csv"
       - "portfolio.example.csv"
+      - "equity.csv"
+      - "config/trade_journal.example.json"
       - "pyproject.toml"
       - ".github/workflows/intelligence-engine.yml"
-      - ".github/workflows/intelligence-dashboard.yml"
   workflow_dispatch:
     inputs:
       refresh_sec:
@@ -124,6 +126,12 @@ jobs:
       V38_FMP_PRICE_URL_TEMPLATE: ${{ vars.V38_FMP_PRICE_URL_TEMPLATE }}
       V38_PRIVATE_DASHBOARD_PASSPHRASE: ${{ secrets.V38_PRIVATE_DASHBOARD_PASSPHRASE }}
       V38_PORTFOLIO_CSV_B64: ${{ secrets.V38_PORTFOLIO_CSV_B64 }}
+      V38_ACCOUNT_EQUITY_JPY: ${{ secrets.V38_ACCOUNT_EQUITY_JPY }}
+      V38_TRADE_JOURNAL_CSV_B64: ${{ secrets.V38_TRADE_JOURNAL_CSV_B64 }}
+      V38_EXECUTIONS_CSV_B64: ${{ secrets.V38_EXECUTIONS_CSV_B64 }}
+      V38_EQUITY_HISTORY_CSV_B64: ${{ secrets.V38_EQUITY_HISTORY_CSV_B64 }}
+      V38_HOLDINGS_CSV_B64: ${{ secrets.V38_HOLDINGS_CSV_B64 }}
+      V38_CASH_FLOWS_CSV_B64: ${{ secrets.V38_CASH_FLOWS_CSV_B64 }}
       RESEARCH_MODE: ${{ inputs.research_mode || 'incremental' }}
       RESEARCH_YEAR: ${{ inputs.research_year || '' }}
       RESEARCH_PRICE_BATCH: ${{ inputs.research_price_batch || 120 }}
@@ -153,6 +161,21 @@ jobs:
             fi
           else
             echo "No decryptable operational state; starting from available inputs"
+          fi
+
+          mkdir -p data/trade_journal
+          if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" && -f private/trade-journal-state.enc.json ]]; then
+            if node scripts/private_crypto.mjs decrypt private/trade-journal-state.enc.json /tmp/trade-journal-state.tar.gz \
+              && tar -xzf /tmp/trade-journal-state.tar.gz; then
+              echo "Encrypted Trade Journal state restored"
+            else
+              echo "::warning::Encrypted Trade Journal state could not be restored; continuing from fresh private inputs"
+              rm -f /tmp/trade-journal-state.tar.gz
+              rm -rf data/trade_journal
+              mkdir -p data/trade_journal
+            fi
+          else
+            echo "No decryptable Trade Journal state; starting from private inputs"
           fi
 
           if [[ -n "${V38_PRIVATE_DASHBOARD_PASSPHRASE:-}" ]]; then
@@ -193,6 +216,37 @@ jobs:
               rm -f portfolio.csv
             fi
           fi
+      - name: Import private Trade Journal data
+        shell: bash
+        run: |
+          set -euo pipefail
+          import_dir="$(mktemp -d /tmp/trade-journal-import.XXXXXX)"
+          trap 'rm -rf -- "$import_dir"' EXIT
+
+          decode_csv() {
+            local encoded="$1"
+            local target="$2"
+            if [[ -z "$encoded" ]]; then
+              return 0
+            fi
+            if ! printf '%s' "$encoded" | base64 --decode > "$target"; then
+              rm -f "$target"
+              echo "Invalid Base64 input for $(basename "$target")"
+              return 1
+            fi
+            test -s "$target"
+            chmod 600 "$target"
+          }
+
+          decode_csv "${V38_TRADE_JOURNAL_CSV_B64:-}" "$import_dir/trades.csv"
+          decode_csv "${V38_EXECUTIONS_CSV_B64:-}" "$import_dir/executions.csv"
+          decode_csv "${V38_EQUITY_HISTORY_CSV_B64:-}" "$import_dir/equity.csv"
+          decode_csv "${V38_HOLDINGS_CSV_B64:-}" "$import_dir/holdings.csv"
+          decode_csv "${V38_CASH_FLOWS_CSV_B64:-}" "$import_dir/cash_flows.csv"
+          python -m intelligence_engine.trade_journal_ingest \
+            --import-dir "$import_dir" \
+            --state-dir data/trade_journal \
+            --account-history equity.csv
       - name: Restore price cache
         uses: actions/cache/restore@v4
         with:
@@ -332,6 +386,54 @@ jobs:
           for warning in sorted(warnings - {'qqq_missing', 'candidate_count_zero'}):
               print(f'::warning::data quality: {warning}')
           PY
+      - name: Synchronize and build private Trade Journal Almanac
+        shell: bash
+        run: |
+          set -euo pipefail
+          sync_command=(
+            python -m intelligence_engine.trade_journal_sync
+            --intelligence-root data/intelligence
+            --output data/trade_journal
+          )
+          if [[ -n "${V38_ACCOUNT_EQUITY_JPY:-}" ]]; then
+            if [[ "$V38_ACCOUNT_EQUITY_JPY" =~ ^[0-9]+([.][0-9]+)?$ ]] && \
+               python -c 'import sys; raise SystemExit(0 if float(sys.argv[1]) > 0 else 1)' "$V38_ACCOUNT_EQUITY_JPY"; then
+              sync_command+=(--account-equity-jpy "$V38_ACCOUNT_EQUITY_JPY")
+            else
+              echo "V38_ACCOUNT_EQUITY_JPY must be a positive number"
+              exit 1
+            fi
+          fi
+          if [[ -n "${V38_HOLDINGS_CSV_B64:-}" ]]; then
+            sync_command+=(--preserve-existing-holdings)
+          fi
+          "${sync_command[@]}"
+
+          rm -rf /tmp/trade-journal-almanac
+          python -m intelligence_engine.trade_journal_almanac_run \
+            --input data/trade_journal \
+            --output /tmp/trade-journal-almanac \
+            --rules config/trade_journal.example.json \
+            --research-root data/intelligence/research \
+            --prices prices.pkl \
+            --require-live-data
+          test -s /tmp/trade-journal-almanac/index.html
+          test -s /tmp/trade-journal-almanac/summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(Path("/tmp/trade-journal-almanac/summary.json").read_text())
+          status = summary.get("data_status", "UNKNOWN")
+          print(f"Trade Journal data status: {status}")
+          if status != "READY":
+              readiness = summary.get("readiness", {})
+              print(
+                  "::warning::Trade Journal is "
+                  f"{status}; missing={readiness.get('missing', [])}, "
+                  f"equity_as_of={readiness.get('equity_as_of')}"
+              )
+          PY
       - name: Build private dashboard and encrypted state
         shell: bash
         run: |
@@ -346,6 +448,14 @@ jobs:
               echo 'plaintext dashboard content leaked into locked HTML'
               exit 1
             fi
+            node scripts/private_crypto.mjs lock-html /tmp/trade-journal-almanac/index.html trade-journal-almanac.html
+            test -s trade-journal-almanac.html
+            grep -q 'V38 Private Intelligence' trade-journal-almanac.html
+            grep -q 'ciphertext' trade-journal-almanac.html
+            if grep -q '候補選択の検証' trade-journal-almanac.html; then
+              echo 'plaintext Trade Journal content leaked into locked HTML'
+              exit 1
+            fi
             mkdir -p private
             paths=()
             [[ -d data/intelligence/history ]] && paths+=(data/intelligence/history)
@@ -358,6 +468,14 @@ jobs:
               test -s private/intelligence-state.enc.json
             else
               echo "::warning::No operational history was available to persist"
+            fi
+
+            if [[ -d data/trade_journal ]]; then
+              tar -czf /tmp/trade-journal-state.tar.gz data/trade_journal
+              node scripts/private_crypto.mjs encrypt /tmp/trade-journal-state.tar.gz private/trade-journal-state.enc.json
+              test -s private/trade-journal-state.enc.json
+            else
+              echo "::warning::No Trade Journal state was available to persist"
             fi
 
             if [[ -d data/intelligence/research ]]; then
@@ -384,18 +502,19 @@ jobs:
               echo "Encrypted research bundles: ${encrypted_count}"
             fi
           else
-            echo "Private passphrase is not configured; publishing a locked placeholder only"
+            echo "Private passphrase is not configured; publishing locked placeholders only"
             node scripts/private_crypto.mjs placeholder-html ignored intelligence-dashboard.html
+            node scripts/private_crypto.mjs placeholder-html ignored trade-journal-almanac.html
           fi
-          rm -f /tmp/intelligence-dashboard.full.html /tmp/intelligence-state.tar.gz /tmp/research-summary.tar.gz portfolio.csv
+          rm -f /tmp/intelligence-dashboard.full.html /tmp/intelligence-state.tar.gz /tmp/research-summary.tar.gz /tmp/trade-journal-state.tar.gz portfolio.csv
       - name: Remove plaintext private data from the public repository
         shell: bash
         run: |
           set -euo pipefail
-          git rm -r -f --ignore-unmatch -- data/intelligence data/external portfolio.csv || true
-          rm -rf -- data/intelligence data/external portfolio.csv
+          git rm -r -f --ignore-unmatch -- data/intelligence data/external data/trade_journal portfolio.csv || true
+          rm -rf -- data/intelligence data/external data/trade_journal portfolio.csv
           find data -maxdepth 2 -type d -empty -delete || true
-          remaining="$(find data/intelligence data/external -type f -print -quit 2>/dev/null || true)"
+          remaining="$(find data/intelligence data/external data/trade_journal -type f -print -quit 2>/dev/null || true)"
           if [[ -n "$remaining" || -e portfolio.csv ]]; then
             echo "plaintext private intelligence files remain: ${remaining:-portfolio.csv}"
             exit 1
@@ -408,8 +527,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add intelligence-dashboard.html
+          git add trade-journal-almanac.html
           git add -A private 2>/dev/null || true
-          git add -A -- data/intelligence data/external portfolio.csv 2>/dev/null || true
+          git add -A -- data/intelligence data/external data/trade_journal portfolio.csv 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No encrypted intelligence changes"
             exit 0

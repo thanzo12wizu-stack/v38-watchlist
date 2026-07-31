@@ -13,6 +13,7 @@ except ModuleNotFoundError:  # direct execution: python scripts/privacy_audit.py
 FORBIDDEN_CURRENT_PATHS = (
     "data/intelligence",
     "data/external",
+    "data/trade_journal",
     "portfolio.csv",
 )
 
@@ -59,6 +60,7 @@ def audit_current_tree(root: Path) -> dict:
             allowed = relative.endswith(".enc.json") or path.name in {
                 "research-success.json",
                 "research-error-detail.json",
+                "research-worker-result.json",
             }
             if not allowed:
                 private_plaintext.append(relative)

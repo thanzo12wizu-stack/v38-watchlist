@@ -16,5 +16,5 @@ def test_workflow_prioritizes_active_candidates_before_backfill():
 def test_workflow_keeps_privacy_gate_strict():
     text = Path('.github/workflows/intelligence-engine.yml').read_text(encoding='utf-8')
     assert "grep -q 'ciphertext' intelligence-dashboard.html" in text
-    assert 'rm -rf -- data/intelligence data/external portfolio.csv' in text
+    assert 'rm -rf -- data/intelligence data/external data/trade_journal portfolio.csv' in text
     assert 'plaintext private intelligence files remain' in text

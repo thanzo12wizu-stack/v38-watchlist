@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from intelligence_engine.trade_journal import JournalInput, JournalRules, analyse_journal, detect_rule_violations, normalise_trades
-from intelligence_engine.trade_journal_run import run
+from intelligence_engine.trade_journal_run import _enrich_candidates_from_outcomes, run
 
 
 def sample_trades() -> pd.DataFrame:
@@ -52,9 +52,48 @@ def test_kpis_drawdown_setup_and_regime() -> None:
     assert report.kpis["losses"] == 1
     assert report.kpis["profit_factor"] > 1
     assert report.kpis["max_drawdown"] < 0
+    assert not report.drawdown_episodes.empty
     assert set(report.setup_analysis["setup"]) == {"Breakout", "21EMA Pullback"}
     assert set(report.regime_analysis["nq_color"]) == {"BLUE", "YELLOW"}
     assert report.portfolio_risk["nominal_heat"] > 0
+
+
+def test_ytd_is_unknown_when_equity_history_starts_midyear() -> None:
+    equity = pd.DataFrame(
+        {
+            "date": pd.date_range("2026-04-14", periods=4),
+            "equity_jpy": [1_000, 1_010, 1_020, 1_030],
+        }
+    )
+
+    report = analyse_journal(
+        JournalInput(equity=equity, account_equity_jpy=1_030),
+        starting_equity_jpy=0,
+    )
+
+    assert pd.isna(report.kpis["ytd_return"])
+
+
+def test_current_period_metrics_are_hidden_when_equity_is_stale() -> None:
+    equity = pd.DataFrame(
+        {
+            "date": ["2026-07-01", "2026-07-02"],
+            "equity_jpy": [1_000, 1_010],
+        }
+    )
+    candidates = pd.DataFrame(
+        [{"date": "2026-07-20", "ticker": "AAA", "rank": 1}]
+    )
+
+    report = analyse_journal(
+        JournalInput(equity=equity, candidates=candidates, account_equity_jpy=1_010),
+        starting_equity_jpy=0,
+    )
+
+    assert report.kpis["equity_age_days"] == 18
+    assert pd.isna(report.kpis["daily_return"])
+    assert pd.isna(report.kpis["mtd_return"])
+    assert pd.isna(report.kpis["ytd_return"])
 
 
 def test_correlation_adjusted_heat_respects_correlation() -> None:
@@ -62,6 +101,16 @@ def test_correlation_adjusted_heat_respects_correlation() -> None:
     report = analyse_journal(JournalInput(holdings=sample_holdings(), account_equity_jpy=10_000, price_returns=returns), starting_equity_jpy=10_000)
     assert report.portfolio_risk["correlation_adjusted_heat"] > 0
     assert abs(report.portfolio_risk["correlation_adjusted_heat"] - report.portfolio_risk["nominal_heat"]) < 1e-8
+
+
+def test_missing_correlation_data_does_not_reduce_reported_heat() -> None:
+    report = analyse_journal(
+        JournalInput(holdings=sample_holdings(), account_equity_jpy=10_000),
+        starting_equity_jpy=10_000,
+    )
+
+    assert report.portfolio_risk["correlation_adjusted_heat"] == report.portfolio_risk["nominal_heat"]
+    assert "完全相関" in report.portfolio_risk["method"]
 
 
 def test_rule_violations_are_fail_closed() -> None:
@@ -92,6 +141,52 @@ def test_candidates_compare_bought_and_missed() -> None:
     assert bought["avg_forward_10d"] > missed["avg_forward_10d"]
 
 
+def test_candidate_is_linked_to_next_session_entry() -> None:
+    candidates = pd.DataFrame(
+        [
+            {
+                "date": "2026-01-04",
+                "ticker": "AAA",
+                "rank": 1,
+                "forward_10d_return": 0.20,
+                "qqq_excess_10d": 0.15,
+            }
+        ]
+    )
+
+    report = analyse_journal(
+        JournalInput(trades=sample_trades(), candidates=candidates, account_equity_jpy=1000),
+        starting_equity_jpy=1000,
+    )
+
+    comparison = report.candidate_comparison.iloc[0]
+    assert bool(comparison["traded"])
+    assert round(float(comparison["realized_return"]), 4) == 0.19
+
+
+def test_candidate_history_is_enriched_when_research_outcome_matures(tmp_path: Path) -> None:
+    candidates = pd.DataFrame(
+        [{"date": "2026-01-05", "ticker": "aaa", "rank": 1, "forward_10d_return": None}]
+    )
+    outcome_root = tmp_path / "outcomes"
+    outcome_root.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "date": "2026-01-05", "ticker": "AAA", "return_5": 0.05,
+                "return_10": 0.12, "excess_10": 0.08, "mfe_10": 0.16, "mae_10": -0.03,
+            }
+        ]
+    ).to_json(outcome_root / "year=2026.jsonl", orient="records", lines=True)
+
+    enriched, notes = _enrich_candidates_from_outcomes(candidates, tmp_path)
+
+    assert enriched.loc[0, "ticker"] == "AAA"
+    assert enriched.loc[0, "forward_10d_return"] == 0.12
+    assert enriched.loc[0, "qqq_excess_10d"] == 0.08
+    assert "10d_ready=1" in notes[0]
+
+
 def test_end_to_end_generates_dashboard_cards_and_exports(tmp_path: Path) -> None:
     output = tmp_path / "out"
     summary = run(input_dir=tmp_path / "input", output_dir=output, starting_equity_jpy=7_300_000, demo=True)
@@ -101,6 +196,7 @@ def test_end_to_end_generates_dashboard_cards_and_exports(tmp_path: Path) -> Non
         "summary.json", "equity_curve.csv", "monthly_returns.csv", "setup_analysis.csv", "regime_analysis.csv",
         "missed_trade_analysis.csv", "candidate_vs_actual.csv", "rule_violations.csv", "sector_allocation.csv",
         "holding_correlations.csv",
+        "holding_correlation_pairs.csv", "drawdown_episodes.csv",
     ]
     for name in expected:
         assert (output / name).exists(), name

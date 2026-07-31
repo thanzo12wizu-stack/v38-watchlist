@@ -6,17 +6,17 @@
   <meta name="theme-color" content="#0a0d12">
   <title>V38 Command Hub</title>
   <style>
-    :root{color-scheme:dark;--bg:#090c11;--panel:#121821;--line:#263140;--text:#f4f7fb;--muted:#93a0b2;--blue:#7db4ff;--red:#ff6969;--green:#55d58a;--gold:#e6bd68}
+    :root{color-scheme:dark;--bg:#090c11;--panel:#121821;--line:#263140;--text:#f4f7fb;--muted:#93a0b2;--blue:#7db4ff;--red:#ff6969;--green:#55d58a;--gold:#e6bd68;--paper:#d7b77d}
     *{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(circle at 15% 0,rgba(125,180,255,.12),transparent 34%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     .wrap{max-width:1080px;margin:auto;padding:max(22px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
     header{padding:18px 4px 20px}h1{margin:0;font-size:28px;letter-spacing:-.03em}.lead{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.55}
     .grid{display:grid;gap:14px}.card{display:flex;flex-direction:column;text-decoration:none;color:inherit;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01)),var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;min-height:174px;transition:transform .14s ease,border-color .14s ease}
-    .card:active{transform:scale(.985)}.card.primary{border-color:rgba(255,105,105,.48)}.card.intel{border-color:rgba(125,180,255,.48)}.card.research{border-color:rgba(230,189,104,.5)}
-    .eyebrow{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}h2{font-size:21px;margin:8px 0 7px}.desc{font-size:13px;line-height:1.55;color:var(--muted);margin:0 0 18px}.go{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:800;margin-top:auto}.primary .go{color:var(--red)}.intel .go{color:var(--blue)}.research .go{color:var(--gold)}
+    .card:active{transform:scale(.985)}.card.primary{border-color:rgba(255,105,105,.48)}.card.intel{border-color:rgba(125,180,255,.48)}.card.research{border-color:rgba(230,189,104,.5)}.card.journal{border-color:rgba(215,183,125,.52)}
+    .eyebrow{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}h2{font-size:21px;margin:8px 0 7px}.desc{font-size:13px;line-height:1.55;color:var(--muted);margin:0 0 18px}.go{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:800;margin-top:auto}.primary .go{color:var(--red)}.intel .go{color:var(--blue)}.research .go{color:var(--gold)}.journal .go{color:var(--paper)}
     .badge{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-top:12px;padding:5px 8px;border-radius:999px;background:rgba(85,213,138,.09);color:var(--green);font-size:10px;font-weight:800}.badge.weekly{background:rgba(230,189,104,.09);color:var(--gold)}.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
     footer{padding:18px 4px 0;color:var(--muted);font-size:10px;line-height:1.5}
     @media(min-width:680px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.card{min-height:210px}}
-    @media(min-width:960px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(min-width:960px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
   </style>
 </head>
 <body>
@@ -24,7 +24,7 @@
     <header>
       <div class="eyebrow">V38 Watchlist</div>
       <h1>Command Hub</h1>
-      <p class="lead">日々の市場判断、銘柄の中身、過去期待値の研究を役割別に分けた3つの入口。</p>
+      <p class="lead">日々の市場判断、銘柄の中身、過去期待値、実際の運用結果を役割別に分けた4つの入口。</p>
     </header>
     <section class="grid" aria-label="ダッシュボード選択">
       <a class="card primary" href="command-center.html">
@@ -48,8 +48,15 @@
         <div class="go"><span>期待値研究を開く</span><span aria-hidden="true">→</span></div>
         <div class="badge weekly"><span class="dot"></span>週末・検証用</div>
       </a>
+      <a class="card journal" href="trade-journal-almanac.html">
+        <div class="eyebrow">Actual Performance</div>
+        <h2>Trade Journal</h2>
+        <p class="desc">実約定、資産推移、保有Heat、規律、見送った候補までを一つのAlmanacで検証。</p>
+        <div class="go"><span>運用実績を開く</span><span aria-hidden="true">→</span></div>
+        <div class="badge"><span class="dot"></span>毎日・実績確認</div>
+      </a>
     </section>
-    <footer>3画面は独立更新。研究処理の障害が既存Command Centerを止めない構成です。</footer>
+    <footer>4画面は独立出力。Trade JournalとIntelligenceの詳細は暗号化され、Command Centerの生成経路を置き換えません。</footer>
   </main>
 </body>
 </html>

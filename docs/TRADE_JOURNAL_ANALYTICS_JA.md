@@ -120,7 +120,7 @@ Stopを下回った銘柄には`STOP逸脱`を表示する。
 
 ## 既存Command Centerとの自動連携
 ### 自動で同期するもの
-`Private Trade Journal`ワークフローは`Intelligence Engine (sidecar)`の正常終了後に実行される。
+Trade Journalの更新は、既存の`Intelligence Engine (sidecar)`内でCommand Centerデータ生成後に続けて実行される。専用ワークフローを増やさず、既存3本の運用構成を維持する。
 
 - NQ色・市場状態
 - Entry Candidates
@@ -147,7 +147,42 @@ Command Centerの候補情報だけから、実際に約定した取引を推測
 
 - `V38_ACCOUNT_EQUITY_JPY`: 現在の実口座資産
 - `V38_TRADE_JOURNAL_CSV_B64`: Base64化した取引履歴CSV
+- `V38_EXECUTIONS_CSV_B64`: Base64化した約定明細CSV
 - `V38_EQUITY_HISTORY_CSV_B64`: Base64化した資産履歴CSV
+- `V38_HOLDINGS_CSV_B64`: Base64化した実保有CSV
+- `V38_CASH_FLOWS_CSV_B64`: Base64化した入出金CSV
+
+`V38_PRIVATE_DASHBOARD_PASSPHRASE`は前提の必須Secret。Almanac本体と継続履歴の暗号化に既存の値をそのまま使う。未設定時は、平文を公開せずロック済みプレースホルダーだけを出す。
+
+リポジトリの既存`equity.csv`は自動で資産履歴へ取り込む。`date / equity / us_pct`形式、過去に混在したタブ・空白区切りの両方へ対応する。`V38_EQUITY_HISTORY_CSV_B64`の同日行がある場合はSecret側を優先する。最新資産日が7日超前なら、その値を今日の残高へ複製せず`PARTIAL`として鮮度警告を残し、今日画面は「資産データ要更新」として新規発注可能を表示しない。
+
+### 秘密CSVの最小列
+
+| Secret | 最小列 | 用途 |
+|---|---|---|
+| `V38_EXECUTIONS_CSV_B64` | `execution_id,position_id,ticker,action,executed_at,price,quantity` | 推奨。分割Entry・部分Exitを約定単位で保持 |
+| `V38_TRADE_JOURNAL_CSV_B64` | `trade_id,ticker,side,entry_date,exit_date,entry_price,exit_price,quantity` | 完結取引を直接投入 |
+| `V38_EQUITY_HISTORY_CSV_B64` | `date,equity_jpy` | 日次総資産。任意で`cash_jpy,deposits_jpy,withdrawals_jpy` |
+| `V38_HOLDINGS_CSV_B64` | `ticker,quantity,entry_price,current_price,fx_to_jpy,stop_price` | 証券口座の実保有をCommand Center推定より優先 |
+| `V38_CASH_FLOWS_CSV_B64` | `flow_id,date,type,amount_jpy` | `type`は`DEPOSIT`または`WITHDRAWAL` |
+
+約定CSVでは`side`を`LONG`または`SHORT`で指定できる。省略時は同じ`position_id`のEntryから補完する。`action`はLONGの`BUY / SELL`、SHORTの`SELL / COVER`に加えて`BTO / STC / STO / BTC`を受け付ける。`point_value,fx_to_jpy,fees_jpy,taxes_jpy,stop_price,target_price,setup,nq_color,sector,theme`は任意列。
+
+macOS / LinuxでSecret値を作る例:
+
+```bash
+base64 < executions.csv | tr -d '\n'
+```
+
+PowerShell:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("executions.csv"))
+```
+
+約定明細は`position_id`単位で集約する。2分割エントリー、複数回の部分利確、手数料、税を一つの完結トレードへまとめ、まだ残玉があるポジションは完結トレード数へ入れない。同じ`execution_id`を再取込しても重複しない。
+
+Command Center候補は日次履歴として蓄積し、Research Outcomesの10日後結果が確定した時点で自動付与する。実トレードは同一Tickerの直近候補（Entry日まで5日以内）へ結び付け、買った候補と見送った候補を同じ10日窓で比較する。
 
 口座資産が未接続で過去の暗号化資産履歴もない場合、架空の円金額で本番版を作らず、セットアップ待ちとして扱う。
 
@@ -159,6 +194,7 @@ Command Centerの候補情報だけから、実際に約定した取引を推測
 - `weekly_review.md`
 - `summary.json`
 - 正規化取引・保有・資産・月次・Setup・地合い・候補比較・逸脱・配分・相関CSV
+- Drawdown局面一覧、相関上位ペア、約定取込ステータス
 
 ## 安全性
 - デモデータを実績として扱わない。
@@ -169,3 +205,4 @@ Command Centerの候補情報だけから、実際に約定した取引を推測
 - Command Center候補を約定として数えない。
 - 自動売買や注文発注は行わない。
 - 平文の取引・資産・保有データを公開リポジトリへ保存しない。
+- 週次レビューはAI生成を装わず、保存データからの自動集計として表示する。

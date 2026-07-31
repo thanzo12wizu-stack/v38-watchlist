@@ -48,8 +48,25 @@ def analyse_candidates(candidates: pd.DataFrame, trades: pd.DataFrame) -> tuple[
     out["selected"] = out["selected"].map(_bool)
     for col in ("forward_5d_return", "forward_10d_return", "qqq_excess_10d", "mfe_10d", "mae_10d"):
         out[col] = pd.to_numeric(out[col], errors="coerce")
-    trade_keys = trades[["ticker", "entry_date", "return_pct"]].dropna(subset=["entry_date"]).rename(columns={"entry_date": "date", "return_pct": "realized_return"}) if not trades.empty else pd.DataFrame(columns=["ticker", "date", "realized_return"])
-    merged = out.merge(trade_keys, on=["ticker", "date"], how="left")
+    out = out.reset_index(drop=True)
+    realized = pd.Series(np.nan, index=out.index, dtype=float)
+    if not trades.empty:
+        trade_keys = trades[["ticker", "entry_date", "return_pct"]].dropna(subset=["entry_date"]).copy()
+        trade_keys["ticker"] = trade_keys["ticker"].map(lambda x: _text(x, "").upper())
+        trade_keys["entry_date"] = pd.to_datetime(trade_keys["entry_date"], errors="coerce").dt.normalize()
+        trade_keys["return_pct"] = pd.to_numeric(trade_keys["return_pct"], errors="coerce")
+        for _, trade in trade_keys.dropna(subset=["entry_date"]).sort_values("entry_date").iterrows():
+            eligible = out[
+                out["ticker"].eq(trade["ticker"])
+                & out["date"].le(trade["entry_date"])
+                & out["date"].ge(trade["entry_date"] - pd.Timedelta(days=5))
+            ]
+            if eligible.empty:
+                continue
+            candidate_index = int(eligible.sort_values("date", kind="stable").index[-1])
+            realized.at[candidate_index] = trade["return_pct"]
+    merged = out.copy()
+    merged["realized_return"] = realized
     merged["traded"] = merged["realized_return"].notna()
     merged["capture_gap"] = merged["realized_return"] - merged["forward_10d_return"]
     rows = []
@@ -126,8 +143,8 @@ def correlation_adjusted_heat(holdings: pd.DataFrame, price_returns: pd.DataFram
     heat = holdings.set_index("ticker")["heat_fraction"].fillna(0).clip(lower=0)
     tickers = list(heat.index)
     if price_returns.empty:
-        corr = pd.DataFrame(np.eye(len(tickers)), index=tickers, columns=tickers)
-        note = "価格リターン未提供のため独立仮定"
+        corr = pd.DataFrame(np.ones((len(tickers), len(tickers))), index=tickers, columns=tickers)
+        note = "価格リターン未提供のため完全相関の保守仮定"
     else:
         work = price_returns.copy()
         if "date" in work:
@@ -136,10 +153,14 @@ def correlation_adjusted_heat(holdings: pd.DataFrame, price_returns: pd.DataFram
         available = [ticker for ticker in tickers if ticker in work.columns]
         corr = work[available].tail(60).corr(min_periods=15) if available else pd.DataFrame()
         corr = corr.reindex(index=tickers, columns=tickers)
-        corr = corr.fillna(0.0).copy()
+        missing_tickers = [ticker for ticker in tickers if ticker not in available]
+        corr = corr.fillna(1.0).copy()
         for ticker in tickers:
             corr.loc[ticker, ticker] = 1.0
-        note = "直近60観測の相関"
+        note = f"直近60観測の相関（取得{len(available)}/{len(tickers)}"
+        if missing_tickers:
+            note += f"、未取得{len(missing_tickers)}は完全相関仮定"
+        note += "）"
     vector = heat.reindex(tickers).to_numpy(dtype=float)
     matrix = corr.to_numpy(dtype=float)
     adjusted = float(math.sqrt(max(0.0, vector @ matrix @ vector.T)))
@@ -151,6 +172,93 @@ def correlation_adjusted_heat(holdings: pd.DataFrame, price_returns: pd.DataFram
         if average_corr.notna().any():
             cluster = str(average_corr.idxmax())
     return corr, {"nominal_heat": nominal, "correlation_adjusted_heat": adjusted, "gross_exposure": gross, "largest_cluster": cluster, "method": note}
+
+
+def correlation_pair_table(correlation: pd.DataFrame) -> pd.DataFrame:
+    columns = ["ticker_a", "ticker_b", "correlation"]
+    if correlation.empty or len(correlation.columns) < 2:
+        return pd.DataFrame(columns=columns)
+    tickers = [str(value) for value in correlation.columns]
+    rows: list[dict[str, Any]] = []
+    for left, ticker_a in enumerate(tickers):
+        for right in range(left + 1, len(tickers)):
+            ticker_b = tickers[right]
+            value = pd.to_numeric(
+                pd.Series([correlation.loc[ticker_a, ticker_b]]),
+                errors="coerce",
+            ).iloc[0]
+            if pd.notna(value):
+                rows.append(
+                    {
+                        "ticker_a": ticker_a,
+                        "ticker_b": ticker_b,
+                        "correlation": float(value),
+                    }
+                )
+    if not rows:
+        return pd.DataFrame(columns=columns)
+    return (
+        pd.DataFrame(rows)
+        .sort_values(["correlation", "ticker_a", "ticker_b"], ascending=[False, True, True])
+        .reset_index(drop=True)
+    )
+
+
+def drawdown_episode_table(equity: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "start_date",
+        "trough_date",
+        "recovery_date",
+        "depth",
+        "days_to_trough",
+        "recovery_days",
+        "total_days",
+        "status",
+    ]
+    if equity.empty or "drawdown" not in equity:
+        return pd.DataFrame(columns=columns)
+    work = equity[["date", "drawdown"]].dropna(subset=["date"]).copy()
+    if work.empty:
+        return pd.DataFrame(columns=columns)
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    work["drawdown"] = pd.to_numeric(work["drawdown"], errors="coerce").fillna(0.0)
+    rows: list[dict[str, Any]] = []
+    index = 0
+    while index < len(work):
+        if float(work.iloc[index]["drawdown"]) >= -1e-12:
+            index += 1
+            continue
+        start = index
+        while index < len(work) and float(work.iloc[index]["drawdown"]) < -1e-12:
+            index += 1
+        end = index - 1
+        segment = work.iloc[start : end + 1]
+        trough_offset = int(segment["drawdown"].to_numpy().argmin())
+        trough = start + trough_offset
+        recovered = index < len(work)
+        recovery_date = work.iloc[index]["date"] if recovered else pd.NaT
+        start_date = work.iloc[start]["date"]
+        trough_date = work.iloc[trough]["date"]
+        terminal_date = recovery_date if recovered else work.iloc[end]["date"]
+        rows.append(
+            {
+                "start_date": start_date,
+                "trough_date": trough_date,
+                "recovery_date": recovery_date,
+                "depth": float(work.iloc[trough]["drawdown"]),
+                "days_to_trough": int((trough_date - start_date).days),
+                "recovery_days": int((recovery_date - trough_date).days) if recovered else np.nan,
+                "total_days": int((terminal_date - start_date).days),
+                "status": "RECOVERED" if recovered else "ACTIVE",
+            }
+        )
+    if not rows:
+        return pd.DataFrame(columns=columns)
+    return (
+        pd.DataFrame(rows)
+        .sort_values(["depth", "start_date"], ascending=[True, False])
+        .reset_index(drop=True)
+    )
 
 
 def compute_kpis(trades: pd.DataFrame, equity: pd.DataFrame, violations: pd.DataFrame) -> dict[str, Any]:
@@ -195,11 +303,19 @@ def compute_kpis(trades: pd.DataFrame, equity: pd.DataFrame, violations: pd.Data
 def _period_return(equity: pd.DataFrame, start: pd.Timestamp) -> float:
     if equity.empty:
         return np.nan
-    group = equity[equity["date"] >= start]
+    work = equity.sort_values("date", kind="stable")
+    group = work[work["date"] >= start]
     if group.empty:
         return np.nan
-    first = float(group["adjusted_equity_jpy"].iloc[0])
-    last = float(group["adjusted_equity_jpy"].iloc[-1])
+    baseline = work[work["date"] <= start]
+    if not baseline.empty:
+        first = float(baseline["adjusted_equity_jpy"].iloc[-1])
+    else:
+        first_date = pd.Timestamp(group["date"].iloc[0]).normalize()
+        if (first_date - start.normalize()).days > 7:
+            return np.nan
+        first = float(group["adjusted_equity_jpy"].iloc[0])
+    last = float(work["adjusted_equity_jpy"].iloc[-1])
     return last / first - 1 if first else np.nan
 
 
@@ -207,36 +323,88 @@ def build_weekly_review(report: JournalReport) -> str:
     k = report.kpis
     recent_start = report.as_of - pd.Timedelta(days=7)
     recent = report.trades[report.trades["exit_date"] >= recent_start] if not report.trades.empty else report.trades
-    lines = ["# AI Weekly Review", "", f"基準日: {report.as_of.date().isoformat()}", ""]
+    lines = ["# Weekly Review（自動集計）", "", f"基準日: {report.as_of.date().isoformat()}", ""]
     weekly_pnl = float(recent["net_pnl_jpy"].sum()) if not recent.empty else 0.0
-    lines.append(f"今週は{len(recent)}トレード、実現損益は¥{weekly_pnl:,.0f}。全期間PFは{_fmt(k.get('profit_factor'), 2)}、勝率は{_pct(k.get('win_rate'))}、最大DDは{_pct(k.get('max_drawdown'))}。")
+    lines.append(
+        f"今週は{len(recent)}トレード、実現損益は¥{weekly_pnl:,.0f}。"
+        f"全期間PFは{_fmt(k.get('profit_factor'), 2)}、勝率は{_pct(k.get('win_rate'))}、"
+        f"平均Rは{_fmt(k.get('average_r'), 2)}、最大DDは{_pct(k.get('max_drawdown'))}。"
+    )
+    findings: list[str] = []
+    actions: list[str] = []
     if not report.setup_analysis.empty:
-        eligible = report.setup_analysis[report.setup_analysis["trades"] >= 2]
+        eligible = report.setup_analysis[report.setup_analysis["trades"] >= 5]
         if not eligible.empty:
             best = eligible.sort_values(["profit_factor", "avg_r"], ascending=False).iloc[0]
             worst = eligible.sort_values(["profit_factor", "avg_r"], ascending=True).iloc[0]
-            lines.append(f"最も機能したセットアップは「{best['setup']}」でPF {_fmt(best['profit_factor'], 2)}・平均R {_fmt(best['avg_r'], 2)}。最も弱いのは「{worst['setup']}」でPF {_fmt(worst['profit_factor'], 2)}。")
+            findings.append(
+                f"n≥5のセットアップでは「{best['setup']}」が最良"
+                f"（n={int(best['trades'])}、PF {_fmt(best['profit_factor'], 2)}、平均R {_fmt(best['avg_r'], 2)}）。"
+            )
+            if str(worst["setup"]) != str(best["setup"]):
+                findings.append(
+                    f"最弱は「{worst['setup']}」"
+                    f"（n={int(worst['trades'])}、PF {_fmt(worst['profit_factor'], 2)}、平均R {_fmt(worst['avg_r'], 2)}）。"
+                )
+                worst_average_r = pd.to_numeric(pd.Series([worst.get("avg_r")]), errors="coerce").iloc[0]
+                if pd.notna(worst_average_r) and float(worst_average_r) < 0:
+                    actions.append(f"「{worst['setup']}」は新規発注前に条件を再検証する。")
+        else:
+            findings.append("セットアップ別の判定に必要なn=5を満たす標本はまだない。")
     if not report.regime_analysis.empty:
-        eligible = report.regime_analysis[report.regime_analysis["trades"] >= 2]
+        eligible = report.regime_analysis[report.regime_analysis["trades"] >= 5]
         if not eligible.empty:
             best = eligible.sort_values("profit_factor", ascending=False).iloc[0]
             worst = eligible.sort_values("profit_factor", ascending=True).iloc[0]
-            lines.append(f"地合い別では{best['nq_color']}が最良（PF {_fmt(best['profit_factor'], 2)}）、{worst['nq_color']}が最弱（PF {_fmt(worst['profit_factor'], 2)}）。")
+            findings.append(
+                f"地合い別では{best['nq_color']}が最良（n={int(best['trades'])}、PF {_fmt(best['profit_factor'], 2)}）、"
+                f"{worst['nq_color']}が最弱（n={int(worst['trades'])}、PF {_fmt(worst['profit_factor'], 2)}）。"
+            )
     risk = report.portfolio_risk
-    lines.append(f"現在の名目Heatは{_pct(risk.get('nominal_heat'))}、相関調整後Heatは{_pct(risk.get('correlation_adjusted_heat'))}、Gross Exposureは{_pct(risk.get('gross_exposure'))}。")
+    findings.append(
+        f"現在の名目Heatは{_pct(risk.get('nominal_heat'))}、"
+        f"相関調整後Heatは{_pct(risk.get('correlation_adjusted_heat'))}、"
+        f"Gross Exposureは{_pct(risk.get('gross_exposure'))}。"
+    )
     if not report.rule_violations.empty:
-        top = report.rule_violations["violation"].value_counts().head(3)
+        recent_violations = report.rule_violations.copy()
+        if "entry_date" in recent_violations:
+            dates = pd.to_datetime(recent_violations["entry_date"], errors="coerce")
+            recent_violations = recent_violations[dates >= recent_start]
+        source = recent_violations if not recent_violations.empty else report.rule_violations
+        top = source["violation"].value_counts().head(3)
         issues = "、".join(f"{name} {count}件" for name, count in top.items())
-        lines.append(f"改善優先度が高いルール逸脱は{issues}。まず新規エントリー前の機械的チェックで遮断する。")
+        scope = "今週" if not recent_violations.empty else "全期間"
+        findings.append(f"{scope}の改善優先度が高いルール逸脱は{issues}。")
+        actions.append(f"次回発注前に「{top.index[0]}」の確認を必須化する。")
     else:
-        lines.append("記録上の重大なルール逸脱は検出されていない。今週はサイズを増やすより、同じ条件の再現性を確認する。")
+        findings.append("記録上の重大なルール逸脱は検出されていない。")
     if not report.missed_analysis.empty:
         bought = report.missed_analysis[report.missed_analysis["bucket"] == "買った候補"]
         missed = report.missed_analysis[report.missed_analysis["bucket"] == "見送った候補"]
         if not bought.empty and not missed.empty and pd.notna(bought.iloc[0]["avg_forward_10d"]) and pd.notna(missed.iloc[0]["avg_forward_10d"]):
             gap = float(bought.iloc[0]["avg_forward_10d"] - missed.iloc[0]["avg_forward_10d"])
-            lines.append(f"候補選択の10日後リターン差は{gap:+.2%}。プラスなら選択精度、マイナスなら見送り判断とエントリー位置を再点検する。")
-    lines.extend(["", "## 来週の行動", "", "1. PFと平均Rが高い上位セットアップに発注を集中する。", "2. NQ色とセクター集中を発注前に確認し、相関調整後Heatで上限を決める。", "3. ルール逸脱が1件でも出た類型は、次回エントリー前にチェック項目を必須化する。", ""])
+            findings.append(f"候補選択の10日後リターン差は{gap:+.2%}。")
+            if gap < 0:
+                actions.append("買った候補が見送り候補に負けているため、見送り理由とエントリー位置を再点検する。")
+    if not report.drawdown_episodes.empty:
+        worst = report.drawdown_episodes.iloc[0]
+        active = report.drawdown_episodes[report.drawdown_episodes["status"] == "ACTIVE"]
+        findings.append(
+            f"最大DD局面は{_pct(worst['depth'])}、谷まで{int(worst['days_to_trough'])}日。"
+            + (f"現在もDD継続中（{int(active.iloc[0]['total_days'])}日）。" if not active.empty else "")
+        )
+        if not active.empty:
+            actions.append("DD回復前はサイズ拡大を止め、既存ポジションのHeatを優先して落とす。")
+
+    lines.extend(["", "## 観測事実", ""])
+    lines.extend(f"- {item}" for item in findings)
+    if not actions:
+        actions.append("現行ルールを変えず、同条件の標本を追加する。")
+    actions.append("NQ色・Stop逸脱・相関調整Heatを発注前に確認する。")
+    lines.extend(["", "## 来週の行動", ""])
+    lines.extend(f"{index}. {action}" for index, action in enumerate(dict.fromkeys(actions), start=1))
+    lines.append("")
     return "\n".join(lines)
 
 

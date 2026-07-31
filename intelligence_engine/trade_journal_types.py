@@ -14,6 +14,8 @@ TRADE_COLUMNS = (
     "quantity", "point_value", "fx_to_jpy", "fees_jpy", "taxes_jpy", "stop_price",
     "target_price", "setup", "nq_color", "sector", "industry", "theme", "entry_reason",
     "exit_reason", "rule_followed", "mistake_type", "notes", "mfe_pct", "mae_pct",
+    "source", "position_id", "closed_quantity", "entry_tranches", "exit_tranches",
+    "partial_exit",
 )
 HOLDING_COLUMNS = (
     "ticker", "quantity", "entry_price", "current_price", "fx_to_jpy", "sector", "industry",
@@ -109,9 +111,11 @@ class JournalReport:
     missed_analysis: pd.DataFrame
     candidate_comparison: pd.DataFrame
     rule_violations: pd.DataFrame
+    drawdown_episodes: pd.DataFrame
     sector_allocation: pd.DataFrame
     theme_allocation: pd.DataFrame
     correlation: pd.DataFrame
+    correlation_pairs: pd.DataFrame
     kpis: dict[str, Any]
     portfolio_risk: dict[str, Any]
     weekly_review: str

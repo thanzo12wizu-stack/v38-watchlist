@@ -15,10 +15,12 @@ def _source(
     *,
     intelligence: str = LOCKED_HTML,
     research: str = LOCKED_HTML,
+    journal: str = LOCKED_HTML,
 ) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command Center</h1>", encoding="utf-8")
     (root / "intelligence-dashboard.html").write_text(intelligence, encoding="utf-8")
+    (root / "trade-journal-almanac.html").write_text(journal, encoding="utf-8")
     (root / "research-dashboard.html").write_text(research, encoding="utf-8")
     (root / "data").mkdir()
     (root / "data" / "secret.json").write_text('{"entry_candidates":[]}', encoding="utf-8")
@@ -36,12 +38,14 @@ def test_export_copies_only_allowlisted_site_files(tmp_path: Path):
     assert manifest["source_commit"] == "abc123"
     assert set(manifest["locked_dashboards"]) == {
         "intelligence-dashboard.html",
+        "trade-journal-almanac.html",
         "research-dashboard.html",
     }
     assert {path.name for path in output.iterdir()} == {
         "index.html",
         "command-center.html",
         "intelligence-dashboard.html",
+        "trade-journal-almanac.html",
         "research-dashboard.html",
         ".nojekyll",
         "public-site-manifest.json",
@@ -69,6 +73,23 @@ def test_export_refuses_plaintext_research_dashboard(tmp_path: Path):
     _source(
         source,
         research="<h1>V38 Private Intelligence</h1><div>Research Decision</h1></div>",
+    )
+    with pytest.raises(ValueError):
+        export_public_site(source, output)
+
+
+def test_export_refuses_plaintext_hidden_behind_placeholder_heading(tmp_path: Path):
+    source = tmp_path / "source"
+    output = tmp_path / "public"
+    source.mkdir()
+    _source(
+        source,
+        journal=(
+            "<title>V38 Private Intelligence</title>"
+            "<h1>Private Dashboard Locked</h1>"
+            '<a href="index.html">home</a>'
+            '<script>window.V38_DATA={"account_equity_jpy":123};</script>'
+        ),
     )
     with pytest.raises(ValueError):
         export_public_site(source, output)

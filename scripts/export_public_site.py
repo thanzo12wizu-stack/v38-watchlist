@@ -11,11 +11,13 @@ PUBLIC_FILES = (
     "index.html",
     "command-center.html",
     "intelligence-dashboard.html",
+    "trade-journal-almanac.html",
     "research-dashboard.html",
 )
 
 LOCKED_DASHBOARDS = (
     "intelligence-dashboard.html",
+    "trade-journal-almanac.html",
     "research-dashboard.html",
 )
 
@@ -30,7 +32,15 @@ def _sha256(path: Path) -> str:
 
 def _validate_locked_dashboard(path: Path) -> None:
     text = path.read_text(encoding="utf-8")
-    required = ("V38 Private Intelligence", "ciphertext", "PBKDF2", "AES-GCM")
+    placeholder = "Private Dashboard Locked" in text
+    if placeholder:
+        required = (
+            "<title>V38 Private Intelligence</title>",
+            "<h1>Private Dashboard Locked</h1>",
+            'href="index.html"',
+        )
+    else:
+        required = ("V38 Private Intelligence", "ciphertext", "PBKDF2", "AES-GCM")
     missing = [token for token in required if token not in text]
     if missing:
         raise ValueError(f"private dashboard is not a valid encrypted shell: missing {missing}")
@@ -42,6 +52,12 @@ def _validate_locked_dashboard(path: Path) -> None:
         "Research Decision</h1>",
         '"current_rankings"',
         '"model_audit"',
+        "候補選択の検証",
+        "candidate-selection",
+        "holdings_normalized.csv",
+        "window.V38_DATA",
+        '"account_equity_jpy"',
+        '"net_pnl_jpy"',
     )
     leaked = [token for token in forbidden if token in text]
     if leaked:

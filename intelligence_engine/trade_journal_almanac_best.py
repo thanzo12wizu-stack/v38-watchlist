@@ -46,8 +46,11 @@ def _risk_counts(report: JournalReport) -> tuple[int, int, int]:
 def _decision(report: JournalReport, breached: int, near: int, events: int) -> tuple[str, str, str]:
     nq = str(report.nq_color or "UNKNOWN").upper()
     corr_heat = _finite(report.portfolio_risk.get("correlation_adjusted_heat"))
+    equity_age = report.kpis.get("equity_age_days")
     if breached:
         return "bad", "撤退確認を優先", f"Stop逸脱{breached}銘柄。新規発注より既存ポジションを処理"
+    if equity_age is not None and _finite(equity_age) > 7:
+        return "bad", "資産データ要更新", f"最終口座評価から{int(_finite(equity_age))}日経過"
     if nq in {"RED", "UNKNOWN"}:
         return "bad", "新規発注停止", "市場ゲートが赤または取得不能"
     if nq == "YELLOW":
@@ -77,6 +80,9 @@ html:not(.js) .tab-panel.active{display:block}
 html:not(.js) .tab-panel:target{display:block}
 html:not(.js):has(.tab-panel:target) .tab-panel.active:not(:target){display:none}
 #holdings-more[hidden]{display:none}
+.pair-row{display:grid;grid-template-columns:94px minmax(0,1fr) 34px;gap:7px;align-items:center;padding:6px 0;font-size:9px}.pair-row+.pair-row{border-top:1px solid var(--line)}.pair-track{height:6px;background:var(--bg-alt);border-radius:99px;overflow:hidden}.pair-track i{display:block;height:100%;background:var(--accent);border-radius:99px}.pair-row strong{text-align:right}
+.dd-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,.7fr) auto;gap:7px;align-items:center;padding:7px 0}.dd-row+.dd-row{border-top:1px solid var(--line)}.dd-row div:first-child b{display:block;font-size:12px}.dd-row small,.dd-row span{display:block;color:var(--muted);font-size:7px}.dd-row div:not(:first-child) b{font-size:9px}.dd-row em{font-style:normal;font-size:7px;font-weight:800;color:var(--good)}.dd-row em.active-dd{color:var(--bad)}
+.selection-row{display:grid;grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,.75fr));gap:6px;align-items:center;padding:7px 0}.selection-row+.selection-row{border-top:1px solid var(--line)}.selection-row div:first-child b{display:block;font-size:9px}.selection-row small,.selection-row span{display:block;color:var(--muted);font-size:7px}.selection-row div:not(:first-child) b{font-size:9px}
 '''
 
 _ENHANCEMENT_JS = r'''
@@ -160,8 +166,8 @@ def _enhance(document: str, report: JournalReport) -> str:
     if count != 1:
         raise ValueError("Almanac risk metrics were not found")
 
-    marker = '<div id="holdings-cards"></div></div></section>'
-    replacement = '<div id="holdings-cards"></div><button class="more-btn" id="holdings-more">残りを表示</button></div></section>'
+    marker = '<div id="holdings-cards"></div>'
+    replacement = '<div id="holdings-cards"></div><button class="more-btn" id="holdings-more">残りを表示</button>'
     if marker not in document:
         raise ValueError("Almanac holdings container was not found")
     document = document.replace(marker, replacement, 1)
