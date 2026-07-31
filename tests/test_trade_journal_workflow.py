@@ -10,6 +10,23 @@ def test_operational_workflows_are_preserved() -> None:
     }
 
 
+def test_dashboard_push_cannot_publish_feature_branch_builds_to_main() -> None:
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    trigger_block = workflow.split("permissions:", 1)[0]
+
+    assert "push:\n    branches:\n      - main" in trigger_block
+
+
+def test_encrypted_state_changes_trigger_intelligence_rebuild() -> None:
+    workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
+    trigger_block = workflow.split("permissions:", 1)[0]
+    push_block = trigger_block.split("  push:", 1)[1].split("  workflow_dispatch:", 1)[0]
+
+    assert '"private/intelligence-state.enc.json"' in push_block
+    assert '"private/trade-journal-state.enc.json"' in push_block
+    assert '"private/research-*.enc.json"' in push_block
+
+
 def test_trade_journal_runs_inside_existing_intelligence_workflow() -> None:
     workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
 
