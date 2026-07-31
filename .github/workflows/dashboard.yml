@@ -10,6 +10,8 @@ on:
     paths:
       - 'sar_state.txt'
       - 'equity.csv'
+      - 'build_dashboard.py'
+      - '.github/workflows/dashboard.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -37,11 +39,20 @@ jobs:
           V38_OUT_HTML: command-center.html
           V38_MKTCAP_JSON: mktcap.json
           V38_TREND_JSON: trend_history.json
+          V38_LOG_CSV: daily_log.csv
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           V38_FRED_CACHE: fred_cache.json
           V38_STATE_JSON: state.json
           V38_EQUITY_CSV: equity.csv
         run: python build_dashboard.py
+      - name: Report persistence result
+        shell: bash
+        run: |
+          if [[ -s commit_manifest.json ]]; then
+            cat commit_manifest.json
+          else
+            echo '::warning::commit_manifest.json was not generated'
+          fi
       - name: Commit updated dashboard + caches
         shell: bash
         run: |
@@ -49,7 +60,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add command-center.html
-          git add mktcap.json trend_history.json fred_cache.json state.json || true
+          git add mktcap.json trend_history.json fred_cache.json state.json daily_log.csv commit_manifest.json || true
 
           if git diff --staged --quiet; then
             echo "No dashboard changes to commit"

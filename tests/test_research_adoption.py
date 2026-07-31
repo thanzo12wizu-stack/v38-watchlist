@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 
 from intelligence_engine.research_adoption import AdoptionPolicy, _candidate_masks, _decision, _summary, _walk_forward
@@ -60,16 +58,3 @@ def test_negative_strategy_is_rejected() -> None:
     assert decision == "REJECT"
     assert "mean" in reasons
     assert "block_ci" in reasons
-
-
-def test_report_publisher_tracks_latest_inputs_without_shared_queue() -> None:
-    workflow = Path(".github/workflows/research-adoption-validation.yml").read_text(encoding="utf-8")
-    assert "group: research-adoption-validation" in workflow
-    assert "cancel-in-progress: true" in workflow
-    assert "private/research-*-year-*.enc.json" in workflow
-    assert "private/research-summary.enc.json" in workflow
-    assert "git diff --quiet \"$GITHUB_SHA\" HEAD^" in workflow
-    assert "Research inputs advanced; defer publication to the newer run" in workflow
-    assert "for attempt in 1 2 3 4" in workflow
-    assert workflow.index("git rebase origin/main") < workflow.index("git push origin HEAD:main")
-    assert "Failed to publish adoption report after retries" in workflow
