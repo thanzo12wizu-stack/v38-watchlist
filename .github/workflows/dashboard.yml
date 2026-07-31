@@ -7,6 +7,8 @@ on:
     # 昼: JST 13時 = UTC 4時（同じくUTC火〜土）。夏時間の取りこぼし・朝のFRED障害を埋める確認用。
     - cron: '0 4 * * 2-6'
   push:
+    branches:
+      - main
     paths:
       - 'sar_state.txt'
       - 'equity.csv'
