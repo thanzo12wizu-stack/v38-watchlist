@@ -1,11 +1,13 @@
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 from intelligence_engine.trade_journal_almanac_demo15 import build_demo15
 from intelligence_engine.trade_journal_almanac_best import _decision
-from intelligence_engine.trade_journal_almanac_run import run
+from intelligence_engine import trade_journal_almanac_run as almanac_runner
+from intelligence_engine.trade_journal_almanac_run import _log_safe_summary, run
 from intelligence_engine.trade_journal import JournalInput, analyse_journal
 
 
@@ -105,6 +107,66 @@ def test_live_runner_treats_empty_holdings_csv_as_zero_positions(tmp_path: Path)
     assert summary["readiness"]["connected_rows"]["holdings"] == 0
     assert output.joinpath("index.html").exists()
     assert output.joinpath("summary.json").exists()
+
+
+def test_actions_log_summary_excludes_private_financial_data() -> None:
+    private_result = {
+        "variant": "almanac-sidecar",
+        "data_status": "PARTIAL",
+        "account_equity_jpy": 7_654_321,
+        "cash_jpy": 7_654_321,
+        "kpis": {"net_pnl_jpy": 123_456},
+        "holdings": [{"ticker": "PRIVATE"}],
+        "readiness": {
+            "account_equity_jpy": 7_654_321,
+            "connected_rows": {"trades": 3, "holdings": 1},
+            "equity_as_of": "2026-08-03",
+            "equity_age_days": 1,
+            "stale_equity": False,
+        },
+        "output_dir": "/tmp/trade-journal-almanac",
+    }
+
+    safe = _log_safe_summary(private_result)
+    serialized = json.dumps(safe)
+
+    assert safe["status"] == "PASS"
+    assert safe["data_status"] == "PARTIAL"
+    assert safe["equity_as_of"] == "2026-08-03"
+    assert "7654321" not in serialized
+    assert "123456" not in serialized
+    assert "PRIVATE" not in serialized
+    assert "connected_rows" not in safe
+
+
+def test_cli_prints_only_log_safe_summary(monkeypatch, capsys, tmp_path: Path) -> None:
+    private_result = {
+        "variant": "almanac-sidecar",
+        "data_status": "PARTIAL",
+        "account_equity_jpy": 8_765_432,
+        "kpis": {"net_pnl_jpy": 234_567},
+        "holdings": [{"ticker": "PRIVATE"}],
+        "readiness": {
+            "account_equity_jpy": 8_765_432,
+            "connected_rows": {"trades": 3, "holdings": 1},
+            "equity_as_of": "2026-08-03",
+            "equity_age_days": 1,
+            "stale_equity": False,
+        },
+        "output_dir": str(tmp_path),
+    }
+    monkeypatch.setattr(almanac_runner, "run", lambda **_: private_result)
+    monkeypatch.setattr(sys, "argv", ["trade-journal-almanac", "--output", str(tmp_path)])
+
+    almanac_runner.main()
+
+    payload = json.loads(capsys.readouterr().out)
+    serialized = json.dumps(payload)
+    assert payload["status"] == "PASS"
+    assert payload["equity_as_of"] == "2026-08-03"
+    assert "8765432" not in serialized
+    assert "234567" not in serialized
+    assert "PRIVATE" not in serialized
 
 
 def test_stale_equity_blocks_open_decision() -> None:

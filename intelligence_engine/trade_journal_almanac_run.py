@@ -138,6 +138,21 @@ def run(
     return summary
 
 
+def _log_safe_summary(result: dict[str, Any]) -> dict[str, Any]:
+    """Return operational status that is safe for public Actions logs."""
+    readiness = result.get("readiness")
+    readiness = readiness if isinstance(readiness, dict) else {}
+    return {
+        "status": "PASS",
+        "variant": result.get("variant"),
+        "data_status": result.get("data_status"),
+        "equity_as_of": readiness.get("equity_as_of"),
+        "equity_age_days": readiness.get("equity_age_days"),
+        "stale_equity": readiness.get("stale_equity"),
+        "output_dir": result.get("output_dir"),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="V38 Trade Journal Almanac sidecar")
     parser.add_argument("--input", default="data/trade_journal")
@@ -168,7 +183,7 @@ def main() -> None:
         demo=args.demo,
         require_live_data=args.require_live_data,
     )
-    print(json.dumps({"status": "PASS", **result}, ensure_ascii=False, allow_nan=False))
+    print(json.dumps(_log_safe_summary(result), ensure_ascii=False, allow_nan=False))
 
 
 if __name__ == "__main__":
