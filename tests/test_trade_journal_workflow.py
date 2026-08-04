@@ -54,3 +54,21 @@ def test_public_mirror_tracks_locked_trade_journal_entrypoint() -> None:
 
     assert '"trade-journal-almanac.html"' in workflow
     assert 'href="trade-journal-almanac.html"' in hub
+
+
+def test_intelligence_build_calls_existing_publication_workflow() -> None:
+    intelligence = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
+    publication = Path(".github/workflows/publish-public-site.yml").read_text(encoding="utf-8")
+
+    assert "  workflow_call: {}" in publication
+    assert "  publish-public-site:" in intelligence
+    assert "    needs: build" in intelligence
+    assert "    uses: ./.github/workflows/publish-public-site.yml" in intelligence
+    assert "    secrets: inherit" in intelligence
+
+
+def test_publication_manifest_uses_checked_out_main_commit() -> None:
+    workflow = Path(".github/workflows/publish-public-site.yml").read_text(encoding="utf-8")
+
+    assert 'source_commit="$(git rev-parse HEAD)"' in workflow
+    assert '--source-commit "$source_commit"' in workflow

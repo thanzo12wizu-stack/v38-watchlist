@@ -12,6 +12,7 @@ on:
       - "scripts/privacy_audit.py"
       - ".github/workflows/publish-public-site.yml"
   workflow_dispatch: {}
+  workflow_call: {}
 
 permissions:
   contents: read
@@ -40,7 +41,14 @@ jobs:
           python scripts/privacy_audit.py --root . --output /tmp/privacy-audit-status.json
           cat /tmp/privacy-audit-status.json
       - name: Export allowlisted public artifacts
-        run: python scripts/export_public_site.py --root . --output /tmp/v38-public-site --source-commit "${GITHUB_SHA}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit="$(git rev-parse HEAD)"
+          python scripts/export_public_site.py \
+            --root . \
+            --output /tmp/v38-public-site \
+            --source-commit "$source_commit"
       - name: Validate deployment configuration
         id: config
         shell: bash

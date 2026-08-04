@@ -551,3 +551,9 @@ jobs:
           done
           echo "Failed to push encrypted intelligence outputs after 3 attempts"
           exit 1
+
+  publish-public-site:
+    if: github.event_name != 'pull_request'
+    needs: build
+    uses: ./.github/workflows/publish-public-site.yml
+    secrets: inherit
