@@ -27,6 +27,12 @@ def test_encrypted_state_changes_trigger_intelligence_rebuild() -> None:
     assert '"private/research-*.enc.json"' in push_block
 
 
+def test_intelligence_workflow_supports_explicit_maintenance_skip() -> None:
+    workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
+
+    assert "!contains(github.event.head_commit.message, '[skip intelligence]')" in workflow
+
+
 def test_trade_journal_runs_inside_existing_intelligence_workflow() -> None:
     workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
 
