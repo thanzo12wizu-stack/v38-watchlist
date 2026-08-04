@@ -40,6 +40,16 @@ def test_five_year_research_timeout_allows_incremental_run_to_finish() -> None:
     assert step.lstrip().startswith("timeout-minutes: 90")
 
 
+def test_priority_ticker_list_is_not_written_to_public_actions_logs() -> None:
+    workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
+    step = workflow.split("- name: Build priority external ticker list", 1)[1].split(
+        "- name: Refresh candidate external data first", 1
+    )[0]
+
+    assert "print(f'Priority external tickers: {len(ordered)}')" in step
+    assert "print(','.join(ordered[:50]))" not in step
+
+
 def test_trade_journal_runs_inside_existing_intelligence_workflow() -> None:
     workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
 

@@ -340,7 +340,6 @@ jobs:
           target = Path('/tmp/external-priority.csv')
           target.write_text('ticker\n' + '\n'.join(ordered) + ('\n' if ordered else ''), encoding='utf-8')
           print(f'Priority external tickers: {len(ordered)}')
-          print(','.join(ordered[:50]))
           PY
       - name: Refresh candidate external data first
         continue-on-error: true
