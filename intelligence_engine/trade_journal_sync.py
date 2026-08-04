@@ -97,14 +97,15 @@ def _positions_to_holdings(positions: list[dict[str, Any]], account_equity: floa
         if entry_price is None and pd.notna(gain_pct) and 1 + float(gain_pct) / 100 > 0:
             entry_price = current_price / (1 + float(gain_pct) / 100)
         entry_price = entry_price or current_price
-        synthetic_fx = market_value / current_price if current_price else 1.0
+        shares = _positive_float(item.get("shares")) or 1.0
+        synthetic_fx = market_value / (current_price * shares) if current_price and shares else 1.0
         held_days = pd.to_numeric(pd.Series([item.get("held_days") or item.get("held_sessions")]), errors="coerce").iloc[0]
         entry_date = as_of - pd.offsets.BDay(int(held_days)) if pd.notna(held_days) else pd.NaT
         risk_pct = pd.to_numeric(pd.Series([item.get("risk_contribution_pct")]), errors="coerce").iloc[0]
         planned_loss = account_equity * float(risk_pct) / 100 if pd.notna(risk_pct) else None
         rows.append({
             "ticker": ticker,
-            "quantity": 1.0,
+            "quantity": shares,
             "entry_price": entry_price,
             "current_price": current_price,
             "fx_to_jpy": synthetic_fx,
@@ -114,8 +115,21 @@ def _positions_to_holdings(positions: list[dict[str, Any]], account_equity: floa
             "industry": item.get("industry") or "UNKNOWN",
             "theme": item.get("theme") or "UNKNOWN",
             "stop_price": item.get("stop"),
+            "stop_method": item.get("stop_method") or "21EMA_LOW",
+            "stop_ema21_low": item.get("stop_ema21_low"),
+            "stop_sma10": item.get("stop_sma10"),
             "entry_date": entry_date.date().isoformat() if pd.notna(entry_date) else "",
             "setup": item.get("setup") or item.get("entry_stage") or item.get("strategy") or "UNKNOWN",
+            "adr_pct": item.get("adr_pct"),
+            "entry_stage": item.get("entry_stage") or 2,
+            "entry_price_1": item.get("entry_price_1"),
+            "entry_price_2": item.get("entry_price_2"),
+            "shares_1": item.get("shares_1"),
+            "shares_2": item.get("shares_2"),
+            "partial_taken": item.get("partial_taken", False),
+            "partial_target_pct": item.get("partial_target_pct", .25),
+            "partial_exit_fraction": item.get("partial_exit_fraction", .25),
+            "capitulation_status": item.get("capitulation_status") or "NONE",
             "nq_color": nq_color,
             "event_risk": item.get("event_risk", ""),
         })

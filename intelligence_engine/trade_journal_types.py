@@ -19,7 +19,10 @@ TRADE_COLUMNS = (
 )
 HOLDING_COLUMNS = (
     "ticker", "quantity", "entry_price", "current_price", "fx_to_jpy", "sector", "industry",
-    "theme", "stop_price", "entry_date", "setup", "nq_color", "event_risk",
+    "theme", "stop_price", "entry_date", "setup", "nq_color", "event_risk", "adr_pct",
+    "stop_method", "stop_ema21_low", "stop_sma10", "entry_stage", "entry_price_1",
+    "entry_price_2", "shares_1", "shares_2", "partial_taken", "partial_target_pct",
+    "partial_exit_fraction", "capitulation_status",
 )
 EQUITY_COLUMNS = ("date", "equity_jpy", "cash_jpy", "deposits_jpy", "withdrawals_jpy")
 CANDIDATE_COLUMNS = (

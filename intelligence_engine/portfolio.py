@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-PORTFOLIO_POLICY_VERSION = "2.2.0"
+PORTFOLIO_POLICY_VERSION = "2.3.0"
 DEFAULT_POSITION_WEIGHT = 0.08
 MAX_POSITIONS = 6
 MARKET_EXPOSURE_CAP = {"BLUE": 1.00, "GREEN": 0.75, "YELLOW": 0.35, "RED": 0.00}
@@ -21,6 +21,7 @@ def load_positions(path: Path) -> pd.DataFrame:
         "ticker", "weight", "shares", "cost_basis", "entry_date", "stop_method",
         "entry_stage", "first_pivot_date", "second_pivot_date", "partial_taken",
         "entry_price_1", "entry_price_2", "shares_1", "shares_2", "strategy",
+        "capitulation_status",
     ]
     if not path.exists():
         return pd.DataFrame(columns=cols)
@@ -42,6 +43,9 @@ def load_positions(path: Path) -> pd.DataFrame:
         "shares_1": ("shares_1", "first_shares", "1st_shares"),
         "shares_2": ("shares_2", "second_shares", "2nd_shares"),
         "strategy": ("strategy", "strat", "戦略"),
+        "capitulation_status": (
+            "capitulation_status", "climax_status", "selloff_status", "セリクラ",
+        ),
     }
     out = pd.DataFrame(index=frame.index)
     for target, names in aliases.items():
@@ -54,6 +58,15 @@ def load_positions(path: Path) -> pd.DataFrame:
     out["entry_stage"] = pd.to_numeric(out["entry_stage"], errors="coerce").fillna(2).clip(1, 2)
     out["partial_taken"] = _bool_series(out["partial_taken"])
     out["strategy"] = out["strategy"].fillna("swing").astype(str).str.lower()
+    capitulation = out["capitulation_status"].fillna("").astype(str).str.strip().str.upper()
+    out["capitulation_status"] = np.select(
+        [
+            capitulation.isin({"WAIT", "WAITING", "PENDING", "待ち", "セリクラ待ち"}),
+            capitulation.isin({"DONE", "COMPLETED", "YES", "TRUE", "1", "済", "済み", "セリクラ済", "セリクラ済み"}),
+        ],
+        ["WAITING", "DONE"],
+        default="NONE",
+    )
 
     first_value = out["entry_price_1"] * out["shares_1"]
     second_value = out["entry_price_2"] * out["shares_2"]
@@ -179,6 +192,8 @@ def build_portfolio_doctor(
         method = str(position.get("stop_method") or "21EMA_LOW").upper()
         raw_stop = row.get("stop_sma10") if "10" in method else row.get("stop_ema21_low")
         stop = pd.to_numeric(raw_stop, errors="coerce")
+        stop_ema21_low = pd.to_numeric(row.get("stop_ema21_low"), errors="coerce")
+        stop_sma10 = pd.to_numeric(row.get("stop_sma10"), errors="coerce")
         gain = float(price / cost - 1) if pd.notna(price) and pd.notna(cost) and cost else None
         partial_due = bool(gain is not None and gain >= .25 and not bool(position.get("partial_taken")))
         if bool(position.get("partial_taken")) and pd.notna(cost):
@@ -217,7 +232,8 @@ def build_portfolio_doctor(
         if action == "HOLD" and stage == 1 and row.get("setup") in {"PULLBACK", "PRE_BREAKOUT"} and gate in {"ALLOW", "SELECTIVE"}:
             action = "ADD"
             reasons.append("second_half_candidate")
-        if partial_due:
+        if partial_due and action != "EXIT":
+            action = "REDUCE"
             reasons.append("take_25pct_partial")
 
         weight = float(position.get("weight") or DEFAULT_POSITION_WEIGHT)
@@ -232,6 +248,11 @@ def build_portfolio_doctor(
                 "entry_stage": stage,
                 "price": None if pd.isna(price) else float(price),
                 "cost_basis": None if pd.isna(cost) else float(cost),
+                "shares": None if pd.isna(position.get("shares")) else float(position.get("shares")),
+                "entry_price_1": None if pd.isna(position.get("entry_price_1")) else float(position.get("entry_price_1")),
+                "entry_price_2": None if pd.isna(position.get("entry_price_2")) else float(position.get("entry_price_2")),
+                "shares_1": None if pd.isna(position.get("shares_1")) else float(position.get("shares_1")),
+                "shares_2": None if pd.isna(position.get("shares_2")) else float(position.get("shares_2")),
                 "gain_pct": None if gain is None else round(gain * 100, 2),
                 "held_days": held,
                 "held_sessions": held,
@@ -244,10 +265,15 @@ def build_portfolio_doctor(
                 "adr_pct": None if pd.isna(adr) else float(adr),
                 "stop_method": method,
                 "stop": None if pd.isna(stop) else float(stop),
+                "stop_ema21_low": None if pd.isna(stop_ema21_low) else float(stop_ema21_low),
+                "stop_sma10": None if pd.isna(stop_sma10) else float(stop_sma10),
                 "stop_distance_pct": None if stop_distance is None else round(stop_distance, 2),
                 "risk_contribution_pct": round(risk_contribution, 3),
                 "partial_take_due": partial_due,
                 "partial_taken": bool(position.get("partial_taken")),
+                "partial_target_pct": .25,
+                "partial_exit_fraction": .25,
+                "capitulation_status": str(position.get("capitulation_status") or "NONE"),
                 "action": action,
                 "reasons": reasons or ["trail_maintained"],
             }

@@ -18,7 +18,10 @@ def _write_index(root: Path) -> None:
                     "ticker": "SNDK", "weight": 0.08, "price": 203.0, "cost_basis": 186.0,
                     "gain_pct": 9.14, "held_days": 12, "risk_contribution_pct": 0.42,
                     "sector": "Technology", "theme": "Memory", "stop": 194.0,
-                    "entry_stage": 2, "strategy": "swing",
+                    "stop_method": "10MA", "stop_ema21_low": 192.0, "stop_sma10": 194.0,
+                    "adr_pct": 4.2, "entry_stage": 2, "entry_price_1": 180.0,
+                    "entry_price_2": 192.0, "shares_1": 10, "shares_2": 10,
+                    "partial_taken": False, "capitulation_status": "WAITING", "strategy": "swing",
                 }
             ],
         },
@@ -40,6 +43,11 @@ def test_sync_command_center_writes_live_inputs(tmp_path: Path) -> None:
     assert holdings.loc[0, "ticker"] == "SNDK"
     assert holdings.loc[0, "market_value_jpy"] == 800_000
     assert holdings.loc[0, "planned_loss_jpy"] == 42_000
+    assert holdings.loc[0, "adr_pct"] == 4.2
+    assert holdings.loc[0, "stop_method"] == "10MA"
+    assert holdings.loc[0, "stop_sma10"] == 194.0
+    assert holdings.loc[0, "entry_price_2"] == 192.0
+    assert holdings.loc[0, "capitulation_status"] == "WAITING"
     candidates = pd.read_csv(output / "candidates.csv")
     assert candidates.loc[0, "ticker"] == "MU"
     assert bool(candidates.loc[0, "selected"])

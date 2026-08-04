@@ -30,6 +30,15 @@ def _assert_almanac(output: Path) -> None:
     assert "Drawdown Episodes" in html
     assert "候補選択の検証" in html
     assert "相関上位ペア" in html
+    assert "ポートフォリオADR%" in html
+    assert 'id="copy-holdings"' in html
+    assert 'id="sizing-calculator"' in html
+    assert 'id="sz-entry1"' in html
+    assert 'id="sz-entry2"' in html
+    assert "21EMA Low" in html
+    assert "10MA" in html
+    assert "+25%部分利確" in html
+    assert "セリクラ待ち" in html
     assert output.joinpath("daily_card.png").stat().st_size > 0
     assert output.joinpath("portfolio_card.png").stat().st_size > 0
 

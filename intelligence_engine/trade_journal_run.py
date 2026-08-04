@@ -282,7 +282,7 @@ def write_templates(input_dir: Path) -> None:
     templates = {
         "trades.csv": "trade_id,ticker,side,entry_date,exit_date,entry_price,exit_price,quantity,point_value,fx_to_jpy,fees_jpy,taxes_jpy,stop_price,target_price,setup,nq_color,sector,industry,theme,entry_reason,exit_reason,rule_followed,mistake_type,notes,mfe_pct,mae_pct\n",
         "executions.csv": "execution_id,position_id,ticker,side,action,executed_at,price,quantity,point_value,fx_to_jpy,fees_jpy,taxes_jpy,stop_price,target_price,setup,nq_color,sector,industry,theme,entry_reason,exit_reason,rule_followed,mistake_type,notes\n",
-        "holdings.csv": "ticker,quantity,entry_price,current_price,fx_to_jpy,sector,industry,theme,stop_price,entry_date,setup,nq_color,event_risk\n",
+        "holdings.csv": "ticker,quantity,entry_price,current_price,fx_to_jpy,sector,industry,theme,adr_pct,stop_method,stop_price,stop_ema21_low,stop_sma10,entry_date,setup,nq_color,event_risk,entry_stage,entry_price_1,entry_price_2,shares_1,shares_2,partial_taken,partial_target_pct,partial_exit_fraction,capitulation_status\n",
         "equity.csv": "date,equity_jpy,cash_jpy,deposits_jpy,withdrawals_jpy\n",
         "cash_flows.csv": "flow_id,date,type,amount_jpy,notes\n",
         "candidates.csv": "date,ticker,rank,setup,nq_color,sector,theme,selected,forward_5d_return,forward_10d_return,qqq_excess_10d,mfe_10d,mae_10d\n",

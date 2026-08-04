@@ -76,22 +76,78 @@ def normalise_trades(frame: pd.DataFrame) -> pd.DataFrame:
 
 def normalise_holdings(frame: pd.DataFrame, account_equity_jpy: float) -> pd.DataFrame:
     if frame.empty:
-        return pd.DataFrame(columns=(*HOLDING_COLUMNS, "market_value_jpy", "cost_basis_jpy", "unrealized_pnl_jpy", "unrealized_pct", "allocation", "planned_loss_jpy", "heat_fraction", "hold_days"))
+        return pd.DataFrame(columns=(
+            *HOLDING_COLUMNS, "market_value_jpy", "cost_basis_jpy", "unrealized_pnl_jpy",
+            "unrealized_pct", "allocation", "planned_loss_jpy", "heat_fraction", "hold_days",
+            "partial_take_due", "partial_target_price",
+        ))
     out = _ensure_columns(frame, HOLDING_COLUMNS)
-    aliases = {"symbol": "ticker", "shares": "quantity", "price": "current_price", "avg_price": "entry_price", "market_color": "nq_color"}
+    aliases = {
+        "symbol": "ticker", "shares": "quantity", "price": "current_price",
+        "avg_price": "entry_price", "cost_basis": "entry_price", "market_color": "nq_color",
+        "adr": "adr_pct", "average_daily_range_pct": "adr_pct", "trail_method": "stop_method",
+        "stop_21ema_low": "stop_ema21_low", "ema21_low": "stop_ema21_low",
+        "stop_10ma": "stop_sma10", "sma10": "stop_sma10",
+        "first_entry_price": "entry_price_1", "second_entry_price": "entry_price_2",
+        "first_shares": "shares_1", "second_shares": "shares_2",
+        "partial_profit_done": "partial_taken", "partial_profit_taken": "partial_taken",
+        "climax_status": "capitulation_status", "selloff_status": "capitulation_status",
+        "撤退方法": "stop_method", "セリクラ": "capitulation_status",
+    }
     for src, dst in aliases.items():
         if src in out and out[dst].isna().all():
             out[dst] = out[src]
     out["ticker"] = out["ticker"].map(lambda x: _text(x, "").upper())
     out = out[out["ticker"] != ""].copy()
-    for col, default in (("quantity", 0), ("entry_price", 0), ("current_price", 0), ("fx_to_jpy", 1), ("stop_price", np.nan)):
+    for col, default in (
+        ("quantity", 0), ("entry_price", 0), ("current_price", 0), ("fx_to_jpy", 1),
+        ("stop_price", np.nan), ("stop_ema21_low", np.nan), ("stop_sma10", np.nan),
+        ("adr_pct", np.nan), ("entry_price_1", np.nan), ("entry_price_2", np.nan),
+        ("shares_1", np.nan), ("shares_2", np.nan), ("entry_stage", np.nan),
+        ("partial_target_pct", .25), ("partial_exit_fraction", .25),
+    ):
         out[col] = pd.to_numeric(out[col], errors="coerce").fillna(default) if not (isinstance(default, float) and math.isnan(default)) else pd.to_numeric(out[col], errors="coerce")
+
+    tranche_shares = out["shares_1"].fillna(0).clip(lower=0) + out["shares_2"].fillna(0).clip(lower=0)
+    tranche_value = (
+        out["entry_price_1"].fillna(0) * out["shares_1"].fillna(0).clip(lower=0)
+        + out["entry_price_2"].fillna(0) * out["shares_2"].fillna(0).clip(lower=0)
+    )
+    tranche_entry = tranche_value / tranche_shares.replace(0, np.nan)
+    out["quantity"] = out["quantity"].where(out["quantity"] > 0, tranche_shares)
+    out["entry_price"] = out["entry_price"].where(out["entry_price"] > 0, tranche_entry)
+
+    method_text = out["stop_method"].map(lambda value: _text(value, "21EMA_LOW").upper())
+    out["stop_method"] = np.where(method_text.str.contains("10"), "10MA", "21EMA_LOW")
+    selected_stop = out["stop_ema21_low"].where(out["stop_method"].eq("21EMA_LOW"), out["stop_sma10"])
+    out["stop_price"] = selected_stop.where(selected_stop.notna() & selected_stop.gt(0), out["stop_price"])
+
+    out["entry_stage"] = out["entry_stage"].where(out["entry_stage"].isin([1, 2]))
+    has_first_tranche = out["entry_price_1"].gt(0) | out["shares_1"].fillna(0).gt(0)
+    has_second_tranche = out["entry_price_2"].gt(0) | out["shares_2"].fillna(0).gt(0)
+    inferred_stage = np.where(has_second_tranche, 2, np.where(has_first_tranche, 1, 2))
+    out["entry_stage"] = out["entry_stage"].fillna(pd.Series(inferred_stage, index=out.index)).astype(int)
+    out["partial_taken"] = out["partial_taken"].map(_bool)
+    for column in ("partial_target_pct", "partial_exit_fraction"):
+        out[column] = out[column].where(out[column].abs() <= 1, out[column] / 100.0).clip(lower=0, upper=1)
+
+    def normalise_capitulation(value: object) -> str:
+        text = _text(value, "NONE").strip().upper().replace(" ", "_")
+        if text in {"WAIT", "WAITING", "PENDING", "待ち", "セリクラ待ち"}:
+            return "WAITING"
+        if text in {"DONE", "COMPLETED", "YES", "TRUE", "1", "済", "済み", "セリクラ済", "セリクラ済み"}:
+            return "DONE"
+        return "NONE"
+
+    out["capitulation_status"] = out["capitulation_status"].map(normalise_capitulation)
     supplied_mv = pd.to_numeric(frame.get("market_value_jpy", pd.Series(index=frame.index, dtype=float)), errors="coerce")
     computed_mv = out["quantity"] * out["current_price"] * out["fx_to_jpy"]
     out["market_value_jpy"] = supplied_mv.reindex(out.index).where(supplied_mv.reindex(out.index).notna(), computed_mv)
     out["cost_basis_jpy"] = out["quantity"] * out["entry_price"] * out["fx_to_jpy"]
     out["unrealized_pnl_jpy"] = out["market_value_jpy"] - out["cost_basis_jpy"]
     out["unrealized_pct"] = out["unrealized_pnl_jpy"] / out["cost_basis_jpy"].replace(0, np.nan)
+    out["partial_target_price"] = out["entry_price"] * (1.0 + out["partial_target_pct"])
+    out["partial_take_due"] = out["unrealized_pct"].ge(out["partial_target_pct"]) & ~out["partial_taken"]
     equity = max(float(account_equity_jpy or 0), 1.0)
     out["allocation"] = out["market_value_jpy"] / equity
     out["planned_loss_jpy"] = (out["current_price"] - out["stop_price"]).abs() * out["quantity"] * out["fx_to_jpy"]

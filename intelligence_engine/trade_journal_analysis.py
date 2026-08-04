@@ -139,7 +139,14 @@ def allocation_table(holdings: pd.DataFrame, column: str) -> pd.DataFrame:
 def correlation_adjusted_heat(holdings: pd.DataFrame, price_returns: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
     if holdings.empty:
         empty = pd.DataFrame()
-        return empty, {"nominal_heat": 0.0, "correlation_adjusted_heat": 0.0, "gross_exposure": 0.0, "largest_cluster": None}
+        return empty, {
+            "nominal_heat": 0.0,
+            "correlation_adjusted_heat": 0.0,
+            "gross_exposure": 0.0,
+            "largest_cluster": None,
+            "portfolio_adr_pct": None,
+            "adr_coverage": 0.0,
+        }
     heat = holdings.set_index("ticker")["heat_fraction"].fillna(0).clip(lower=0)
     tickers = list(heat.index)
     if price_returns.empty:
@@ -166,12 +173,34 @@ def correlation_adjusted_heat(holdings: pd.DataFrame, price_returns: pd.DataFram
     adjusted = float(math.sqrt(max(0.0, vector @ matrix @ vector.T)))
     nominal = float(vector.sum())
     gross = float(holdings["allocation"].sum())
+    adr = pd.to_numeric(
+        holdings.get("adr_pct", pd.Series(index=holdings.index, dtype=float)),
+        errors="coerce",
+    )
+    market_value = pd.to_numeric(holdings["market_value_jpy"], errors="coerce").clip(lower=0)
+    adr_valid = adr.notna() & adr.gt(0) & market_value.gt(0)
+    adr_weight = float(market_value[adr_valid].sum())
+    total_market_value = float(market_value.sum())
+    portfolio_adr = (
+        float(np.average(adr[adr_valid], weights=market_value[adr_valid]))
+        if adr_weight > 0
+        else None
+    )
+    adr_coverage = adr_weight / total_market_value if total_market_value > 0 else 0.0
     cluster = None
     if len(tickers) > 1:
         average_corr = corr.where(~np.eye(len(corr), dtype=bool)).mean(axis=1)
         if average_corr.notna().any():
             cluster = str(average_corr.idxmax())
-    return corr, {"nominal_heat": nominal, "correlation_adjusted_heat": adjusted, "gross_exposure": gross, "largest_cluster": cluster, "method": note}
+    return corr, {
+        "nominal_heat": nominal,
+        "correlation_adjusted_heat": adjusted,
+        "gross_exposure": gross,
+        "largest_cluster": cluster,
+        "portfolio_adr_pct": portfolio_adr,
+        "adr_coverage": adr_coverage,
+        "method": note,
+    }
 
 
 def correlation_pair_table(correlation: pd.DataFrame) -> pd.DataFrame:

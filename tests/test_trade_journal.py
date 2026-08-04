@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from intelligence_engine.trade_journal import JournalInput, JournalRules, analyse_journal, detect_rule_violations, normalise_trades
+from intelligence_engine.trade_journal import (
+    JournalInput,
+    JournalRules,
+    analyse_journal,
+    detect_rule_violations,
+    normalise_holdings,
+    normalise_trades,
+)
 from intelligence_engine.trade_journal_run import _enrich_candidates_from_outcomes, run
 
 
@@ -41,6 +48,41 @@ def test_trade_normalization_uses_point_value_and_costs() -> None:
     assert first["planned_risk_jpy"] == 50
     assert first["r_multiple"] == 3.8
     assert first["hold_days"] == 3
+
+
+def test_holding_operations_normalize_two_entries_trail_partial_and_capitulation() -> None:
+    holdings = pd.DataFrame(
+        [
+            {
+                "ticker": "AAA",
+                "quantity": 0,
+                "entry_price_1": 100,
+                "entry_price_2": 110,
+                "shares_1": 5,
+                "shares_2": 5,
+                "current_price": 132,
+                "fx_to_jpy": 1,
+                "stop_method": "10MA",
+                "stop_price": 90,
+                "stop_ema21_low": 118,
+                "stop_sma10": 121,
+                "adr_pct": 4.5,
+                "partial_taken": False,
+                "capitulation_status": "セリクラ待ち",
+            }
+        ]
+    )
+
+    result = normalise_holdings(holdings, 10_000).iloc[0]
+
+    assert result["quantity"] == 10
+    assert result["entry_price"] == 105
+    assert result["entry_stage"] == 2
+    assert result["stop_method"] == "10MA"
+    assert result["stop_price"] == 121
+    assert result["partial_target_price"] == 131.25
+    assert bool(result["partial_take_due"])
+    assert result["capitulation_status"] == "WAITING"
 
 
 def test_kpis_drawdown_setup_and_regime() -> None:
@@ -101,6 +143,20 @@ def test_correlation_adjusted_heat_respects_correlation() -> None:
     report = analyse_journal(JournalInput(holdings=sample_holdings(), account_equity_jpy=10_000, price_returns=returns), starting_equity_jpy=10_000)
     assert report.portfolio_risk["correlation_adjusted_heat"] > 0
     assert abs(report.portfolio_risk["correlation_adjusted_heat"] - report.portfolio_risk["nominal_heat"]) < 1e-8
+
+
+def test_portfolio_adr_is_market_value_weighted_and_reports_coverage() -> None:
+    holdings = sample_holdings().copy()
+    holdings["adr_pct"] = [4.0, 2.0]
+    report = analyse_journal(
+        JournalInput(holdings=holdings, account_equity_jpy=10_000),
+        starting_equity_jpy=10_000,
+    )
+
+    # AAA market value 1,100 and BBB 960.
+    expected = (1_100 * 4.0 + 960 * 2.0) / (1_100 + 960)
+    assert abs(report.portfolio_risk["portfolio_adr_pct"] - expected) < 1e-10
+    assert report.portfolio_risk["adr_coverage"] == 1.0
 
 
 def test_missing_correlation_data_does_not_reduce_reported_heat() -> None:

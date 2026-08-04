@@ -163,7 +163,7 @@ Command Centerの候補情報だけから、実際に約定した取引を推測
 | `V38_EXECUTIONS_CSV_B64` | `execution_id,position_id,ticker,action,executed_at,price,quantity` | 推奨。分割Entry・部分Exitを約定単位で保持 |
 | `V38_TRADE_JOURNAL_CSV_B64` | `trade_id,ticker,side,entry_date,exit_date,entry_price,exit_price,quantity` | 完結取引を直接投入 |
 | `V38_EQUITY_HISTORY_CSV_B64` | `date,equity_jpy` | 日次総資産。任意で`cash_jpy,deposits_jpy,withdrawals_jpy` |
-| `V38_HOLDINGS_CSV_B64` | `ticker,quantity,entry_price,current_price,fx_to_jpy,stop_price` | 証券口座の実保有をCommand Center推定より優先 |
+| `V38_HOLDINGS_CSV_B64` | `ticker,quantity,entry_price,current_price,fx_to_jpy,stop_price` | 証券口座の実保有をCommand Center推定より優先。任意で`adr_pct,stop_method,stop_ema21_low,stop_sma10,entry_stage,entry_price_1,entry_price_2,shares_1,shares_2,partial_taken,capitulation_status` |
 | `V38_CASH_FLOWS_CSV_B64` | `flow_id,date,type,amount_jpy` | `type`は`DEPOSIT`または`WITHDRAWAL` |
 
 約定CSVでは`side`を`LONG`または`SHORT`で指定できる。省略時は同じ`position_id`のEntryから補完する。`action`はLONGの`BUY / SELL`、SHORTの`SELL / COVER`に加えて`BTO / STC / STO / BTC`を受け付ける。`point_value,fx_to_jpy,fees_jpy,taxes_jpy,stop_price,target_price,setup,nq_color,sector,theme`は任意列。
@@ -181,6 +181,8 @@ PowerShell:
 ```
 
 約定明細は`position_id`単位で集約する。2分割エントリー、複数回の部分利確、手数料、税を一つの完結トレードへまとめ、まだ残玉があるポジションは完結トレード数へ入れない。同じ`execution_id`を再取込しても重複しない。
+
+保有CSVの`stop_method`は`21EMA_LOW`または`10MA`。選択した線と`stop_ema21_low / stop_sma10`がある場合は`stop_price`より優先する。`capitulation_status`は`WAITING / DONE / NONE`（日本語の「待ち」「済み」も可）。`partial_taken=false`のまま建値比+25%へ到達すると、25%部分利確候補として表示する。
 
 Command Center候補は日次履歴として蓄積し、Research Outcomesの10日後結果が確定した時点で自動付与する。実トレードは同一Tickerの直近候補（Entry日まで5日以内）へ結び付け、買った候補と見送った候補を同じ10日窓で比較する。
 

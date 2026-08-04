@@ -24,6 +24,10 @@ def test_mobile_almanac_and_fifteen_position_stress_case(tmp_path: Path) -> None
     assert "Stop距離" in html
     assert "Stop逸脱" in html
     assert "相関調整Heat" in html
+    assert 'id="copy-holdings"' in html
+    assert 'id="sizing-calculator"' in html
+    assert "@media(max-width:390px)" in html
+    assert "ポートフォリオADR%" in html
     assert "さらに20件表示" in html
     assert "Setup × NQ" in html
     assert "入出金調整後の日次口座評価額" in html

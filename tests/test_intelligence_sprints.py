@@ -187,6 +187,7 @@ def test_portfolio_two_stage_cost_exit_and_concentration(tmp_path: Path) -> None
                 "entry_stage": 1,
                 "first_pivot_date": "2026-01-01",
                 "trail_method": "21EMA_LOW",
+                "capitulation_status": "WAITING",
                 "strategy": "swing",
             },
             {
@@ -217,6 +218,51 @@ def test_portfolio_two_stage_cost_exit_and_concentration(tmp_path: Path) -> None
     assert "sector_concentration" in result["warnings"]
     assert "theme_concentration" in result["warnings"]
     assert result["positions_copy"]
+    assert aaa["entry_price_1"] == 10
+    assert aaa["entry_price_2"] == 12
+    assert aaa["stop_ema21_low"] == 10
+    assert aaa["stop_sma10"] == 11
+    assert aaa["capitulation_status"] == "WAITING"
+
+
+def test_portfolio_plus_25_percent_forces_partial_reduce() -> None:
+    positions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAA",
+                "weight": .08,
+                "cost_basis": 100,
+                "entry_stage": 2,
+                "stop_method": "21EMA_LOW",
+                "partial_taken": False,
+            }
+        ]
+    )
+    scored = pd.DataFrame(
+        [
+            {
+                "ticker": "AAA",
+                "price": 126,
+                "stop_ema21_low": 115,
+                "stop_sma10": 117,
+                "adr_pct": 4,
+                "sector": "Tech",
+                "theme": "AI",
+            }
+        ]
+    )
+
+    result = build_portfolio_doctor(
+        positions,
+        scored,
+        {},
+        {"regime": "GREEN", "entry_gate": "ALLOW"},
+    )
+    position = result["positions"][0]
+
+    assert position["action"] == "REDUCE"
+    assert position["partial_take_due"] is True
+    assert "take_25pct_partial" in position["reasons"]
 
 
 def test_dashboard_translates_decision_contract_without_raw_json() -> None:
