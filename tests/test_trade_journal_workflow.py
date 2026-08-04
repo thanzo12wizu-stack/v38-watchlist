@@ -33,6 +33,13 @@ def test_intelligence_workflow_supports_explicit_maintenance_skip() -> None:
     assert "!contains(github.event.head_commit.message, '[skip intelligence]')" in workflow
 
 
+def test_five_year_research_timeout_allows_incremental_run_to_finish() -> None:
+    workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
+    step = workflow.split("- name: Build five-year point-in-time research", 1)[1]
+
+    assert step.lstrip().startswith("timeout-minutes: 90")
+
+
 def test_trade_journal_runs_inside_existing_intelligence_workflow() -> None:
     workflow = Path(".github/workflows/intelligence-engine.yml").read_text(encoding="utf-8")
 
