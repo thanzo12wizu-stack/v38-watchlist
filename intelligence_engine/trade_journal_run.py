@@ -15,11 +15,14 @@ from .trade_journal_render import render_daily_card, render_dashboard, render_po
 
 
 def _read_table(path: Path | None) -> pd.DataFrame:
-    if path is None or not path.exists():
+    if path is None or not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame()
     suffixes = "".join(path.suffixes).lower()
     if suffixes.endswith(".csv"):
-        return pd.read_csv(path)
+        try:
+            return pd.read_csv(path)
+        except pd.errors.EmptyDataError:
+            return pd.DataFrame()
     if suffixes.endswith(".jsonl") or suffixes.endswith(".jsonl.gz"):
         opener = gzip.open if suffixes.endswith(".gz") else open
         rows: list[dict[str, Any]] = []

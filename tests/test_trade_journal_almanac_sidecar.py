@@ -80,6 +80,33 @@ def test_live_runner_refuses_to_present_default_equity_as_real_data(tmp_path: Pa
     assert not (output / "daily_card.png").exists()
 
 
+def test_live_runner_treats_empty_holdings_csv_as_zero_positions(tmp_path: Path) -> None:
+    input_dir = tmp_path / "live-input"
+    input_dir.mkdir()
+    (input_dir / "holdings.csv").write_text("", encoding="utf-8")
+    pd.DataFrame(
+        [
+            {
+                "date": pd.Timestamp.now(tz="Asia/Tokyo").date().isoformat(),
+                "equity_jpy": 7_300_000,
+            }
+        ]
+    ).to_csv(input_dir / "equity.csv", index=False)
+
+    output = tmp_path / "live"
+    summary = run(
+        input_dir=input_dir,
+        output_dir=output,
+        starting_equity_jpy=0,
+        require_live_data=True,
+    )
+
+    assert summary["data_status"] == "PARTIAL"
+    assert summary["readiness"]["connected_rows"]["holdings"] == 0
+    assert output.joinpath("index.html").exists()
+    assert output.joinpath("summary.json").exists()
+
+
 def test_stale_equity_blocks_open_decision() -> None:
     report = analyse_journal(
         JournalInput(
