@@ -62,7 +62,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('intelligence-engine-pr-{0}', github.event.pull_request.number) || 'intelligence-engine-main' }}
