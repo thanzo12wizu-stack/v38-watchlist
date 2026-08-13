@@ -12,7 +12,6 @@ def _safe_tree(root: Path) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command</h1>", encoding="utf-8")
     (root / "intelligence-dashboard.html").write_text(LOCKED_HTML, encoding="utf-8")
-    (root / "trade-journal-almanac.html").write_text(LOCKED_HTML, encoding="utf-8")
     (root / "research-dashboard.html").write_text(LOCKED_HTML, encoding="utf-8")
     private = root / "private"
     private.mkdir()

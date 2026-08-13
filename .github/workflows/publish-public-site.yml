@@ -7,12 +7,10 @@ on:
       - "index.html"
       - "command-center.html"
       - "intelligence-dashboard.html"
-      - "trade-journal-almanac.html"
       - "scripts/export_public_site.py"
       - "scripts/privacy_audit.py"
       - ".github/workflows/publish-public-site.yml"
   workflow_dispatch: {}
-  workflow_call: {}
 
 permissions:
   contents: read
