@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from intelligence_engine.trade_journal_almanac_demo15 import build_demo15
-from intelligence_engine.trade_journal_almanac_best import _decision
-from intelligence_engine import trade_journal_almanac_run as almanac_runner
-from intelligence_engine.trade_journal_almanac_run import _log_safe_summary, run
-from intelligence_engine.trade_journal import JournalInput, analyse_journal
+from kaview.demo import build_demo15
+from kaview.almanac_enhanced import _decision
+import kaview.run as almanac_runner
+from kaview.run import _log_safe_summary, run
+from kaview.journal import JournalInput, analyse_journal
 
 
 def _assert_almanac(output: Path) -> None:

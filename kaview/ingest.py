@@ -708,7 +708,7 @@ def ingest_bundle(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Merge idempotent broker/CSV inputs into Trade Journal state")
     parser.add_argument("--import-dir", type=Path, default=Path("/tmp/trade-journal-import"))
-    parser.add_argument("--state-dir", type=Path, default=Path("data/trade_journal"))
+    parser.add_argument("--state-dir", type=Path, default=Path("kaview/data"))
     parser.add_argument(
         "--account-history",
         type=Path,

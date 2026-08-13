@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from intelligence_engine.trade_journal import (
+from kaview.journal import (
     JournalInput,
     JournalRules,
     analyse_journal,
@@ -13,7 +13,8 @@ from intelligence_engine.trade_journal import (
     normalise_holdings,
     normalise_trades,
 )
-from intelligence_engine.trade_journal_run import _enrich_candidates_from_outcomes, run
+from kaview.loader import _enrich_candidates_from_outcomes
+from kaview.run import run
 
 
 def sample_trades() -> pd.DataFrame:

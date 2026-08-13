@@ -9,8 +9,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .trade_journal import JournalReport
-from .trade_journal_almanac import render_dashboard as _render_base
+from .journal import JournalReport
+from .almanac import render_dashboard as _render_base
 
 
 def _finite(value: Any, default: float = 0.0) -> float:
@@ -179,7 +179,7 @@ def _enhance(document: str, report: JournalReport) -> str:
 
 def render_dashboard(report: JournalReport, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    staging = path.parent / ".trade_journal_almanac_base.html"
+    staging = path.parent / ".almanac_base.html"
     _render_base(report, staging)
     document = staging.read_text(encoding="utf-8")
     staging.unlink(missing_ok=True)

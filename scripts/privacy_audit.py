@@ -13,7 +13,6 @@ except ModuleNotFoundError:  # direct execution: python scripts/privacy_audit.py
 FORBIDDEN_CURRENT_PATHS = (
     "data/intelligence",
     "data/external",
-    "data/trade_journal",
     "portfolio.csv",
 )
 

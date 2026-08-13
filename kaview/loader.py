@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import gzip
 import json
 import pickle
@@ -10,8 +9,7 @@ from typing import Any, Iterable, Mapping
 import numpy as np
 import pandas as pd
 
-from .trade_journal import JournalInput, JournalRules, analyse_journal, write_report_data
-from .trade_journal_render import render_daily_card, render_dashboard, render_portfolio_card, write_social_copy
+from .journal import JournalInput, JournalRules
 
 
 def _read_table(path: Path | None) -> pd.DataFrame:
@@ -342,59 +340,3 @@ def load_input(
         account_equity_jpy=account, cash_jpy=cash, nq_color=nq, rules=rules,
         price_returns=_load_price_returns(prices_path), source_notes=source_notes,
     )
-
-
-def run(
-    *, input_dir: Path, output_dir: Path, starting_equity_jpy: float,
-    portfolio_path: Path | None = None, rules_path: Path | None = None,
-    research_root: Path | None = None, prices_path: Path | None = None, demo: bool = False,
-) -> dict[str, Any]:
-    data = load_input(
-        input_dir=input_dir, portfolio_path=portfolio_path, rules_path=rules_path,
-        research_root=research_root, prices_path=prices_path,
-        starting_equity_jpy=starting_equity_jpy, demo=demo,
-    )
-    report = analyse_journal(data, starting_equity_jpy=starting_equity_jpy)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    write_report_data(report, output_dir)
-    render_dashboard(report, output_dir / "index.html")
-    render_daily_card(report, output_dir / "daily_card.png")
-    render_portfolio_card(report, output_dir / "portfolio_card.png")
-    write_social_copy(report, output_dir / "social_post_ja.txt")
-    return report.to_summary_dict()
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="V38 Trade Journal & Portfolio Analytics")
-    parser.add_argument("--input", default="data/trade_journal")
-    parser.add_argument("--output", default="artifacts/trade-journal")
-    parser.add_argument("--starting-equity-jpy", type=float)
-    parser.add_argument("--portfolio")
-    parser.add_argument("--rules", default="config/trade_journal.example.json")
-    parser.add_argument("--research-root", default="data/intelligence/research")
-    parser.add_argument("--prices", default="prices.pkl")
-    parser.add_argument("--demo", action="store_true")
-    parser.add_argument("--init-templates", action="store_true")
-    args = parser.parse_args()
-    if args.init_templates:
-        write_templates(Path(args.input))
-        print(json.dumps({"status": "PASS", "templates": str(Path(args.input))}, ensure_ascii=False))
-        return
-    starting_equity_jpy = (
-        args.starting_equity_jpy
-        if args.starting_equity_jpy is not None
-        else (7_300_000 if args.demo else 0)
-    )
-    result = run(
-        input_dir=Path(args.input), output_dir=Path(args.output), starting_equity_jpy=starting_equity_jpy,
-        portfolio_path=Path(args.portfolio) if args.portfolio else None,
-        rules_path=Path(args.rules) if args.rules and Path(args.rules).exists() else None,
-        research_root=Path(args.research_root) if args.research_root and Path(args.research_root).exists() else None,
-        prices_path=Path(args.prices) if args.prices and Path(args.prices).exists() else None,
-        demo=args.demo,
-    )
-    print(json.dumps({"status": "PASS", **result}, ensure_ascii=False, allow_nan=False))
-
-
-if __name__ == "__main__":
-    main()

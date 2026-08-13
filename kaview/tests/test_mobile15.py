@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from intelligence_engine.trade_journal_demo15 import build_demo15
+from kaview.demo import build_demo15
 
 
 def test_mobile_almanac_and_fifteen_position_stress_case(tmp_path: Path) -> None:

@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from intelligence_engine.trade_journal_data import build_equity_curve
-from intelligence_engine.trade_journal_ingest import executions_to_trades, ingest_bundle
+from kaview.data import build_equity_curve
+from kaview.ingest import executions_to_trades, ingest_bundle
 
 
 def _executions() -> pd.DataFrame:

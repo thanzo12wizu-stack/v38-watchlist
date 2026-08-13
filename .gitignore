@@ -13,3 +13,10 @@
 # Local generated plaintext
 *.full.html
 *.tar.gz
+
+# Standalone Kaview inputs, outputs, and Python caches
+/kaview/data/
+/kaview/artifacts/
+__pycache__/
+*.pyc
+*.egg-info/

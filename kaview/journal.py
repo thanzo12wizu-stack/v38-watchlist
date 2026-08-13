@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .trade_journal_types import JournalInput, JournalReport, JournalRules, _normalise_color
-from .trade_journal_data import build_equity_curve, monthly_return_table, normalise_holdings, normalise_trades
-from .trade_journal_analysis import (
+from .types import JournalInput, JournalReport, JournalRules, _normalise_color
+from .data import build_equity_curve, monthly_return_table, normalise_holdings, normalise_trades
+from .analysis import (
     _group_analysis, _period_return, allocation_table, analyse_candidates,
     build_weekly_review, compute_kpis, correlation_adjusted_heat, correlation_pair_table,
     detect_rule_violations, drawdown_episode_table,

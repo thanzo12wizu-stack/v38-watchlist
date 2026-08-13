@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from intelligence_engine.trade_journal_sync import sync_command_center
+from kaview.sync import sync_command_center
 
 
 def _write_index(root: Path) -> None:

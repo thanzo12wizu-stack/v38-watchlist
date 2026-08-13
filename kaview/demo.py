@@ -7,11 +7,28 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .trade_journal import analyse_journal, write_report_data
-from .trade_journal_almanac_final import render_dashboard
-from .trade_journal_cards import render_daily_card, render_portfolio_card, write_social_copy
-from .trade_journal_demo15 import DEMO_POSITIONS
-from .trade_journal_run import _demo_input
+from .journal import analyse_journal, write_report_data
+from .renderer import render_dashboard
+from .loader import _demo_input
+
+
+DEMO_POSITIONS = [
+    ("SNDK", 203.0, "Technology", "Memory", "2nd Pivot"),
+    ("MU", 178.0, "Technology", "Memory", "21EMA Pullback"),
+    ("NVDA", 188.0, "Technology", "AI Compute", "Breakout"),
+    ("AVGO", 402.0, "Technology", "AI Networking", "21EMA Pullback"),
+    ("CRDO", 146.0, "Technology", "AI Networking", "2nd Pivot"),
+    ("VRT", 142.0, "Industrials", "Data Center Power", "Breakout"),
+    ("APP", 512.0, "Communication Services", "AdTech", "Pocket Pivot"),
+    ("PLTR", 168.0, "Technology", "AI Software", "21EMA Pullback"),
+    ("HOOD", 119.0, "Financials", "Digital Brokerage", "Pocket Pivot"),
+    ("FCX", 57.0, "Materials", "Copper", "21EMA Pullback"),
+    ("STLD", 167.0, "Materials", "Steel", "Breakout"),
+    ("WDC", 124.0, "Technology", "Storage", "2nd Pivot"),
+    ("CEG", 362.0, "Utilities", "Nuclear Power", "Breakout"),
+    ("ETN", 418.0, "Industrials", "Grid Equipment", "21EMA Pullback"),
+    ("UBER", 108.0, "Industrials", "Mobility", "Pocket Pivot"),
+]
 
 
 def build_demo15(starting_equity_jpy: float, output_dir: Path) -> dict[str, object]:
@@ -68,9 +85,6 @@ def build_demo15(starting_equity_jpy: float, output_dir: Path) -> dict[str, obje
     output_dir.mkdir(parents=True, exist_ok=True)
     write_report_data(report, output_dir)
     render_dashboard(report, output_dir / "index.html")
-    render_daily_card(report, output_dir / "daily_card.png")
-    render_portfolio_card(report, output_dir / "portfolio_card.png")
-    write_social_copy(report, output_dir / "social_post_ja.txt")
 
     summary = report.to_summary_dict()
     summary["variant"] = "almanac-sidecar"
@@ -81,7 +95,7 @@ def build_demo15(starting_equity_jpy: float, output_dir: Path) -> dict[str, obje
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the standalone Almanac 15-position demo")
-    parser.add_argument("--output", default="artifacts/trade-journal-almanac")
+    parser.add_argument("--output", default="kaview/artifacts")
     parser.add_argument("--starting-equity-jpy", type=float, default=7_300_000)
     args = parser.parse_args()
     result = build_demo15(args.starting_equity_jpy, Path(args.output))

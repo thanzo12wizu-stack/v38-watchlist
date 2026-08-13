@@ -8,9 +8,9 @@ from typing import Any
 
 import pandas as pd
 
-from .trade_journal import analyse_journal, write_report_data
-from .trade_journal_almanac_final import render_dashboard
-from .trade_journal_run import load_input, write_templates
+from .journal import analyse_journal, write_report_data
+from .renderer import render_dashboard
+from .loader import load_input, write_templates
 
 
 def _live_readiness(data: Any) -> dict[str, Any]:
@@ -155,11 +155,11 @@ def _log_safe_summary(result: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="V38 Trade Journal Almanac sidecar")
-    parser.add_argument("--input", default="data/trade_journal")
-    parser.add_argument("--output", default="artifacts/trade-journal-almanac")
+    parser.add_argument("--input", default="kaview/data")
+    parser.add_argument("--output", default="kaview/artifacts")
     parser.add_argument("--starting-equity-jpy", type=float, default=0)
     parser.add_argument("--portfolio")
-    parser.add_argument("--rules", default="config/trade_journal.example.json")
+    parser.add_argument("--rules", default="kaview/config/rules.example.json")
     parser.add_argument("--research-root", default="data/intelligence/research")
     parser.add_argument("--prices", default="prices.pkl")
     parser.add_argument("--demo", action="store_true")

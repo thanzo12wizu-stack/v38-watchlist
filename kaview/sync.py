@@ -295,7 +295,7 @@ def sync_command_center(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Synchronize Command Center state into Trade Journal inputs")
     parser.add_argument("--intelligence-root", default="data/intelligence")
-    parser.add_argument("--output", default="data/trade_journal")
+    parser.add_argument("--output", default="kaview/data")
     parser.add_argument("--account-equity-jpy", type=float)
     parser.add_argument("--preserve-existing-holdings", action="store_true")
     args = parser.parse_args()

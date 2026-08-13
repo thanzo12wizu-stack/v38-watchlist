@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from intelligence_engine.trade_journal_run import run
+from kaview.run import run
 
 
 def test_dashboard_is_single_html_with_real_almanac_tab_links(tmp_path: Path) -> None:

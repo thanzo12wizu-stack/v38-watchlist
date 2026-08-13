@@ -4,7 +4,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from .trade_journal_types import (
+from .types import (
     EQUITY_COLUMNS, HOLDING_COLUMNS, TRADE_COLUMNS, _bool, _ensure_columns,
     _normalise_color, _num, _text,
 )

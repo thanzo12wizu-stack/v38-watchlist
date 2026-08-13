@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .trade_journal import JournalReport
+from .journal import JournalReport
 
 
 def _finite(value: Any, default: float = 0.0) -> float:

@@ -1,12 +1,49 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .trade_journal import JournalReport
-from .trade_journal_html import _num, _pct, _yen
+from .journal import JournalReport
+
+
+def _yen(value: Any, compact: bool = False) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "—"
+    if not math.isfinite(number):
+        return "—"
+    if compact:
+        absolute = abs(number)
+        sign = "-" if number < 0 else ""
+        if absolute >= 100_000_000:
+            return f"{sign}¥{absolute / 100_000_000:.2f}億"
+        if absolute >= 10_000:
+            return f"{sign}¥{absolute / 10_000:.1f}万"
+    return f"¥{number:,.0f}"
+
+
+def _pct(value: Any, digits: int = 1, signed: bool = False) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "—"
+    if not math.isfinite(number):
+        return "—"
+    return f"{number:+.{digits}%}" if signed else f"{number:.{digits}%}"
+
+
+def _num(value: Any, digits: int = 2) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "—"
+    if not math.isfinite(number):
+        return "∞" if number > 0 else "—"
+    return f"{number:.{digits}f}"
 
 BG = "#F5F2EA"
 PANEL = "#FFFDF8"

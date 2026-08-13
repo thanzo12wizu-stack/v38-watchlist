@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .trade_journal_types import (
+from .types import (
     CANDIDATE_COLUMNS, JournalReport, JournalRules, _bool, _ensure_columns, _fraction, _text,
 )
 

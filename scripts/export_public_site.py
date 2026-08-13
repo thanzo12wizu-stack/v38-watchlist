@@ -11,13 +11,11 @@ PUBLIC_FILES = (
     "index.html",
     "command-center.html",
     "intelligence-dashboard.html",
-    "trade-journal-almanac.html",
     "research-dashboard.html",
 )
 
 LOCKED_DASHBOARDS = (
     "intelligence-dashboard.html",
-    "trade-journal-almanac.html",
     "research-dashboard.html",
 )
 
