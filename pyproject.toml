@@ -13,9 +13,9 @@ dependencies = ["numpy>=1.26", "pandas>=2.1", "yfinance>=0.2.54", "Pillow>=10"]
 test = ["pytest>=8"]
 
 [tool.setuptools.packages.find]
-include = ["intelligence_engine*"]
+include = ["intelligence_engine*", "kaview*"]
 exclude = ["data*", "tests*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["tests", "kaview/tests"]

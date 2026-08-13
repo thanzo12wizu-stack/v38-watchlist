@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          pytest -q tests 2>&1 | tee /tmp/intelligence-pytest.log
+          pytest -q 2>&1 | tee /tmp/intelligence-pytest.log
       - name: Inspect repository inputs without mutation
         run: python -m intelligence_engine.validate_inputs --universe universe.csv --prices prices.pkl --report /tmp/intelligence-input-report.json
       - name: Test private crypto round trip
