@@ -17,7 +17,7 @@ jobs:
     env:
       FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
     steps:
-      - name: Verify free FMP reference endpoints
+      - name: Verify free FMP universe alternatives
         shell: bash
         run: |
           python3 - <<'PY'
@@ -36,12 +36,16 @@ jobs:
           tests = [
               ("stock-list", {}),
               ("actively-trading-list", {}),
+              ("etf-list", {}),
+              ("financial-statement-symbol-list", {}),
+              ("company-screener", {"exchange": "NASDAQ", "limit": "10000"}),
               ("search-symbol", {"query": "TQQQ"}),
               ("search-symbol", {"query": "SOXL"}),
           ]
           successes = 0
           for endpoint, params in tests:
-              safe_name = endpoint + (":" + params["query"] if "query" in params else "")
+              suffix = params.get("query") or params.get("exchange") or ""
+              safe_name = endpoint + (":" + suffix if suffix else "")
               query = urlencode({**params, "apikey": key})
               url = "https://financialmodelingprep.com/stable/" + endpoint + "?" + query
               try:
@@ -61,18 +65,16 @@ jobs:
                   print(f"FMP_EMPTY {safe_name}")
                   continue
 
-              matches = []
-              for row in rows:
-                  if isinstance(row, dict):
-                      symbol = str(row.get("symbol", "")).upper()
-                      if symbol in {"TQQQ", "SOXL"}:
-                          matches.append(symbol)
-              matches = sorted(set(matches))
+              matches = sorted({
+                  str(row.get("symbol", "")).upper()
+                  for row in rows if isinstance(row, dict)
+                  and str(row.get("symbol", "")).upper() in {"TQQQ", "SOXL"}
+              })
               print(f"FMP_OK {safe_name} rows={len(rows)} matches={','.join(matches) or '-'}")
               successes += 1
 
           if successes == 0:
               print("::error::No tested FMP endpoint returned usable data")
               sys.exit(1)
-          print(f"FMP_REFERENCE_SMOKE_OK endpoints={successes}/{len(tests)}")
+          print(f"FMP_UNIVERSE_SMOKE_OK endpoints={successes}/{len(tests)}")
           PY
