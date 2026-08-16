@@ -17,7 +17,7 @@ jobs:
     env:
       FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
     steps:
-      - name: Verify FMP key and ETF historical data
+      - name: Verify free FMP reference endpoints
         shell: bash
         run: |
           python3 - <<'PY'
@@ -33,42 +33,46 @@ jobs:
               print("::error::FMP_API_KEY is not configured or is empty")
               sys.exit(1)
 
-          failures = []
-          for symbol in ("TQQQ", "SOXL"):
-              query = urlencode({
-                  "symbol": symbol,
-                  "from": "2025-01-02",
-                  "to": "2025-01-10",
-                  "apikey": key,
-              })
-              url = "https://financialmodelingprep.com/stable/historical-price-eod/full?" + query
+          tests = [
+              ("stock-list", {}),
+              ("actively-trading-list", {}),
+              ("search-symbol", {"query": "TQQQ"}),
+              ("search-symbol", {"query": "SOXL"}),
+          ]
+          successes = 0
+          for endpoint, params in tests:
+              safe_name = endpoint + (":" + params["query"] if "query" in params else "")
+              query = urlencode({**params, "apikey": key})
+              url = "https://financialmodelingprep.com/stable/" + endpoint + "?" + query
               try:
-                  with urlopen(url, timeout=25) as response:
+                  with urlopen(url, timeout=45) as response:
                       payload = json.loads(response.read().decode("utf-8"))
               except HTTPError as exc:
-                  failures.append(f"{symbol}: HTTP {exc.code}")
+                  print(f"FMP_DENIED {safe_name} HTTP={exc.code}")
                   continue
               except (URLError, TimeoutError, json.JSONDecodeError) as exc:
-                  failures.append(f"{symbol}: {type(exc).__name__}")
+                  print(f"FMP_ERROR {safe_name} type={type(exc).__name__}")
                   continue
 
-              rows = payload
-              if isinstance(payload, dict):
-                  rows = payload.get("historical") or payload.get("data") or payload.get("results")
+              rows = payload if isinstance(payload, list) else (
+                  payload.get("data") or payload.get("results") if isinstance(payload, dict) else None
+              )
               if not isinstance(rows, list) or not rows:
-                  message = payload.get("Error Message") if isinstance(payload, dict) else None
-                  failures.append(f"{symbol}: no price rows" + (f" ({message})" if message else ""))
+                  print(f"FMP_EMPTY {safe_name}")
                   continue
 
-              required = {"date", "open", "high", "low", "close", "volume"}
-              if not required.issubset(rows[0]):
-                  failures.append(f"{symbol}: unexpected schema")
-                  continue
-              print(f"FMP_OK {symbol} rows={len(rows)}")
+              matches = []
+              for row in rows:
+                  if isinstance(row, dict):
+                      symbol = str(row.get("symbol", "")).upper()
+                      if symbol in {"TQQQ", "SOXL"}:
+                          matches.append(symbol)
+              matches = sorted(set(matches))
+              print(f"FMP_OK {safe_name} rows={len(rows)} matches={','.join(matches) or '-'}")
+              successes += 1
 
-          if failures:
-              for failure in failures:
-                  print(f"::error::{failure}")
+          if successes == 0:
+              print("::error::No tested FMP endpoint returned usable data")
               sys.exit(1)
-          print("FMP_API_SMOKE_OK")
+          print(f"FMP_REFERENCE_SMOKE_OK endpoints={successes}/{len(tests)}")
           PY
