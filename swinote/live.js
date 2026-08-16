@@ -319,10 +319,10 @@
     var banner = el("sync-banner");
     var count = data.holdings.length + data.trades.length;
     banner.className = "sync-banner " + (count ? "good" : "warn");
-    el("sync-title").textContent = count ? "Command Center実データに同期済み" : "Command Centerには接続済み・保有記録は0件";
+    el("sync-title").textContent = count ? "最新データに同期済み" : "保有・決済記録はありません";
     el("sync-detail").textContent = count
-      ? "保有" + data.holdings.length + "件・決済" + data.trades.length + "件をこの端末から読み込みました。個人データは外部送信しません。"
-      : "同じブラウザのCommand Centerで保有を登録すると自動反映されます。架空値は表示しません。";
+      ? "保有" + data.holdings.length + "件・決済" + data.trades.length + "件を反映しました。"
+      : "登録済みの保有・決済記録がある場合は自動反映されます。";
   }
   function renderHeader(data) {
     el("asof").textContent = data.asOf || "—";
@@ -336,7 +336,7 @@
   }
   function renderDecision(data) {
     var decision = el("decision"), title, reason, toneName;
-    if (!data.account) { title = "口座総資産が未取得"; reason = "Command Centerで口座評価額を記録してください"; toneName = "bad"; }
+    if (!data.account) { title = "口座総資産が未取得"; reason = "口座評価額を更新してください"; toneName = "bad"; }
     else if (data.nq === "RED" || data.nq === "UNKNOWN") { title = "新規発注停止"; reason = "市場ゲート " + data.nq; toneName = "bad"; }
     else if (data.nq === "YELLOW") { title = "新規発注停止"; reason = "市場ゲート YELLOW"; toneName = "warn"; }
     else if (data.stopBreached) { title = "撤退確認を優先"; reason = "Stop逸脱 " + data.stopBreached + "銘柄"; toneName = "bad"; }
@@ -362,7 +362,7 @@
     el("watch-list").innerHTML = watch.length ? watch.map(function (holding) {
       var distance = (holding.current_price - holding.stop_price) / holding.current_price;
       return '<details class="holding-card"><summary><div class="holding-main"><div><div class="holding-title">' + esc(holding.ticker) + '<small>' + esc(holding.setup) + '</small></div><div class="holding-quick"><div><span>Stop</span><b class="num">' + fmtNum(holding.stop_price) + '</b></div><div><span>Stop距離</span><b class="num ' + (distance <= 0.02 ? "neg" : "") + '">' + fmtPct(distance, true) + '</b></div><div><span>保有</span><b class="num">' + (num(holding.hold_days) === null ? "—" : holding.hold_days + "日") + '</b></div></div></div><div class="holding-pnl num ' + tone(holding.unrealized_pct) + '">' + fmtPct(holding.unrealized_pct, true) + '</div></div></summary></details>';
-    }).join("") : '<div class="empty-action"><b>撤退線を評価できる実保有なし</b><span>Command Centerの保有記録と価格・撤退線が揃うと表示します。</span><a href="../command-center.html" target="_blank" rel="noopener">Command Centerを開く</a></div>';
+    }).join("") : '<div class="empty-action"><b>撤退線を評価できる保有なし</b><span>保有記録と価格・撤退線が揃うと表示します。</span></div>';
   }
   function renderBars(rows, target) {
     var max = Math.max.apply(null, rows.map(function (row) { return row.value; }).concat([0.0001]));
@@ -385,8 +385,7 @@
     el("holdings-cards").innerHTML = data.holdings.length ? data.holdings.map(function (holding) {
       var distance = positive(holding.current_price) && positive(holding.stop_price) ? (holding.current_price - holding.stop_price) / holding.current_price : null;
       return '<details class="holding-card"><summary><div class="holding-main"><div><div class="holding-title">' + esc(holding.ticker) + (distance !== null && distance <= 0 ? '<span class="risk-badge">STOP逸脱</span>' : '') + (holding.partial_take_due ? '<span class="risk-badge">+25%到達</span>' : '') + '<small>' + esc(holding.setup) + '｜' + esc(holding.sector) + '</small></div><div class="holding-quick"><div><span>配分</span><b class="num">' + fmtPct(holding.allocation) + '</b></div><div><span>保有</span><b class="num">' + (num(holding.hold_days) === null ? "—" : holding.hold_days + "日") + '</b></div><div><span>Stop距離</span><b class="num ' + (distance !== null && distance <= .02 ? "neg" : "") + '">' + fmtPct(distance, true) + '</b></div></div></div><div class="holding-pnl num ' + tone(holding.unrealized_pct) + '">' + fmtPct(holding.unrealized_pct, true) + '<small style="display:block;color:var(--muted);font-size:7px">' + fmtYen(holding.unrealized_pnl_jpy) + '</small></div></div></summary><div class="holding-detail"><div><span>現在値</span><b class="num">' + fmtNum(holding.current_price) + '</b></div><div><span>平均Entry</span><b class="num">' + fmtNum(holding.entry_price) + '</b></div><div><span>撤退線</span><b class="num">' + fmtNum(holding.stop_price) + '</b></div><div><span>撤退方法</span><b>' + esc(holding.stop_method) + '</b></div><div><span>残株</span><b class="num">' + fmtNum(holding.quantity, 0) + '</b></div><div><span>評価額</span><b class="num">' + fmtYen(holding.market_value_jpy) + '</b></div><div><span>ADR%</span><b class="num">' + (num(holding.adr_pct) === null ? "—" : holding.adr_pct.toFixed(1) + "%") + '</b></div><div><span>Theme</span><b>' + esc(holding.theme) + '</b></div><div><span>Entry日</span><b>' + dateOnly(holding.entry_date) + '</b></div><div><span>2分割Entry</span><b>' + (holding.entry_stage >= 2 ? "2nd組入済" : "1stのみ") + '</b></div><div><span>1st / 2nd</span><b class="num">' + fmtNum(holding.entry_price_1) + " / " + fmtNum(holding.entry_price_2) + '</b></div><div><span>+25%ルール</span><b>' + (holding.partial_take_due ? "利確候補" : holding.partial_taken ? "利確済" : "未到達") + '</b></div></div></details>';
-    }).join("") : '<div class="empty-action"><b>Command Centerの実保有記録は0件</b><span>同じブラウザで保有登録すると、ここへ即時反映します。</span><a href="../command-center.html" target="_blank" rel="noopener">Command Centerで登録する</a></div>';
-    el("portfolio-source").textContent = "取得元: command-center.html（価格・NQ・FX・テクニカル）／localStorage v38_holdings（保有・決済）／equity.csv＋eqLast（口座評価額）。外部送信なし。";
+    }).join("") : '<div class="empty-action"><b>保有記録はありません</b><span>保有を登録すると自動反映されます。</span></div>';
   }
   function renderCurve(rows) {
     var svg = el("equity-svg"), empty = el("equity-empty");
@@ -456,7 +455,7 @@
     el("j-count").innerHTML = "<span>" + visible.length + " / " + list.length + "件</span><span>全" + data.trades.length + "件</span>";
     el("j-list").innerHTML = visible.length ? visible.map(function (trade) {
       return '<div class="trade-card"><div class="trade-top"><span class="tk">' + esc(trade.ticker) + '<small>' + esc(trade.setup) + '</small></span><span class="pnl num ' + tone(trade.pnl_usd) + '">' + fmtPct(trade.return_pct, true) + "｜" + (num(trade.r_multiple) === null ? "R—" : fmtNum(trade.r_multiple) + "R") + '</span></div><div class="trade-meta"><span>' + dateOnly(trade.entry_date) + " → " + dateOnly(trade.exit_date) + '</span><span><i class="nq-dot nq-' + esc(trade.nq_color) + '"></i>' + esc(trade.nq_color) + '</span><span>' + (num(trade.hold_days) === null ? "—" : trade.hold_days + "日") + '</span><span>' + esc(trade.exit_reason || "—") + '</span>' + (trade.partial_exit ? "<span>分割利確</span>" : "") + '<span class="num ' + tone(trade.pnl_usd) + '">' + fmtUsd(trade.pnl_usd) + '</span></div></div>';
-    }).join("") : '<div class="empty-action"><b>実決済履歴なし</b><span>Command Centerで決済済みにした取引だけを表示します。</span><a href="../command-center.html" target="_blank" rel="noopener">Command Centerを開く</a></div>';
+    }).join("") : '<div class="empty-action"><b>決済履歴はありません</b><span>決済済みの取引だけを表示します。</span></div>';
     el("j-more").hidden = shownTrades >= list.length;
   }
   function renderEdge(data) {
@@ -499,18 +498,10 @@
     html += "</ul>";
     if (!data.trades.length) html += '<div class="stub">決済履歴が蓄積されるとSetup別の事実を表示します。</div>';
     el("review-body").innerHTML = html;
-    var quality = [
-      "価格・NQ・FX: command-center.html（" + (data.asOf || "日付未取得") + "）",
-      "口座評価額: equity.csv" + (positive(localStorage.getItem("eqLast")) ? "＋端末eqLast" : ""),
-      "保有・決済: 端末localStorage v38_holdings（外部送信なし）",
-      data.holdings.length ? "実保有 " + data.holdings.length + "件を価格データに照合" : "実保有記録なし",
-      data.trades.length ? "実決済 " + data.trades.length + "件を集計" : "実決済記録なし"
-    ];
-    el("quality-list").innerHTML = quality.map(function (item) { return "<li>" + esc(item) + "</li>"; }).join("");
   }
   function renderShare(data) {
     var s = data.tradeStats, p = data.performance;
-    el("share-eyebrow").textContent = "V38 Trade Journal — " + (data.asOf ? data.asOf.slice(0, 7) : "未取得");
+    el("share-eyebrow").textContent = "Swinote — " + (data.asOf ? data.asOf.slice(0, 7) : "未取得");
     el("share-wr").textContent = fmtPct(s.wr);
     el("share-pf").textContent = s.pf === Infinity ? "∞" : fmtNum(s.pf);
     el("share-r").textContent = fmtNum(s.r);
@@ -559,13 +550,13 @@
   }
   function showFailure(error) {
     el("sync-banner").className = "sync-banner bad";
-    el("sync-title").textContent = "Command Center実データを取得できません";
-    el("sync-detail").textContent = String(error && error.message ? error.message : error) + "。架空値は表示していません。";
-    el("decision").className = "status-line bad"; el("decision-title").textContent = "判断停止"; el("decision-reason").textContent = "実データ未取得";
+    el("sync-title").textContent = "データを取得できません";
+    el("sync-detail").textContent = "時間を置いて再同期してください。";
+    el("decision").className = "status-line bad"; el("decision-title").textContent = "判断停止"; el("decision-reason").textContent = "データ未取得";
   }
   async function load() {
-    el("sync-banner").className = "sync-banner warn"; el("sync-title").textContent = "Command Centerから実データを取得中";
-    el("sync-detail").textContent = "このページには資産・保有・取引の固定値を埋め込んでいません。";
+    el("sync-banner").className = "sync-banner warn"; el("sync-title").textContent = "データを同期中";
+    el("sync-detail").textContent = "最新データを確認しています。";
     try {
       var results = await Promise.all([fetchText("../command-center.html"), fetchText("../equity.csv").catch(function () { return ""; })]);
       renderAll(enrich(results[0], results[1]));
