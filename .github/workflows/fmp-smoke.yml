@@ -1,0 +1,74 @@
+name: FMP API one-time smoke test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fmp-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+    steps:
+      - name: Verify FMP key and ETF historical data
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import urlencode
+          from urllib.request import urlopen
+
+          key = os.environ.get("FMP_API_KEY", "").strip()
+          if not key:
+              print("::error::FMP_API_KEY is not configured or is empty")
+              sys.exit(1)
+
+          failures = []
+          for symbol in ("TQQQ", "SOXL"):
+              query = urlencode({
+                  "symbol": symbol,
+                  "from": "2025-01-02",
+                  "to": "2025-01-10",
+                  "apikey": key,
+              })
+              url = "https://financialmodelingprep.com/stable/historical-price-eod/full?" + query
+              try:
+                  with urlopen(url, timeout=25) as response:
+                      payload = json.loads(response.read().decode("utf-8"))
+              except HTTPError as exc:
+                  failures.append(f"{symbol}: HTTP {exc.code}")
+                  continue
+              except (URLError, TimeoutError, json.JSONDecodeError) as exc:
+                  failures.append(f"{symbol}: {type(exc).__name__}")
+                  continue
+
+              rows = payload
+              if isinstance(payload, dict):
+                  rows = payload.get("historical") or payload.get("data") or payload.get("results")
+              if not isinstance(rows, list) or not rows:
+                  message = payload.get("Error Message") if isinstance(payload, dict) else None
+                  failures.append(f"{symbol}: no price rows" + (f" ({message})" if message else ""))
+                  continue
+
+              required = {"date", "open", "high", "low", "close", "volume"}
+              if not required.issubset(rows[0]):
+                  failures.append(f"{symbol}: unexpected schema")
+                  continue
+              print(f"FMP_OK {symbol} rows={len(rows)}")
+
+          if failures:
+              for failure in failures:
+                  print(f"::error::{failure}")
+              sys.exit(1)
+          print("FMP_API_SMOKE_OK")
+          PY
