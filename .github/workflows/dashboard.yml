@@ -2,9 +2,9 @@ name: Dashboard daily build
 
 on:
   schedule:
-    # 朝一: JST 7時 = UTC 22時（米取引日の翌朝＝UTC火〜土）。起きてすぐ確認用。
+    # 朝一: JST 7時 = UTC 22時（米取引日の翌朝＝UTC火〜土）
     - cron: '0 22 * * 2-6'
-    # 昼: JST 13時 = UTC 4時（同じくUTC火〜土）。夏時間の取りこぼし・朝のFRED障害を埋める確認用。
+    # 昼: JST 13時 = UTC 4時（夏時間の取りこぼし・朝のFRED障害を再確認）
     - cron: '0 4 * * 2-6'
   push:
     branches:
@@ -13,9 +13,13 @@ on:
       - 'sar_state.txt'
       - 'equity.csv'
       - 'build_dashboard.py'
+      - 'scripts/export_public_site.py'
+      - 'scripts/privacy_audit.py'
       - '.github/workflows/dashboard.yml'
   workflow_dispatch: {}
 
+# deploy-pagesは使わず、clean Pagesリポジトリへ限定tokenで反映する。
+# GITHUB_TOKENはこのリポジトリの生成物commitにだけ使用する。
 permissions:
   contents: write
 
@@ -24,18 +28,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Tokyo
+
     steps:
       - uses: actions/checkout@v4
         with:
+          # bot commitのpush競合時に安全にrebaseできる完全履歴。
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - run: pip install pandas numpy yfinance
+      - name: Install dependencies
+        run: pip install pandas numpy yfinance
 
       - name: Build dashboard
         env:
@@ -46,61 +56,241 @@ jobs:
           V38_TREND_JSON: trend_history.json
           V38_LOG_CSV: daily_log.csv
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-
-          # Yahoo価格は主系統のまま。
-          # FMP無料枠はYahoo欠損tickerの確認・変更候補照合だけに使用。
+          V38_FRED_CACHE: fred_cache.json
+          # Yahoo価格を主系統とし、FMP無料枠は欠損tickerの照合だけに使う。
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           V38_FMP_REFERENCE_CACHE: fmp_reference_cache.json
           V38_FMP_REFERENCE_BUDGET: '40'
-
-          V38_FRED_CACHE: fred_cache.json
           V38_STATE_JSON: state.json
           V38_EQUITY_CSV: equity.csv
-        run: python build_dashboard.py
-
-      - name: Report persistence result
         shell: bash
         run: |
+          set -euo pipefail
+          python build_dashboard.py 2>&1 | tee build-dashboard.log
+
+      - name: Validate generated files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          required = {
+              "command-center.html": 200_000,
+              "command-center_share.html": 2_500,
+          }
+          for name, minimum in required.items():
+              path = Path(name)
+              if not path.is_file():
+                  raise SystemExit(f"missing generated file: {name}")
+              size = path.stat().st_size
+              if size < minimum:
+                  raise SystemExit(
+                      f"generated file too small: {name}={size} bytes < {minimum}"
+                  )
+              text = path.read_text(encoding="utf-8", errors="strict")
+              if "<!doctype html>" not in text.lower():
+                  raise SystemExit(f"doctype missing: {name}")
+
+          main = Path("command-center.html").read_text(encoding="utf-8")
+          if "Command Center" not in main:
+              raise SystemExit("Command Center marker missing from main HTML")
+
+          state = json.loads(
+              Path("state.json").read_text(encoding="utf-8")
+          )
+          if not state.get("date"):
+              raise SystemExit(
+                  "state.json has no completed market-session date"
+              )
+
+          manifest = json.loads(
+              Path("commit_manifest.json").read_text(encoding="utf-8")
+          )
+          failed = [
+              key
+              for key in ("html", "share", "state", "trend", "log")
+              if manifest.get(key) != "ok"
+          ]
+          if failed:
+              raise SystemExit(
+                  f"critical persistence did not complete: {failed}"
+              )
+          PY
+
+      - name: Report persistence and data date
+        shell: bash
+        run: |
+          set -euo pipefail
           if [[ -s commit_manifest.json ]]; then
             cat commit_manifest.json
           else
             echo '::warning::commit_manifest.json was not generated'
           fi
 
-      - name: Commit updated dashboard + caches
+          read -r asof gate < <(
+            python -c 'import json; s=json.load(open("state.json", encoding="utf-8")); print(s.get("date", ""), s.get("gate", ""))'
+          )
+
+          {
+            echo "### Dashboard build"
+            echo "- Data session: ${asof:-unknown}"
+            echo "- Gate: ${gate:-unknown}"
+            echo "- Main HTML: $(wc -c < command-center.html) bytes"
+            echo "- Share HTML: $(wc -c < command-center_share.html) bytes"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit dashboard and caches
+        id: persist
         shell: bash
         run: |
           set -euo pipefail
-
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add command-center.html
-          git add mktcap.json trend_history.json fred_cache.json fmp_reference_cache.json state.json daily_log.csv commit_manifest.json || true
+          for file in \
+            command-center.html command-center_share.html \
+            mktcap.json trend_history.json fred_cache.json \
+            fmp_reference_cache.json state.json daily_log.csv \
+            commit_manifest.json; do
+            [[ -f "$file" ]] && git add -- "$file"
+          done
 
-          if git diff --staged --quiet; then
+          if ! git diff --staged --quiet; then
+            git commit -m "Daily dashboard rebuild + cache refresh"
+
+            pushed=false
+            for attempt in 1 2 3; do
+              if git push origin HEAD:main; then
+                pushed=true
+                break
+              fi
+
+              echo "Push attempt ${attempt} failed; rebasing onto latest origin/main"
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort || true
+                echo "Rebase conflict detected; refusing to overwrite remote changes"
+                exit 1
+              fi
+              sleep $((attempt * 2))
+            done
+
+            if [[ "$pushed" != true ]]; then
+              echo "Push failed after 3 attempts"
+              exit 1
+            fi
+          else
             echo "No dashboard changes to commit"
+          fi
+
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Audit public privacy boundary
+        run: |
+          python scripts/privacy_audit.py \
+            --root . \
+            --output /tmp/privacy-audit-status.json
+          cat /tmp/privacy-audit-status.json
+
+      - name: Export allowlisted public site
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/export_public_site.py \
+            --root . \
+            --output /tmp/v38-public-site \
+            --source-commit "${{ steps.persist.outputs.source_sha }}"
+
+      - name: Publish clean public mirror
+        id: publish
+        continue-on-error: true
+        shell: bash
+        env:
+          PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
+          PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
+            echo "::warning::Public mirror is not configured; build and privacy validation completed"
             exit 0
           fi
 
-          git commit -m "Daily dashboard rebuild + cache refresh"
+          if [[ ! "$PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid V38_PUBLIC_PAGES_REPOSITORY: expected owner/repository"
+            exit 1
+          fi
 
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              exit 0
-            fi
+          target=/tmp/v38-pages-repository
+          git clone \
+            --depth 1 \
+            "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" \
+            "$target"
 
-            echo "Push attempt ${attempt} failed; rebasing onto latest origin/main"
-            git fetch origin main
+          find "$target" \
+            -mindepth 1 \
+            -maxdepth 1 \
+            ! -name .git \
+            -exec rm -rf -- {} +
 
-            if ! git rebase origin/main; then
-              git rebase --abort || true
-              echo "Rebase conflict detected; refusing to overwrite remote changes"
-              exit 1
-            fi
+          cp -a /tmp/v38-public-site/. "$target/"
+          cd "$target"
 
-            sleep $((attempt * 2))
-          done
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
 
-          echo "Push failed after 3 attempts"
+          if git diff --staged --quiet; then
+            echo "Public site mirror already current"
+            exit 0
+          fi
+
+          git commit \
+            -m "Publish dashboard ${{ steps.persist.outputs.source_sha }}"
+          git push origin HEAD:main
+
+      - name: Report publish failure
+        if: steps.publish.outcome == 'failure'
+        shell: bash
+        env:
+          FAILURE_WEBHOOK: ${{ secrets.V38_WEBHOOK }}
+        run: |
+          set -euo pipefail
+
+          message="Dashboard build succeeded, but public mirror publish failed: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          echo "::error::$message"
+          echo "### Public publish failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ -n "${FAILURE_WEBHOOK:-}" ]]; then
+            MESSAGE="$message" python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          body = json.dumps(
+              {"content": os.environ["MESSAGE"]}
+          ).encode("utf-8")
+
+          req = urllib.request.Request(
+              os.environ["FAILURE_WEBHOOK"],
+              data=body,
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "dashboard-actions/1.0",
+              },
+          )
+
+          with urllib.request.urlopen(req, timeout=10) as response:
+              if response.status >= 300:
+                  raise SystemExit(
+                      f"webhook returned HTTP {response.status}"
+                  )
+          PY
+          fi
+
           exit 1
