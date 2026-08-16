@@ -30,10 +30,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - run: pip install pandas numpy yfinance
+
       - name: Build dashboard
         env:
           V38_UNIVERSE_CSV: universe.csv
@@ -43,10 +46,18 @@ jobs:
           V38_TREND_JSON: trend_history.json
           V38_LOG_CSV: daily_log.csv
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
+          # Yahoo価格は主系統のまま。
+          # FMP無料枠はYahoo欠損tickerの確認・変更候補照合だけに使用。
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          V38_FMP_REFERENCE_CACHE: fmp_reference_cache.json
+          V38_FMP_REFERENCE_BUDGET: '40'
+
           V38_FRED_CACHE: fred_cache.json
           V38_STATE_JSON: state.json
           V38_EQUITY_CSV: equity.csv
         run: python build_dashboard.py
+
       - name: Report persistence result
         shell: bash
         run: |
@@ -55,14 +66,17 @@ jobs:
           else
             echo '::warning::commit_manifest.json was not generated'
           fi
+
       - name: Commit updated dashboard + caches
         shell: bash
         run: |
           set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add command-center.html
-          git add mktcap.json trend_history.json fred_cache.json state.json daily_log.csv commit_manifest.json || true
+          git add mktcap.json trend_history.json fred_cache.json fmp_reference_cache.json state.json daily_log.csv commit_manifest.json || true
 
           if git diff --staged --quiet; then
             echo "No dashboard changes to commit"
@@ -78,11 +92,13 @@ jobs:
 
             echo "Push attempt ${attempt} failed; rebasing onto latest origin/main"
             git fetch origin main
+
             if ! git rebase origin/main; then
               git rebase --abort || true
               echo "Rebase conflict detected; refusing to overwrite remote changes"
               exit 1
             fi
+
             sleep $((attempt * 2))
           done
 
