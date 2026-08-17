@@ -70,6 +70,9 @@ jobs:
           # 以降は差分更新なので所要はほぼゼロ。
           V38_INCEPT_VWAP_JSON: inception_vwap.json
           V38_INCEPT_VWAP_BUDGET: '1400'
+          # 業種分類（TradingViewスキャナー）。7日ごとに自動更新し、失敗時は前回値へ退避。
+          V38_INDUSTRY_JSON: industry_map.json
+          V38_INDUSTRY_MAX_AGE_DAYS: '7'
         shell: bash
         run: |
           set -euo pipefail
@@ -161,7 +164,7 @@ jobs:
             command-center.html command-center_share.html \
             mktcap.json trend_history.json fred_cache.json \
             fmp_reference_cache.json state.json daily_log.csv \
-            earnings.json inception_vwap.json \
+            earnings.json inception_vwap.json industry_map.json \
             commit_manifest.json; do
             [[ -f "$file" ]] && git add -- "$file"
           done
@@ -302,3 +305,5 @@ jobs:
           fi
 
           exit 1
+          
+          
