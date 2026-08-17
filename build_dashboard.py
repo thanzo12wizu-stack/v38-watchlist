@@ -1027,8 +1027,95 @@ REBAL_ANCHOR_ENV = os.environ.get("V38_REBAL_ANCHOR", "").strip()  # 隔週サ�
 # industries excluded from sector-RS (binary-event noise); editable blacklist
 SECTOR_BLACKLIST_KEYS = ("biotech", "pharmaceutic", "drug")
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ユニバースの自動生成。TradingViewスクリーナーと同じ条件をAPIで再現する。
+# 手作業のCSVエクスポートを廃止する目的。買収完了・上場廃止した銘柄が自動で落ち、
+# 新規上場が自動で入るので、universe.csv が古くなること自体がなくなる。
+_TV_SCAN = "https://scanner.tradingview.com/america/scan"
+UNIVERSE_AUTO = os.environ.get("V38_UNIVERSE_AUTO", "0") == "1"
+UNIVERSE_EXCHANGES = ["NYSE", "NASDAQ", "AMEX"]
+UNIVERSE_MIN_MCAP = float(os.environ.get("V38_UNIVERSE_MIN_MCAP", "200000000"))
+UNIVERSE_MIN_PRICE = float(os.environ.get("V38_UNIVERSE_MIN_PRICE", "1"))
+# 既存CSVに対してこの比率を下回る結果しか返らなければ、取得失敗とみなして既存を使う。
+UNIVERSE_MIN_RATIO = 0.80
+
+
+def fetch_universe_rows():
+    """TradingViewスクリーナーからユニバースを取得。列名は現行CSVと同一に揃える。"""
+    if not _net_ok():
+        return []
+    flt = [{"left": "type", "operation": "equal", "right": "stock"},
+           {"left": "exchange", "operation": "in_range", "right": UNIVERSE_EXCHANGES},
+           {"left": "market_cap_basic", "operation": "egreater", "right": UNIVERSE_MIN_MCAP},
+           {"left": "close", "operation": "egreater", "right": UNIVERSE_MIN_PRICE}]
+    cols = ["name", "description", "close", "change", "volume", "market_cap_basic",
+            "sector", "industry", "exchange"]
+    import urllib.request as _ur
+    rows = []
+    for start in range(0, 20000, 1000):
+        body = {"filter": flt, "columns": cols,
+                "sort": {"sortBy": "market_cap_basic", "sortOrder": "desc"},
+                "range": [start, start + 1000]}
+        req = _ur.Request(_TV_SCAN, data=json.dumps(body).encode("utf-8"),
+                          headers={"Content-Type": "application/json",
+                                   "User-Agent": "Mozilla/5.0"})
+        with _ur.urlopen(req, timeout=40) as fh:
+            got = json.load(fh).get("data") or []
+        rows += got
+        if len(got) < 1000:
+            break
+    out = []
+    for r in rows:
+        d = r.get("d") or []
+        if len(d) < 9 or not d[0]:
+            continue
+        out.append({"シンボル": str(d[0]).strip().upper(), "名称": d[1] or "",
+                    "価格": d[2], "価格変動 %, 1日": d[3], "出来高, 1日": d[4],
+                    "時価総額": d[5], "セクター": d[6] or "", "業種": d[7] or "",
+                    "取引所": d[8] or ""})
+    return out
+
+
+def refresh_universe_csv(path=None):
+    """universe.csv を再生成する。失敗・件数不足なら既存ファイルを温存して False を返す。"""
+    path = path or UNIVERSE_CSV
+    prev = 0
+    try:
+        with open(path, encoding="utf-8-sig") as fh:
+            prev = max(0, sum(1 for _ in fh) - 1)
+    except Exception:
+        prev = 0
+    try:
+        rows = fetch_universe_rows()
+    except Exception as exc:
+        sys.stderr.write("[universe] 自動取得に失敗: %s（既存CSVを使用）\n" % type(exc).__name__)
+        return False
+    if not rows:
+        sys.stderr.write("[universe] 取得0件（既存CSVを使用）\n")
+        return False
+    if prev and len(rows) < prev * UNIVERSE_MIN_RATIO:
+        sys.stderr.write("[universe] 取得%d件は既存%d件の%.0f%%未満（既存CSVを使用）\n"
+                         % (len(rows), prev, UNIVERSE_MIN_RATIO * 100))
+        return False
+    cols = ["シンボル", "名称", "価格", "価格変動 %, 1日", "出来高, 1日",
+            "時価総額", "セクター", "業種", "取引所"]
+    tmp = str(path) + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=cols)
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: r.get(k, "") for k in cols})
+    os.replace(tmp, path)
+    sys.stderr.write("[universe] 自動更新 %d銘柄 (前回%d件・取引所%s・時価総額≥$%.0fM・株価≥$%.0f)\n"
+                     % (len(rows), prev, "/".join(UNIVERSE_EXCHANGES),
+                        UNIVERSE_MIN_MCAP / 1e6, UNIVERSE_MIN_PRICE))
+    return True
+
+
 # ----------------------------------------------------------------------------- inputs
 def load_inputs(use_cache=True):
+    if UNIVERSE_AUTO:
+        _scard("universe_auto", refresh_universe_csv, default=False)
     # BOM除去(utf-8-sig)＋列名ゆらぎ吸収: Ticker/Symbol/ticker/symbol いずれでも読む
     rows = list(csv.DictReader(open(UNIVERSE_CSV, encoding="utf-8-sig")))
     if not rows:
@@ -1690,9 +1777,33 @@ def theme_of(t, s2t):
         return v.strip()
     return "その他"
 
+# 画面に出す「業種」は TradingView 分類に一本化する。s2t（手動テーマ表）は
+# 更新が止まると古い名前が各タブに散らばるため、表示の主系統からは外す。
+# ただしテーマ（メモリ/HBM・量子・eVTOL等）は業種分類には存在しない情報なので、
+# subtheme_theme() として別軸に残し、業種の中の細目として併記する。
+INDUSTRY_DISPLAY = {}          # ticker -> 日本語業種名（load_industry_map後に張る）
+INDUSTRY_RAW = {}              # ticker -> [sector, industry]（生のTV分類）
+
+
+def industry_of(t, fallback=""):
+    v = INDUSTRY_DISPLAY.get(t)
+    return v if v else fallback
+
+
+def subtheme_theme(t, s2t):
+    """s2t側の細目テーマ。業種より細かい粒度（メモリ/HBM 等）。無ければ空。"""
+    v = (s2t or {}).get(t)
+    if isinstance(v, list) and len(v) >= 2 and v[1] and v[1] not in ("?", ""):
+        return v[1]
+    return ""
+
+
 def subtheme_of(t, s2t, fallback="その他"):
-    """Specific sub-theme (量子/メモリ/AI GPU等). Falls back to `fallback` when absent."""
-    v = s2t.get(t)
+    """画面表示用の業種名。TradingView業種 → s2tテーマ → fallback の順。"""
+    ind = INDUSTRY_DISPLAY.get(t)
+    if ind:
+        return ind
+    v = (s2t or {}).get(t)
     if isinstance(v, list) and len(v) >= 2 and v[1] and v[1] not in ("?", ""):
         return v[1]
     return fallback
@@ -5126,9 +5237,13 @@ INDUSTRY_JSON = os.environ.get("V38_INDUSTRY_JSON",
                                os.path.join(os.path.dirname(CACHE), "industry_map.json"))
 INDUSTRY_MAX_AGE_DAYS = int(os.environ.get("V38_INDUSTRY_MAX_AGE_DAYS", "7"))
 INDUSTRY_MIN_N = 5          # 実測: 127業種・中央値11銘柄。5未満は統計にならない。
+# 未分類（業種が付かない銘柄）が増えたら universe.csv が古い合図。
+# 買収完了・上場廃止した銘柄が残ると、価格取得・RS計算・セクター集計すべてで穴になる。
+INDUSTRY_UNK_WARN = 25      # この件数を超えたら画面とログで掃除を促す
+INDUSTRY_UNK_ALERT = 60     # この件数を超えたら強い警告
 INDUSTRY_LEAD_RS = 65
 INDUSTRY_BREADTH_RS = 80
-_TV_SCAN = "https://scanner.tradingview.com/america/scan"
+_INDUSTRY_STATE = {"unknown": 0, "buckets": 0, "total": 0}
 
 _IND_JA = {
  "Packaged Software":"パッケージソフト","Real Estate Investment Trusts":"REIT",
@@ -5230,6 +5345,22 @@ def _tv_scan(payload_type, want, timeout=30):
     return rows
 
 
+def _industry_from_universe():
+    """universe.csv の「業種」列（自動生成時に入る）を industry_map と同じ形で返す。
+       TradingView APIが落ちた日でも、ユニバース側に同じ分類が入っているので穴が空かない。"""
+    out = {}
+    try:
+        for r in csv.DictReader(open(UNIVERSE_CSV, encoding="utf-8-sig")):
+            tk = (r.get("シンボル") or r.get("Symbol") or r.get("Ticker") or "").strip().upper()
+            ind = (r.get("業種") or r.get("Industry") or "").strip()
+            sec = (r.get("セクター") or r.get("Sector") or "").strip()
+            if tk and ind:
+                out[tk] = [sec, ind]
+    except Exception:
+        return {}
+    return out
+
+
 def load_industry_map(order=None, path=None):
     """{ticker: [sector, industry]} を返す。取得失敗時は必ず既存キャッシュへ退避する。
 
@@ -5257,7 +5388,7 @@ def load_industry_map(order=None, path=None):
     if cache and fresh and covered >= 0.98:
         return cache
     if not _net_ok():
-        return cache
+        return cache or _industry_from_universe()
     try:
         rows = []
         for typ, want in (("stock", 13000), ("dr", 3000), ("fund", 5000)):
@@ -5281,18 +5412,55 @@ def load_industry_map(order=None, path=None):
                          % (len(cache), 100 * cov))
     except Exception as exc:
         sys.stderr.write("[industry] refresh failed: %s\n" % type(exc).__name__)
+    if not cache:
+        cache = _industry_from_universe()
+        if cache:
+            sys.stderr.write("[industry] universe.csv の業種列にフォールバック (%d件)\n" % len(cache))
     return cache
 
 
-def build_industry_hier(m, ind_map, min_n=INDUSTRY_MIN_N):
+def build_theme_stats(m, s2t, min_n=3):
+    """細目テーマのRS・20日変化・ブレッドス。テーマは業種をまたぐ（メモリ/HBMは
+       Semiconductors と Computer Peripherals に分かれる）ので、必ず全体で集計する。"""
+    from collections import defaultdict
+    if not s2t or "rs189" not in m.columns:
+        return {}
+    grp = defaultdict(list)
+    for t in m.index:
+        k = subtheme_theme(t, s2t)
+        if k:
+            grp[k].append(t)
+    lag = next((c for c in ("rs189_l21", "rs189_l20", "rs189_l5") if c in m.columns), None)
+    out = {}
+    for k, tks in grp.items():
+        sub = m.loc[tks]
+        rs = sub["rs189"].dropna()
+        if len(rs) < min_n:
+            out[k] = dict(n=len(tks), nrs=len(rs), rs=None, drs=0, br=0)
+            continue
+        x = float(rs.median()); y = 0.0
+        if lag:
+            prev = sub[lag].dropna()
+            if len(prev) >= min_n:
+                y = x - float(prev.median())
+        out[k] = dict(n=len(tks), nrs=len(rs), rs=int(round(x)), drs=int(round(y)),
+                      br=int(round(float((rs >= INDUSTRY_BREADTH_RS).mean() * 100))))
+    return out
+
+
+def build_industry_hier(m, ind_map, min_n=INDUSTRY_MIN_N, s2t=None, tstats=None):
     """セクター → 業種 → 構成銘柄。TradingViewの分類を構成銘柄の実データで評価する。"""
     from collections import defaultdict
     if "rs189" not in m.columns or not ind_map:
         return {}
+    # ユニバースの全銘柄がどこかのバケットに必ず入るようにする（取りこぼしゼロが要件）。
+    # 業種が付かない銘柄は「未分類」セクターへ落とし、画面上でも件数が見えるようにする。
     det = defaultdict(list); sec_of = {}
+    UNK = "未分類"
     for t in m.index:
         v = ind_map.get(t)
         if not v or len(v) < 2 or not v[1]:
+            det[UNK].append(t); sec_of[UNK] = UNK
             continue
         det[v[1]].append(t); sec_of[v[1]] = _sec_ja(v[0])
     lag = next((c for c in ("rs189_l21", "rs189_l20", "rs189_l5") if c in m.columns), None)
@@ -5300,26 +5468,45 @@ def build_industry_hier(m, ind_map, min_n=INDUSTRY_MIN_N):
     def _pack(name, idxs, thin=False):
         sub = m.loc[idxs]
         rs = sub["rs189"].dropna()
-        if rs.empty:
-            return None
-        x = float(rs.median()); y = 0.0
+        x = float(rs.median()) if len(rs) else float("nan")
+        y = 0.0
         if lag:
             prev = sub[lag].dropna()
             if len(prev) >= max(3, min_n // 2):
                 y = x - float(prev.median())
-        q = ("主導" if (x >= INDUSTRY_LEAD_RS and y >= 0) else
-             "弱化" if x >= INDUSTRY_LEAD_RS else "改善" if y >= 0 else "停滞")
-        top = sub["rs189"].sort_values(ascending=False).head(12)
+        if not (x == x):                       # RSが1本も無いバケット
+            q = "対象外"
+        else:
+            q = ("主導" if (x >= INDUSTRY_LEAD_RS and y >= 0) else
+                 "弱化" if x >= INDUSTRY_LEAD_RS else "改善" if y >= 0 else "停滞")
+        # 全構成銘柄を載せる（上位12件だけでは200銘柄の業種が見えない）。
+        # RS欠損は末尾にまとめ、理由バッジ付きで必ず表示する。
+        top = sub["rs189"].sort_values(ascending=False, na_position="last")
         mem = []
         for t2, v2 in top.items():
             if v2 == v2:
-                mem.append(dict(t=t2, rs=int(round(float(v2)))))
+                mem.append(dict(t=t2, rs=int(round(float(v2))),
+                                th=subtheme_theme(t2, s2t) or None))
             else:
                 k = rs_off_reason(m.loc[t2]) or "hist"
-                mem.append(dict(t=t2, rs=None, off=RS_OFF_LABEL.get(k, "対象外")))
-        return dict(sub=_ind_ja(name), q=q, rs=int(round(x)), drs=int(round(y)),
-                    n=len(idxs), br=int(round(float((rs >= INDUSTRY_BREADTH_RS).mean() * 100))),
-                    thin=bool(thin), members=mem)
+                mem.append(dict(t=t2, rs=None, off=RS_OFF_LABEL.get(k, "対象外"),
+                                th=subtheme_theme(t2, s2t) or None))
+        subs_th = []
+        seen_th = {}
+        for mm in mem:
+            k = mm.get("th")
+            if k:
+                seen_th[k] = seen_th.get(k, 0) + 1
+        for k, cnt in sorted(seen_th.items(), key=lambda kv: -kv[1]):
+            st = (tstats or {}).get(k) or {}
+            subs_th.append(dict(th=k, here=cnt, n=st.get("n"), rs=st.get("rs"),
+                                drs=st.get("drs", 0), br=st.get("br", 0)))
+        return dict(sub=_ind_ja(name), q=q, ths=subs_th,
+                    rs=(int(round(x)) if x == x else None), drs=int(round(y)),
+                    n=len(idxs),
+                    br=(int(round(float((rs >= INDUSTRY_BREADTH_RS).mean() * 100)))
+                        if len(rs) else 0),
+                    nrs=len(rs), thin=bool(thin), members=mem)
 
     big = defaultdict(list); spill = defaultdict(list)
     for name, tks in det.items():
@@ -5330,15 +5517,31 @@ def build_industry_hier(m, ind_map, min_n=INDUSTRY_MIN_N):
         if rec:
             big[sec_of[name]].append(rec)
     for sc, idxs in spill.items():
-        if len(idxs) >= min_n:
-            rec = _pack("その他（少数業種の合計）", idxs, thin=True)
-            if rec:
-                big[sc].append(rec)
-    order_q = {"主導": 0, "改善": 1, "弱化": 2, "停滞": 3}
+        # 件数に関わらず必ずバケットを作る。ここで捨てるとユニバースに穴が空く。
+        rec = _pack("その他（少数業種の合計）", idxs, thin=True)
+        if rec:
+            big[sc].append(rec)
+    order_q = {"主導": 0, "改善": 1, "弱化": 2, "停滞": 3, "対象外": 4}
     out = {}
     for sc, subs in big.items():
-        subs.sort(key=lambda d: (d["thin"], order_q[d["q"]], -d["rs"]))
+        subs.sort(key=lambda d: (d["thin"], order_q.get(d["q"], 9),
+                                 -(d["rs"] if d["rs"] is not None else -1)))
         out[sc] = subs
+    unk = sum(int(x["n"]) for x in out.get("未分類", []))
+    if unk:
+        lvl = "alert" if unk > INDUSTRY_UNK_ALERT else ("warn" if unk > INDUSTRY_UNK_WARN else "ok")
+        sys.stderr.write("[industry] 未分類 %d銘柄 (%s)%s\n"
+                         % (unk, lvl,
+                            " ← universe.csv の掃除を推奨" if lvl != "ok" else ""))
+    _INDUSTRY_STATE["unknown"] = unk
+    _INDUSTRY_STATE["buckets"] = sum(len(v) for v in out.values())
+    covered = sum(int(x["n"]) for subs in out.values() for x in subs)
+    _INDUSTRY_STATE["total"] = covered
+    if covered != len(m):
+        sys.stderr.write("[industry] coverage gap: %d/%d\n" % (covered, len(m)))
+    else:
+        sys.stderr.write("[industry] coverage 100%% (%d tickers / %d buckets)\n"
+                         % (covered, sum(len(v) for v in out.values())))
     return out
 
 
@@ -5418,7 +5621,8 @@ def build_sector_hier(m, s2t, min_n=SECTOR_MIN_N):
 
 def build_etf_hier(m, s2t, min_n=SECTOR_MIN_N, ind_map=None):
     """階層の背骨。TradingViewの業種が取れていればそれを使い、無ければ旧テーマ表に退避する。"""
-    hier = build_industry_hier(m, ind_map or {}) if ind_map else {}
+    tstats = build_theme_stats(m, s2t) if (ind_map and s2t) else {}
+    hier = build_industry_hier(m, ind_map or {}, s2t=s2t, tstats=tstats) if ind_map else {}
     if hier:
         return hier
     return build_sector_hier(m, s2t, min_n=min_n)
@@ -5643,6 +5847,71 @@ def _rrg_svg(pts, cxv=50, period="now"):
             f'<text x="{Wd/2}" y="{Ht-6}" fill="#7d8da1" font-size="12" text-anchor="middle">→ SPYに対する相対力（右=強い）</text>'
             f'<text x="12" y="{Ht/2}" fill="#7d8da1" font-size="12" text-anchor="middle" transform="rotate(-90 12 {Ht/2})">↑ 相対力の勢い</text></svg>')
 
+# GICSセクターETF（時価総額加重）と、自ユニバースの同領域（等加重）の対応。
+# 「指数は主導だが中身は弱い」＝上位数銘柄が牽引している状態を検出するために使う。
+# 等加重で12銘柄を持つ本体にとっては、指数の強さより中身の広がりの方が効く。
+GICS_TO_TVSEC = {
+    "情報技術": ["電子テクノロジー", "テクノロジーサービス"],
+    "通信サービス": ["通信"],
+    "一般消費財": ["耐久消費財", "小売業", "消費者サービス"],
+    "生活必需品": ["非耐久消費財", "流通サービス"],
+    "エネルギー": ["エネルギー鉱物", "産業サービス"],
+    "金融": ["金融"],
+    "ヘルスケア": ["ヘルスケアテクノロジー", "ヘルスサービス"],
+    "資本財": ["生産財製造", "交通・輸送"],
+    "素材": ["非エネルギー鉱物", "加工産業"],
+    "不動産": ["金融"],
+    "公益": ["公益事業"],
+}
+
+
+def build_index_vs_breadth(mkt):
+    """指数（ETF相対力）と中身（等加重RS中央値・ブレッドス）の乖離。"""
+    pts = {p.get("ja"): p for p in (mkt.get("rrg_gics") or []) if p.get("ja")}
+    groups = {g["bg"]: g for g in (mkt.get("big_groups") or [])}
+    rows = []
+    for ja, tvsecs in GICS_TO_TVSEC.items():
+        p = pts.get(ja)
+        if not p:
+            continue
+        gs = [groups[s] for s in tvsecs if s in groups]
+        if not gs:
+            continue
+        tot = sum(int(g["n"]) for g in gs) or 1
+        rs = sum(float(g["rs"]) * int(g["n"]) for g in gs) / tot
+        br = sum(float(g["br"]) * int(g["n"]) for g in gs) / tot
+        now = (p.get("per") or {}).get("now") or {}
+        rows.append(dict(ja=ja, tk=p.get("tk"), x=float(now.get("x") or 0),
+                         q=now.get("q") or "", rs=int(round(rs)),
+                         br=int(round(br)), n=tot))
+    if not rows:
+        return []
+    # 指数が市場並み以上なのに中身のブレッドスが薄い順
+    rows.sort(key=lambda r: (-(r["x"] - 100.0), r["br"]))
+    return rows
+
+
+def _index_vs_breadth_card(rows):
+    if not rows:
+        return ""
+    body = ""
+    for r in rows:
+        gap = r["x"] - 100.0
+        cls = "neg" if (gap >= 0 and r["br"] < 25) else ("pos" if r["br"] >= 45 else "mut")
+        mark = "⚠" if (gap >= 0 and r["br"] < 25) else ("◎" if r["br"] >= 45 else "・")
+        body += (f'<div class="ivbrow"><div class="ivbn">{mark} {_h(r["ja"])}'
+                 f'<span class="mut"> {_h(r["tk"] or "")}</span></div>'
+                 f'<div class="ivbm {cls}">指数 {r["x"]:.1f}（{_h(r["q"])}） ／ '
+                 f'中身 RS{r["rs"]} ・ 強{r["br"]}% ・ {r["n"]}銘柄</div></div>')
+    return ('<div class="card"><div class="hdr"><h2>指数と中身の乖離 '
+            '<span class="h2en">Index vs Breadth</span></h2></div>'
+            '<div class="sub">左=セクターETFの相対力（時価総額加重・100が市場並み）、'
+            '右=同領域の自ユニバース銘柄の等加重RS中央値とブレッドス（RS189が80以上の比率）。'
+            '<b>指数が市場並み以上なのに強が25%未満＝上位数銘柄だけで持ち上がっている</b>。'
+            '等加重で持つ本体にとっては、指数の強さより中身の広がりが効く。⚠が乖離。</div>'
+            f'{body}</div>')
+
+
 _RRG_GICS_DESC = ('GICS11セクター＋スタイル5本をSPYとの相対力で配置（横=相対力・100が市場並み／'
                   '縦=その10日モメンタム）。この集合は相互に重複せず市場を網羅し、時価総額加重なので'
                   '「資金がどこへ移ったか」が定義できる。テーマETFは重複が多くこの用途には使えない。')
@@ -5677,13 +5946,22 @@ def _big_group_card(groups):
                  f'<div class="bgname">{_h(disp)}<span class="chip-arr">›</span></div>'
                  f'<div class="bgmeta">RS {g["rs"]} ・ {arrow}{abs(g["drs"])} ・ '
                  f'強{g["br"]}% ・ 主導{g["lead"]}/{g["nsub"]} ・ {g["n"]}銘柄</div></div>')
+    unk = int(_INDUSTRY_STATE.get("unknown") or 0)
+    tot = int(_INDUSTRY_STATE.get("total") or 0)
+    notice = ""
+    if unk > INDUSTRY_UNK_WARN:
+        cls = "neg" if unk > INDUSTRY_UNK_ALERT else "warnc"
+        notice = (f'<div class="unkwarn {cls}">⚠ 業種が付かない銘柄が <b>{unk}件</b>'
+                  f'（全{tot}銘柄中）。買収完了・上場廃止した銘柄が universe.csv に'
+                  f'残っている可能性が高い。TradingViewのスクリーナーから取り直して'
+                  f'universe.csv を更新すると解消する。</div>')
     return ('<div class="card"><div class="hdr"><h2>主導セクター・業種 '
             '<span class="h2en">Leading Groups</span></h2></div>'
             '<div class="sub">ETFではなく<b>構成銘柄の実データ</b>から算出。'
             'RS=詳細セクターのRS189中央値を銘柄数で加重、▲=20日の変化、'
             f'強=RS189が{SECTOR_BREADTH_RS}以上の銘柄比率、主導=主導判定の業種数。'
             'タップで業種一覧へ。</div>'
-            f'<div class="bglist">{rows}</div></div>')
+            f'{notice}<div class="bglist">{rows}</div></div>')
 
 
 _RRG_ETF_DESC = ('テーマETF56本の温度計。相互に重複（SMH⊂AIQ、TAN⊂ICLN等）するため、'
@@ -7577,6 +7855,194 @@ _CF_SECTIONS = (
 )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 発火前ボード（PRE-BREAKOUT）
+#
+# 思想: 買い点の signature は「発火」ではなく「静けさ」。O'Neilの実例に共通するのは
+#   volume dries up just before the big move / 3-4 weeks tight closes /
+#   handle drifts down along lows / extreme volume dry up on pullback
+# であって、ブレイクはその結果でしかない。発火を条件にすると必ず遅れる（PP8日前は
+#   ADR6%の銘柄なら既に15〜25%動いた後）。
+#
+# 同時に、O'Neilが繰り返し "Do not buy" と書いた形を明示的に落とす:
+#   straight up from bottom / 3週や4週はベースではない / late-stage base /
+#   wide and loose / 伸び切り
+#
+# 配点も総合点も作らない。並び順は「ベース段階 → 静けさ → ピボットまでの距離」の
+# 3キーのソートだけで、これは事実の量であって合否ではない。
+PRE_BASE_MIN, PRE_BASE_MAX = 0.08, 0.35   # ベースの深さ。浅すぎ=ただの上昇 / 深すぎ=wide and loose
+PRE_MIN_BASE_DAYS = 20                     # 4週未満は「ベースではない」
+PRE_MAX_STAGE = 2                          # 3rd/4th stage base は買わない
+PRE_PIVOT_LO, PRE_PIVOT_HI = -0.08, 0.005  # ピボット直下。直上は既に発火側
+PRE_MAX_EXT_ATR = 4.0                      # 発火前なので伸び切り判定は厳しく
+PRE_TIGHT_PCT = 0.03                       # 21EMA/VWAPからの「タイト」の閾値
+PRE_SECTOR_RS = 65                         # 業種RS中央値の下限
+PRE_SECTOR_BREADTH = 30                    # 業種ブレッドスの下限(%)
+
+
+def _pre_i(v, default=None):
+    """NaN/None を安全に int 化する。NaN混入でカードごと落ちるのを防ぐ。"""
+    try:
+        f = float(v)
+        return int(round(f)) if np.isfinite(f) else default
+    except Exception:
+        return default
+
+def _pre_num(m, name):
+    if name in m.columns:
+        return pd.to_numeric(m[name], errors="coerce")
+    return pd.Series(np.nan, index=m.index)
+
+
+def _pre_bool(m, name):
+    if name in m.columns:
+        return m[name].fillna(False).astype(bool)
+    return pd.Series(False, index=m.index)
+
+
+def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
+    """発火前ボード。構造が整い、出来高が枯れ、VWAP/21EMAに張り付いている未発火銘柄。"""
+    sys.stderr.write("[pre-breakout] enter rows=%d\n" % (0 if m is None else len(m)))
+    if m is None or m.empty or "rs189" not in m.columns:
+        return []
+    depth = _pre_num(m, "base_depth40")
+    days = _pre_num(m, "cup_days")
+    stage_n = _pre_num(m, "wsb")
+    piv = _pre_num(m, "pivot_dist")
+    ext = _pre_num(m, "ext50_atr")
+    vdry = _pre_num(m, "vdry")
+    atrc = _pre_num(m, "atr_contract")
+    d21 = _pre_num(m, "dma21")
+    v63 = _pre_num(m, "vwap63_dist")
+    v252 = _pre_num(m, "vwap252_dist")
+
+    # --- O'Neilの否定形を落とす --------------------------------------------
+    base_ok = depth.between(PRE_BASE_MIN, PRE_BASE_MAX) & (days >= PRE_MIN_BASE_DAYS)
+    stage_ok = (_pre_bool(m, "stage2") | _pre_bool(m, "weekly_stage2")) & \
+               (stage_n.isna() | (stage_n <= PRE_MAX_STAGE))
+    unfired = (~_pre_bool(m, "true_breakout")) & (~_pre_bool(m, "cup_breakout")) \
+              & (~_pre_bool(m, "breakout_failure"))
+    near_piv = piv.between(PRE_PIVOT_LO, PRE_PIVOT_HI)
+    not_ext = ~(ext > PRE_MAX_EXT_ATR)
+
+    # --- 静けさ（買い点のsignature） ----------------------------------------
+    quiet = (~(vdry > 1.0)) | (~(atrc > 1.0)) | _pre_bool(m, "tc3") \
+            | (_pre_num(m, "contractions") >= 1)
+
+    # --- タイトな位置（21EMA / VWAP） ---------------------------------------
+    tight = (d21.abs() <= PRE_TIGHT_PCT) | (v63.abs() <= PRE_TIGHT_PCT) \
+            | (v252.abs() <= PRE_TIGHT_PCT * 1.7)
+
+    keep = setup_eligible(m) & base_ok & stage_ok & unfired & near_piv & not_ext & quiet & tight
+    sub = m[keep.fillna(False)]
+    if sub.empty:
+        return []
+
+    # --- 業種の強さ（O'Neilはindustry group順位を必ず見る） -----------------
+    sec_of = {}
+    for sc, subs in (hier or {}).items():
+        for x in subs:
+            sec_of[x["sub"]] = (x.get("rs"), x.get("br"), sc)
+    ja_of = {}
+    for t, v in (ind_map or {}).items():
+        if isinstance(v, list) and len(v) >= 2 and v[1]:
+            ja_of[t] = _ind_ja(v[1])
+
+    rows = []
+    for t, r in sub.iterrows():
+        ind = ja_of.get(t, "")
+        srs, sbr, ssec = sec_of.get(ind, (None, None, ""))
+        strong = bool(srs is not None and srs >= PRE_SECTOR_RS
+                      and (sbr or 0) >= PRE_SECTOR_BREADTH)
+        q_v = float(vdry.get(t)) if pd.notna(vdry.get(t)) else 1.0
+        q_a = float(atrc.get(t)) if pd.notna(atrc.get(t)) else 1.0
+        rows.append(dict(
+            t=t, rs189=_pre_i(r.get("rs189"), 0),
+            stage=_pre_i(stage_n.get(t), None),
+            piv=float(piv.get(t)) if pd.notna(piv.get(t)) else None,
+            depth=float(depth.get(t)) if pd.notna(depth.get(t)) else None,
+            days=_pre_i(days.get(t), None),
+            vdry=q_v, atrc=q_a, quiet=q_v * q_a,
+            d21=float(d21.get(t)) if pd.notna(d21.get(t)) else None,
+            v63=float(v63.get(t)) if pd.notna(v63.get(t)) else None,
+            ext=float(ext.get(t)) if pd.notna(ext.get(t)) else None,
+            adr=float(_pre_num(m, "adr").get(t)) if "adr" in m.columns else None,
+            tc3=bool(r.get("tc3")), hl=bool(r.get("higher_lows")),
+            vcp=_pre_i(r.get("contractions"), 0),
+            rsl=bool(r.get("rsline_newhigh")),
+            ind=ind, sec=ssec, srs=srs, sbr=sbr, strong=strong,
+            lo10=float(r.get("lo10")) if pd.notna(r.get("lo10")) else None,
+            close=float(r.get("close")) if pd.notna(r.get("close")) else None,
+            atr14=float(r.get("atr14")) if pd.notna(r.get("atr14")) else None,
+            dvol=float(r.get("dvol") or 0),
+        ))
+    # 並びは3キーのソートのみ。配点はしない。
+    rows.sort(key=lambda d: ((d["stage"] if d["stage"] is not None else 9),
+                             round(d["quiet"], 3),
+                             abs(d["piv"] if d["piv"] is not None else 9)))
+    for d in rows:
+        d["ftd"] = (ftd or {}).get("state") if isinstance(ftd, dict) else None
+    return rows[:cap]
+
+
+def _pre_breakout_card(rows, ftd=None):
+    state = (ftd or {}).get("state") if isinstance(ftd, dict) else None
+    ftd_txt = ""
+    if state:
+        lab = {"FTD_ACTIVE": ("フォロースルー成立中", "pos"),
+               "RALLY_ATTEMPT": ("リバウンド試行中", "warnc"),
+               "CORRECTION": ("調整局面", "neg"),
+               "FTD_FAILED": ("フォロースルー失敗", "neg"),
+               "NO_CORRECTION": ("調整なし", "mut")}.get(state, (state, "mut"))
+        ftd_txt = f'<span class="chip {lab[1]}">{_h(lab[0])}</span>'
+    head = ('<div class="card"><div class="hdr"><h2>発火前 '
+            '<span class="h2en">Pre-Breakout</span></h2>' + ftd_txt + '</div>')
+    if not rows:
+        return (head + '<div class="sub">ベースが整い、出来高が枯れ、21EMA/VWAPに'
+                '張り付いている未発火銘柄。該当なし。</div>'
+                '<div class="empty">該当なし</div></div>')
+    body = ""
+    for d in rows:
+        marks = []
+        if d["tc3"]:
+            marks.append("3週タイト")
+        if d["vcp"]:
+            marks.append(f"収縮{d['vcp']}回")
+        if d["hl"]:
+            marks.append("安値切上")
+        if d["rsl"]:
+            marks.append("RS線新高値")
+        stop = ""
+        if d["lo10"] and d["close"]:
+            stop = f"損切候補 10日安値 ${d['lo10']:,.2f}（{d['lo10']/d['close']-1:+.1%}）"
+        sec = ""
+        if d["ind"]:
+            cls = "pos" if d["strong"] else "mut"
+            sec = (f'<span class="{cls}">{_h(d["ind"])}'
+                   + (f' RS{d["srs"]}・強{d["sbr"]}%' if d["srs"] is not None else "")
+                   + '</span>')
+        body += (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
+                 f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
+                 f'<span class="mut">RS189 {d["rs189"]}</span>'
+                 f'<span class="prestage">{"ベース"+str(d["stage"])+"本目" if d["stage"] is not None else "ベース段階—"}</span>'
+                 f'<span class="presec">{sec}</span></div>'
+                 f'<div class="prenums">'
+                 f'<div><i>piv</i>{(d["piv"] or 0)*100:+.1f}%</div>'
+                 f'<div><i>深さ</i>{(d["depth"] or 0)*100:.0f}%</div>'
+                 f'<div><i>出来高</i>{d["vdry"]:.2f}×</div>'
+                 f'<div><i>ATR収縮</i>{d["atrc"]:.2f}×</div>'
+                 f'<div><i>21EMA</i>{(d["d21"] or 0)*100:+.1f}%</div>'
+                 f'</div>'
+                 f'<div class="pretail">{" ・ ".join(marks)}{"　" if marks and stop else ""}{stop}</div>'
+                 f'</div>')
+    return (head + '<div class="sub">ベースが整い、出来高が枯れ、21EMA/VWAPに張り付いている'
+            '<b>未発火</b>銘柄。発火を待たずに構造で拾う。'
+            'ベース4週未満・深さ8%未満または35%超・3本目以降のベース・50日線から4ATR超は除外。'
+            '並びは「ベース段階 → 静けさ（出来高×ATR収縮）→ ピボットまでの距離」の3キーのみで、'
+            '配点も合否判定もしない。業種名が緑＝業種RS65以上かつブレッドス30%以上。</div>'
+            f'<div class="prelist">{body}</div></div>')
+
+
 def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
     """Fact-only board: no weights, totals, rankings or order recommendations."""
     pool = m[setup_eligible(m) & (m["rs189"] >= min_rs)]
@@ -7792,8 +8258,8 @@ def build_pullback_screener(m, k=20):
 
 def build_buy_today(m, s2i, e2j, s2t, k=20, pick_set=None):
     """Leader setup scanner. Breakouts require an actual close-through of a prior pivot."""
-    base = (setup_eligible(m) & (m["stage2"] == True) & (m["rs"] >= 90) & (m["rs189"] >= 85)
-            & (m["dist52"] >= -0.25) & (m["breakout_failure"] != True))
+    base = (setup_eligible(m) & entry_worthy(m) & (m["rs"] >= 90) & (m["rs189"] >= 85)
+            & (m["dist52"] >= -0.25))
     sub = m[base.fillna(False)].copy()
     if sub.empty:
         return []
@@ -9820,7 +10286,7 @@ def _updown_vol_card(ts):
            f'<circle cx="{X(n-1):.1f}" cy="{Y(ys[-1]):.1f}" r="3.5" fill="{col}"/></svg>')
     return (f'<div class="card"><div class="chd"><h2>集積／分散（上げ日÷下げ日 売買代金）</h2>'
             f'<div class="chd-now" style="color:{col}"><b>{raw_last:.2f}</b><span>{state}</span></div></div>'
-            f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">上げ日÷下げ日の売買代金（20日）。<b>1.0超＝買い集め</b>／<b>1.0割れ＝売り抜け</b>（O\'Neil式）</div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">上げ日÷下げ日の売買代金（20日）。<b>1.0超＝買い集め</b>／<b>1.0割れ＝売り抜け</b>（O\'Neil式）</div></details>'
             f'<div class="chart">{svg}'
             f'{_date_axis(ts)}</div></div>')
 
@@ -10537,7 +11003,7 @@ def _dd_card(dd):
                 f'<span class="st st-{d["cls"]}">{d["st"]}</span>{bd}{dline}{prior_line}</div>')
     boxes = "".join(_box(tk, d) for tk, d in dd.items())
     return (f'<div class="card"><h2>ディストリビューション・デイ（直近25営業日／FTD以降）</h2>'
-            f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">'
             f'前日比−0.2%以下＆出来高増＝<b>売り抜け日</b>／上げても値幅出ず出来高だけ膨らむ＝'
             f'<b>ストール日（末尾s）</b>。4=観察・6=警戒、指数+5%で解消。'
             f'<b>有効FTD成立時はFTD以前のDDを前サイクルとして現在件数からリセット</b>。'
@@ -11467,7 +11933,7 @@ def _leader_run_card(lr):
                   f'<span class="mrph">{r["phase"]}</span>'
                   f'<span class="mrtr">{traj(r)}</span></span>')
     return (f'<div class="card"><div class="hdr"><h2>先導株モメンタム・ラン</h2>{_cp([r["t"] for r in rows])}</div>'
-            f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">現リーダー（RS189上位{lr["n"]}）の63日RSの軌跡（42日前→現在）。<b class="mr-acc">加速</b>＝拡大／<b class="mr-cru">巡航</b>＝維持／<b class="mr-fad">失速</b>＝細り</div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">現リーダー（RS189上位{lr["n"]}）の63日RSの軌跡（42日前→現在）。<b class="mr-acc">加速</b>＝拡大／<b class="mr-cru">巡航</b>＝維持／<b class="mr-fad">失速</b>＝細り</div></details>'
             f'<div class="lbmood" style="color:{lr["hcol"]}">● {lr["health"]} ・ 加速{lr["acc"]} / 失速{lr["fade"]}（{lr["n"]}中）</div>'
             f'<div class="mrgrid">{chips}</div>'
             f'<div class="lbnote">数字＝63日RSパーセンタイル。失速は出口線を意識——執行は確定出口線で（予兆での自動売却はしない）。</div></div>')
@@ -11542,7 +12008,7 @@ def _leader_temp_card(lt):
     return (
         f'<div class="card"><div class="chd"><h2>リーダーの強さ</h2>'
         f'<div class="chd-now" style="color:#5b6b7f"><b>{cur:.0f}%</b><span>{zone}</span></div></div>'
-        f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">リーダー群（RS189上位10%）の勢いを過去分布の%タイルで表示・{span}</div></details>'
+        f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">リーダー群（RS189上位10%）の勢いを過去分布の%タイルで表示・{span}</div></details>'
         f'{chart}'
         f'</div>')
 
@@ -11608,7 +12074,7 @@ def build_structure_pivot_screen(m, s2t=None):
                     f'<span class="mvr-x">{"".join(extras)}</span>'
                     f'<span class="mvr-v mut" style="font-weight:700">{rhtxt}</span></div>'
                     f'{lvls}</div>')
-    return (hd + '<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">'
+    return (hd + '<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">'
             'LL→高い安値(HL)の<b>安値切り上げ構造</b>を検出（フィボ不使用・構造のみ）。'
             '段階：底固め（反発高値未突破）→上放れ確認（反発高値突破）→ブレイク後リテスト（突破後の押し戻し）。'
             '<b>［出来高減］＝HL付近の出来高がLL付近より枯れている＝売り枯れの健全な下げ止まり（最優先表示）</b>。'
@@ -11827,6 +12293,33 @@ def _vcp_card(rows):
 MULTI_VWAP_RS189_MIN = 85
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# セットアップ系カード共通の「今日見る価値があるか」ゲート。
+# 伸び切り（50日線から遠い）と、ブレイク後に走り切った銘柄を落とす。
+# 数値は表示用の足切りであり、選定ロジック（Core 12）には影響しない。
+SETUP_MAX_EXT_ATR = 6.0      # 50日線からのATR距離。これ以上は追いかけ
+SETUP_MAX_PIVOT_RUN = 0.12   # ピボットから+12%超に走った後は「もう入る場所ではない」
+
+
+def entry_worthy(m):
+    """ステージ2の上昇トレンドで、まだ伸び切っていない銘柄だけTrueにする。"""
+    idx = m.index
+    def col(name, default=np.nan):
+        return pd.to_numeric(m[name], errors="coerce") if name in m.columns \
+            else pd.Series(default, index=idx)
+    stage = (m["stage2"].fillna(False).astype(bool) if "stage2" in m.columns
+             else pd.Series(False, index=idx))
+    if "weekly_stage2" in m.columns:
+        stage = stage | m["weekly_stage2"].fillna(False).astype(bool)
+    ext = col("ext50_atr")
+    not_extended = ~(ext > SETUP_MAX_EXT_ATR)             # NaNは通す
+    piv = col("pivot_dist")
+    not_run = ~(piv > SETUP_MAX_PIVOT_RUN)                # ピボットから走り切った後を除外
+    failed = (m["breakout_failure"].fillna(False).astype(bool)
+              if "breakout_failure" in m.columns else pd.Series(False, index=idx))
+    return stage & not_extended & not_run & (~failed)
+
+
 def build_multi_vwap_card(m, cap=24):
     """63/252/all-time VWAP watch with a dedicated all-time break column."""
     needed = ("vwap63", "vwap252", "vwap_all")
@@ -11846,12 +12339,14 @@ def build_multi_vwap_card(m, cap=24):
     loc_roll = _any_loc(("vwap63", "vwap252"))
     all_valid = m.get("vwap_all_valid", pd.Series(False, index=m.index)).fillna(False).astype(bool)
     loc_all = _any_loc(("vwap_all",)) & all_valid
-    keep = elig & ((loc_roll & (rs >= MULTI_VWAP_RS189_MIN)) | loc_all)
+    # 下落トレンドや伸び切りの銘柄を出さない（VWAP接触は上昇中でこそ意味がある）
+    keep = elig & entry_worthy(m) & ((loc_roll & (rs >= MULTI_VWAP_RS189_MIN)) | loc_all)
     sub = m[keep].copy()
     if sub.empty:
         return ('<div class="card"><h2>Multi VWAPセットアップ</h2>'
                 '<div class="sub">63/252/上場来VWAPの近接・支持反発・回復に該当なし。'
                 '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
+                'ステージ2かつ50日線から6ATR以内・ピボットから+12%以内に限定。'
                 '合否と総合点は計算しない。</div>'
                 '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
                 '<th>上場来VWAP</th><th>上場来ブレイク</th></tr></table></div>')
@@ -12736,6 +13231,40 @@ body:has(#t-rules:target) nav a[href="#t-rules"]{background:#1f6feb;color:#fff;b
 .zoomable.zoomed{cursor:grab;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)}
 .zoomhint{font-size:9px;color:#7e8ea3;margin-top:3px;text-align:right}
 .zoomable.zoomed+.zoomhint::after{content:" ・ ダブルタップで戻す"}
+.hth{margin-left:5px;font-size:9px;color:#7e8ea3;opacity:.9}
+.hthg{margin:6px 0 2px;width:100%}
+.hthg-h{font-size:10px;font-weight:700;color:#9fb0c5;margin:4px 0 3px;
+  display:flex;align-items:center;gap:5px}
+.hthg-n{font-size:9px;font-weight:400;color:#7e8ea3}
+.hthg-m{font-size:9.5px;font-weight:600;color:#8fa2b8;font-variant-numeric:tabular-nums}
+.hthg-x{font-size:9px;font-weight:400;color:#6b7a8d;margin-left:auto;white-space:nowrap}
+.subx{margin-top:2px}
+.subx>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:3px;
+  font-size:10.5px;font-weight:700;color:#8fb3ff;padding:2px 0}
+.subx>summary::-webkit-details-marker{display:none}
+.subx>summary::after{content:'\25B8';font-size:9px;transition:transform .15s}
+.subx[open]>summary::after{transform:rotate(90deg)}
+.subx-b{margin-top:4px;padding-left:8px;border-left:2px solid rgba(255,255,255,.10)}
+.prelist{margin-top:6px}
+.prerow{padding:9px 2px;border-top:1px solid rgba(255,255,255,.06)}
+.prerow:first-child{border-top:0}
+.premain{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.pretk{font-size:14px;font-weight:800;color:#e6edf3;letter-spacing:.02em}
+.prestage{font-size:10px;color:#9fb0c5}
+.presec{font-size:10px;margin-left:auto}
+.prenums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;margin-top:5px}
+.prenums div{text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:#8fa2b8}
+.prenums div i{display:block;font-style:normal;font-size:8.5px;color:#4d5b6d}
+.pretail{margin-top:4px;font-size:10px;color:#7e8ea3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ivbrow{padding:8px 2px;border-top:1px solid rgba(255,255,255,.06)}
+.ivbrow:first-child{border-top:0}
+.ivbn{font-size:12.5px;font-weight:700;color:#e6edf3}
+.ivbm{font-size:10.5px;margin-top:3px;font-variant-numeric:tabular-nums}
+.unkwarn{margin:8px 0 2px;padding:8px 10px;border-radius:8px;font-size:11px;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+.unkwarn.warnc{color:#f2b263}.unkwarn.neg{color:#ff8080}
+.hmore{margin-top:6px;width:100%}
+.hmore>summary{list-style:none;cursor:pointer;font-size:10.5px;color:#7e8ea3;padding:4px 0}
+.hmore>summary::-webkit-details-marker{display:none}
 .rrgdt{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;
   font-variant-numeric:tabular-nums}
 .rrgdt th{font-size:10px;color:#7e8ea3;font-weight:600;text-align:right;padding:4px 3px}
@@ -13624,16 +14153,56 @@ function showThemeHier(ev,el){
   var ix=0;
   function rowHtml(su){
     var qc=QC[su.q]||'#8b949e';
-    var mem=(su.members||[]).map(function(mm){
+    var CAP=20;
+    var all=(su.members||[]);
+    function memHtml(mm){
       return '<span class="hmem" data-tkone="'+mm.t+'" onclick="hierPick(event,this)">'+mm.t+
         (mm.rs!=null?'<span class="rsb">'+mm.rs+'</span>'
-                    :'<span class="rsb rsoff">'+(mm.off||'対象外')+'</span>')+'</span>';
-    }).join('');
+                    :'<span class="rsb rsoff">'+(mm.off||'対象外')+'</span>')+
+        (mm.th?'<span class="hth">'+escHtml(mm.th)+'</span>':'')+'</span>';
+    }
+    /* 業種の中の細目（メモリ→DRAM/NAND/HBM 等）でまとめる。細目が無い分は末尾へ。 */
+    function memBlock(list){
+      var byTh={}, ord=[], plain=[];
+      list.forEach(function(mm){
+        if(mm.th){ if(!byTh[mm.th]){byTh[mm.th]=[];ord.push(mm.th);} byTh[mm.th].push(mm); }
+        else plain.push(mm);
+      });
+      if(ord.length<2){ return list.map(memHtml).join(''); }
+      var TS={}; (su.ths||[]).forEach(function(x){ TS[x.th]=x; });
+      var h='';
+      ord.forEach(function(k){
+        var st=TS[k]||{}, meta='';
+        if(st.rs!=null){
+          var ar=st.drs>0?'▲':st.drs<0?'▼':'＝';
+          meta='<span class="hthg-m">RS '+st.rs+' '+ar+Math.abs(st.drs)+
+               ' 強'+st.br+'%</span>';
+          if(st.n && st.n>byTh[k].length){
+            meta+='<span class="hthg-x">全'+st.n+'銘柄・この業種に'+byTh[k].length+'</span>';
+          }
+        }
+        h+='<div class="hthg"><div class="hthg-h">'+escHtml(k)+
+           '<span class="hthg-n">'+byTh[k].length+'</span>'+meta+'</div>'+
+           byTh[k].map(memHtml).join('')+'</div>';
+      });
+      if(plain.length){
+        h+='<div class="hthg"><div class="hthg-h">細目なし<span class="hthg-n">'+
+           plain.length+'</span></div>'+plain.map(memHtml).join('')+'</div>';
+      }
+      return h;
+    }
+    var mem=memBlock(all.slice(0,CAP));
+    if(all.length>CAP){
+      mem+='<details class="hmore"><summary>残り'+(all.length-CAP)+'件</summary>'+
+           memBlock(all.slice(CAP))+'</details>';
+    }
     var arrow=su.drs>0?'▲':su.drs<0?'▼':'＝';
+    var rsTxt=(su.rs===null||su.rs===undefined)?'RS —':'RS '+su.rs;
     var h='<div class="hsub-row"><div class="hsub-hd" onclick="hierSub('+ix+')">'+
       '<div class="hsub-name">'+escHtml(su.sub)+'<span class="hsub-q" style="background:'+qc+'22;color:'+qc+'">'+escHtml(su.q)+'</span></div>'+
-      '<div class="hsub-meta">RS '+su.rs+' ・ '+arrow+Math.abs(su.drs)+
-      (su.br!=null?' ・ 強'+su.br+'%':'')+' ・ '+su.n+'銘柄</div></div>'+
+      '<div class="hsub-meta">'+rsTxt+' ・ '+arrow+Math.abs(su.drs)+
+      (su.br!=null?' ・ 強'+su.br+'%':'')+' ・ '+su.n+'銘柄'+
+      ((su.nrs!=null&&su.nrs<su.n)?'（RS対象'+su.nrs+'）':'')+'</div></div>'+
       '<div class="hsub-mem" id="hsub'+ix+'">'+mem+'</div></div>';
     ix++; return h;
   }
@@ -13661,7 +14230,7 @@ function showThemeHier(ev,el){
   if(!html) html='<div class="empty">該当なし</div>';
   var m=document.getElementById('hierModal');
   m.querySelector('.hier-box').innerHTML='<h3>'+escHtml(disp)+'</h3>'+
-    '<div class="hb-sub">このセクターに属する業種（TradingViewの業種分類×構成銘柄の実データ）。RS=構成銘柄のRS189中央値、▲=20日の変化、強=RS189が80以上の銘柄比率。構成5銘柄未満の業種は統計にならないので「その他」へ集約。主導・改善を既定表示、弱化・停滞はタップで展開。行タップで構成銘柄、銘柄タップで詳細。</div>'+html;
+    '<div class="hb-sub">このセクターに属する業種（TradingViewの業種分類×構成銘柄の実データ）。RS=構成銘柄のRS189中央値、▲=20日の変化、強=RS189が80以上の銘柄比率。構成5銘柄未満の業種はセクター内の「その他」へ集約——捨てずに必ずどこかに入る。主導・改善を既定表示、弱化・停滞はタップで展開。行タップで構成銘柄、銘柄タップで詳細。</div>'+html;
   m.classList.add('on');
 }
 function hierSub(ix){ var e=document.getElementById('hsub'+ix); if(e) e.classList.toggle('on'); }
@@ -13816,9 +14385,11 @@ function showDet(tk){
   function _fsg(x,u){ if(x===null||x===undefined) return '—';
     var t=_f(x,u); return (Number(x)>0 && t.charAt(0)!=='+') ? ('+'+t) : t; }
   function _vwcell(st,val){
+    /* イベントが無いときは距離だけを出す。'—' や 'イベントなし' の前置きは
+       負号と読み間違えるうえ、情報を足していないので出さない。 */
     var v=(val===null||val===undefined)?'':_fsg(val,'%');
-    if(st) return v ? (st+' '+v) : st;
-    return v ? ('イベントなし '+v) : '対象外'; }
+    if(st && st!=='—') return v ? (st+' '+v) : st;
+    return v || '対象外'; }
   function _rsc(v){ return (v===null||v===undefined)
     ? '<span class="rsoff" title="'+(d.offh||'')+'">'+(d.off||'対象外')+'</span>' : _f(v); }
   var rows=[['RS(63日)',_rsc(d.rs),'mut'],
@@ -15220,7 +15791,7 @@ def _expl(text):
     """推移チャートの読み方を折りたたみ表示（既定は閉じる）。冗長な解説で画面を占有しない。"""
     if not text:
         return ""
-    return (f'<details class="cxpl" open><summary>読み方</summary>'
+    return (f'<details class="cxpl"><summary>読み方</summary>'
             f'<div class="cxpl-b">{text}</div></details>')
 
 
@@ -15232,7 +15803,7 @@ def _svg_breadth(ts, n_uni=None):
     svg = _svg_inner(ys, "#58a6ff", "bg", [20,40,50,60,80], "%")
     uni_txt = f"約{round(n_uni,-1):,.0f}銘柄" if n_uni else "ユニバース"
     return (f'<div class="card"><div class="chd"><h2>ブレッドス推移（200日線上の割合）</h2><div class="chd-now" style="color:#9ecbff"><b>{last:.0f}%</b><span>200日線上</span></div></div>'
-            f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">200日線を上回る銘柄の割合（{uni_txt}・{_span_label(ts)}）</div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">200日線を上回る銘柄の割合（{uni_txt}・{_span_label(ts)}）</div></details>'
             f'<div class="chart">{svg}'
             f'{_date_axis(ts)}</div></div>')
 
@@ -15294,7 +15865,7 @@ def _dollarvol_card(dv):
     _dv_now = (f'<div class="chd-now" style="color:{tcol}"><b>{ur:.2f}<span style="font-size:11px">倍</span></b><span>参加度</span></div>'
                if (ur is not None and ur == ur) else "")
     return (f'<div class="card"><div class="chd"><h2>売買代金 参加度（200日平均比）</h2>{_dv_now}</div>'
-            f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">売買代金（終値×出来高・21日平滑）÷各自の200日平均・{dv["span"]}。1.0=平常／超=資金厚い／割れ=細り<span style="margin-left:6px">{legend}</span></div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">売買代金（終値×出来高・21日平滑）÷各自の200日平均・{dv["span"]}。1.0=平常／超=資金厚い／割れ=細り<span style="margin-left:6px">{legend}</span></div></details>'
             f'<div class="chart">{svg}'
             f'<div class="cap cap-c"><span style="color:#7dd3fc;font-weight:700">'
             f'現在 {_fmt_usd_big(uni["last_abs"])}（20日前比 {uni["chg20"]:+.0f}%）{tclause}</span></div>'
@@ -15616,7 +16187,7 @@ def _svg_mri(ts):
            f'<polyline points="{pts}" fill="none" stroke="#34d399" stroke-width="2"/>'
            f'<circle cx="{X(n-1):.1f}" cy="{Y(ys[-1]):.1f}" r="3.5" fill="#34d399"/></svg>')
     return (f'<div class="card"><div class="chd"><h2>マーケットステータス推移</h2><div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
-            f'<details class="cxpl" open><summary>読み方</summary><div class="cxpl-b">地合いスコアの推移・{_span_label(ts)}（70強気/55やや強気/40中立/25弱含み）</div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">地合いスコアの推移・{_span_label(ts)}（70強気/55やや強気/40中立/25弱含み）</div></details>'
             f'<div class="chart">{svg}'
             f'{_date_axis(ts)}</div></div>')
 
@@ -16896,20 +17467,37 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             '<a class="tabx" href="#t-rules" onclick="tab(\'t-rules\',this);return false;">Rules</a></nav>'
             f'<section id="t-market" class="on">{market}</section>'
             f'<section id="t-rotation">'
-            + _mkt_section("① ローテーションの向き（RRG）", "改善→主導→弱化→停滞の時計回り（視覚的な全体像）", en="Rotation Direction (RRG)")
+            # 上から「市場全体 → その中身 → 自ユニバース → 個別」の順。粒度が一方向に細かくなる。
+            + _mkt_section("① どこに資金が向かっているか", "重複のないGICS11＋スタイルで測る資金フロー", en="Where the Money Is")
             + f'{_rrg_card(mkt.get("rrg_gics"), None, None, 100, "資金フロー（GICS11＋スタイル）", _RRG_GICS_DESC)}'
-            + f'{_big_group_card(mkt.get("big_groups"))}'
-            + f'{_rrg_card(mkt.get("rrg_etf"), None, None, 100, "テーマETFの温度計（重複あり）", _RRG_ETF_DESC)}'
-            + _mkt_section("② 強い業種の主導株", "強いグループ×個別も強い＝順張りの一等地", en="Leaders in Strong Groups")
-            + f'{sector_leaders}'
-            + _mkt_section("③ 大枠（セクターETF）", "市場全体のセクター資金フロー・大分類", en="Sector ETFs")
             + f'{_heatmap_card(mkt.get("sector_ranks"))}'
+            + _mkt_section("② その資金は広いか、数銘柄か", "指数（時価総額加重）と中身（等加重）の乖離", en="Index vs Breadth")
+            + f'{_index_vs_breadth_card(mkt.get("idx_breadth"))}'
+            + _mkt_section("③ 自ユニバースで主導しているのは誰か", "セクター→業種→細目テーマ→銘柄。タップで降りる", en="Leading Groups")
+            + f'{_big_group_card(mkt.get("big_groups"))}'
+            + _mkt_section("④ その中で買える銘柄はどれか", "強いグループ×個別も強い＝順張りの一等地", en="Leaders in Strong Groups")
+            + f'{sector_leaders}'
+            + _mkt_section("⑤ 一覧で確認する", "見出しタップで並べ替え・行タップで構成銘柄", en="Full Rankings")
             + f'{_sector_rank_card(mkt.get("sector_ranks"))}'
-            + _mkt_section("④ サブテーマ別RS（詳細）", "見出しタップで並べ替え・行タップで構成銘柄", en="Sub-Theme RS")
-            + f'{sector}</section>'
+            + f'{sector}'
+            + f'{_rrg_card(mkt.get("rrg_etf"), None, None, 100, "テーマETFの温度計（重複あり）", _RRG_ETF_DESC)}</section>'
             f'<section id="t-movers">{build_movers_tab(m, s2t)}</section>'
             f'<section id="t-rs">{rs_compare}</section>'
-            f'<section id="t-today">{today}</section>'
+            f'<section id="t-today">'
+            # 上から「発火前 → 発火 → 一覧」。買い点のsignatureは静けさなので先に置く。
+            + _mkt_section("① 発火前（構造が整い、静かなもの）",
+                           "出来高が枯れ21EMA/VWAPに張り付いた未発火銘柄。発火を待たずに構造で拾う",
+                           en="Pre-Breakout")
+            # mkt側で落ちても表示が消えないよう、無ければこの場で組み直す
+            + _pre_breakout_card(
+                (mkt.get("pre_breakout")
+                 or _scard("pre_breakout_rt", build_pre_breakout, m, INDUSTRY_RAW,
+                           mkt.get("etf_hier"), mkt.get("ftd"), default=[])),
+                mkt.get("ftd"))
+            + _mkt_section("② 発火済み・その他のセットアップ",
+                           "実際にイベントが起きたもの・従来の一覧",
+                           en="Fired & Other Setups")
+            + f'{today}</section>'
             f'<section id="t-port">{port}</section>'
             f'<section id="t-alloc">'
             + _mkt_section("トレード計画・保有記録", "買う前に株数・撤退・部分利確を決め、そのまま保有に記録", en="Plan & Holdings")
@@ -16968,6 +17556,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             + "<script>window.SWING=" + _json_for_script(swing_data) + ";</script>"
             + "<script>" + JS + "</script></body></html>")
     html = _inject_en_titles(html)
+    html = _fold_long_subs(html)          # 説明文の出し方を全カードで統一
     html = _lightpass(html)
     # 投稿カードはAlmanacライトで生成済みのため、lightpass後に注入して二重変換を防ぐ
     html = html.replace('</head>', '<style>' + POST_CSS + '</style></head>', 1)
@@ -17085,6 +17674,46 @@ def _lp_map_rgba(mo):
     return mo.group(0)                           # 有彩色rgba（チップ地等）は保持
 
 _LP_KEEP = set()                                  # 変換除外（必要時に追加）
+
+def _fold_long_subs(html, limit=88):
+    """カードの説明文（.sub）が長いときに、1文目だけ残して残りを折りたたむ。
+
+    カードごとに書き方が分かれていた（常時表示83箇所／折りたたみ13箇所／既定で開いた
+    ものが9箇所）ため、出力後に一括で揃える。ネストした<div>を含むsubは対象外にして
+    既存レイアウトを壊さない。
+    """
+    import re as _re
+
+    def _rep(mo):
+        inner = mo.group(1)
+        if "<div" in inner or "<details" in inner or "<table" in inner:
+            return mo.group(0)
+        plain = _re.sub(r"<[^>]+>", "", inner)
+        if len(plain) <= limit:
+            return mo.group(0)
+        # 1文目の区切り（。）でだけ切る。タグ境界を割らないよう、タグ外の。を探す。
+        depth, cut = 0, -1
+        for i, ch in enumerate(inner):
+            if ch == "<":
+                depth += 1
+            elif ch == ">":
+                depth = max(0, depth - 1)
+            elif ch == "。" and depth == 0:
+                head = _re.sub(r"<[^>]+>", "", inner[:i + 1])
+                if len(head) >= 18:
+                    cut = i + 1
+                    break
+        if cut < 0 or cut >= len(inner) - 8:
+            return mo.group(0)
+        head, rest = inner[:cut], inner[cut:].strip()
+        if not rest:
+            return mo.group(0)
+        return (f'<div class="sub">{head}'
+                f'<details class="subx"><summary>詳しく</summary>'
+                f'<div class="subx-b">{rest}</div></details></div>')
+
+    return _re.sub(r'<div class="sub">(.*?)</div>', _rep, html, flags=_re.S)
+
 
 def _lightpass(html):
     import re as _re
@@ -17237,6 +17866,24 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
         errs.append("multi vwap: 63/252のRS189下限が85から変更")
     if "VIX反転シーケンス" not in html or "VIX FEAR CYCLE" not in html:
         errs.append("VIX fear-cycle card missing from Daily")
+    try:
+        _h2 = (mkt or {}).get("etf_hier") or {}
+        if _h2:
+            _cov = sum(int(x.get("n") or 0) for v in _h2.values() for x in v)
+            _mem = sum(len(x.get("members") or []) for v in _h2.values() for x in v)
+            if _cov != _mem:
+                errs.append("industry hier: 構成銘柄の総数(%d)がバケット合計(%d)と不一致"
+                            % (_mem, _cov))
+    except Exception as _e:
+        errs.append("industry hier coverage check failed: " + repr(_e)[:60])
+    try:
+        _unk = int(_INDUSTRY_STATE.get("unknown") or 0)
+        if _unk > INDUSTRY_UNK_ALERT:
+            warns.append("universe.csv の掃除を推奨: 業種が付かない銘柄が%d件" % _unk)
+        elif _unk > INDUSTRY_UNK_WARN:
+            warns.append("業種が付かない銘柄が%d件（universe.csv が古い可能性）" % _unk)
+    except Exception:
+        pass
     if VIX_CYCLE_START != pd.Timestamp("1990-01-01") or VIX_CYCLE_MIN_MONTHS != 120:
         errs.append("VIX fear-cycle native history settings changed")
     try:
@@ -17985,6 +18632,9 @@ def main():
                 "  実データ/実ネットワークで検証する場合は --integration-test を付けてください。")
         _ALLOW_NETWORK = False
         print("[selftest] offline mode: 全ネットワーク停止・本番state/履歴/キャッシュは読み書きしない（strict fixture）")
+    if UNIVERSE_AUTO and not os.path.exists(UNIVERSE_CSV) and _net_ok():
+        # 自動生成モードでは初回にCSVが無くてよい（ここで作る）
+        _scard("universe_bootstrap", refresh_universe_csv, default=False)
     elif do_self and not integration and not os.path.exists(UNIVERSE_CSV):
         raise SystemExit(
             "[selftest] universe が見つかりません: %s\n"
@@ -18155,9 +18805,19 @@ def main():
     mkt["rrg_gics"] = _scard("rrg_gics", build_rrg_etf, macro, _extras,
                              themes=GICS_THEMES + STYLE_THEMES)
     _indmap = _scard("industry_map", load_industry_map, list(m.index), default={}) or {}
+    # 全タブの「業種」表記を一本化（Publish/Setups/Movers/RS比較/銘柄詳細まで波及）
+    INDUSTRY_RAW.clear()
+    INDUSTRY_RAW.update(_indmap)
+    INDUSTRY_DISPLAY.clear()
+    for _t, _v in _indmap.items():
+        if isinstance(_v, list) and len(_v) >= 2 and _v[1]:
+            INDUSTRY_DISPLAY[_t] = _ind_ja(_v[1])
     mkt["etf_hier"] = _scard("etf_hier", build_etf_hier, m, s2t, ind_map=_indmap)
     # etf_hier(=大分類キー)を作ってから集計する。順序を逆にすると空になる。
     mkt["big_groups"] = _scard("big_groups", build_big_groups, mkt.get("etf_hier"))
+    mkt["idx_breadth"] = _scard("idx_breadth", build_index_vs_breadth, mkt, default=[])
+    mkt["pre_breakout"] = _scard("pre_breakout", build_pre_breakout, m,
+                                 _indmap, mkt.get("etf_hier"), mkt.get("ftd"), default=[])
     mkt["sectors_rs"] = sectors
     mkt["theme_hier"] = _scard("theme_hier", build_theme_hierarchy, m, s2t)
     mkt["lev_env"] = _scard("lev_env", build_lev_env, macro)
