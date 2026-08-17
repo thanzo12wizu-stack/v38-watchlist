@@ -2,10 +2,11 @@ name: Dashboard daily build
 
 on:
   schedule:
-    # 朝一: JST 7時 = UTC 22時（米取引日の翌朝＝UTC火〜土）
-    - cron: '0 22 * * 2-6'
-    # 昼: JST 13時 = UTC 4時（夏時間の取りこぼし・朝のFRED障害を再確認）
-    - cron: '0 4 * * 2-6'
+    # 朝一: JST 7時 = UTC 22時。UTC22時はJST翌日なので曜日はUTC月〜金。
+    # 2-6 だと月曜引け後（JST火曜朝）が抜け、JST日曜朝が空打ちになる。
+    - cron: '17 22 * * 1-5'
+    # 昼: JST 13時 = UTC 4時（同日）。朝の取得漏れ・FRED障害を再確認。
+    - cron: '17 4 * * 2-6'
   push:
     branches:
       - main
@@ -29,7 +30,7 @@ concurrency:
 
 jobs:
   build-and-publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       TZ: Asia/Tokyo
@@ -45,7 +46,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pandas numpy yfinance
+        run: pip install --disable-pip-version-check -r requirements.txt
 
       - name: Build dashboard
         env:
@@ -63,6 +64,12 @@ jobs:
           V38_FMP_REFERENCE_BUDGET: '40'
           V38_STATE_JSON: state.json
           V38_EQUITY_CSV: equity.csv
+          # 決算キャッシュ。未設定だとrunnerで書けないパスに落ちて毎回再取得になる。
+          V38_ER_JSON: earnings.json
+          # 上場来VWAPの累積和キャッシュ。初回だけ period="max" を全銘柄ぶん取得し、
+          # 以降は差分更新なので所要はほぼゼロ。
+          V38_INCEPT_VWAP_JSON: inception_vwap.json
+          V38_INCEPT_VWAP_BUDGET: '1400'
         shell: bash
         run: |
           set -euo pipefail
@@ -154,6 +161,7 @@ jobs:
             command-center.html command-center_share.html \
             mktcap.json trend_history.json fred_cache.json \
             fmp_reference_cache.json state.json daily_log.csv \
+            earnings.json inception_vwap.json \
             commit_manifest.json; do
             [[ -f "$file" ]] && git add -- "$file"
           done
