@@ -31,7 +31,7 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       TZ: Asia/Tokyo
 
@@ -51,6 +51,12 @@ jobs:
       - name: Build dashboard
         env:
           V38_UNIVERSE_CSV: universe.csv
+          # ユニバースをTradingViewスクリーナーAPIから毎回生成する。
+          # 手作業のCSVエクスポートが不要になり、上場廃止・新規上場が自動で反映される。
+          # 取得失敗・件数が前回の80%未満なら既存CSVを温存する。
+          V38_UNIVERSE_AUTO: '1'
+          V38_UNIVERSE_MIN_MCAP: '200000000'
+          V38_UNIVERSE_MIN_PRICE: '1'
           V38_SECTOR_JSON: sector_snapshot.json
           V38_OUT_HTML: command-center.html
           V38_MKTCAP_JSON: mktcap.json
@@ -165,6 +171,7 @@ jobs:
             mktcap.json trend_history.json fred_cache.json \
             fmp_reference_cache.json state.json daily_log.csv \
             earnings.json inception_vwap.json industry_map.json \
+            universe.csv \
             commit_manifest.json; do
             [[ -f "$file" ]] && git add -- "$file"
           done
@@ -305,5 +312,3 @@ jobs:
           fi
 
           exit 1
-          
-          
