@@ -1,0 +1,55 @@
+name: Options GEX Prototype
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: Underlying ticker
+        required: true
+        default: MSTR
+      expiry:
+        description: Expiration YYYY-MM-DD (blank = nearest)
+        required: false
+        default: ''
+      strike_pct:
+        description: Strike range around spot (0.35 = +/-35%)
+        required: false
+        default: '0.35'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prototype/options-gex-wall
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check yfinance pandas numpy
+      - name: Build GEX prototype
+        shell: bash
+        run: |
+          args=(--ticker "${{ inputs.ticker }}" --strike-pct "${{ inputs.strike_pct }}")
+          if [ -n "${{ inputs.expiry }}" ]; then args+=(--expiry "${{ inputs.expiry }}"); fi
+          python tools/build_options_gex_prototype.py "${args[@]}"
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: options-gex-${{ inputs.ticker }}
+          path: |
+            options-gex-prototype.html
+            data/options_gex_prototype.json
+      - name: Commit preview to prototype branch
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add options-gex-prototype.html data/options_gex_prototype.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Build ${{ inputs.ticker }} options GEX prototype"
+          git push origin HEAD:prototype/options-gex-wall
