@@ -15,6 +15,12 @@ on:
         description: Strike range around spot (0.35 = +/-35%)
         required: false
         default: '0.35'
+  push:
+    branches:
+      - prototype/options-gex-wall
+    paths:
+      - '.github/workflows/options-gex-prototype.yml'
+      - 'tools/build_options_gex_prototype.py'
 
 permissions:
   contents: write
@@ -22,6 +28,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TICKER: ${{ inputs.ticker || 'MSTR' }}
+      EXPIRY: ${{ inputs.expiry || '' }}
+      STRIKE_PCT: ${{ inputs.strike_pct || '0.35' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,22 +44,48 @@ jobs:
       - name: Build GEX prototype
         shell: bash
         run: |
-          args=(--ticker "${{ inputs.ticker }}" --strike-pct "${{ inputs.strike_pct }}")
-          if [ -n "${{ inputs.expiry }}" ]; then args+=(--expiry "${{ inputs.expiry }}"); fi
+          args=(--ticker "$TICKER" --strike-pct "$STRIKE_PCT")
+          if [ -n "$EXPIRY" ]; then args+=(--expiry "$EXPIRY"); fi
           python tools/build_options_gex_prototype.py "${args[@]}"
+      - name: Verify generated HTML and JSON
+        shell: bash
+        run: |
+          test -s options-gex-prototype.html
+          test -s data/options_gex_prototype.json
+          grep -q 'Options Positioning' options-gex-prototype.html
+          grep -q 'Gamma Exposure' options-gex-prototype.html
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('data/options_gex_prototype.json').read_text())
+          required=['symbol','spot','expiry','call_wall','put_wall','net_gex','strikes','profile']
+          missing=[k for k in required if k not in p]
+          assert not missing, missing
+          assert p['symbol']=='MSTR' if '${{ github.event_name }}'=='push' else True
+          assert p['spot']>0
+          assert len(p['strikes'])>0
+          assert len(p['profile'])>10
+          html=Path('options-gex-prototype.html').read_text()
+          assert '__DATA__' not in html
+          assert p['symbol'] in html
+          assert str(p['expiry']) in html
+          print({k:p.get(k) for k in ['symbol','spot','expiry','call_wall','put_wall','gamma_flip','net_gex']})
+          print('strikes',len(p['strikes']),'profile',len(p['profile']))
+          PY
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:
-          name: options-gex-${{ inputs.ticker }}
+          name: options-gex-${{ env.TICKER }}
           path: |
             options-gex-prototype.html
             data/options_gex_prototype.json
       - name: Commit preview to prototype branch
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add options-gex-prototype.html data/options_gex_prototype.json
           git diff --cached --quiet && exit 0
-          git commit -m "Build ${{ inputs.ticker }} options GEX prototype"
+          git commit -m "Build $TICKER options GEX prototype"
           git push origin HEAD:prototype/options-gex-wall
