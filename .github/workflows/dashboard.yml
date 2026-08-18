@@ -34,12 +34,32 @@ jobs:
     timeout-minutes: 45
     env:
       TZ: Asia/Tokyo
+      # commitする生成物の唯一の定義。commitステップの復元処理と共有する。
+      # ここに挙げたファイルは「このワークフローが唯一の書き手」であり、
+      # remoteと衝突したら常にこのrunの出力を採用する（後述のconflict-free commit）。
+      V38_ARTIFACTS: >-
+        command-center.html
+        command-center_share.html
+        mktcap.json
+        trend_history.json
+        fred_cache.json
+        fmp_reference_cache.json
+        state.json
+        daily_log.csv
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
 
     steps:
       - uses: actions/checkout@v4
         with:
-          # bot commitのpush競合時に安全にrebaseできる完全履歴。
-          fetch-depth: 0
+          # 生成物のcommitはrebaseせず origin/main へ載せ直す方式にしたため、
+          # 完全履歴は不要。command-center.htmlが1回11MBあり、fetch-depth:0だと
+          # checkoutだけで9分近くかかっていた。
+          fetch-depth: 1
 
       - uses: actions/setup-python@v5
         with:
@@ -170,42 +190,61 @@ jobs:
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
-          for file in \
-            command-center.html command-center_share.html \
-            mktcap.json trend_history.json fred_cache.json \
-            fmp_reference_cache.json state.json daily_log.csv \
-            earnings.json inception_vwap.json industry_map.json \
-            universe.csv options_targets.json \
-            commit_manifest.json; do
-            [[ -f "$file" ]] && git add -- "$file"
+          # --- なぜrebaseをやめたか -------------------------------------------
+          # 生成物は毎回ファイル全体が書き換わるため、runが競合すると rebase は
+          # 必ず content conflict になる（command-center.html / mktcap.json /
+          # inception_vwap.json / universe.csv 等）。行単位のマージに意味がない
+          # ファイルを3-way mergeさせていたのが誤り。
+          # このワークフローがこれらの唯一の書き手なので、「最新のorigin/mainに
+          # このrunの出力を載せ直す」= 常にこのrunが勝つ、に変更する。
+          # ソースコード側は触らないので、他者の変更を潰すことはない。
+          # 古いrunが新しい出力を上書きする件は、build_dashboard.py側の
+          # as-of巻き戻りガード（古い基準日なら生成せず終了）で塞いでいる。
+          # --------------------------------------------------------------------
+
+          staging="$(mktemp -d)"
+          for file in $V38_ARTIFACTS; do
+            if [[ -f "$file" ]]; then
+              mkdir -p "$staging/$(dirname "$file")"
+              cp -a "$file" "$staging/$file"
+            fi
           done
 
-          if ! git diff --staged --quiet; then
-            git commit -m "Daily dashboard rebuild + cache refresh"
+          pushed=false
+          committed=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard FETCH_HEAD          # 生成物以外は必ず最新のremoteに合わせる
 
-            pushed=false
-            for attempt in 1 2 3; do
-              if git push origin HEAD:main; then
-                pushed=true
-                break
+            for file in $V38_ARTIFACTS; do
+              if [[ -f "$staging/$file" ]]; then
+                mkdir -p "$(dirname "$file")"
+                cp -a "$staging/$file" "$file"
+                git add -- "$file"
               fi
-
-              echo "Push attempt ${attempt} failed; rebasing onto latest origin/main"
-              git fetch origin main
-              if ! git rebase origin/main; then
-                git rebase --abort || true
-                echo "Rebase conflict detected; refusing to overwrite remote changes"
-                exit 1
-              fi
-              sleep $((attempt * 2))
             done
 
-            if [[ "$pushed" != true ]]; then
-              echo "Push failed after 3 attempts"
-              exit 1
+            if git diff --staged --quiet; then
+              echo "No dashboard changes to commit"
+              pushed=true
+              break
             fi
-          else
-            echo "No dashboard changes to commit"
+
+            git commit -m "Daily dashboard rebuild + cache refresh"
+            committed=true
+
+            if git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
+
+            echo "Push attempt ${attempt} failed; reloading latest origin/main and retrying"
+            sleep $((attempt * 3))
+          done
+
+          if [[ "$pushed" != true ]]; then
+            echo "Push failed after 3 attempts (committed=${committed})"
+            exit 1
           fi
 
           echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
