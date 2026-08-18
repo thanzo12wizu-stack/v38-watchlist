@@ -1,0 +1,153 @@
+name: Stage1 date consistency builder
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/stage1-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-stage1-branch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Build staged date-consistency branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="stage1-date-consistency-final"
+          git checkout -b "$branch"
+
+          # 1/3: market-session date logic only.
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('build_dashboard.py')
+          s = p.read_text(encoding='utf-8')
+
+          def once(old, new, label):
+              global s
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 match, got {n}')
+              s = s.replace(old, new, 1)
+
+          once(
+              '    m, asof_bar = compute_metrics(W, order, s2i, macro=macro, incept=_incept)\n\n    try:',
+              '    m, asof_bar = compute_metrics(W, order, s2i, macro=macro, incept=_incept)\n'
+              '    # Market-session date is distinct from cache/fetch metadata ``asof``.\n'
+              '    # Keep cache ``asof`` untouched: it is still the freshness timestamp.\n'
+              '    session_date = asof_bar.date()\n\n    try:',
+              'session_date insertion')
+
+          guard_start = '    # #C as-of巻き戻りガード。\n'
+          guard_end = '    _rebal_anchor = resolve_rebal_anchor(_prev_state, asof_bar.date())\n'
+          a = s.find(guard_start)
+          b = s.find(guard_end, a)
+          if a < 0 or b < 0 or s.find(guard_start, a + 1) >= 0:
+              raise SystemExit('as-of guard anchors are not unique')
+          new_guard = '''    # #C as-of巻き戻りガード。\n    # stateトップだけではなく、保存済みstate/prevday/trend/log全体の最新市場日を基準にする。\n    # cache metadataの ``asof``（取得時刻）は鮮度判定用なので、ここでは参照・変更しない。\n    if production_run and not offline_selftest:\n        _persisted_dates = []\n\n        def _remember_persisted_date(value):\n            _d = str(value or "")\n            if _is_iso_date(_d):\n                _persisted_dates.append(_d)\n\n        _remember_persisted_date((_prev_state or {}).get("date"))\n        _pd = (_prev_state or {}).get("prevday")\n        if isinstance(_pd, dict):\n            _remember_persisted_date(_pd.get("date"))\n\n        try:\n            _tp = _trend_history_path()\n            if _tp and os.path.exists(_tp):\n                with open(_tp, encoding="utf-8") as _fh:\n                    _raw_trend = json.load(_fh)\n                if isinstance(_raw_trend, list):\n                    for _item in _raw_trend:\n                        if isinstance(_item, (list, tuple)) and _item:\n                            _remember_persisted_date(_item[0])\n                        elif isinstance(_item, dict):\n                            _remember_persisted_date(_item.get("date"))\n        except Exception as _e:\n            sys.stderr.write("[asof] persisted trend date scan failed: %s\\n" % type(_e).__name__)\n\n        try:\n            _lp = (os.environ.get("V38_LOG_CSV") or\n                   os.path.join(os.path.dirname(CACHE), "daily_log.csv"))\n            if _lp and os.path.exists(_lp):\n                with open(_lp, encoding="utf-8", newline="") as _fh:\n                    for _row in csv.DictReader(_fh):\n                        _remember_persisted_date(_row.get("date"))\n        except Exception as _e:\n            sys.stderr.write("[asof] persisted log date scan failed: %s\\n" % type(_e).__name__)\n\n        _persisted_latest = max(_persisted_dates) if _persisted_dates else ""\n        _cur_d = str(session_date)\n        if (_persisted_latest and _persisted_latest > _cur_d and\n                os.environ.get("V38_ALLOW_ASOF_REGRESSION") != "1"):\n            print("[asof] 保存済みデータの最新市場日 %s より古い %s で走っています。"\n                  % (_persisted_latest, _cur_d))\n            print("[asof] 新しい記録を古いデータで上書きしないため、このrunは生成・保存を行わず終了します。")\n            print("[asof] 意図的に上書きする場合は V38_ALLOW_ASOF_REGRESSION=1 を設定してください。")\n            sys.stderr.write("::warning::as-of regression: persisted=%s current=%s -> skipped\\n"\n                             % (_persisted_latest, _cur_d))\n            return\n'''
+          s = s[:a] + new_guard + s[b:]
+
+          once('    _today = str(asof_bar.date())\n',
+               '    _today = str(session_date)\n',
+               'state session date')
+
+          older_start = '    def _older_summary(st):\n'
+          older_end = '    _prevday = _older_summary(_prev_state)\n'
+          a = s.find(older_start)
+          b = s.find(older_end, a)
+          if a < 0 or b < 0 or s.find(older_start, a + 1) >= 0:
+              raise SystemExit('older_summary anchors are not unique')
+          new_older = '''    def _older_summary(st):\n        # prevdayは「最初に見つかった過去日」ではなく、session_date未満で最大の日を採用する。\n        _c = st or {}\n        _cands = []\n        for _cand in (_c, _c.get("prevday")):\n            if not isinstance(_cand, dict):\n                continue\n            _d = str(_cand.get("date") or "")\n            if _is_iso_date(_d) and _d < _today:\n                _cands.append((_d, _summ(_cand) if _cand is _c else _cand))\n        return max(_cands, key=lambda x: x[0])[1] if _cands else None\n'''
+          s = s[:a] + new_older + s[b:]
+
+          old_share = '''    # シェアHTMLもselftest前に生成し、両方を検査する（#17）\n    try:\n        _ts2 = pd.Timestamp(asof)\n        if _ts2.tzinfo is None:\n            _ts2 = _ts2.tz_localize("UTC")\n        _ad = _ts2.tz_convert("Asia/Tokyo").strftime("%Y-%m-%d")\n    except Exception:\n        _ad = str(asof_bar.date())\n    share = build_share_html(aux, sar, mkt, picks, mkt.get("senti"), _ad)\n'''
+          new_share = '''    # シェアカードの日付は取得時刻ではなく、確定した市場セッション日。\n    # cache metadata ``asof`` は鮮度判定用としてそのまま保持する。\n    _ad = str(session_date)\n    share = build_share_html(aux, sar, mkt, picks, mkt.get("senti"), _ad)\n'''
+          once(old_share, new_share, 'share session date')
+
+          old_overview = '''    # Overview投稿カード（実データ）: サンプル数値の静的カードを廃止し、毎ビルドで自動生成\n    try:\n        _asof_ts = pd.Timestamp(asof)\n        if _asof_ts.tzinfo is None:\n            _asof_ts = _asof_ts.tz_localize('UTC')\n        _ov_asof = _asof_ts.tz_convert('Asia/Tokyo').strftime('%Y-%m-%d %H:%M JST')\n    except Exception:\n        _ov_asof = str(asof or '')\n'''
+          new_overview = '''    # Overview投稿カードも市場セッション日を表示する。取得時刻(asof)とは分離する。\n    _ov_asof = str(session_date)\n'''
+          once(old_overview, new_overview, 'overview session date')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+          python -m py_compile build_dashboard.py
+          git add build_dashboard.py
+          git commit -m "Use market session date consistently"
+
+          # 2/3: repair the already-lost 2026-08-17 history, preserving current 8/18 state values.
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state_path = Path('state.json')
+          state = json.loads(state_path.read_text(encoding='utf-8'))
+          if str(state.get('date')) != '2026-08-18':
+              raise SystemExit(f'unexpected current state date: {state.get("date")!r}')
+          state['prevday'] = {
+              'date': '2026-08-17',
+              'gate': 'Blue',
+              'mri': 75.4,
+              'bear_lit': [],
+              'senti_flags': [],
+              'picks': ['AEHR','ATEX','SYRE','MU','BFLY','TWST','BLZE','TXG','DELL','QMCO','FET','CDNA'],
+              'soxl_band': '帯外',
+              'turnover': '横ばい',
+              'updown': 'accum',
+              'emergency': {
+                  'available': False, 'active': False, 'mult': 1.0,
+                  'dd': None, 'rel12': None, 'nav12': None, 'bench12': None,
+                  'start': None, 'end': None, 'triggered_on': None,
+                  'event': '待機', 'benchmark': 'QQQ×USD/JPY（円建て）',
+                  'reason': '非常口判定不可: 12ヶ月履歴不足',
+                  'thresholds': {'dd_on': -0.28, 'rel_on': -0.12, 'dd_off': -0.2, 'rel_off': -0.08},
+              },
+          }
+          state_path.write_text(json.dumps(state, ensure_ascii=False, allow_nan=False), encoding='utf-8')
+
+          trend_path = Path('trend_history.json')
+          trend = json.loads(trend_path.read_text(encoding='utf-8'))
+          by_date = {}
+          for item in trend:
+              if isinstance(item, list) and len(item) >= 2:
+                  by_date[str(item[0])] = [str(item[0]), item[1]]
+          by_date['2026-08-17'] = ['2026-08-17', 'Blue']
+          trend = [by_date[d] for d in sorted(by_date)]
+          trend_path.write_text(json.dumps(trend, ensure_ascii=False, allow_nan=False), encoding='utf-8')
+          PY
+          git add state.json trend_history.json
+          git commit -m "Repair 2026-08-17 session history"
+
+          # 3/3: only date consistency becomes a hard publication gate.
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('.github/workflows/dashboard.yml')
+          s = p.read_text(encoding='utf-8')
+          anchor = '''          if not state.get("date"):\n              raise SystemExit(\n                  "state.json has no completed market-session date"\n              )\n\n          manifest = json.loads(\n'''
+          if s.count(anchor) != 1:
+              raise SystemExit(f'validation anchor expected once, got {s.count(anchor)}')
+          insert = '''          if not state.get("date"):\n              raise SystemExit(\n                  "state.json has no completed market-session date"\n              )\n\n          # Market-session date is a hard invariant. A mixed-date dashboard must never publish.\n          import csv\n          import re\n\n          iso = re.compile(r"^\\d{4}-\\d{2}-\\d{2}$")\n          state_date = str(state.get("date") or "")\n          if not iso.fullmatch(state_date):\n              raise SystemExit(f"invalid state market-session date: {state_date!r}")\n\n          log_dates = []\n          with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:\n              for row in csv.DictReader(fh):\n                  d = str(row.get("date") or "")\n                  if iso.fullmatch(d):\n                      log_dates.append(d)\n          if not log_dates:\n              raise SystemExit("daily_log.csv has no valid market-session dates")\n          log_latest = max(log_dates)\n\n          trend_raw = json.loads(Path("trend_history.json").read_text(encoding="utf-8"))\n          trend_dates = []\n          if isinstance(trend_raw, list):\n              for item in trend_raw:\n                  d = ""\n                  if isinstance(item, (list, tuple)) and item:\n                      d = str(item[0] or "")\n                  elif isinstance(item, dict):\n                      d = str(item.get("date") or "")\n                  if iso.fullmatch(d):\n                      trend_dates.append(d)\n          if not trend_dates:\n              raise SystemExit("trend_history.json has no valid market-session dates")\n          trend_latest = max(trend_dates)\n\n          if state_date != log_latest or state_date != trend_latest:\n              raise SystemExit(\n                  "market-session mismatch: "\n                  f"state={state_date} log={log_latest} trend={trend_latest}"\n              )\n\n          prevday = state.get("prevday")\n          prior_dates = sorted({d for d in (log_dates + trend_dates) if d < state_date})\n          if isinstance(prevday, dict) and prevday.get("date"):\n              prev_date = str(prevday.get("date"))\n              if not iso.fullmatch(prev_date) or prev_date >= state_date:\n                  raise SystemExit(\n                      f"invalid prevday ordering: prevday={prev_date!r} state={state_date}"\n                  )\n              if prior_dates and prev_date != prior_dates[-1]:\n                  raise SystemExit(\n                      "prevday is not the latest prior market session: "\n                      f"prevday={prev_date} expected={prior_dates[-1]}"\n                  )\n          elif prior_dates:\n              raise SystemExit(\n                  f"prevday missing; latest prior market session is {prior_dates[-1]}"\n              )\n\n          mm = re.search(r"分析基準日\\s+(\\d{4}-\\d{2}-\\d{2})", main)\n          if not mm:\n              raise SystemExit("main HTML market-session date marker missing")\n          main_date = mm.group(1)\n\n          share_text = Path("command-center_share.html").read_text(encoding="utf-8")\n          sm = re.search(r"class=[\\\"']asof[\\\"'][^>]*>(\\d{4}-\\d{2}-\\d{2})<", share_text)\n          if not sm:\n              raise SystemExit("share HTML market-session date marker missing")\n          share_date = sm.group(1)\n\n          if main_date != state_date or share_date != state_date:\n              raise SystemExit(\n                  "HTML market-session mismatch: "\n                  f"state={state_date} main={main_date} share={share_date}"\n              )\n\n          manifest = json.loads(\n'''
+          s = s.replace(anchor, insert, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          git add .github/workflows/dashboard.yml
+          git diff --check
+          git commit -m "Enforce dashboard session date consistency"
+
+          # Do not carry this one-shot helper into the final branch.
+          git rm .github/workflows/stage1-finalize.yml
+          git commit -m "Remove one-shot Stage1 helper"
+
+          git push origin HEAD:"$branch"
