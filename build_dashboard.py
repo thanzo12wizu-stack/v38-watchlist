@@ -4987,10 +4987,14 @@ def _build_log_csv_content(path, asof_date, color, aux, senti, picks):
     if os.path.exists(path):
         rows = [ln for ln in open(path).read().splitlines()
                 if ln and not ln.startswith(today + ",") and not ln.startswith("date,")]
-    line = ",".join([today, color or "", f"{aux['cur']:.1f}", str(aux["bear_n"]),
+    line = ",".join([today, color or "",  f"{aux['cur']:.1f}", str(aux["bear_n"]),
                      (f"{senti['cur']:.1f}" if senti else ""),
                      " ".join(t for t, _, _ in picks)])
-    return "\n".join(["date,gate,mri,bear_n,senti,picks"] + rows + [line]) + "\n"
+    # #C 日付順を保つ。asofが巻き戻ったビルドで末尾に追記すると 8/17→8/14 のように
+    #    行が逆転し、後段の履歴読み出し（末尾=最新の前提）が壊れる。
+    rows.append(line)
+    rows.sort(key=lambda ln: ln.split(",", 1)[0])
+    return "\n".join(["date,gate,mri,bear_n,senti,picks"] + rows) + "\n"
 
 def append_log_csv(asof_date, color, aux, senti, picks):
     p = os.environ.get("V38_LOG_CSV") or os.path.join(os.path.dirname(CACHE), "daily_log.csv")
@@ -8139,13 +8143,31 @@ def load_options():
 
 
 def write_option_targets(picks, pre_rows, entry_rows, path=None):
-    """次回のオプション取得対象を吐く。本体→オプションの一方向依存にする。"""
+    """次回のオプション取得対象を吐く。本体→オプションの一方向依存にする。
+       #C 呼び出し側は picks を (ticker, theme, row) のタプル列で渡し、pre_rows/entry_rows は
+       行dict列で渡す。以前は要素をそのまま str() していたため、タプルやSeriesの
+       文字列表現がtickerとして書き出され、オプション側が巨大な偽tickerを取得対象に
+       していた。ここで確実にticker文字列だけを取り出す。"""
     path = path or OPT_TARGETS
+
+    def _tk(x):
+        if x is None:
+            return ""
+        if isinstance(x, str):
+            t = x
+        elif isinstance(x, (tuple, list)):
+            t = _tk(x[0]) if len(x) else ""
+        elif isinstance(x, dict):
+            t = x.get("t") or x.get("ticker") or ""
+        else:
+            t = getattr(x, "name", None) or (x.get("t") if hasattr(x, "get") else None) or ""
+        t = str(t or "").strip().upper()
+        return t if _valid_ticker(t) else ""
+
     seen, out = set(), []
-    for src in (picks or [], [r.get("t") for r in (pre_rows or [])],
-                [r for r in (entry_rows or [])]):
-        for t in src:
-            t = str(t or "").strip().upper()
+    for src in (picks or [], pre_rows or [], entry_rows or []):
+        for item in src:
+            t = _tk(item)
             if t and t not in seen:
                 seen.add(t); out.append(t)
     try:
@@ -19197,6 +19219,28 @@ def main():
     macro_pressure_ctx = {sid: _fred_all[sid] for sid in FRED_PRESSURE_SERIES if sid in _fred_all}
     sar = read_sar_state(asof_date=asof_bar.date(), strict=offline_selftest)
     _prev_state = load_state(strict=offline_selftest, fail_closed=production_run)   # 破損時は本番のみ停止/復元。offline時は明示env以外読まない
+    # #C as-of巻き戻りガード。
+    #   取得が劣化した日は [guard] が最終足を捨てて前営業日で計算する。その結果、
+    #   すでに保存済みのstate(例 8/17)より古い基準日(8/14)でstate/trend/logを
+    #   上書きしてしまい、prevdayが本体より新しくなる時間逆転や、trend_historyの
+    #   新しい足の消失（_sanitize_trend_historyがasofより未来として除去する）が起きる。
+    #   古いデータで新しい記録を潰さない。生成物は既存のものを据え置き、正常終了する。
+    if production_run and not offline_selftest:
+        _prev_d = str((_prev_state or {}).get("date") or "")
+        _cur_d = str(asof_bar.date())
+        if _is_iso_date(_prev_d) and _prev_d > _cur_d and os.environ.get("V38_ALLOW_ASOF_REGRESSION") != "1":
+            try:
+                _gap = (dt.date.fromisoformat(_prev_d) - asof_bar.date()).days
+            except Exception:
+                _gap = 0
+            if 0 < _gap <= 10:                     # 極端に先の日付はstate側の異常とみなし通常処理へ
+                print("[asof] 保存済みstateの基準日 %s より古い %s で走っています"
+                      " (データ劣化で最終足が捨てられた可能性)。" % (_prev_d, _cur_d))
+                print("[asof] 新しい記録を古いデータで上書きしないため、このrunは生成・保存を行わず終了します。")
+                print("[asof] 意図的に上書きする場合は V38_ALLOW_ASOF_REGRESSION=1 を設定してください。")
+                sys.stderr.write("::warning::as-of regression: saved=%s this run=%s -> skipped\n"
+                                 % (_prev_d, _cur_d))
+                return
     _rebal_anchor = resolve_rebal_anchor(_prev_state, asof_bar.date())
     _rebal_next = next_rebalance_date(asof_bar.date(), _rebal_anchor, include_today=is_rebalance_date(asof_bar.date(), _rebal_anchor))
     _thist, _tprev = load_trend_history(sar[0], asof_bar.date(), persist=False, strict=offline_selftest, fail_closed=production_run)   # 破損時は本番停止/復元。保存はcommit段で
@@ -19424,8 +19468,15 @@ def main():
         state=_chref)
     # persist state (prevdayは直近の別日サマリを保持) + 日次ログ + 通知
     _today = str(asof_bar.date())
-    _prevday = (_summ(_prev_state) if (_prev_state.get("date") and _prev_state["date"] != _today)
-                else _prev_state.get("prevday"))
+    # #C prevdayは必ず本体dateより過去。asofが巻き戻ったビルドで未来のサマリを
+    #    prevdayに載せると時間が逆転し、前日比較・変化ログが壊れる。
+    def _older_summary(st):
+        _c = st or {}
+        for _cand in (_c, _c.get("prevday")):
+            if isinstance(_cand, dict) and _is_iso_date(str(_cand.get("date") or "")) and str(_cand["date"]) < _today:
+                return _summ(_cand) if _cand is _c else _cand
+        return None
+    _prevday = _older_summary(_prev_state)
     # state/log/Webhookはここでは実行しない。selftest成功→両HTML出力成功の後に production_run のときだけcommitする。
     _cycle_snap = _market_cycle_snapshot(asof_bar.date(), mkt.get("ftd"), mkt.get("distrib"))
     _cycle_hist = _upsert_market_cycle_history(_prev_state, _cycle_snap)
