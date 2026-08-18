@@ -1,0 +1,33 @@
+name: Stage2c bio preview patcher
+
+on:
+  push:
+    branches:
+      - stage2c-bio-core-preview
+    paths:
+      - '.github/workflows/stage2c-bio-preview-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: stage2c-bio-core-preview
+          fetch-depth: 1
+      - name: Apply preview patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/stage2c_patch.py
+          python -m py_compile build_dashboard.py
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build_dashboard.py .github/workflows/dashboard.yml
+          git rm scripts/stage2c_patch.py .github/workflows/stage2c-bio-preview-patch.yml
+          git commit -m "Preview revenue-based biotech filter without changing Core12"
+          git push origin HEAD:stage2c-bio-core-preview
