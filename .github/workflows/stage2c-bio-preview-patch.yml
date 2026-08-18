@@ -18,59 +18,16 @@ jobs:
         with:
           ref: stage2c-bio-core-preview
           fetch-depth: 1
-
-      - name: Add revenue-based Core12 preview without changing picks
+      - name: Apply preview patch
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          p = Path('build_dashboard.py')
-          s = p.read_text(encoding='utf-8')
-
-          old = '''BIO_EXCLUDE_INDUSTRIES = ("Biotechnology", "Pharmaceuticals: Other")\nBIO_KEEP_MCAP = 1e10          # $10B以上は治験一発で消えない規模とみなして残す\n\n\ndef _bio_industry_map():\n'''
-          new = '''BIO_EXCLUDE_INDUSTRIES = ("Biotechnology", "Pharmaceuticals: Other")\nBIO_KEEP_MCAP = 1e10          # $10B以上は治験一発で消えない規模とみなして残す\n# 売上ベースの次期ルールはまずpreviewのみ。SEC取得失敗/欠損は必ず通過+可視化。\nBIO_REVENUE_MAX = float(os.environ.get("V38_BIO_REVENUE_MAX", "50000000"))\nBIO_REVENUE_JSON = os.environ.get(\n    "V38_BIO_REVENUE_JSON", os.path.join(os.path.dirname(CACHE), "bio_revenue_audit.json"))\nBIO_PREVIEW_JSON = os.environ.get(\n    "V38_BIO_PREVIEW_JSON", os.path.join(os.path.dirname(CACHE), "bio_core12_preview.json"))\nBIO_REVENUE_PREVIEW = os.environ.get("V38_BIO_REVENUE_PREVIEW", "0") == "1"\n_BIO_REVENUE_RECORDS = None\n\n\ndef _load_bio_revenue_records():\n    global _BIO_REVENUE_RECORDS\n    if _BIO_REVENUE_RECORDS is not None:\n        return _BIO_REVENUE_RECORDS\n    out = {}\n    try:\n        obj = json.load(open(BIO_REVENUE_JSON, encoding="utf-8"))\n        recs = obj.get("records") if isinstance(obj, dict) else None\n        if isinstance(recs, dict):\n            out = recs\n    except Exception:\n        pass\n    _BIO_REVENUE_RECORDS = out\n    return out\n\n\ndef _bio_revenue_proposal(t, mcap=None, ind_map=None):\n    """次期バイオ除外のpreview。選定にはまだ使わない。\n\n    healthcare系 × <$10B × 売上<$50M。TTMを優先し、SECに明示的な最新FY売上が\n    ある場合だけannual fallbackを許す。取得不能/売上fact欠損は pass + missing=True。\n    """\n    v = (ind_map or _bio_industry_map()).get(t)\n    sec = str(v[0] if isinstance(v, list) and len(v) >= 1 else "").upper()\n    ind = str(v[1] if isinstance(v, list) and len(v) >= 2 else "").upper()\n    healthcare = ("HEALTH" in sec or any(x in ind for x in ("BIOTECH", "PHARM", "MEDICAL", "DRUG")))\n    try:\n        mc = float(mcap)\n        small = np.isfinite(mc) and mc < BIO_KEEP_MCAP\n    except Exception:\n        small = False\n    if not healthcare or not small:\n        return {"exclude": False, "missing": False, "metric": None, "source": None, "status": "not_applicable"}\n    rec = _load_bio_revenue_records().get(t) or {}\n    status = str(rec.get("status") or "missing")\n    metric = rec.get("revenue_ttm")\n    source = "ttm"\n    try:\n        metric = float(metric)\n        if not np.isfinite(metric):\n            raise ValueError\n    except Exception:\n        metric = None\n    if metric is None and status == "annual_fallback":\n        try:\n            metric = float(rec.get("revenue_latest_fy"))\n            if not np.isfinite(metric):\n                raise ValueError\n            source = "latest_fy"\n        except Exception:\n            metric = None\n    if metric is None:\n        return {"exclude": False, "missing": True, "metric": None, "source": None, "status": status}\n    return {\n        "exclude": bool(metric < BIO_REVENUE_MAX),\n        "missing": False,\n        "metric": metric,\n        "source": source,\n        "status": status,\n    }\n\n\ndef _bio_industry_map():\n'''
-          if s.count(old) != 1:
-              raise SystemExit(f'bio constants anchor count={s.count(old)}')
-          s = s.replace(old, new, 1)
-
-          old = '''    cand["excluded_theme"] = [is_excluded_theme(t, s2t,\n                                                (_mc.get(t) if _mc is not None else None))\n                              for t in cand.index]\n    # リーダー外除外: リーダー(63日RS≥85 かつ 200MA上)でない銘柄は買わない。\n'''
-          new = '''    cand["excluded_theme"] = [is_excluded_theme(t, s2t,\n                                                (_mc.get(t) if _mc is not None else None))\n                              for t in cand.index]\n    # 次期の売上ベース除外はpreview列だけ作る。現行excluded_theme/実pickにはまだ非連動。\n    _bio_prop = {t: _bio_revenue_proposal(\n        t, (_mc.get(t) if _mc is not None else None)) for t in cand.index}\n    cand["bio_revenue_would_exclude"] = [bool(_bio_prop[t]["exclude"]) for t in cand.index]\n    cand["bio_revenue_missing"] = [bool(_bio_prop[t]["missing"]) for t in cand.index]\n    # リーダー外除外: リーダー(63日RS≥85 かつ 200MA上)でない銘柄は買わない。\n'''
-          if s.count(old) != 1:
-              raise SystemExit(f'candidate bio anchor count={s.count(old)}')
-          s = s.replace(old, new, 1)
-
-          old = '''    # プール = 小型創薬・リーダー外・勢い落ち を除いた上位RS189から N_PORT（出遅れは含める＝買う・タグのみ）。\n    pool = cand[~(cand["excluded_theme"] | cand["nonleader"] | cand["fade63"])]\n    picks = [(t, theme_of(t, s2t), row) for t, row in pool.head(N_PORT).iterrows()]\n    return picks, cand\n'''
-          new = '''    # プール = 現行ルールのまま。preview段階では実pickを一切変更しない。\n    pool = cand[~(cand["excluded_theme"] | cand["nonleader"] | cand["fade63"])]\n    picks = [(t, theme_of(t, s2t), row) for t, row in pool.head(N_PORT).iterrows()]\n\n    if BIO_REVENUE_PREVIEW:\n        # 提案ルールでは旧業種ベースexcluded_themeを置き換え、売上ベースだけを使う。\n        # SEC欠損はbio_revenue_would_exclude=Falseなので自動的にpassする。\n        _p_pool = cand[~(cand["bio_revenue_would_exclude"] | cand["nonleader"] | cand["fade63"])]\n        _p_names = list(_p_pool.head(N_PORT).index)\n        _cur_names = [x[0] for x in picks]\n        _out = [t for t in _cur_names if t not in _p_names]\n        _in = [t for t in _p_names if t not in _cur_names]\n        _missing = [t for t in _p_pool.index if bool(cand.at[t, "bio_revenue_missing"])][:30]\n        _detail = {}\n        for t in dict.fromkeys(_cur_names + _p_names):\n            _r = _bio_prop.get(t) or {}\n            _detail[t] = {\n                "legacy_excluded": bool(cand.at[t, "excluded_theme"]),\n                "proposed_excluded": bool(_r.get("exclude")),\n                "revenue_missing_pass": bool(_r.get("missing")),\n                "revenue_metric": _r.get("metric"),\n                "revenue_source": _r.get("source"),\n                "revenue_status": _r.get("status"),\n                "mcap": (float(_mc.get(t)) if _mc is not None and pd.notna(_mc.get(t)) else None),\n            }\n        _preview = {\n            "mode": "warning_only_no_selection_effect",\n            "threshold_revenue": BIO_REVENUE_MAX,\n            "threshold_mcap": BIO_KEEP_MCAP,\n            "current_core12": _cur_names,\n            "proposed_core12": _p_names,\n            "out_if_enabled": _out,\n            "in_if_enabled": _in,\n            "missing_revenue_pass": _missing,\n            "details": _detail,\n        }\n        try:\n            with open(BIO_PREVIEW_JSON, "w", encoding="utf-8") as _fh:\n                json.dump(_preview, _fh, ensure_ascii=False, indent=2, allow_nan=False)\n            if _out or _in:\n                sys.stderr.write("::warning::bio revenue preview Core12 change OUT=%s IN=%s (not applied)\\n"\n                                 % (",".join(_out) or "-", ",".join(_in) or "-"))\n            if _missing:\n                sys.stderr.write("::warning::bio revenue preview missing/pass=%s (not excluded)\\n"\n                                 % ",".join(_missing))\n        except Exception as _e:\n            sys.stderr.write("[warn] bio revenue preview write failed: %s\\n" % type(_e).__name__)\n    return picks, cand\n'''
-          if s.count(old) != 1:
-              raise SystemExit(f'pool anchor count={s.count(old)}')
-          s = s.replace(old, new, 1)
-          p.write_text(s, encoding='utf-8')
-
-          wf = Path('.github/workflows/dashboard.yml')
-          y = wf.read_text(encoding='utf-8')
-          old = '        bio_revenue_audit.json\n        commit_manifest.json' if '        bio_revenue_audit.json\n' in y else '        options_targets.json\n        commit_manifest.json'
-          if old.startswith('        bio_revenue'):
-              new = '        bio_revenue_audit.json\n        bio_core12_preview.json\n        commit_manifest.json'
-          else:
-              new = '        options_targets.json\n        bio_core12_preview.json\n        commit_manifest.json'
-          if y.count(old) != 1:
-              raise SystemExit(f'artifact anchor count={y.count(old)}')
-          y = y.replace(old, new, 1)
-          env_anchor = '          V38_OPT_TARGETS: options_targets.json\n'
-          env_new = '''          V38_OPT_TARGETS: options_targets.json\n          # 売上ベースのバイオ除外は現在previewのみ。実Core12は変更しない。\n          V38_BIO_REVENUE_JSON: bio_revenue_audit.json\n          V38_BIO_PREVIEW_JSON: bio_core12_preview.json\n          V38_BIO_REVENUE_MAX: '50000000'\n          V38_BIO_REVENUE_PREVIEW: '1'\n'''
-          if y.count(env_anchor) != 1:
-              raise SystemExit(f'env anchor count={y.count(env_anchor)}')
-          y = y.replace(env_anchor, env_new, 1)
-          wf.write_text(y, encoding='utf-8')
-          PY
-
+          python scripts/stage2c_patch.py
           python -m py_compile build_dashboard.py
           git diff --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add build_dashboard.py .github/workflows/dashboard.yml
-          git rm .github/workflows/stage2c-bio-preview-patch.yml
+          git rm scripts/stage2c_patch.py .github/workflows/stage2c-bio-preview-patch.yml
           git commit -m "Preview revenue-based biotech filter without changing Core12"
           git push origin HEAD:stage2c-bio-core-preview
