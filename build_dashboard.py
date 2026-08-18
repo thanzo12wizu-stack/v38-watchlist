@@ -19177,6 +19177,9 @@ def main():
     _incept_before = len(_incept)
 
     m, asof_bar = compute_metrics(W, order, s2i, macro=macro, incept=_incept)
+    # Market-session date is distinct from cache/fetch metadata ``asof``.
+    # Keep cache ``asof`` untouched: it is still the freshness timestamp.
+    session_date = asof_bar.date()
 
     try:
         _incept = {k: v for k, v in _incept.items() if isinstance(v, dict)}
@@ -19220,27 +19223,56 @@ def main():
     sar = read_sar_state(asof_date=asof_bar.date(), strict=offline_selftest)
     _prev_state = load_state(strict=offline_selftest, fail_closed=production_run)   # 破損時は本番のみ停止/復元。offline時は明示env以外読まない
     # #C as-of巻き戻りガード。
-    #   取得が劣化した日は [guard] が最終足を捨てて前営業日で計算する。その結果、
-    #   すでに保存済みのstate(例 8/17)より古い基準日(8/14)でstate/trend/logを
-    #   上書きしてしまい、prevdayが本体より新しくなる時間逆転や、trend_historyの
-    #   新しい足の消失（_sanitize_trend_historyがasofより未来として除去する）が起きる。
-    #   古いデータで新しい記録を潰さない。生成物は既存のものを据え置き、正常終了する。
+    # stateトップだけではなく、保存済みstate/prevday/trend/log全体の最新市場日を基準にする。
+    # cache metadataの ``asof``（取得時刻）は鮮度判定用なので、ここでは参照・変更しない。
     if production_run and not offline_selftest:
-        _prev_d = str((_prev_state or {}).get("date") or "")
-        _cur_d = str(asof_bar.date())
-        if _is_iso_date(_prev_d) and _prev_d > _cur_d and os.environ.get("V38_ALLOW_ASOF_REGRESSION") != "1":
-            try:
-                _gap = (dt.date.fromisoformat(_prev_d) - asof_bar.date()).days
-            except Exception:
-                _gap = 0
-            if 0 < _gap <= 10:                     # 極端に先の日付はstate側の異常とみなし通常処理へ
-                print("[asof] 保存済みstateの基準日 %s より古い %s で走っています"
-                      " (データ劣化で最終足が捨てられた可能性)。" % (_prev_d, _cur_d))
-                print("[asof] 新しい記録を古いデータで上書きしないため、このrunは生成・保存を行わず終了します。")
-                print("[asof] 意図的に上書きする場合は V38_ALLOW_ASOF_REGRESSION=1 を設定してください。")
-                sys.stderr.write("::warning::as-of regression: saved=%s this run=%s -> skipped\n"
-                                 % (_prev_d, _cur_d))
-                return
+        _persisted_dates = []
+
+        def _remember_persisted_date(value):
+            _d = str(value or "")
+            if _is_iso_date(_d):
+                _persisted_dates.append(_d)
+
+        _remember_persisted_date((_prev_state or {}).get("date"))
+        _pd = (_prev_state or {}).get("prevday")
+        if isinstance(_pd, dict):
+            _remember_persisted_date(_pd.get("date"))
+
+        try:
+            _tp = _trend_history_path()
+            if _tp and os.path.exists(_tp):
+                with open(_tp, encoding="utf-8") as _fh:
+                    _raw_trend = json.load(_fh)
+                if isinstance(_raw_trend, list):
+                    for _item in _raw_trend:
+                        if isinstance(_item, (list, tuple)) and _item:
+                            _remember_persisted_date(_item[0])
+                        elif isinstance(_item, dict):
+                            _remember_persisted_date(_item.get("date"))
+        except Exception as _e:
+            sys.stderr.write("[asof] persisted trend date scan failed: %s\n" % type(_e).__name__)
+
+        try:
+            _lp = (os.environ.get("V38_LOG_CSV") or
+                   os.path.join(os.path.dirname(CACHE), "daily_log.csv"))
+            if _lp and os.path.exists(_lp):
+                with open(_lp, encoding="utf-8", newline="") as _fh:
+                    for _row in csv.DictReader(_fh):
+                        _remember_persisted_date(_row.get("date"))
+        except Exception as _e:
+            sys.stderr.write("[asof] persisted log date scan failed: %s\n" % type(_e).__name__)
+
+        _persisted_latest = max(_persisted_dates) if _persisted_dates else ""
+        _cur_d = str(session_date)
+        if (_persisted_latest and _persisted_latest > _cur_d and
+                os.environ.get("V38_ALLOW_ASOF_REGRESSION") != "1"):
+            print("[asof] 保存済みデータの最新市場日 %s より古い %s で走っています。"
+                  % (_persisted_latest, _cur_d))
+            print("[asof] 新しい記録を古いデータで上書きしないため、このrunは生成・保存を行わず終了します。")
+            print("[asof] 意図的に上書きする場合は V38_ALLOW_ASOF_REGRESSION=1 を設定してください。")
+            sys.stderr.write("::warning::as-of regression: persisted=%s current=%s -> skipped\n"
+                             % (_persisted_latest, _cur_d))
+            return
     _rebal_anchor = resolve_rebal_anchor(_prev_state, asof_bar.date())
     _rebal_next = next_rebalance_date(asof_bar.date(), _rebal_anchor, include_today=is_rebalance_date(asof_bar.date(), _rebal_anchor))
     _thist, _tprev = load_trend_history(sar[0], asof_bar.date(), persist=False, strict=offline_selftest, fail_closed=production_run)   # 破損時は本番停止/復元。保存はcommit段で
@@ -19467,15 +19499,20 @@ def main():
         emergency_active=bool((mkt.get("emergency") or {}).get("active")),
         state=_chref)
     # persist state (prevdayは直近の別日サマリを保持) + 日次ログ + 通知
-    _today = str(asof_bar.date())
+    _today = str(session_date)
     # #C prevdayは必ず本体dateより過去。asofが巻き戻ったビルドで未来のサマリを
     #    prevdayに載せると時間が逆転し、前日比較・変化ログが壊れる。
     def _older_summary(st):
+        # prevdayは「最初に見つかった過去日」ではなく、session_date未満で最大の日を採用する。
         _c = st or {}
+        _cands = []
         for _cand in (_c, _c.get("prevday")):
-            if isinstance(_cand, dict) and _is_iso_date(str(_cand.get("date") or "")) and str(_cand["date"]) < _today:
-                return _summ(_cand) if _cand is _c else _cand
-        return None
+            if not isinstance(_cand, dict):
+                continue
+            _d = str(_cand.get("date") or "")
+            if _is_iso_date(_d) and _d < _today:
+                _cands.append((_d, _summ(_cand) if _cand is _c else _cand))
+        return max(_cands, key=lambda x: x[0])[1] if _cands else None
     _prevday = _older_summary(_prev_state)
     # state/log/Webhookはここでは実行しない。selftest成功→両HTML出力成功の後に production_run のときだけcommitする。
     _cycle_snap = _market_cycle_snapshot(asof_bar.date(), mkt.get("ftd"), mkt.get("distrib"))
@@ -19564,14 +19601,8 @@ def main():
         print(f"SAR-bullish count: {(m['sar_bull']==True).sum()} / {m['sar_bull'].notna().sum()} valid")
         return
 
-    # Overview投稿カード（実データ）: サンプル数値の静的カードを廃止し、毎ビルドで自動生成
-    try:
-        _asof_ts = pd.Timestamp(asof)
-        if _asof_ts.tzinfo is None:
-            _asof_ts = _asof_ts.tz_localize('UTC')
-        _ov_asof = _asof_ts.tz_convert('Asia/Tokyo').strftime('%Y-%m-%d %H:%M JST')
-    except Exception:
-        _ov_asof = str(asof or '')
+    # Overview投稿カードも市場セッション日を表示する。取得時刻(asof)とは分離する。
+    _ov_asof = str(session_date)
     try:
         mkt['post1_html'], mkt['post2_html'] = build_overview_cards(dict(
             aux=aux, sar=sar, macro=macro, extras=_extras, mkt=mkt,
@@ -19581,14 +19612,9 @@ def main():
         mkt['post1_html'] = mkt['post2_html'] = None
     html = render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                   sectors, breadth, yields, asof, sar, mkt, leaders, s2i, e2j, s2t, W=W)
-    # シェアHTMLもselftest前に生成し、両方を検査する（#17）
-    try:
-        _ts2 = pd.Timestamp(asof)
-        if _ts2.tzinfo is None:
-            _ts2 = _ts2.tz_localize("UTC")
-        _ad = _ts2.tz_convert("Asia/Tokyo").strftime("%Y-%m-%d")
-    except Exception:
-        _ad = str(asof_bar.date())
+    # シェアカードの日付は取得時刻ではなく、確定した市場セッション日。
+    # cache metadata ``asof`` は鮮度判定用としてそのまま保持する。
+    _ad = str(session_date)
     share = build_share_html(aux, sar, mkt, picks, mkt.get("senti"), _ad)
     # シェアHTML出力先: 拡張子が無い/ディレクトリ名に.htmlを含むケースでメインを上書きしないよう pathlib で厳密化（#18）
     _op = _Path(OUT_HTML)
