@@ -1,0 +1,50 @@
+name: Stage1 validation patch
+
+on:
+  push:
+    branches:
+      - stage1-date-consistency
+    paths:
+      - '.github/workflows/stage1-validation-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: stage1-date-consistency
+          fetch-depth: 1
+
+      - name: Add hard date consistency validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('.github/workflows/dashboard.yml')
+          s = p.read_text(encoding='utf-8')
+          anchor = '''          if not state.get("date"):\n              raise SystemExit(\n                  "state.json has no completed market-session date"\n              )\n\n          manifest = json.loads(\n'''
+          if s.count(anchor) != 1:
+              raise SystemExit(f'validation anchor expected once, got {s.count(anchor)}')
+          insert = '''          if not state.get("date"):\n              raise SystemExit(\n                  "state.json has no completed market-session date"\n              )\n\n          # Market-session date is a hard invariant. A mixed-date dashboard must never publish.\n          import csv\n          import re\n\n          iso = re.compile(r"^\\d{4}-\\d{2}-\\d{2}$")\n          state_date = str(state.get("date") or "")\n          if not iso.fullmatch(state_date):\n              raise SystemExit(f"invalid state market-session date: {state_date!r}")\n\n          log_dates = []\n          with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:\n              for row in csv.DictReader(fh):\n                  d = str(row.get("date") or "")\n                  if iso.fullmatch(d):\n                      log_dates.append(d)\n          if not log_dates:\n              raise SystemExit("daily_log.csv has no valid market-session dates")\n          log_latest = max(log_dates)\n\n          trend_raw = json.loads(Path("trend_history.json").read_text(encoding="utf-8"))\n          trend_dates = []\n          if isinstance(trend_raw, list):\n              for item in trend_raw:\n                  d = ""\n                  if isinstance(item, (list, tuple)) and item:\n                      d = str(item[0] or "")\n                  elif isinstance(item, dict):\n                      d = str(item.get("date") or "")\n                  if iso.fullmatch(d):\n                      trend_dates.append(d)\n          if not trend_dates:\n              raise SystemExit("trend_history.json has no valid market-session dates")\n          trend_latest = max(trend_dates)\n\n          if state_date != log_latest or state_date != trend_latest:\n              raise SystemExit(\n                  "market-session mismatch: "\n                  f"state={state_date} log={log_latest} trend={trend_latest}"\n              )\n\n          prevday = state.get("prevday")\n          prior_dates = sorted({d for d in (log_dates + trend_dates) if d < state_date})\n          if isinstance(prevday, dict) and prevday.get("date"):\n              prev_date = str(prevday.get("date"))\n              if not iso.fullmatch(prev_date) or prev_date >= state_date:\n                  raise SystemExit(\n                      f"invalid prevday ordering: prevday={prev_date!r} state={state_date}"\n                  )\n              if prior_dates and prev_date != prior_dates[-1]:\n                  raise SystemExit(\n                      "prevday is not the latest prior market session: "\n                      f"prevday={prev_date} expected={prior_dates[-1]}"\n                  )\n          elif prior_dates:\n              raise SystemExit(\n                  f"prevday missing; latest prior market session is {prior_dates[-1]}"\n              )\n\n          mm = re.search(r"分析基準日\\s+(\\d{4}-\\d{2}-\\d{2})", main)\n          if not mm:\n              raise SystemExit("main HTML market-session date marker missing")\n          main_date = mm.group(1)\n\n          share_text = Path("command-center_share.html").read_text(encoding="utf-8")\n          sm = re.search(\n              r"class=[\\\"']asof[\\\"'][^>]*>(\\d{4}-\\d{2}-\\d{2})<",\n              share_text,\n          )\n          if not sm:\n              raise SystemExit("share HTML market-session date marker missing")\n          share_date = sm.group(1)\n\n          if main_date != state_date or share_date != state_date:\n              raise SystemExit(\n                  "HTML market-session mismatch: "\n                  f"state={state_date} main={main_date} share={share_date}"\n              )\n\n          manifest = json.loads(\n'''
+          s = s.replace(anchor, insert, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          git diff --check
+
+      - name: Commit validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/dashboard.yml
+          git diff --staged --quiet && { echo "No patch needed"; exit 0; }
+          git commit -m "Enforce dashboard session date consistency"
+          git push origin HEAD:stage1-date-consistency
