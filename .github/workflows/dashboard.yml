@@ -26,7 +26,8 @@ permissions:
 
 concurrency:
   group: dashboard-build-main
-  cancel-in-progress: false
+  # 同じmain向けの古いrunは新しいrunで打ち切る。古い生成物の後勝ちを防ぐ。
+  cancel-in-progress: true
 
 jobs:
   build-and-publish:
@@ -69,6 +70,7 @@ jobs:
         run: pip install --disable-pip-version-check -r requirements.txt
 
       - name: Build dashboard
+        id: build
         env:
           V38_UNIVERSE_CSV: universe.csv
           # ユニバースをTradingViewスクリーナーAPIから毎回生成する。
@@ -107,8 +109,25 @@ jobs:
         run: |
           set -euo pipefail
           python build_dashboard.py 2>&1 | tee build-dashboard.log
+          if grep -q "::warning::as-of regression:" build-dashboard.log; then
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report skipped stale run
+        if: steps.build.outputs.skipped == 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard build"
+            echo "- Status: skipped"
+            echo "- Reason: as-of regression guard kept the newer persisted session intact"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "As-of regression guard fired; validation, persistence and public publish are intentionally skipped."
 
       - name: Validate generated files
+        if: steps.build.outputs.skipped != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -160,6 +179,7 @@ jobs:
           PY
 
       - name: Report persistence and data date
+        if: steps.build.outputs.skipped != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -182,6 +202,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit dashboard and caches
+        if: steps.build.outputs.skipped != 'true'
         id: persist
         shell: bash
         run: |
@@ -198,8 +219,6 @@ jobs:
           # このワークフローがこれらの唯一の書き手なので、「最新のorigin/mainに
           # このrunの出力を載せ直す」= 常にこのrunが勝つ、に変更する。
           # ソースコード側は触らないので、他者の変更を潰すことはない。
-          # 古いrunが新しい出力を上書きする件は、build_dashboard.py側の
-          # as-of巻き戻りガード（古い基準日なら生成せず終了）で塞いでいる。
           # --------------------------------------------------------------------
 
           staging="$(mktemp -d)"
@@ -250,6 +269,7 @@ jobs:
           echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Audit public privacy boundary
+        if: steps.build.outputs.skipped != 'true'
         run: |
           python scripts/privacy_audit.py \
             --root . \
@@ -257,6 +277,7 @@ jobs:
           cat /tmp/privacy-audit-status.json
 
       - name: Export allowlisted public site
+        if: steps.build.outputs.skipped != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -266,6 +287,7 @@ jobs:
             --source-commit "${{ steps.persist.outputs.source_sha }}"
 
       - name: Publish clean public mirror
+        if: steps.build.outputs.skipped != 'true'
         id: publish
         continue-on-error: true
         shell: bash
@@ -315,7 +337,7 @@ jobs:
           git push origin HEAD:main
 
       - name: Report publish failure
-        if: steps.publish.outcome == 'failure'
+        if: steps.build.outputs.skipped != 'true' && steps.publish.outcome == 'failure'
         shell: bash
         env:
           FAILURE_WEBHOOK: ${{ secrets.V38_WEBHOOK }}
