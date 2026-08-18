@@ -62,5 +62,6 @@ jobs:
             echo "Bio revenue diagnostic already current"
             exit 0
           fi
-          git commit -m "Bio revenue diagnostic $(python -c 'import json; print(json.load(open("state.json"))["date"])')"
+          session_date="$(python -c 'import json; print(json.load(open("state.json"))["date"])')"
+          git commit -m "Bio revenue diagnostic ${session_date}"
           git push origin HEAD:main
