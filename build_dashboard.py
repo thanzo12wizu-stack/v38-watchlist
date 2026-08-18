@@ -471,16 +471,21 @@ def _validate_market_cycle_history(v):
                     return False
     return True
 
-def _sanitize_market_cycle_history(v):
-    """壊れた行だけ落とし、同日重複は後勝ち。最大120遷移を保持。"""
+def _sanitize_market_cycle_history(v, asof=None):
+    """壊れた行だけ落とし、同日重複は後勝ち。最大120遷移を保持。
+       asofを渡すと、それより後の日付の行を除去する（データ劣化でasofが巻き戻ったビルドでも
+       履歴が日付降順にならないようにする。trend_history側と同じ扱い）。"""
     if not isinstance(v, list):
         return []
+    _asof = str(asof) if (asof is not None and _is_iso_date(str(asof))) else None
     by_date = {}
     for rec in v:
         if not isinstance(rec, dict):
             continue
         d = rec.get("date")
         if not _is_iso_date(d):
+            continue
+        if _asof is not None and d > _asof:
             continue
         clean_inds = {}
         inds = rec.get("indices")
@@ -618,6 +623,96 @@ def _validate_trend_schema(obj):
             return False
         _prev = _d
     return True
+
+def _state_schema_reason(obj):
+    """#B _validate_state_schema がFalseを返した理由を1つだけ特定して返す（判定部品は同一）。
+       schema検証はbool しか返さないため、commit失敗時に犯人が分からずログから追えなかった。
+       検証を通るなら None。"""
+    if _validate_state_schema(obj):
+        return None
+    if not isinstance(obj, dict):
+        return "state is not dict: %s" % type(obj).__name__
+    sv = obj.get("schema_version")
+    if sv is not None and not (isinstance(sv, int) and 1 <= sv <= _STATE_SCHEMA_MAX):
+        return "schema_version=%r" % sv
+    if obj.get("date") is not None and not _is_iso_date(obj["date"]):
+        return "date=%r" % obj.get("date")
+    if obj.get("gate") is not None and obj["gate"] not in _VALID_GATES:
+        return "gate=%r" % obj.get("gate")
+    if obj.get("picks") is not None:
+        if not isinstance(obj["picks"], list):
+            return "picks is not list"
+        for _p in obj["picks"]:
+            if not (isinstance(_p, str) and _valid_ticker(_p)):
+                return "picks bad element %r" % (_p,)
+    for _lf in ("bear_lit", "senti_flags"):
+        if obj.get(_lf) is not None and not _label_list_ok(obj[_lf]):
+            return "%s invalid: %r" % (_lf, obj.get(_lf))
+    if not _finite_or_none(obj.get("mri")):
+        return "mri=%r" % obj.get("mri")
+    if not _is_iso_or_none(obj.get("rebal_anchor")):
+        return "rebal_anchor=%r" % obj.get("rebal_anchor")
+    for _sf in ("soxl_band", "turnover", "updown", "event"):
+        _v = obj.get(_sf)
+        if _v is not None and (not isinstance(_v, str) or len(_v) > 30
+                               or any(c in _v for c in '<>"\'')):
+            return "%s=%r" % (_sf, _v)
+    if not _validate_emergency(obj.get("emergency")):
+        return "emergency invalid: %r" % (obj.get("emergency"),)
+    if obj.get("prevday") is not None and not _validate_state_common(obj.get("prevday"), allow_nested=False):
+        return "prevday invalid"
+    if not _validate_market_cycle_history(obj.get("market_cycle_history")):
+        _h = obj.get("market_cycle_history") or []
+        _ds = [r.get("date") for r in _h if isinstance(r, dict)]
+        _desc = [(_ds[i - 1], _ds[i]) for i in range(1, len(_ds)) if str(_ds[i]) < str(_ds[i - 1])]
+        return ("market_cycle_history invalid (n=%d, tail=%r, 降順箇所=%r)"
+                % (len(_h), _ds[-4:], _desc[:3]))
+    _hd = obj.get("hold")
+    if _hd is not None:
+        if not isinstance(_hd, dict):
+            return "hold is not dict"
+        for _k, _v in _hd.items():
+            if not isinstance(_v, dict):
+                return "hold[%r] is not dict" % _k
+            if not (isinstance(_k, str) and _k and _valid_ticker(_k)):
+                return "hold key %r" % _k
+            for _f in ("ed", "sell_due_date", "date"):
+                if _v.get(_f) is not None and not _is_iso_date(str(_v.get(_f))):
+                    return "hold[%s].%s=%r" % (_k, _f, _v.get(_f))
+            for _f in ("ep", "peak", "istop", "stop", "entry"):
+                if _v.get(_f) is not None and not _num_finite_pos(_v.get(_f)):
+                    return "hold[%s].%s=%r" % (_k, _f, _v.get(_f))
+            if _v.get("peak") is not None and _v.get("ep") is not None:
+                try:
+                    if float(_v["peak"]) < float(_v["ep"]):
+                        return "hold[%s] peak<ep (%r<%r)" % (_k, _v["peak"], _v["ep"])
+                except Exception:
+                    return "hold[%s] peak/ep not numeric" % _k
+            if _v.get("sell_due") is not None and not isinstance(_v.get("sell_due"), bool):
+                return "hold[%s].sell_due=%r" % (_k, _v.get("sell_due"))
+    if not _all_finite(obj):
+        return "non-finite value in state"
+    return "unknown"
+
+def _trend_schema_reason(obj):
+    """#B _validate_trend_schema がFalseを返した理由を1つ返す。通るなら None。"""
+    if _validate_trend_schema(obj):
+        return None
+    if not isinstance(obj, list):
+        return "trend_history is not list: %s" % type(obj).__name__
+    _prev = None
+    for _i, it in enumerate(obj):
+        if not (isinstance(it, (list, tuple)) and len(it) == 2):
+            return "entry[%d]=%r (2要素でない)" % (_i, it)
+        _d, _c = it[0], it[1]
+        if not _is_iso_date(_d):
+            return "entry[%d] date=%r" % (_i, _d)
+        if _c not in _VALID_GATES:
+            return "entry[%d] color=%r" % (_i, _c)
+        if _prev is not None and _d <= _prev:
+            return "entry[%d] 日付が昇順でない: %r の後に %r" % (_i, _prev, _d)
+        _prev = _d
+    return "unknown"
 
 def _sanitize_trend_history(hist, asof=None):
     """trend_historyを『拒否』でなく『修復』する（本番の実履歴を落とさない）。
@@ -4634,20 +4729,30 @@ def _market_cycle_snapshot(asof_date, ftd, distrib):
               and not e.get("washed_out") and e.get("kind") == "classic" and _is_iso_date(e.get("date"))]
         stall = [e.get("date") for e in ev if isinstance(e, dict) and e.get("cycle") != "prior"
                  and not e.get("washed_out") and e.get("kind") == "stall" and _is_iso_date(e.get("date"))]
+        _d0 = str(asof_date)
+        dd = [z for z in dd if z <= _d0]           # #B マクロ側が個別株より新しい日を持つ場合の混入を防ぐ
+        stall = [z for z in stall if z <= _d0]
         inds[tk] = dict(state=f.get("state"), ftd_iso=f.get("ftd_iso"), dd=dd[-25:], stall=stall[-25:])
     return {"date": str(asof_date), "indices": inds}
 
 def _upsert_market_cycle_history(prev_state, snap, keep=120):
-    """同日更新は置換。状態/DD集合が前回と同じなら新規行を作らず、状態遷移＋件数変化だけ履歴化。"""
-    hist = _sanitize_market_cycle_history((prev_state or {}).get("market_cycle_history"))
+    """同日更新は置換。状態/DD集合が前回と同じなら新規行を作らず、状態遷移＋件数変化だけ履歴化。
+       #B ダウンロード劣化で asof が前回ビルドより巻き戻ると、末尾に過去日をappendして
+       日付降順になり state schema 検証(_validate_market_cycle_history)が落ちていた。
+       as-ofより後の行を落とし、最後に昇順ソートしてから返す。"""
     if not snap or not _is_iso_date(snap.get("date")):
-        return hist
+        return _sanitize_market_cycle_history((prev_state or {}).get("market_cycle_history"))
     today = snap["date"]
+    hist = _sanitize_market_cycle_history((prev_state or {}).get("market_cycle_history"), asof=today)
+    _dropped = len(_sanitize_market_cycle_history((prev_state or {}).get("market_cycle_history"))) - len(hist)
+    if _dropped > 0:
+        sys.stderr.write("[cycle] 修復: as-of(%s)より未来の履歴 %d 行を除去\n" % (today, _dropped))
     hist = [x for x in hist if x.get("date") != today]
     payload = snap.get("indices") or {}
     if hist and (hist[-1].get("indices") or {}) == payload:
         return hist[-keep:]
     hist.append(snap)
+    hist.sort(key=lambda r: str(r.get("date")))
     return hist[-keep:]
 
 def _summ(st):
@@ -4919,10 +5024,12 @@ def _commit_state_trend_log(state_obj, trend_hist, log_content):
         # Phase1.5: tmpの中身をschema検証（壊れた新版で本番を上書きしない）
         _sv = _load_json_safe(sp + ".tmp", None, "state.tmp", fail_closed=False, validator=_validate_state_schema)
         if _sv is None:
-            raise ValueError("state tmp failed schema validation")
+            raise ValueError("state tmp failed schema validation: %s"
+                             % _state_schema_reason(_load_json_raw(sp + ".tmp") or {}))
         _tv = _load_json_safe(tp + ".tmp", None, "trend.tmp", fail_closed=False, validator=_validate_trend_schema)
         if _tv is None:
-            raise ValueError("trend tmp failed schema validation")
+            raise ValueError("trend tmp failed schema validation: %s"
+                             % _trend_schema_reason(_load_json_raw(tp + ".tmp") or []))
         # Phase2: 旧内容を退避しつつ trend→log→state 順で置換。失敗したら既置換分を復元。
         order = [(tp, "trend"), (lp, "log"), (sp, "state")]
         by_path = {_p: _t for _p, _t in tmps}
