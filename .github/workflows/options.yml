@@ -1,0 +1,69 @@
+name: Options positioning
+
+on:
+  schedule:
+    # 米引け後（JST翌朝6:47）。EODのOIが載ったタイミングで取得する。
+    - cron: '47 21 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-positioning-main
+  cancel-in-progress: false
+
+jobs:
+  options:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Build options positioning
+        env:
+          V38_STATE_JSON: state.json
+          V38_OPT_JSON: options_positioning.json
+          V38_OPT_HISTORY: options_history.csv
+          V38_OPT_CACHE: options_cache
+          # 対象。空なら state.json の picks/hold（Core 12）を使う。
+          V38_OPT_TICKERS: ''
+          V38_OPT_MAX_EXPIRY: '4'
+          V38_OPT_HTML: options-positioning.html
+          # 履歴用の全銘柄スキャン。表示はせず1銘柄1行のサマリーだけ残す。
+          # 検証に必要なサンプル数は表示対象60〜70銘柄だけでは足りないため。
+          V38_OPT_SCAN_ALL: '1'
+          V38_UNIVERSE_CSV: universe.csv
+          V38_OPT_SCAN_HISTORY: options_scan_history.csv
+          V38_OPT_SCAN_WORKERS: '8'
+          V38_OPT_TARGETS: options_targets.json
+        run: |
+          python tools/build_options_positioning.py
+          python tools/render_options_html.py
+
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for f in options_positioning.json options_history.csv \
+                   options-positioning.html options_scan_history.csv; do
+            [[ -f "$f" ]] && git add -- "$f"
+          done
+          [[ -d options_cache ]] && git add -A options_cache || true
+          if git diff --staged --quiet; then
+            echo "no options changes"; exit 0
+          fi
+          git commit -m "Options positioning $(date +%F)"
+          for a in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((a*2))
+          done
+          exit 1
