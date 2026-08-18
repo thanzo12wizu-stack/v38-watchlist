@@ -26,8 +26,9 @@ permissions:
 
 concurrency:
   group: dashboard-build-main
-  # 同じmain向けの古いrunは新しいrunで打ち切る。古い生成物の後勝ちを防ぐ。
-  cancel-in-progress: true
+  # 既に走っている同系統runは止めず、順番に処理する。
+  # 古いas-ofの後勝ちはbuild_dashboard.py側の巻き戻りガードで防ぐ。
+  cancel-in-progress: false
 
 jobs:
   build-and-publish:
