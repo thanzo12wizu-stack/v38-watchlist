@@ -46,7 +46,7 @@ import html as _html
 #     Weekly からは MRI/パフォーマンス/RRG/ヒートマップ/銘柄入替/資産曲線を撤去し各ホームへ一本化。
 #   ・集約: Industry→Rotation / W30→Setups / Equity→Positions / Overview1+2→Publish(2セクション)。
 #   ・Setups タブ内順序: 検索(最上部)→速報(liq/ema)→①重なり→②単独→③圧縮ベース→
-#     ④底打ち(構造ピボット)→⑤W30→⑥リーダー母集団。絞り込み強度順＋参照プールを最後に。
+#     ⑥底打ち(構造ピボット)→⑦W30→⑧リーダー母集団。絞り込み強度順＋参照プールを最後に。
 #
 #  【Core 12 と 裁量スイングの分離（最重要）】
 #   ・Core 12 = システム機械選定(RS順12銘柄・隔週・出口=ピーク×0.70 または 建値×0.75・途中利確なし)。
@@ -2214,10 +2214,23 @@ def build_w30_breakouts(m, cap=12, e2j=None):
     cohort_card = _w30_cohort_card(m, e2j=e2j)
     return signal_card + rule_card + legend_card + status_card + cohort_card + entry_card + exit_card
 
+# 米国株の「取引日」の確定線。2026-12-06(日)から Nasdaq が 23時間取引へ移行予定で、
+# 21:00 ET開始・20:00 ET終了・20:00〜21:00 ET が業界共通の停止時間になる。
+# 日足の確定は従来どおり 16:00 ET のクロージング・クロスで決まる（NasdaqのFAQに明記）
+# ため、確定線は 16:15 ET のままでよい。ただし移行後は 21:00 ET 以降が「翌取引日」
+# 扱いになるので、夜間セッション中に前日の日付へ戻さないよう境界を持たせる。
+SESSION_23H_START = pd.Timestamp("2026-12-06")   # 23時間取引の開始（SEC承認前提）
+SESSION_CLOSE_ET = (16, 15)                      # 日足確定線（クロージング・クロス+15分）
+SESSION_NIGHT_START_ET = 21                      # 夜間セッション開始（移行後）
+
+
 def last_completed_session(now=None):
     """最後に「引けまで完了した」米国市場の営業日(日付)を返す。
        ザラ場中実行では当日を確定足とみなさない。祝日カレンダーは持たないが、
-       `index <= cut` で切るだけなので祝日は自然に無視される（直前の実バーが残る）。"""
+       `index <= cut` で切るだけなので祝日は自然に無視される（直前の実バーが残る）。
+
+       23時間取引移行後(2026-12-06〜)も日足の確定は 16:00 ET のクロージング・クロス。
+       21:00 ET 以降は翌取引日の夜間セッションなので、その日の引けは確定済みとして扱う。"""
     try:
         from zoneinfo import ZoneInfo
         et = ZoneInfo("America/New_York")
@@ -2227,11 +2240,26 @@ def last_completed_session(now=None):
     n = now.astimezone(et) if et is not None else (now - dt.timedelta(hours=5))
     d = n.date()
     # 16:15 ET(引け+15分)を確定線とする。それ未満なら当日は未確定。
-    if (n.hour, n.minute) < (16, 15):
+    if (n.hour, n.minute) < SESSION_CLOSE_ET:
         d -= dt.timedelta(days=1)
+    # 23時間取引移行後: 21:00 ET以降は翌取引日の夜間セッション。日付は当日の引けのまま
+    # で正しいので何もしない（ここで進めると未確定の翌日を確定扱いにしてしまう）。
     while d.weekday() >= 5:                       # 土日は営業日でない
         d -= dt.timedelta(days=1)
     return pd.Timestamp(d)
+
+
+def session_note(now=None):
+    """画面に出す取引時間の注記。移行日を跨いだら自動で文言が変わる。"""
+    today = pd.Timestamp(now).normalize() if now is not None else pd.Timestamp.utcnow().normalize()
+    try:
+        today = today.tz_localize(None)
+    except Exception:
+        pass
+    if today >= SESSION_23H_START:
+        return ("米国株は23時間取引（日〜金 21:00 ET開始・20:00 ET終了、"
+                "20:00〜21:00 ETは停止）。日足は従来どおり16:00 ETのクロージング・クロスで確定。")
+    return ""
 
 def cut_to_completed(W, macro):
     """A5-2: 株式(W)とマクロ(macro)を「同一の最終確定営業日」で切り揃える。
@@ -2610,7 +2638,11 @@ def _incept_vwap_features(rec, c, h, l, v):
         vw, aligned = got
         if len(vw) < 8:
             return empty, newrec
-        return _vwap_flags(vw, aligned), newrec
+        out = _vwap_flags(vw, aligned)
+        # 累積和キャッシュ由来＝上場からの全履歴で算出できている。
+        # 3年窓の代理判定（_recent_listing）に関係なく有効とする。
+        out["valid"] = True
+        return out, newrec
     except Exception:
         return empty, None
 
@@ -5198,13 +5230,14 @@ def build_theme_hierarchy(m, s2t):
 # 百分位を付けるため、プール外はNaNになる。画面には「—」ではなく理由を出す。
 RS_OFF_LABEL = {
     "liq": "流動性外", "price": "低位株", "split": "分割疑い",
-    "hist": "履歴不足", "none": "データなし",
+    "hist": "履歴不足", "ipo": "新規上場", "none": "データなし",
 }
 RS_OFF_HELP = {
     "liq": "20日平均$出来高が$10M未満。RSの母集団に入れていない",
     "price": "株価が$5未満。RSの母集団に入れていない",
     "split": "直近200日に単日±150%超の変化。分割/データ異常としてRSから除外",
     "hist": "価格履歴が不足していてRSを算出できない",
+    "ipo": "上場から日が浅く189日RSを算出できない。短期RS(21/63日)で判断する",
     "none": "価格データを取得できていない",
 }
 
@@ -5230,6 +5263,23 @@ def rs_off_reason(r):
         return "price"
     if dvol is None or dvol < DVOL_FLOOR:
         return "liq"
+    # 上場来VWAPが算出できている、または一定本数あるのにRS189だけ無い＝新規上場。
+    # RS189は189営業日を要するので、上場1年未満は必ずNaNになる（弱いのではない）。
+    if bool(r.get("vwap_all_valid")):
+        return "ipo"
+    try:
+        _b = r.get("bars")
+        if _b is not None and IPO_MIN_BARS <= float(_b) < 250:
+            return "ipo"
+    except Exception:
+        pass
+    for _k in ("rs21", "rs"):
+        try:
+            _v = r.get(_k)
+            if _v is not None and np.isfinite(float(_v)):
+                return "ipo"      # 短期RSが付く＝価格履歴はある。189日に足りないだけ。
+        except Exception:
+            continue
     return "hist"
 
 
@@ -7703,7 +7753,20 @@ def _signals_of(r, new_entry=None):
     return a["setup"] + a["trigger"] + a["confirm"]
 
 
+SETUP_MIN_ADR = 0.035     # ADR3.5%未満は値幅不足。Setups全カード共通で除外。
+
+
 def setup_eligible(m):
+    """Setups全カード共通の適格。コア条件（株価/流動性/時価総額/分割/除外テーマ）に
+       ADR下限を足したもの。IPO経路もコア条件は同じものを通す（緩めない）。"""
+    try:
+        _nan = pd.Series(np.nan, index=m.index)
+        return (setup_eligible_core(m) & m.get("adr", _nan).ge(SETUP_MIN_ADR)).fillna(False)
+    except Exception:
+        return pd.Series(False, index=m.index)
+
+
+def setup_eligible_core(m):
     """Setups全カード共通の適格母集団：株価≥5・売買代金≥$10M・時価総額≥$1B・分割疑い除外・除外テーマ除外。
        RSや200MA等の個別条件はこれに & して各カードで足す（早期転換でRSを緩めるのは可・株価/流動性/時価総額/除外は共通）。
        列欠損・例外時はフェイルクローズ（全除外）——適格側に倒すより安全。"""
@@ -7872,11 +7935,13 @@ _CF_SECTIONS = (
 # 3キーのソートだけで、これは事実の量であって合否ではない。
 PRE_BASE_MIN, PRE_BASE_MAX = 0.08, 0.35   # ベースの深さ。浅すぎ=ただの上昇 / 深すぎ=wide and loose
 PRE_MIN_BASE_DAYS = 20                     # 4週未満は「ベースではない」
-PRE_MAX_STAGE = 2                          # 3rd/4th stage base は買わない
+PRE_MAX_STAGE = 1                          # wsb=0が1本目。0/1のみ通す（3本目以降は買わない）
 PRE_PIVOT_LO, PRE_PIVOT_HI = -0.08, 0.005  # ピボット直下。直上は既に発火側
 PRE_MAX_EXT_ATR = 4.0                      # 発火前なので伸び切り判定は厳しく
 PRE_TIGHT_PCT = 0.03                       # 21EMA/VWAPからの「タイト」の閾値
-PRE_SECTOR_RS = 65                         # 業種RS中央値の下限
+PRE_MIN_RS189 = 80                         # 主導株の下限（RS55の地銀は出さない）
+PRE_MIN_RS63 = 80
+PRE_SECTOR_RS = 60                         # 業種RS中央値の下限
 PRE_SECTOR_BREADTH = 30                    # 業種ブレッドスの下限(%)
 
 
@@ -7900,6 +7965,163 @@ def _pre_bool(m, name):
     return pd.Series(False, index=m.index)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# オプション連携（読むだけ）。別ワークフローが吐いたJSON/CSVを参照する。
+# 本体からOption APIは叩かない。ファイルが無くても壊れていても本体は落とさない。
+OPT_JSON = os.environ.get("V38_OPT_JSON", "options_positioning.json")
+OPT_SCAN_CSV = os.environ.get("V38_OPT_SCAN_HISTORY", "options_scan_history.csv")
+OPT_TARGETS = os.environ.get("V38_OPT_TARGETS", "options_targets.json")
+OPT_STALE_DAYS = 3          # これより古ければ画面に古さを出す
+
+
+def load_options():
+    """{ticker: {cw,pw,gf,reg,stale}} を返す。
+       詳細JSON(Core12+候補) を主、全銘柄スキャンCSVの最新行を副として合流する。"""
+    out = {}
+    def _age(ts):
+        try:
+            t = pd.Timestamp(ts)
+            t = t.tz_convert(None) if t.tzinfo is not None else t
+            return int((pd.Timestamp.utcnow().tz_localize(None) - t).days)
+        except Exception:
+            return None
+    # 副: 全銘柄スキャン（1銘柄1行サマリー）。同一tickerは最終行が最新。
+    try:
+        for r in csv.DictReader(open(OPT_SCAN_CSV, encoding="utf-8-sig")):
+            tk = (r.get("ticker") or "").strip().upper()
+            if not tk:
+                continue
+            def f(k):
+                try:
+                    v = r.get(k)
+                    return float(v) if v not in (None, "", "None") else None
+                except Exception:
+                    return None
+            out[tk] = dict(cw=f("call_wall"), pw=f("put_wall"), gf=f("gamma_flip"),
+                           cwp=f("call_wall_pct"), pwp=f("put_wall_pct"), gfp=f("flip_pct"),
+                           reg=r.get("regime"), conf=r.get("confidence"),
+                           exp=r.get("expiry"), age=_age(r.get("date")), src="scan")
+    except Exception:
+        pass
+    # 主: 詳細JSON。距離・ATR・重なりまで持つのでこちらで上書きする。
+    try:
+        d = json.load(open(OPT_JSON, encoding="utf-8"))
+        age = _age(d.get("asof"))
+        for tk, v in (d.get("tickers") or {}).items():
+            g = lambda k: (v.get(k) or {})
+            conf_names = []
+            for key in ("call_wall", "put_wall", "gamma_flip"):
+                for c in ((v.get("confluence") or {}).get(key) or []):
+                    if c.get("name") not in conf_names:
+                        conf_names.append(c["name"])
+            out[str(tk).upper()] = dict(
+                cw=g("call_wall").get("px"), pw=g("put_wall").get("px"),
+                gf=g("gamma_flip").get("px"),
+                cwp=g("call_wall").get("pct"), pwp=g("put_wall").get("pct"),
+                gfp=g("gamma_flip").get("pct"),
+                cwa=g("call_wall").get("atr"), pwa=g("put_wall").get("atr"),
+                gfa=g("gamma_flip").get("atr"),
+                reg=v.get("regime"), conf=v.get("confidence"), exp=v.get("nearest"),
+                rpos=v.get("range_pos"), cfl=conf_names,
+                age=age, stale=bool(v.get("stale")), src="full")
+    except Exception:
+        pass
+    if out:
+        sys.stderr.write("[options] %d tickers loaded\n" % len(out))
+    return out
+
+
+def write_option_targets(picks, pre_rows, entry_rows, path=None):
+    """次回のオプション取得対象を吐く。本体→オプションの一方向依存にする。"""
+    path = path or OPT_TARGETS
+    seen, out = set(), []
+    for src in (picks or [], [r.get("t") for r in (pre_rows or [])],
+                [r for r in (entry_rows or [])]):
+        for t in src:
+            t = str(t or "").strip().upper()
+            if t and t not in seen:
+                seen.add(t); out.append(t)
+    try:
+        _defer_cache_write(path, out[:120])
+    except Exception:
+        pass
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 強い銘柄が「下値の支え（Put Wall）」に接触している状態。
+# 支えは建玉が積み上がった価格で、押し目が拾われやすい一方、割れると下げが速い。
+# 表示は接触の事実と距離まで。売買判定はしない。
+OPTWALL_TOUCH_ATR = 0.5      # 支えから±0.5ATR以内を「接触」とする
+OPTWALL_MIN_RS189 = 80       # 強い銘柄に限定（弱い銘柄の支えは支えにならない）
+
+
+def build_optwall_touch(m, opts, cap=20):
+    """RSが高く、下値の支えに接触している銘柄。"""
+    if m is None or m.empty or not opts:
+        return []
+    rows = []
+    for t, o in opts.items():
+        if t not in m.index:
+            continue
+        r = m.loc[t]
+        pw = o.get("pw")
+        if pw is None:
+            continue
+        try:
+            close = float(r.get("close")); atr = float(r.get("atr14"))
+            rs189 = float(r.get("rs189")); rs21 = float(r.get("rs21"))
+        except Exception:
+            continue
+        if not (close > 0 and atr > 0):
+            continue
+        lead = (rs189 == rs189 and rs189 >= OPTWALL_MIN_RS189) or \
+               (rs189 != rs189 and rs21 == rs21 and rs21 >= IPO_MIN_RS21)
+        if not lead:
+            continue
+        d_atr = (close - float(pw)) / atr
+        if abs(d_atr) > OPTWALL_TOUCH_ATR:
+            continue
+        rows.append(dict(t=t, close=round(close, 2), pw=round(float(pw), 2),
+                         pct=round(float(pw) / close - 1, 4), atr=round(d_atr, 2),
+                         rs189=(int(rs189) if rs189 == rs189 else None),
+                         rs21=(int(rs21) if rs21 == rs21 else None),
+                         reg=o.get("reg"), conf=o.get("conf"), age=o.get("age"),
+                         above=bool(close >= float(pw)),
+                         dvol=float(r.get("dvol") or 0)))
+    rows.sort(key=lambda d: abs(d["atr"]))
+    return rows[:cap]
+
+
+def _optwall_touch_card(rows):
+    head = ('<div class="card"><div class="hdr"><h2>支えへの接触 '
+            '<span class="h2en">Put Wall Touch</span></h2></div>')
+    if not rows:
+        return (head + '<div class="sub">RSが高く、オプションの下値の支えに接触している銘柄。'
+                'オプション取得がまだか、該当なし。</div><div class="empty">該当なし</div></div>')
+    body = ""
+    for d in rows:
+        side = ("支えの上" if d["above"] else "支えを割っている")
+        cls = "pos" if d["above"] else "neg"
+        rs = (f'RS189 {d["rs189"]}' if d["rs189"] is not None else f'RS21 {d["rs21"]}・新規上場')
+        body += (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
+                 f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
+                 f'<span class="mut">{rs}</span>'
+                 f'<span class="prestage {cls}">{side}</span></div>'
+                 f'<div class="prenums">'
+                 f'<div><i>現値</i>${d["close"]:,.2f}</div>'
+                 f'<div><i>支え</i>${d["pw"]:,.2f}</div>'
+                 f'<div><i>距離</i>{d["pct"]*100:+.1f}%</div>'
+                 f'<div><i>ATR</i>{d["atr"]:+.2f}</div>'
+                 f'<div><i>局面</i>{_h(str(d["reg"] or "—"))[:8]}</div></div>'
+                 + (f'<div class="pretail">建玉薄・信頼度低</div>' if d["conf"] == "LOW" else "")
+                 + '</div>')
+    return (head + '<div class="sub">RSが高く、オプションの<b>下値の支え</b>（建玉が最も積み上がった価格）'
+            'に±0.5ATR以内で接触している銘柄。支えの上なら押し目が拾われやすく、'
+            '割っていれば下げが速くなりやすい。距離の近い順。'
+            '建玉からの推定であり、売買判定ではない。</div>'
+            f'<div class="prelist">{body}</div></div>')
+
 def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
     """発火前ボード。構造が整い、出来高が枯れ、VWAP/21EMAに張り付いている未発火銘柄。"""
     sys.stderr.write("[pre-breakout] enter rows=%d\n" % (0 if m is None else len(m)))
@@ -7917,7 +8139,12 @@ def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
     v252 = _pre_num(m, "vwap252_dist")
 
     # --- O'Neilの否定形を落とす --------------------------------------------
-    base_ok = depth.between(PRE_BASE_MIN, PRE_BASE_MAX) & (days >= PRE_MIN_BASE_DAYS)
+    # cup_days はカップ形状が取れた銘柄しか埋まらない（既定None）。フラットベースや
+    # VCPには値が付かないので、期間の代理として「40日高値を試した回数」「収縮回数」を併用する。
+    touches = _pre_num(m, "pivot_touches")
+    contr = _pre_num(m, "contractions")
+    has_duration = (days >= PRE_MIN_BASE_DAYS) | (touches >= 1) | (contr >= 1)
+    base_ok = depth.between(PRE_BASE_MIN, PRE_BASE_MAX) & has_duration
     stage_ok = (_pre_bool(m, "stage2") | _pre_bool(m, "weekly_stage2")) & \
                (stage_n.isna() | (stage_n <= PRE_MAX_STAGE))
     unfired = (~_pre_bool(m, "true_breakout")) & (~_pre_bool(m, "cup_breakout")) \
@@ -7931,9 +8158,21 @@ def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
 
     # --- タイトな位置（21EMA / VWAP） ---------------------------------------
     tight = (d21.abs() <= PRE_TIGHT_PCT) | (v63.abs() <= PRE_TIGHT_PCT) \
-            | (v252.abs() <= PRE_TIGHT_PCT * 1.7)
+            | (v252.abs() <= PRE_TIGHT_PCT * 1.7) \
+            | _pre_bool(m, "ema21_touch3")
 
-    keep = setup_eligible(m) & base_ok & stage_ok & unfired & near_piv & not_ext & quiet & tight
+    # 主導株に限定する。構造条件だけで絞ると「静かに動かない銘柄」が最も静かになり、
+    # RS30〜50台の地銀・公益が上位を占める（実測で確認）。O'Neilの前提は一貫して主導株。
+    lead = (_pre_num(m, "rs189") >= PRE_MIN_RS189) & (_pre_num(m, "rs") >= PRE_MIN_RS63)
+    steps = [("適格", setup_eligible(m)), ("主導", lead), ("ベース", base_ok),
+             ("段階", stage_ok), ("未発火", unfired), ("ピボット圏", near_piv),
+             ("未伸切", not_ext), ("静けさ", quiet), ("タイト", tight)]
+    keep = pd.Series(True, index=m.index)
+    diag = []
+    for _lab, _cond in steps:
+        keep = keep & _cond.fillna(False)
+        diag.append("%s=%d" % (_lab, int(keep.sum())))
+    sys.stderr.write("[pre-breakout] " + " / ".join(diag) + "\n")
     sub = m[keep.fillna(False)]
     if sub.empty:
         return []
@@ -7976,6 +8215,8 @@ def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
             atr14=float(r.get("atr14")) if pd.notna(r.get("atr14")) else None,
             dvol=float(r.get("dvol") or 0),
         ))
+    # 業種が弱い銘柄は落とす。強い業種の中の静かな銘柄、が本来の狙い。
+    rows = [d for d in rows if d["strong"]] or rows
     # 並びは3キーのソートのみ。配点はしない。
     rows.sort(key=lambda d: ((d["stage"] if d["stage"] is not None else 9),
                              round(d["quiet"], 3),
@@ -8024,7 +8265,7 @@ def _pre_breakout_card(rows, ftd=None):
         body += (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
                  f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
                  f'<span class="mut">RS189 {d["rs189"]}</span>'
-                 f'<span class="prestage">{"ベース"+str(d["stage"])+"本目" if d["stage"] is not None else "ベース段階—"}</span>'
+                 f'<span class="prestage">{"ベース"+str(d["stage"]+1)+"本目" if d["stage"] is not None else "ベース段階—"}</span>'
                  f'<span class="presec">{sec}</span></div>'
                  f'<div class="prenums">'
                  f'<div><i>piv</i>{(d["piv"] or 0)*100:+.1f}%</div>'
@@ -8146,6 +8387,8 @@ def build_new_entrants(cand):
     rk = cand["rk189_now"] if "rk189_now" in cand.columns else cand["rs189"].rank(ascending=False)
     buckets = {"今日": [], "今週": [], "今月": []}
     for t, r in cand.iterrows():
+        if bool(r.get("excluded_theme")):
+            continue          # 除外テーマは新規参入としても出さない
         lab = r.get("new_entry")
         if isinstance(lab, str) and lab in buckets:
             buckets[lab].append((int(rk.get(t, 999)), t, r))
@@ -8223,7 +8466,7 @@ def build_pullback_screener(m, k=20):
     """押し目質スクリーナー: 全リーダーを押し目質スコア順に抽出（裁量参考・売買非連動）。"""
     try:
         pool = m[(m["dvol"] >= DVOL_FLOOR) & (m["close"] >= 5) & (m["rs"] >= LEADER_RS)
-                 & (m["close"] > m["sma200"])].copy()
+                 & (m["close"] > m["sma200"]) & (~m.get("excluded_theme", pd.Series(False, index=m.index)).fillna(False))].copy()
         if len(pool) < 5:
             return ""
         scored = []
@@ -8698,7 +8941,10 @@ def build_portfolio(m, s2t):
         print("[warn] laggard flag failed:", e)
         cand["laggard"] = False
     # 思想的除外(バイオ/創薬): 選定から外す。candには excluded_theme フラグを残し表示する。
-    cand["excluded_theme"] = [is_excluded_theme(t, s2t) for t in cand.index]
+    _mc = pd.to_numeric(cand.get("mcap"), errors="coerce") if "mcap" in cand.columns else None
+    cand["excluded_theme"] = [is_excluded_theme(t, s2t,
+                                                (_mc.get(t) if _mc is not None else None))
+                              for t in cand.index]
     # リーダー外除外: リーダー(63日RS≥85 かつ 200MA上)でない銘柄は買わない。
     #   RS189の適格を満たしても先導株でなければ選定対象外＝「上から順に、リーダーの中で12銘柄」。
     def _is_leader_row(t):
@@ -8747,12 +8993,49 @@ def build_portfolio(m, s2t):
 # バイオ除外はサブテーマ単位: ヘッドライン一発で±30%飛ぶ投機的小型創薬のみ外す。
 # 大手バイオ/大手製薬/GLP-1/手術ロボ/医療機器等はモメンタムで来れば拾う(思想: 大型は別物)。
 EXCLUDE_SUBTHEMES = ("臨床段階・中小型バイオ",)
-def is_excluded_theme(t, s2t):
-    v = s2t.get(t)
-    if not isinstance(v, list) or len(v) < 2:
-        return False
-    sub = v[1] or ""
-    return sub in EXCLUDE_SUBTHEMES
+
+# s2t（手動テーマ表）は更新が止まると新規上場のバイオを拾えないので、
+# TradingViewの業種分類（毎ビルド自動更新・被覆100%）を主系統にする。
+# 除外するのは治験ヘッドラインで一夜に±30%飛ぶ層。時価総額で線を引き、
+# LLY/JNJのような大型製薬と、確立した大型バイオだけを残す。
+BIO_EXCLUDE_INDUSTRIES = ("Biotechnology", "Pharmaceuticals: Other")
+BIO_KEEP_MCAP = 1e10          # $10B以上は治験一発で消えない規模とみなして残す
+
+
+def _bio_industry_map():
+    """業種分類を excluded_theme の計算時点で使えるようにする。
+       INDUSTRY_RAW は build_market 内で埋まるがそれより前に呼ばれるため、
+       未充填ならキャッシュ/ユニバースから直接読む（取得は行わない）。"""
+    if INDUSTRY_RAW:
+        return INDUSTRY_RAW
+    try:
+        blob = json.load(open(INDUSTRY_JSON, encoding="utf-8"))
+        got = blob.get("map") or blob
+        if got:
+            INDUSTRY_RAW.update(got)
+            return INDUSTRY_RAW
+    except Exception:
+        pass
+    got = _industry_from_universe()
+    if got:
+        INDUSTRY_RAW.update(got)
+    return INDUSTRY_RAW
+
+
+def is_excluded_theme(t, s2t, mcap=None, ind_map=None):
+    """モメンタム継続性が構造的に効かない銘柄をTrueにする。
+       選定・表示の両方でこの1関数を参照する（重複定義を作らない）。"""
+    v = (ind_map or _bio_industry_map()).get(t)
+    if isinstance(v, list) and len(v) >= 2 and v[1] in BIO_EXCLUDE_INDUSTRIES:
+        try:
+            if mcap is None or not np.isfinite(float(mcap)) or float(mcap) < BIO_KEEP_MCAP:
+                return True
+        except Exception:
+            return True
+    sv = (s2t or {}).get(t)
+    if isinstance(sv, list) and len(sv) >= 2 and (sv[1] or "") in EXCLUDE_SUBTHEMES:
+        return True
+    return False
 
 LEADER_RS = 85   # リーダー(=先導株)の唯一の定義: 63日RS≥85 かつ 200日線上。
                  # マーケットタブ「リーダー一覧」もピックアップの母集団もこの1定義を参照(重複定義なし)。
@@ -8822,7 +9105,8 @@ def momentum_nuance(r):
 # LEGACY（未使用・参照用に残置。呼び出しなし）
 def _leaders_watch_card(m, cap=80):
     """リーダー一覧（RS≥85 かつ 200MA上）をRS順のチップで。タップで詳細。ウォッチ用。（旧称「リーダー一覧」を統合）"""
-    lead = m[(m["rs"] >= LEADER_RS) & (m["close"] > m["sma200"])].copy()
+    lead = m[(m["rs"] >= LEADER_RS) & (m["close"] > m["sma200"])
+             & (~m.get("excluded_theme", pd.Series(False, index=m.index)).fillna(False))].copy()
     if lead.empty:
         return ""
     lead = lead.sort_values("rs189", ascending=False)
@@ -8840,7 +9124,8 @@ def _leaders_watch_card(m, cap=80):
 
 def build_leaders(m, s2i, e2j, s2t):
     """Leaders = RS>=85 & above 200MA, tagged with state ①〜⑤. Returns (by_state, buys)."""
-    lead = m[(m["rs"] >= LEADER_RS) & (m["close"] > m["sma200"])].copy()
+    lead = m[(m["rs"] >= LEADER_RS) & (m["close"] > m["sma200"])
+             & (~m.get("excluded_theme", pd.Series(False, index=m.index)).fillna(False))].copy()
     if lead.empty:
         return {}, []
     lead["state"] = lead.apply(tag_state, axis=1)
@@ -11680,7 +11965,9 @@ def build_tenbagger_l1(m):
     """テンバガー・レーダー L1（検証: <$20×ADR≥5×RS≥60×上場4年未満でP≈10.3%/リフト29.7x）。
        宝くじ帳簿・本体と分離。生存バイアスで割引後の実態6-8%。捕獲は広トレール、サイズ≤0.25%/本。"""
     try:
-        pool = m[(m["dvol"] >= DVOL_FLOOR) & (m["close"] >= 5)].copy()
+        # 除外テーマ（投機的バイオ等）は他タブと同じく出さない。
+        pool = m[(m["dvol"] >= DVOL_FLOOR) & (m["close"] >= 5)
+                 & (~m.get("excluded_theme", pd.Series(False, index=m.index)).fillna(False))].copy()
         if len(pool) < 20:
             return ""
         # L1条件: 低位<$20 × ADR≥5% × RS189≥60 × (52週高値圏でない=まだ上げ切っていない)
@@ -11860,7 +12147,8 @@ def build_leader_run(m, k=24):
        思想(添付): 序列が信頼区間・表示専用の裁量/心構え材料。均等分散×ワイドトレールの本体は触らない。"""
     if "rs189" not in m.columns or "rs_l1" not in m.columns or "rs_l2" not in m.columns:
         return None
-    lead = m[m["rs189"].notna()].sort_values("rs189", ascending=False).head(k)
+    lead = m[m["rs189"].notna()
+             & (~m.get("excluded_theme", pd.Series(False, index=m.index)).fillna(False))].sort_values("rs189", ascending=False).head(k)
     if len(lead) < 6:
         return None
     rows = []
@@ -12320,12 +12608,51 @@ def entry_worthy(m):
     return stage & not_extended & not_run & (~failed)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 新規上場（IPO）銘柄の扱い。
+# RS189は189営業日の履歴が要るため、上場1年未満の銘柄は必ずNaNになる。
+# 現状これが全カードの入口になっていて、CBRS/NBIS/RDDTのような上場直後の主導株が
+# 構造的に一度も出てこない。O'Neilも "Recent IPOs with big earnings can form
+# IPO chart bases. They are worth researching." と明記している。
+# RS189が「無い」ことと「弱い」ことは別なので、短期RSで代替する経路を用意する。
+IPO_MIN_BARS = 40          # これ未満は値動きの評価自体ができない
+IPO_MAX_BARS = 250         # これ以上あればRS189が付くので通常経路
+IPO_MIN_RS21 = 80          # 短期RSでの主導条件（RS189の代替）
+
+
+def ipo_recent(m):
+    """上場1年未満で、短期RSでは主導している銘柄。RS189欠落を理由に捨てない。"""
+    idx = m.index
+    def num(c):
+        return pd.to_numeric(m[c], errors="coerce") if c in m.columns \
+            else pd.Series(np.nan, index=idx)
+    bars = num("bars") if "bars" in m.columns else pd.Series(np.nan, index=idx)
+    if bars.isna().all() and "vwap_all_n" in m.columns:
+        bars = num("vwap_all_n")
+    no_rs189 = num("rs189").isna()
+    young = bars.between(IPO_MIN_BARS, IPO_MAX_BARS) if bars.notna().any() else no_rs189
+    rs21 = num("rs21")
+    rs63 = num("rs")
+    strong = (rs21 >= IPO_MIN_RS21) | (rs63 >= IPO_MIN_RS21)
+    return (no_rs189 & young & strong).fillna(False)
+
+
+def eligible_or_ipo(m):
+    """通常の適格母集団に、新規上場の主導株を合流させる。
+       株価・流動性・時価総額・除外テーマ・ADRの条件は同じものを課す（緩めない）。"""
+    base = setup_eligible(m)
+    try:
+        return (base | (setup_eligible_core(m) & ipo_recent(m))).fillna(False)
+    except Exception:
+        return base
+
+
 def build_multi_vwap_card(m, cap=24):
     """63/252/all-time VWAP watch with a dedicated all-time break column."""
     needed = ("vwap63", "vwap252", "vwap_all")
     if m is None or m.empty or not all(x in m.columns for x in needed):
         return ""
-    elig = setup_eligible(m)
+    elig = eligible_or_ipo(m)          # 上場来VWAPは189日を必要としない
     rs = pd.to_numeric(m.get("rs189", pd.Series(0, index=m.index)), errors="coerce").fillna(0)
 
     def _any_loc(keys):
@@ -12340,7 +12667,10 @@ def build_multi_vwap_card(m, cap=24):
     all_valid = m.get("vwap_all_valid", pd.Series(False, index=m.index)).fillna(False).astype(bool)
     loc_all = _any_loc(("vwap_all",)) & all_valid
     # 下落トレンドや伸び切りの銘柄を出さない（VWAP接触は上昇中でこそ意味がある）
-    keep = elig & entry_worthy(m) & ((loc_roll & (rs >= MULTI_VWAP_RS189_MIN)) | loc_all)
+    # 63/252はRS189でリーダーを絞る。上場来VWAPはRS189条件を課さない（稀少イベント＋IPO対応）。
+    ipo = ipo_recent(m)
+    keep = elig & (entry_worthy(m) | ipo) & \
+        ((loc_roll & ((rs >= MULTI_VWAP_RS189_MIN) | ipo)) | loc_all)
     sub = m[keep].copy()
     if sub.empty:
         return ('<div class="card"><h2>Multi VWAPセットアップ</h2>'
@@ -14384,6 +14714,16 @@ function showDet(tk){
   /* 距離系は必ず符号を出す。'—'は「イベントなし」であって負号ではない。 */
   function _fsg(x,u){ if(x===null||x===undefined) return '—';
     var t=_f(x,u); return (Number(x)>0 && t.charAt(0)!=='+') ? ('+'+t) : t; }
+  /* オプションの壁。建玉からの推定なので「目安」。データが無ければ「—」。 */
+  function _optcell(o,k){
+    if(!o || o[k]===null || o[k]===undefined) return '—';
+    var px='$'+Number(o[k]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+    var p=o[k+'p'], a=o[k+'a'], t=px;
+    if(p!==null&&p!==undefined) t+=' '+(p>=0?'+':'')+(p*100).toFixed(1)+'%';
+    if(a!==null&&a!==undefined) t+=' ・'+Math.abs(a).toFixed(1)+'日分';
+    if(o.age!==null&&o.age!==undefined&&o.age>=3) t+=' <span class="rsoff">'+o.age+'日前</span>';
+    if(o.conf==='LOW') t+=' <span class="rsoff">建玉薄</span>';
+    return t; }
   function _vwcell(st,val){
     /* イベントが無いときは距離だけを出す。'—' や 'イベントなし' の前置きは
        負号と読み間違えるうえ、情報を足していないので出さない。 */
@@ -14405,6 +14745,9 @@ function showDet(tk){
             ['RVOL',_f(d.rv),'mut'],
             ['ピボットまで',_fsg(d.pdist,'%'),'mut'],
             ['VCP形状',_f(d.vcpq),'mut'],
+            ['上値の壁',_optcell(d.opt,'cw'),'mut'],
+            ['下値の支え',_optcell(d.opt,'pw'),'mut'],
+            ['性質の境目',_optcell(d.opt,'gf'),'mut'],
             ['63 VWAP',_vwcell(d.vws63,d.vw63),(d.vws63==='下から回復'||d.vws63==='タッチ反発')?'pos':'mut'],
             ['252 VWAP',_vwcell(d.vws252,d.vw252),(d.vws252==='下から回復'||d.vws252==='タッチ反発')?'pos':'mut'],
             ['上場来VWAP',_vwcell(d.vwsall,d.vwall)+(d.vwab?' ブレイク':''),d.vwab?'pos':'mut'],
@@ -15649,7 +15992,7 @@ def _build_det_extra(m, s2t, s2i, e2j, picks, deck, buys, nh_list, where, hold=N
                     "hep": _hep}
     return extra
 
-def _det_json(m, names, tapset, extra=None):
+def _det_json(m, names, tapset, extra=None, opts=None):
     """§4: compact per-ticker data for the tap-to-detail panel (displayed tickers only)."""
     import json as _json
     extra = extra or {}
@@ -15682,7 +16025,9 @@ def _det_json(m, names, tapset, extra=None):
             if bool(r.get(key + "_near")): return "近接"
             return "—"
         _off = rs_off_reason(r)
-        out[t] = {"rs": _r(r.get("rs"), 0), "rs189": _r(r.get("rs189"), 0),
+        _opt = (opts or {}).get(t)
+        out[t] = {"opt": _opt,
+                  "rs": _r(r.get("rs"), 0), "rs189": _r(r.get("rs189"), 0),
                   "rs21": _r(r.get("rs21"), 0),
                   "off": RS_OFF_LABEL.get(_off) if _off else None,
                   "offh": RS_OFF_HELP.get(_off) if _off else None,
@@ -16565,7 +16910,8 @@ def build_ema21_touch(m, W, s2t, cap=12, out=None):
                 & (m["close"] > m["sma200"])
                 & (adr >= 0.03)
                 & m["ema21_touch3"].fillna(False).astype(bool)
-                & (m["ema21"] > m["ema21_10ago"]))
+                & (m["ema21"] > m["ema21_10ago"])
+                & (~m.get("excluded_theme", pd.Series(False, index=m.index)).fillna(False)))
         lead = m[mask].copy()
         if lead.empty:
             return ('<div class="card"><h2>21EMAタッチ <span class="h2en">21EMA Touch</span></h2>'
@@ -16904,6 +17250,8 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
         nu_tag, _nun, nu_cls = momentum_nuance(r)
         _selected = t in _pick_set
         _exq = bool(r.get("excluded_theme")); _lag = bool(r.get("laggard")); _nl = bool(r.get("nonleader"))
+        if _exq:
+            continue          # 除外テーマは選定対象外。灰色表示で残すと一覧が読みにくい。
         _lag_tag = '<span class="lagb">出遅れ</span>' if _lag else ''   # 買う対象・タグのみ
         # 選外バッジ / 急落情報バッジ
         if _exq:
@@ -17027,13 +17375,22 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     for _pos, _tk in enumerate(cand.index):
         if _tk in _pick_set:
             _last_pos = _pos
-    deck = cand.iloc[_last_pos+1:_last_pos+1+15]   # 保有表の下から15(次の繰上げ候補)
+    # 除外テーマ（投機的バイオ等）は繰上げ候補にならないので控えにも出さない。
+    _deck_src = cand[~cand.get("excluded_theme", pd.Series(False, index=cand.index)).fillna(False)] \
+        if "excluded_theme" in cand.columns else cand
+    _dpos = 0
+    for _pos, _tk in enumerate(_deck_src.index):
+        if _tk in _pick_set:
+            _dpos = _pos
+    deck = _deck_src.iloc[_dpos+1:_dpos+1+15]   # 保有表の下から15(次の繰上げ候補)
     wrows = []
     for rank, (t, r) in enumerate(deck.iterrows(), start=_last_pos+2):
         _sth = subtheme_of(t, s2t, e2j.get(s2i.get(t), "—"))
         _il, _code, _l, _rsn = leader_state(r)
         _nt, _nn, _nc = momentum_nuance(r)
         _exq = bool(r.get("excluded_theme"))
+        if _exq:
+            continue          # 控えも同様に行ごと出さない
         _lag = bool(r.get("laggard"))
         _nl = bool(r.get("nonleader"))
         _lag_tag = '<span class="lagb">出遅れ</span>' if _lag else ''
@@ -17126,19 +17483,18 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
         'placeholder="例: NVDA" oninput="tkSearch(this.value)">'
         '<div id="tkresults" class="tkresults"></div></div>')
     # ---- TAB ピックアップ：コンフルエンス事実 → 発火 → セットアップの順。
-    today = (search_card
-        + _liq_bar()
-             + _mkt_section("① コンフルエンス（事実表示）", "セットアップ・発火・確認・位置/警戒を分類", en="Confluence Facts")
+    today = (
+             _mkt_section("③ コンフルエンス（事実表示）", "発火・確認・位置/警戒を分類した一覧", en="Confluence Facts")
              + build_confluence_watch(m, cand)
-             + _mkt_section("② 発火トリガー", "PP・ブレイク・出来高伴う反発", en="Entry Triggers")
+             + _mkt_section("④ 発火トリガー", "PP・ブレイク・出来高伴う反発", en="Entry Triggers")
              + build_pocket_pivots(m) + _buy_today_card(buytoday) + _patterns_card(patterns)
-             + _mkt_section("③ セットアップ評価", "VCP・21EMA・63/252/上場来VWAP", en="Setup Quality")
+             + _mkt_section("⑤ セットアップ評価", "VCP・21EMA・63/252/上場来VWAP", en="Setup Quality")
              + _vcp_card(vcp_rows) + (mkt.get("ema_touch") or "") + build_multi_vwap_card(m)
-             + _mkt_section("④ 底打ち（構造ピボット）", "安値切り上げ＋出来高減で下げ止まり。RS63主軸・構造のみ", en="Structure Pivot")
+             + _mkt_section("⑥ 底打ち（構造ピボット）", "安値切り上げ＋出来高減で下げ止まり。RS63主軸・構造のみ", en="Structure Pivot")
              + build_structure_pivot_screen(m, s2t)
-             + _mkt_section("⑤ W30ブレイク（30週線）", "金曜クローズ確定→翌週寄り。◎本格が本線・△ギリ抜けは警戒", en="W30 Breakout")
+             + _mkt_section("⑦ W30ブレイク（30週線）", "金曜クローズ確定→翌週寄り。◎本格が本線・△ギリ抜けは警戒", en="W30 Breakout")
              + build_w30_breakouts(m, e2j=e2j)
-             + _mkt_section("⑥ リーダー母集団", "RS≥85・200MA上を状態別に", en="Leaders")
+             + _mkt_section("⑧ リーダー母集団", "RS≥85・200MA上を状態別に", en="Leaders")
              + leaders_card)
 
     # ---- §4: collect every displayed ticker + build compact detail data (DET)
@@ -17177,7 +17533,9 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                 tapset.update([t for t in m.index if bool(m.at[t, "w30x"])])                     # W30ブレイク
     except Exception:
         pass
-    det_json = _det_json(m, names, set(m.index), _build_det_extra(m, s2t, s2i, e2j, picks, deck, buytoday, nh_list, where, mkt.get("hold")))   # 全ユニバース（検索＆タップ詳細）
+    det_json = _det_json(m, names, set(m.index),
+                         _build_det_extra(m, s2t, s2i, e2j, picks, deck, buytoday, nh_list, where, mkt.get("hold")),
+                         opts=mkt.get("options"))   # 全ユニバース（検索＆タップ詳細）
     # タップ詳細に出す簡易チャート（スパークライン）を tapset ぶん生成
     spark_map = {}
     try:
@@ -17484,7 +17842,11 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             f'<section id="t-movers">{build_movers_tab(m, s2t)}</section>'
             f'<section id="t-rs">{rs_compare}</section>'
             f'<section id="t-today">'
-            # 上から「発火前 → 発火 → 一覧」。買い点のsignatureは静けさなので先に置く。
+            # 検索を最上段に固定。以降「発火前 → 発火済み」の順で粒度を混ぜない。
+            + search_card
+            # 流動性フィルタはタブ全体に効くので、セクション②の中ではなく最上段に置く。
+            + _liq_bar()
+            # 買い点のsignatureは静けさなので、発火前を発火済みより先に置く。
             + _mkt_section("① 発火前（構造が整い、静かなもの）",
                            "出来高が枯れ21EMA/VWAPに張り付いた未発火銘柄。発火を待たずに構造で拾う",
                            en="Pre-Breakout")
@@ -17494,9 +17856,10 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                  or _scard("pre_breakout_rt", build_pre_breakout, m, INDUSTRY_RAW,
                            mkt.get("etf_hier"), mkt.get("ftd"), default=[])),
                 mkt.get("ftd"))
-            + _mkt_section("② 発火済み・その他のセットアップ",
-                           "実際にイベントが起きたもの・従来の一覧",
-                           en="Fired & Other Setups")
+            + _mkt_section("② 支えへの接触（オプション）",
+                           "建玉が積み上がった下値の支えに、強い銘柄が接触しているもの",
+                           en="Put Wall Touch")
+            + _optwall_touch_card(mkt.get("optwall_touch"))
             + f'{today}</section>'
             f'<section id="t-port">{port}</section>'
             f'<section id="t-alloc">'
@@ -17851,7 +18214,7 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     except Exception:
         pass
     # Setups回帰ガード: 特徴個数・任意配点・発注合否へ戻さない。
-    for _label in ('<div class="msec-l">① コンフルエンス（事実表示）',
+    for _label in ('<div class="msec-l">③ コンフルエンス（事実表示）',
                    '<h2>エントリー候補ボード',
                    '<h2>Multi VWAPセットアップ</h2>',
                    '<th>63 VWAP</th>', '<th>252 VWAP</th>', '<th>上場来ブレイク</th>'):
@@ -18154,7 +18517,7 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     for sid in ["t-today","t-movers","t-market","t-weekly","t-port","t-alloc","t-rs","t-rotation","t-rules","t-post1"]:
         if f'id="{sid}"' not in html:
             errs.append(f"missing tab {sid}")
-    for _lab in ("① コンフルエンス（事実表示）", "② 発火トリガー", "③ セットアップ評価", "④ 底打ち（構造ピボット）", "⑤ W30ブレイク（30週線）", "⑥ リーダー母集団"):
+    for _lab in ("③ コンフルエンス（事実表示）", "④ 発火トリガー", "⑤ セットアップ評価", "⑥ 底打ち（構造ピボット）", "⑦ W30ブレイク（30週線）", "⑧ リーダー母集団"):
         if _lab not in html:
             errs.append(f"pickup section missing: {_lab}")
     if "Setups</button>" not in html and "Setups</a>" not in html:
@@ -18704,7 +19067,10 @@ def main():
     mcaps = load_market_caps(list(m.index), live=(_net_ok() and not offline_selftest), strict=offline_selftest)
     m["mcap"] = m.index.map(lambda t: mcaps.get(t))
     _mcap_cov = (sum(1 for t in m.index if _valid_mcap(mcaps.get(t))) / len(m.index)) if len(m.index) else 1.0
-    m["excluded_theme"] = [is_excluded_theme(t, s2t) for t in m.index]   # 全タブ共通の除外テーマ列（Movers/Setups/Structure Pivot等で効かせる）
+    _mc = pd.to_numeric(m.get("mcap"), errors="coerce") if "mcap" in m.columns else None
+    m["excluded_theme"] = [is_excluded_theme(t, s2t,
+                                             (_mc.get(t) if _mc is not None else None))
+                           for t in m.index]   # 全タブ共通の除外テーマ列（Movers/Setups/Structure Pivot等で効かせる）
     _tier = m["mcap"].map(cap_tier)
     m["tier_key"]  = _tier.map(lambda x: x[0])
     m["tier_lab"]  = _tier.map(lambda x: x[1])
@@ -18816,8 +19182,13 @@ def main():
     # etf_hier(=大分類キー)を作ってから集計する。順序を逆にすると空になる。
     mkt["big_groups"] = _scard("big_groups", build_big_groups, mkt.get("etf_hier"))
     mkt["idx_breadth"] = _scard("idx_breadth", build_index_vs_breadth, mkt, default=[])
+    mkt["options"] = _scard("options", load_options, default={}) or {}
+    mkt["optwall_touch"] = _scard("optwall_touch", build_optwall_touch, m,
+                                  mkt.get("options"), default=[])
     mkt["pre_breakout"] = _scard("pre_breakout", build_pre_breakout, m,
                                  _indmap, mkt.get("etf_hier"), mkt.get("ftd"), default=[])
+    _scard("opt_targets", write_option_targets, picks,
+           mkt.get("pre_breakout"), None, default=None)
     mkt["sectors_rs"] = sectors
     mkt["theme_hier"] = _scard("theme_hier", build_theme_hierarchy, m, s2t)
     mkt["lev_env"] = _scard("lev_env", build_lev_env, macro)
