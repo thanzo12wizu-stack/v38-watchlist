@@ -5,7 +5,7 @@ Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
   A. 個別スリーブ(70%): N=12, 189日RS上位 × 50日SMA>200日SMA × 出来高金額$10M/日 × 株価$5以上,
      各1/12均等(テーマ上限なし)。継続=50>200日SMA&189日RS上位24(2N)。週足SARはアブレーションで撤廃・クールダウンなし。
      選定除外: 189日RS≥85&200MA上のリーダーから、63日RS<85(中期の勢い落ち)・小型創薬(サブテーマ=臨床段階・中小型バイオ)を外す(大手バイオ/製薬/GLP-1/手術ロボは対象)。出遅れ(業種内−20%)は買う(タグのみ)。
-              ※ユニバース段階でも時価総額<$100億のヘルスケアは除外済み(二重の網)。除外株はRS順に表示だけ残す(強さ確認用・買わない)。
+              ※臨床段階バイオもMaster Universeには残す。RS母集団/具体候補からのみ除外し、参考RSと除外理由は表示する。売上不明は通過+警告。
      急落局面(20日安値割れ or 5日−15%)のセリングクライマックス解禁は裁量メモ(未検証・NQ赤ゲートと役割重複のため機械選定には非連動)。
      急落局面フラグは情報バッジのみ（選定・配分・株数には非連動）。見送りは裁量判断。
      出口: 初期ストップ=建値×0.75(ワイド)→ピーク×0.70トレール(黄も0.70=B2)。二層出口(タイト初期+3R)は不採用。
@@ -1136,38 +1136,174 @@ UNIVERSE_MIN_RATIO = 0.80
 
 
 def fetch_universe_rows():
-    """TradingViewスクリーナーからユニバースを取得。列名は現行CSVと同一に揃える。"""
+    """TradingView stock screenerからMaster Universeを取得。
+
+    普通株に加えてDR/ADR/Registry Shareを含める。Preferred/Warrant/Unit/Right等は
+    typespecsを主判定、ticker suffixを補助判定としてここで除外する。自由文名称は
+    除外判定に使わない。total_revenueは選定適格性用のTTM売上スナップショット。
+    """
     if not _net_ok():
         return []
-    flt = [{"left": "type", "operation": "equal", "right": "stock"},
-           {"left": "exchange", "operation": "in_range", "right": UNIVERSE_EXCHANGES},
-           {"left": "market_cap_basic", "operation": "egreater", "right": UNIVERSE_MIN_MCAP},
-           {"left": "close", "operation": "egreater", "right": UNIVERSE_MIN_PRICE}]
-    cols = ["name", "description", "close", "change", "volume", "market_cap_basic",
-            "sector", "industry", "exchange"]
+
     import urllib.request as _ur
-    rows = []
-    for start in range(0, 20000, 1000):
-        body = {"filter": flt, "columns": cols,
-                "sort": {"sortBy": "market_cap_basic", "sortOrder": "desc"},
-                "range": [start, start + 1000]}
-        req = _ur.Request(_TV_SCAN, data=json.dumps(body).encode("utf-8"),
-                          headers={"Content-Type": "application/json",
-                                   "User-Agent": "Mozilla/5.0"})
-        with _ur.urlopen(req, timeout=40) as fh:
-            got = json.load(fh).get("data") or []
-        rows += got
-        if len(got) < 1000:
-            break
-    out = []
-    for r in rows:
-        d = r.get("d") or []
-        if len(d) < 9 or not d[0]:
+    import re as _re
+
+    base_cols = ["name", "description", "close", "change", "volume", "market_cap_basic",
+                 "sector", "industry", "exchange", "type", "typespecs"]
+    revenue_col = "total_revenue"
+
+    def _scan_type(payload_type, with_revenue=True):
+        cols = list(base_cols) + ([revenue_col] if with_revenue else [])
+        flt = [{"left": "type", "operation": "equal", "right": payload_type},
+               {"left": "exchange", "operation": "in_range", "right": UNIVERSE_EXCHANGES},
+               {"left": "market_cap_basic", "operation": "egreater", "right": UNIVERSE_MIN_MCAP},
+               {"left": "close", "operation": "egreater", "right": UNIVERSE_MIN_PRICE}]
+        out = []
+        for start in range(0, 20000, 1000):
+            body = {"filter": flt, "columns": cols,
+                    "sort": {"sortBy": "market_cap_basic", "sortOrder": "desc"},
+                    "range": [start, start + 1000]}
+            req = _ur.Request(_TV_SCAN, data=json.dumps(body).encode("utf-8"),
+                              headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+            with _ur.urlopen(req, timeout=40) as fh:
+                obj = json.loads(fh.read().decode("utf-8"))
+            data = obj.get("data") or []
+            for item in data:
+                d = item.get("d") or []
+                if len(d) < len(cols):
+                    continue
+                rec = dict(zip(cols, d))
+                if revenue_col not in rec:
+                    rec[revenue_col] = None
+                out.append(rec)
+            if len(data) < 1000:
+                break
+        return out
+
+    raw = []
+    for _typ in ("stock", "dr"):
+        try:
+            raw.extend(_scan_type(_typ, with_revenue=True))
+        except Exception as _e:
+            # Fundamental column outage must not break the universe. Retry without it.
+            sys.stderr.write("[universe] total_revenue付き%s scan失敗(%s) -> revenue無しで再試行\n"
+                             % (_typ, type(_e).__name__))
+            try:
+                raw.extend(_scan_type(_typ, with_revenue=False))
+            except Exception as _e2:
+                sys.stderr.write("[universe] %s scan失敗: %s\n" % (_typ, type(_e2).__name__))
+
+    def _tokens(v):
+        vals = v if isinstance(v, (list, tuple)) else ([] if v is None else [v])
+        z = []
+        for part in vals:
+            z.extend(x for x in _re.split(r"[^a-z0-9]+", str(part).lower()) if x)
+        return set(z)
+
+    def _ticker_bad(t):
+        t = str(t or "").strip().upper()
+        rules = (
+            (r"/P[A-Z0-9]*$", "preferred_slash"),
+            (r"\.PR[A-Z0-9]*$", "preferred_dot_pr"),
+            (r"-P[A-Z0-9]*$", "preferred_dash"),
+            (r"[./-]U$", "unit_suffix"),
+            (r"[./-](WT|WTS|WS)$", "warrant_suffix"),
+            (r"[./-](RT|RTS)$", "rights_suffix"),
+        )
+        for rx, reason in rules:
+            if _re.search(rx, t):
+                return reason
+        return None
+
+    bad_specs = {"preferred", "preference", "warrant", "warrants", "unit", "units",
+                 "right", "rights", "pre", "ipo"}
+    kept = []
+    removed = []
+    seen = set()
+    for rec in raw:
+        t = str(rec.get("name") or "").strip().upper()
+        if not t or t in seen:
             continue
-        out.append({"シンボル": str(d[0]).strip().upper(), "名称": d[1] or "",
-                    "価格": d[2], "価格変動 %, 1日": d[3], "出来高, 1日": d[4],
-                    "時価総額": d[5], "セクター": d[6] or "", "業種": d[7] or "",
-                    "取引所": d[8] or ""})
+        seen.add(t)
+        typ = str(rec.get("type") or "").lower()
+        toks = _tokens(rec.get("typespecs"))
+        subtype_bad = sorted(toks & bad_specs)
+        # 'pre-ipo' is tokenized as pre + ipo; require both together.
+        if "pre" in subtype_bad and "ipo" not in subtype_bad:
+            subtype_bad.remove("pre")
+        if "ipo" in subtype_bad and "pre" not in toks:
+            subtype_bad.remove("ipo")
+        reason = subtype_bad[0] if subtype_bad else _ticker_bad(t)
+        if typ not in ("stock", "dr"):
+            reason = reason or ("type_" + typ if typ else "unknown_type")
+        if reason:
+            removed.append((t, reason))
+            continue
+        dvol = 0.0
+        try:
+            dvol = float(rec.get("close") or 0) * float(rec.get("volume") or 0)
+        except Exception:
+            pass
+        kept.append({
+            "シンボル": t,
+            "名称": rec.get("description") or "",
+            "価格": rec.get("close"),
+            "価格変動 %, 1日": rec.get("change"),
+            "出来高, 1日": rec.get("volume"),
+            "時価総額": rec.get("market_cap_basic"),
+            "セクター": rec.get("sector") or "",
+            "業種": rec.get("industry") or "",
+            "取引所": rec.get("exchange") or "",
+            "証券種別": typ,
+            "証券サブタイプ": ",".join(sorted(_tokens(rec.get("typespecs")))),
+            "売上高TTM": rec.get(revenue_col),
+            "_dvol": dvol,
+        })
+
+    # Ordinary share-class duplicates are a separate issue from security type.
+    # Only explicit Class A/B/etc groups are collapsed; free-text fuzzy matching alone
+    # is never enough. Keep the most liquid class so one issuer cannot distort RS twice.
+    def _issuer_key(name):
+        x = str(name or "").upper()
+        x = _re.sub(r"\bCLASS\s+[A-Z0-9]+\b", "", x)
+        x = _re.sub(r"\bCOMMON\s+STOCK\b", "", x)
+        x = _re.sub(r"\bORDINARY\s+SHARES?\b", "", x)
+        x = _re.sub(r"[^A-Z0-9]+", " ", x)
+        return " ".join(x.split())
+
+    groups = {}
+    for rec in kept:
+        if rec.get("証券種別") != "stock":
+            continue
+        nm = str(rec.get("名称") or "")
+        tk = rec["シンボル"]
+        explicit = bool(_re.search(r"\bClass\s+[A-Z0-9]+\b", nm, _re.I) or _re.search(r"\.[A-Z]$", tk))
+        if not explicit:
+            continue
+        key = _issuer_key(nm)
+        if key:
+            groups.setdefault(key, []).append(rec)
+
+    dup_drop = set()
+    for key, members in groups.items():
+        if len(members) < 2:
+            continue
+        ranked = sorted(members, key=lambda r: (float(r.get("_dvol") or 0), r["シンボル"]), reverse=True)
+        keep = ranked[0]["シンボル"]
+        for rec in ranked[1:]:
+            dup_drop.add(rec["シンボル"])
+            removed.append((rec["シンボル"], "duplicate_share_class_keep_" + keep))
+
+    out = []
+    for rec in kept:
+        if rec["シンボル"] in dup_drop:
+            continue
+        rec.pop("_dvol", None)
+        out.append(rec)
+
+    for t, reason in sorted(removed):
+        sys.stderr.write("[universe] security-excluded %s (%s)\n" % (t, reason))
+    sys.stderr.write("[universe] common/DR kept=%d removed=%d\n" % (len(out), len(removed)))
     return out
 
 
@@ -1193,7 +1329,7 @@ def refresh_universe_csv(path=None):
                          % (len(rows), prev, UNIVERSE_MIN_RATIO * 100))
         return False
     cols = ["シンボル", "名称", "価格", "価格変動 %, 1日", "出来高, 1日",
-            "時価総額", "セクター", "業種", "取引所"]
+            "時価総額", "セクター", "業種", "取引所", "証券種別", "証券サブタイプ", "売上高TTM"]
     tmp = str(path) + ".tmp"
     with open(tmp, "w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=cols)
@@ -3114,15 +3250,34 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
     # A2 プール内RS: RSは「非サスペクト × 株価≥$5 × 20日$出来高≥$10M」内の順位で付ける。
     #   RS85 の意味が微小株で希釈されるのを解消＝リーダー判定/選定の母集団を統一（バグ⑤も解消）。
     #   プール外は RS=NaN → 選定・リーダーから自然脱落。順位の相対順は保たれるので採用12の並びは不変。
-    _pool = (~df["split_suspect"]) & (df["close"] >= 5) & (df["dvol"] >= DVOL_FLOOR)
+    _bio_excluded, _bio_unknown = _bio_selection_masks(df.index)
+    df["selection_excluded"] = _bio_excluded
+    df["excluded_theme"] = _bio_excluded                 # existing UI/filters use this canonical flag
+    df["bio_revenue_unknown"] = _bio_unknown
+    _pool = ((~df["split_suspect"]) & (df["close"] >= 5) & (df["dvol"] >= DVOL_FLOOR)
+             & (~_bio_excluded))
     df["rs_pool"] = _pool
-    def _rk(col):                                         # トレーダブル母集団内でのみ百分位付け
-        return df[col].where(_pool).rank(pct=True) * 100
+    def _rank_with_excluded_reference(col, pool):
+        out = df[col].where(pool).rank(pct=True) * 100
+        # Structural exclusions do not enter the denominator, but get an empirical-CDF
+        # reference RS for display/candidate audit. Other non-tradable names remain NaN.
+        try:
+            refmask = _bio_excluded & df[col].notna()
+            vals = np.sort(pd.to_numeric(df.loc[pool & df[col].notna(), col], errors="coerce").dropna().to_numpy())
+            if len(vals) and bool(refmask.any()):
+                x = pd.to_numeric(df.loc[refmask, col], errors="coerce")
+                out.loc[refmask] = np.searchsorted(vals, x.to_numpy(), side="right") / len(vals) * 100.0
+        except Exception:
+            pass
+        return out
+    def _rk(col):                                         # selection-eligible母集団内の百分位 + 除外株の参考RS
+        return _rank_with_excluded_reference(col, _pool)
     # #1: 過去RSは「その過去時点のプール」で順位付け（現在プール流用を解消）。
     #   主要ラグ(5日/20日)のプールを当時の終値・$出来高・異常値から構成。列が無い銘柄はNaN=自然脱落。
     def _pool_lag(clc, dvc, mxc):
         if clc in df and dvc in df and mxc in df:
-            return (df[mxc].fillna(0) <= 1.50) & (df[clc] >= 5) & (df[dvc] >= DVOL_FLOOR)
+            return ((df[mxc].fillna(0) <= 1.50) & (df[clc] >= 5) & (df[dvc] >= DVOL_FLOOR)
+                    & (~_bio_excluded))
         return _pool
     _pool_l1 = _pool_lag("close_l1", "dvol_l1", "maxabs_l1")
     _pool_l5 = _pool_lag("close_l5", "dvol_l5", "maxabs_l5")
@@ -3131,7 +3286,7 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
     _pool_l21 = _pool_lag("close_l21", "dvol_l21", "maxabs_l21")
     _pool_l42 = _pool_lag("close_l42", "dvol_l42", "maxabs_l42")
     def _rk_at(col, pool):
-        return (df[col].where(pool).rank(pct=True) * 100) if col in df else np.nan
+        return _rank_with_excluded_reference(col, pool) if col in df else np.nan
     def _r_at(col, pool):                                 # 0-1ランク（concat用）
         return df[col].where(pool).rank(pct=True) if col in df else pd.Series(np.nan, index=df.index)
     # RS percentile from 63d return (0-100), instantaneous for monitoring + 短期スキャナー
@@ -3144,7 +3299,7 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
     # RSランクΔ: 約1週間前の189日RSランクとの差（ローテーション初動の検知・表示のみ）＝当時プール
     df["rs189_d"] = df["rs189"] - _rk_at("ret189_l5", _pool_l5)
     # smoothed 63d RS = mean of 3 RS-percentile snapshots (今/~21d前/~42d前) — 参考表示のみ(選定には未使用)
-    r0 = df["ret63"].where(_pool).rank(pct=True)
+    r0 = _rk("ret63") / 100.0
     df["rs63"] = r0 * 100          # 63日RS百分位（単一スナップ）— 勢い落ち除外の基準
     r1 = _r_at("ret63_l1", _pool_l21)      # ~21d前＝当時プール
     r2 = _r_at("ret63_l2", _pool_l42)      # ~42d前＝当時プール（#7）
@@ -4772,6 +4927,8 @@ def core_continuation_rank(m):
         if m is None or getattr(m, "columns", None) is None or "rs189" not in m.columns:
             return pd.Series(np.nan, index=getattr(m, "index", []))
         elig = m["rs189"].notna() & (m["rs189"] >= 85)   # 189日RS≥85（cand と一致）
+        if "selection_excluded" in m.columns:
+            elig = elig & (~m["selection_excluded"].fillna(False))
         if "sma50" in m.columns and "sma200" in m.columns:
             elig = elig & m["sma50"].notna() & m["sma200"].notna() & (m["sma50"] > m["sma200"])
         if "dvol" in m.columns:
@@ -7668,7 +7825,10 @@ def build_setups(m):
     up200 = m["close"] > m["sma200"]
     up50  = m["close"] > m["sma50"]
     def names(mask, sort="rs"):
-        sub = m[mask.fillna(False)].sort_values(sort, ascending=False)
+        ok = mask.fillna(False)
+        if "selection_excluded" in m.columns:
+            ok = ok & (~m["selection_excluded"].fillna(False))
+        sub = m[ok].sort_values(sort, ascending=False)
         return list(sub.index)
     setups = {}
     setups["押し目"] = names(up200 & up50 & (m["rs"] >= 88) &
@@ -9074,6 +9234,12 @@ def build_portfolio(m, s2t):
     cand["excluded_theme"] = [is_excluded_theme(t, s2t,
                                                 (_mc.get(t) if _mc is not None else None))
                               for t in cand.index]
+    cand["bio_revenue_unknown"] = [bool(_bio_selection_status(
+        t, (_mc.get(t) if _mc is not None else None)).get("unknown")) for t in cand.index]
+    _bio_missing = [t for t in cand.index if bool(cand.at[t, "bio_revenue_unknown"])]
+    if _bio_missing:
+        sys.stderr.write("::warning::bio revenue unknown -> PASS (selection unchanged by missing data): %s\n"
+                         % ",".join(_bio_missing[:50]))
     # リーダー外除外: リーダー(63日RS≥85 かつ 200MA上)でない銘柄は買わない。
     #   RS189の適格を満たしても先導株でなければ選定対象外＝「上から順に、リーダーの中で12銘柄」。
     def _is_leader_row(t):
@@ -9130,6 +9296,96 @@ EXCLUDE_SUBTHEMES = ("臨床段階・中小型バイオ",)
 BIO_EXCLUDE_INDUSTRIES = ("Biotechnology", "Pharmaceuticals: Other")
 BIO_KEEP_MCAP = 1e10          # $10B以上は治験一発で消えない規模とみなして残す
 
+BIO_REVENUE_MAX = float(os.environ.get("V38_BIO_REVENUE_MAX", "50000000"))
+BIO_REVENUE_AUDIT_JSON = os.environ.get("V38_BIO_REVENUE_JSON", "bio_revenue_audit.json")
+_BIO_SELECTION_META = None
+_BIO_UNKNOWN_WARNED = set()
+
+
+def _bio_selection_meta():
+    """Master Universe metadata + SEC audit fallback. No manual ticker maintenance."""
+    global _BIO_SELECTION_META
+    if _BIO_SELECTION_META is not None:
+        return _BIO_SELECTION_META
+    meta = {}
+    try:
+        for r in csv.DictReader(open(UNIVERSE_CSV, encoding="utf-8-sig")):
+            t = str(r.get("シンボル") or r.get("Symbol") or r.get("Ticker") or "").strip().upper()
+            if t:
+                meta[t] = {
+                    "mcap": r.get("時価総額"),
+                    "sector": r.get("セクター") or "",
+                    "industry": r.get("業種") or "",
+                    "tv_revenue_ttm": r.get("売上高TTM"),
+                }
+    except Exception:
+        pass
+    sec_records = {}
+    try:
+        obj = json.load(open(BIO_REVENUE_AUDIT_JSON, encoding="utf-8"))
+        if isinstance(obj, dict) and isinstance(obj.get("records"), dict):
+            sec_records = obj["records"]
+    except Exception:
+        pass
+    for t, rec in sec_records.items():
+        if isinstance(rec, dict):
+            meta.setdefault(str(t).upper(), {})["sec"] = rec
+    _BIO_SELECTION_META = meta
+    return meta
+
+
+def _finite_float(v):
+    try:
+        x = float(v)
+        return x if np.isfinite(x) else None
+    except Exception:
+        return None
+
+
+def _bio_selection_status(t, mcap=None, ind_map=None):
+    """Return structural selection eligibility without deleting the symbol.
+
+    Rule: healthcare-like x market cap < $10B x revenue < $50M.
+    Revenue precedence: TradingView TTM -> SEC TTM -> explicit SEC latest-FY fallback.
+    Missing revenue never excludes: PASS + unknown flag.
+    """
+    t = str(t or "").strip().upper()
+    meta = _bio_selection_meta().get(t, {})
+    tv_ind = (ind_map or _bio_industry_map()).get(t)
+    sector = str(meta.get("sector") or (tv_ind[0] if isinstance(tv_ind, list) and len(tv_ind) >= 1 else ""))
+    industry = str(meta.get("industry") or (tv_ind[1] if isinstance(tv_ind, list) and len(tv_ind) >= 2 else ""))
+    txt = (sector + " | " + industry).upper()
+    healthcare = any(k in txt for k in ("HEALTH", "BIOTECH", "PHARM", "MEDICAL", "DRUG"))
+
+    mc = _finite_float(mcap)
+    if mc is None:
+        mc = _finite_float(meta.get("mcap"))
+    if not healthcare or mc is None or mc >= BIO_KEEP_MCAP:
+        return {"exclude": False, "unknown": False, "revenue": None, "source": "not_applicable"}
+
+    rev = _finite_float(meta.get("tv_revenue_ttm"))
+    source = "tradingview_ttm"
+    sec = meta.get("sec") if isinstance(meta.get("sec"), dict) else {}
+    if rev is None:
+        rev = _finite_float(sec.get("revenue_ttm"))
+        source = "sec_ttm"
+    if rev is None and str(sec.get("status") or "") == "annual_fallback":
+        rev = _finite_float(sec.get("revenue_latest_fy"))
+        source = "sec_latest_fy"
+    if rev is None:
+        return {"exclude": False, "unknown": True, "revenue": None, "source": "missing_pass"}
+    return {"exclude": bool(rev < BIO_REVENUE_MAX), "unknown": False, "revenue": rev, "source": source}
+
+
+def _bio_selection_masks(index):
+    ex = pd.Series(False, index=index, dtype=bool)
+    unk = pd.Series(False, index=index, dtype=bool)
+    for t in index:
+        st = _bio_selection_status(t)
+        ex.at[t] = bool(st.get("exclude"))
+        unk.at[t] = bool(st.get("unknown"))
+    return ex, unk
+
 
 def _bio_industry_map():
     """業種分類を excluded_theme の計算時点で使えるようにする。
@@ -9152,19 +9408,8 @@ def _bio_industry_map():
 
 
 def is_excluded_theme(t, s2t, mcap=None, ind_map=None):
-    """モメンタム継続性が構造的に効かない銘柄をTrueにする。
-       選定・表示の両方でこの1関数を参照する（重複定義を作らない）。"""
-    v = (ind_map or _bio_industry_map()).get(t)
-    if isinstance(v, list) and len(v) >= 2 and v[1] in BIO_EXCLUDE_INDUSTRIES:
-        try:
-            if mcap is None or not np.isfinite(float(mcap)) or float(mcap) < BIO_KEEP_MCAP:
-                return True
-        except Exception:
-            return True
-    sv = (s2t or {}).get(t)
-    if isinstance(sv, list) and len(sv) >= 2 and (sv[1] or "") in EXCLUDE_SUBTHEMES:
-        return True
-    return False
+    """Canonical selection exclusion. Master Universe is never changed here."""
+    return bool(_bio_selection_status(t, mcap=mcap, ind_map=ind_map).get("exclude"))
 
 LEADER_RS = 85   # リーダー(=先導株)の唯一の定義: 63日RS≥85 かつ 200日線上。
                  # マーケットタブ「リーダー一覧」もピックアップの母集団もこの1定義を参照(重複定義なし)。
@@ -13213,7 +13458,8 @@ def _rs_continuity_card(cont):
 
 def build_leadership_pulse(m, continuity, s2t):
     try:
-        top=m.dropna(subset=["rs189"]).sort_values("rs189",ascending=False).head(RS_CONTINUITY_TOP_N)
+        _lm = m[m["rs_pool"].fillna(False)] if "rs_pool" in m.columns else m
+        top=_lm.dropna(subset=["rs189"]).sort_values("rs189",ascending=False).head(RS_CONTINUITY_TOP_N)
         rows=(continuity or {}).get("rows") or []
         themes=[theme_of(t,s2t) for t in top.index]
         from collections import Counter
