@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: final-dashboard-completion
@@ -27,21 +27,93 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Render final dashboard workflow patch
+      - name: Apply and validate same-session stale-source guard
         shell: bash
         run: |
           set -euo pipefail
           python scripts/apply_remaining_dashboard_fixes.py
-          python -m py_compile build_dashboard.py scripts/apply_remaining_dashboard_fixes.py
-          git diff --check
-          grep -F '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' build_dashboard.py
           grep -F 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' .github/workflows/dashboard.yml
-          grep -F 'source drift after build; skip persistence/public publish' .github/workflows/dashboard.yml
+          grep -F 'source drift after build; skip persistence/public publish for stale same-session run' .github/workflows/dashboard.yml
+          grep -F "steps.persist.outputs.source_drift != 'true'" .github/workflows/dashboard.yml
+          git diff --check
 
-      - name: Upload patched dashboard workflow
-        uses: actions/upload-artifact@v4
-        with:
-          name: patched-dashboard-workflow
-          path: .github/workflows/dashboard.yml
-          if-no-files-found: error
-          retention-days: 1
+      - name: Persist dashboard guard and restore normal workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > .github/workflows/bio-revenue-audit.yml <<'YAML'
+          name: Bio revenue audit
+
+          on:
+            workflow_run:
+              workflows:
+                - Dashboard daily build
+              types:
+                - completed
+            push:
+              branches:
+                - main
+              paths:
+                - 'scripts/audit_bio_revenue.py'
+                - '.github/workflows/bio-revenue-audit.yml'
+            workflow_dispatch: {}
+
+          permissions:
+            contents: write
+
+          concurrency:
+            group: bio-revenue-audit-main
+            cancel-in-progress: true
+
+          jobs:
+            audit:
+              if: >-
+                github.event_name != 'workflow_run' ||
+                github.event.workflow_run.conclusion == 'success'
+              runs-on: ubuntu-24.04
+              timeout-minutes: 10
+              steps:
+                - uses: actions/checkout@v4
+                  with:
+                    ref: main
+                    fetch-depth: 1
+
+                - uses: actions/setup-python@v5
+                  with:
+                    python-version: '3.11'
+
+                - name: Audit provisional clinical-stage revenue rule
+                  env:
+                    SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    python scripts/audit_bio_revenue.py \
+                      --state state.json \
+                      --universe universe.csv \
+                      --output bio_revenue_audit.json \
+                      --mcap-max 10000000000 \
+                      --revenue-max 50000000
+
+                - name: Commit diagnostic only
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    git config user.name "github-actions[bot]"
+                    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                    git add bio_revenue_audit.json
+                    if git diff --staged --quiet; then
+                      echo "Bio revenue diagnostic already current"
+                      exit 0
+                    fi
+                    session_date="$(python -c 'import json; print(json.load(open("state.json"))["date"])')"
+                    git commit -m "Bio revenue diagnostic ${session_date}"
+                    git push origin HEAD:main
+          YAML
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/dashboard.yml .github/workflows/bio-revenue-audit.yml
+          git rm -f scripts/apply_remaining_dashboard_fixes.py .github/workflows/final-stale-source-fix.yml || true
+          git commit -m 'Complete same-session stale-source guard'
+          git push origin HEAD:main
