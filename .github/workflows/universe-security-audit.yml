@@ -43,6 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/audit_universe_security.py
+          python scripts/probe_tv_symbols.py
 
       - name: Commit diagnostic only
         shell: bash
@@ -50,7 +51,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add universe_security_audit.json
+          git add universe_security_audit.json tv_symbol_probe.json
           if git diff --staged --quiet; then
             echo "Universe security diagnostic already current"
             exit 0
