@@ -37,7 +37,8 @@ old_scan = '''    raw = []
             except Exception as _e2:
                 sys.stderr.write("[universe] %s scan失敗: %s\\n" % (_typ, type(_e2).__name__))
 '''
-new_scan = '''    # Scan the exchange set once without a type filter, then keep only stock/dr below.
+new_scan = '''    # Scan the exchange set once without a type filter. Existing structured post-filtering
+    # below keeps stock/dr and removes preferred/warrant/unit/right securities.
     # This prevents valid ADR/ADS/Registry Shares from disappearing at scanner ingress.
     raw = []
     try:
@@ -57,18 +58,6 @@ if old_scan in s:
     s = s.replace(old_scan, new_scan, 1)
 elif new_scan not in s:
     raise SystemExit('universe raw-scan anchor not found')
-
-# Enforce stock/dr after the broad scan. Prefer inserting beside the row mapping so all
-# later security-description sanitation remains intact.
-row_anchor = '        r = {columns[i]: data[i] for i in range(min(len(columns), len(data)))}\n'
-row_guard = '''        r = {columns[i]: data[i] for i in range(min(len(columns), len(data)))}
-        if str(r.get("type") or "").strip().lower() not in {"stock", "dr"}:
-            continue
-'''
-if row_guard not in s:
-    if s.count(row_anchor) != 1:
-        raise SystemExit(f'universe row anchor count={s.count(row_anchor)}')
-    s = s.replace(row_anchor, row_guard, 1)
 
 # 2) VWAP near is an observation/display filter only.
 # ADR20 = ordinary 20-day average (High-Low)/Close; floor 2%, 0.5x ADR20, cap 5%.
