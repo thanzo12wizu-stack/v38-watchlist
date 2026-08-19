@@ -1,0 +1,260 @@
+name: Complete remaining dashboard fixes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/complete-remaining-dashboard-fixes.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  complete:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply remaining source fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          # 1) VWAP near: observation/display only.
+          bp = Path('build_dashboard.py')
+          s = bp.read_text(encoding='utf-8')
+          old_near = '    near = bool(np.isfinite(dist) and abs(dist) <= 0.02)\n'
+          near_marker = '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))'
+          new_near = '''    # Observation-only near zone. ADR20 = ordinary 20-day average range%.
+              # Keep touch/support/reclaim unchanged. If near later affects Core12 ranking,
+              # entry eligibility or position sizing, validate it before promotion.
+              try:
+                  _adr20 = (((aligned["h"] - aligned["l"]) / aligned["c"].replace(0, np.nan))
+                            .replace([np.inf, -np.inf], np.nan).dropna().tail(20).mean())
+                  _adr20 = float(_adr20) if np.isfinite(_adr20) else 0.0
+              except Exception:
+                  _adr20 = 0.0
+              _near_threshold = min(0.05, max(0.02, 0.5 * _adr20))
+              near = bool(np.isfinite(dist) and abs(dist) <= _near_threshold)
+          '''
+          # Remove only the 12-space indentation added by this embedded literal after line 1.
+          _lines = new_near.splitlines(True)
+          new_near = _lines[0] + ''.join(line[12:] if line.startswith('            ') else line for line in _lines[1:])
+          if near_marker not in s:
+              if s.count(old_near) != 1:
+                  raise SystemExit(f'VWAP near anchor count={s.count(old_near)}')
+              s = s.replace(old_near, new_near, 1)
+          bp.write_text(s, encoding='utf-8')
+
+          # 2) Same-session stale-source protection.
+          wf = Path('.github/workflows/dashboard.yml')
+          y = wf.read_text(encoding='utf-8')
+
+          setup_anchor = """      - uses: actions/setup-python@v5
+                with:
+                  python-version: '3.11'
+
+          """
+          _lines = setup_anchor.splitlines(True)
+          setup_anchor = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          sync_block = """      - name: Sync latest main before build
+                shell: bash
+                run: |
+                  set -euo pipefail
+                  git fetch --depth=1 origin main
+                  git reset --hard origin/main
+                  echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+          """
+          _lines = sync_block.splitlines(True)
+          sync_block = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          if 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' not in y:
+              if y.count(setup_anchor) != 1:
+                  raise SystemExit(f'dashboard setup anchor count={y.count(setup_anchor)}')
+              y = y.replace(setup_anchor, sync_block + setup_anchor, 1)
+
+          persist_anchor = '''          git config user.name "github-actions[bot]"
+                  git config user.email \\
+                    "41898282+github-actions[bot]@users.noreply.github.com"
+
+                  # --- なぜrebaseをやめたか -------------------------------------------
+          '''
+          _lines = persist_anchor.splitlines(True)
+          persist_anchor = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          persist_block = '''          git config user.name "github-actions[bot]"
+                  git config user.email \\
+                    "41898282+github-actions[bot]@users.noreply.github.com"
+                  echo "source_drift=false" >> "$GITHUB_OUTPUT"
+
+                  # Same-session stale-source guard. Generated artifacts and options data are not
+                  # source drift; generation logic and explicit dashboard inputs are.
+                  git fetch --depth=1 origin main
+                  if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && \\
+                     ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- \\
+                       build_dashboard.py .github/workflows/dashboard.yml requirements.txt \\
+                       scripts/export_public_site.py scripts/privacy_audit.py \\
+                       sar_state.txt equity.csv; then
+                    echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
+                    echo "source_drift=true" >> "$GITHUB_OUTPUT"
+                    echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  # --- なぜrebaseをやめたか -------------------------------------------
+          '''
+          _lines = persist_block.splitlines(True)
+          persist_block = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          drift_marker = 'source drift after build; skip persistence/public publish for stale same-session run'
+          if drift_marker not in y:
+              if y.count(persist_anchor) != 1:
+                  raise SystemExit(f'dashboard persist anchor count={y.count(persist_anchor)}')
+              y = y.replace(persist_anchor, persist_block, 1)
+
+          replacements = [
+              ("      - name: Audit public privacy boundary\n        if: steps.build.outputs.skipped != 'true'",
+               "      - name: Audit public privacy boundary\n        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'"),
+              ("      - name: Export allowlisted public site\n        if: steps.build.outputs.skipped != 'true'",
+               "      - name: Export allowlisted public site\n        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'"),
+              ("      - name: Publish clean public mirror\n        if: steps.build.outputs.skipped != 'true'",
+               "      - name: Publish clean public mirror\n        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'"),
+          ]
+          for before, after in replacements:
+              if after not in y:
+                  if before not in y:
+                      raise SystemExit('downstream stale guard anchor missing: ' + before.splitlines()[0])
+                  y = y.replace(before, after, 1)
+
+          old_failure = "if: steps.build.outputs.skipped != 'true' && steps.publish.outcome == 'failure'"
+          new_failure = "if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true' && steps.publish.outcome == 'failure'"
+          if new_failure not in y:
+              if old_failure not in y:
+                  raise SystemExit('publish failure condition anchor missing')
+              y = y.replace(old_failure, new_failure, 1)
+
+          report_anchor = "      - name: Audit public privacy boundary\n"
+          report_block = """      - name: Report skipped stale-source run
+                if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift == 'true'
+                shell: bash
+                run: |
+                  {
+                    echo "### Dashboard build"
+                    echo "- Status: skipped after build"
+                    echo "- Reason: generation/input source changed while this run was executing"
+                    echo "- Safety: stale same-session artifacts were not persisted or published"
+                  } >> "$GITHUB_STEP_SUMMARY"
+
+          """
+          _lines = report_block.splitlines(True)
+          report_block = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          if 'name: Report skipped stale-source run' not in y:
+              if report_anchor not in y:
+                  raise SystemExit('stale-source report anchor missing')
+              y = y.replace(report_anchor, report_block + report_anchor, 1)
+
+          wf.write_text(y, encoding='utf-8')
+          PY
+
+          python -m py_compile build_dashboard.py
+          git diff --check
+          grep -F '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' build_dashboard.py
+          grep -F 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' .github/workflows/dashboard.yml
+          grep -F 'source drift after build; skip persistence/public publish' .github/workflows/dashboard.yml
+
+      - name: Commit fixes and self-delete
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build_dashboard.py .github/workflows/dashboard.yml
+          git rm -- .github/workflows/complete-remaining-dashboard-fixes.yml
+          git commit -m "Complete VWAP near and stale-run protection"
+          git push origin HEAD:main
+          echo "FIX_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Dispatch production dashboard and wait
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run dashboard.yml --ref main
+          run_id=""
+          for _ in $(seq 1 45); do
+            sleep 2
+            run_id="$(gh run list --workflow dashboard.yml --branch main --event workflow_dispatch --limit 10 --json databaseId,headSha --jq '.[] | select(.headSha == env.FIX_SHA) | .databaseId' | head -n1)"
+            if [[ -n "$run_id" ]]; then
+              break
+            fi
+          done
+          if [[ -z "$run_id" ]]; then
+            echo "Could not identify dispatched dashboard run for $FIX_SHA" >&2
+            exit 1
+          fi
+          echo "Production dashboard run: $run_id"
+          gh run watch "$run_id" --exit-status --interval 15
+          gh run view "$run_id" --json databaseId,status,conclusion,event,headSha,url
+
+      - name: Verify final main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          python - <<'PY'
+          import csv
+          import json
+          import re
+          from pathlib import Path
+
+          src = Path('build_dashboard.py').read_text(encoding='utf-8')
+          wf = Path('.github/workflows/dashboard.yml').read_text(encoding='utf-8')
+          assert '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' in src
+          assert 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' in wf
+          assert 'source drift after build; skip persistence/public publish' in wf
+          assert not Path('.github/workflows/complete-remaining-dashboard-fixes.yml').exists()
+
+          with Path('universe.csv').open(encoding='utf-8', newline='') as fh:
+              rows = {str(r.get('シンボル') or '').upper(): r for r in csv.DictReader(fh)}
+          for ticker in ('ASML', 'ARM', 'SKHY'):
+              assert ticker in rows, f'{ticker} missing from Master Universe'
+              assert str(rows[ticker].get('証券種別') or '').lower() == 'dr', (ticker, rows[ticker].get('証券種別'))
+          assert 'SYRE' in rows, 'SYRE must remain in Master Universe'
+
+          state = json.loads(Path('state.json').read_text(encoding='utf-8'))
+          state_date = str(state.get('date') or '')
+          with Path('daily_log.csv').open(encoding='utf-8', newline='') as fh:
+              log_dates = [str(r.get('date') or '') for r in csv.DictReader(fh) if r.get('date')]
+          trend = json.loads(Path('trend_history.json').read_text(encoding='utf-8'))
+          trend_dates = []
+          for item in trend:
+              if isinstance(item, (list, tuple)) and item:
+                  trend_dates.append(str(item[0]))
+              elif isinstance(item, dict) and item.get('date'):
+                  trend_dates.append(str(item['date']))
+          share = Path('command-center_share.html').read_text(encoding='utf-8')
+          match = re.search(r'class=["\']asof["\'][^>]*>(\d{4}-\d{2}-\d{2})<', share)
+          assert match, 'share market-session date missing'
+          assert state_date == max(log_dates) == max(trend_dates) == match.group(1), (
+              state_date, max(log_dates), max(trend_dates), match.group(1)
+          )
+
+          targets = set(json.loads(Path('options_targets.json').read_text(encoding='utf-8')))
+          missing = [t for t in state.get('picks', []) if t not in targets]
+          assert not missing, f'options targets missing Core12: {missing}'
+          assert 'SYRE' not in state.get('picks', []), 'structurally excluded SYRE surfaced in Core12'
+          assert 'AMLX' not in state.get('picks', []), 'structurally excluded AMLX surfaced in Core12'
+          print('FINAL_VERIFY_OK', state_date, len(rows), state.get('picks'))
+          PY
