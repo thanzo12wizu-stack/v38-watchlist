@@ -49,7 +49,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git checkout HEAD^ -- .github/workflows/bio-revenue-audit.yml
+          git checkout 1098cb17862da2f283e8285dff90fd5bcb695434 -- .github/workflows/bio-revenue-audit.yml
           git add build_dashboard.py .github/workflows/dashboard.yml .github/workflows/bio-revenue-audit.yml
           git rm -f --ignore-unmatch scripts/apply_remaining_dashboard_fixes.py
           git rm -f --ignore-unmatch .github/workflows/complete-remaining-dashboard-fixes.yml
