@@ -63,6 +63,14 @@ jobs:
           # checkoutだけで9分近くかかっていた。
           fetch-depth: 1
 
+      - name: Sync latest main before build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -290,8 +298,18 @@ jobs:
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
-          git config user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "source_drift=false" >> "$GITHUB_OUTPUT"
+
+          # Same-session stale-source guard. Artifact/options commits are harmless;
+          # generation logic and explicit dashboard inputs are not.
+          git fetch --depth=1 origin main
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+            echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
+            echo "source_drift=true" >> "$GITHUB_OUTPUT"
+            echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # --- なぜrebaseをやめたか -------------------------------------------
           # 生成物は毎回ファイル全体が書き換わるため、runが競合すると rebase は
@@ -350,8 +368,19 @@ jobs:
 
           echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Report skipped stale-source run
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift == 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard build"
+            echo "- Status: skipped after build"
+            echo "- Reason: generation/input source changed while this run was executing"
+            echo "- Safety: stale same-session artifacts were not persisted or published"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Audit public privacy boundary
-        if: steps.build.outputs.skipped != 'true'
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
         run: |
           python scripts/privacy_audit.py \
             --root . \
@@ -359,7 +388,7 @@ jobs:
           cat /tmp/privacy-audit-status.json
 
       - name: Export allowlisted public site
-        if: steps.build.outputs.skipped != 'true'
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -369,7 +398,7 @@ jobs:
             --source-commit "${{ steps.persist.outputs.source_sha }}"
 
       - name: Publish clean public mirror
-        if: steps.build.outputs.skipped != 'true'
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
         id: publish
         continue-on-error: true
         shell: bash
@@ -419,7 +448,7 @@ jobs:
           git push origin HEAD:main
 
       - name: Report publish failure
-        if: steps.build.outputs.skipped != 'true' && steps.publish.outcome == 'failure'
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true' && steps.publish.outcome == 'failure'
         shell: bash
         env:
           FAILURE_WEBHOOK: ${{ secrets.V38_WEBHOOK }}
