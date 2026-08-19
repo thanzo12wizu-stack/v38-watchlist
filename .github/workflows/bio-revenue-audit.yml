@@ -30,6 +30,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # re.sub replacement strings interpret backslashes; make both large replacements callable.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/finalize_stageA.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'pat.subn(new, s, count=1)'
+          if s.count(old) != 2:
+              raise SystemExit(f'unexpected pat.subn count={s.count(old)}')
+          p.write_text(s.replace(old, 'pat.subn(lambda _m: new, s, count=1)'), encoding='utf-8')
+          PY
           python scripts/finalize_stageA.py
           python -m py_compile build_dashboard.py
           git diff --check
