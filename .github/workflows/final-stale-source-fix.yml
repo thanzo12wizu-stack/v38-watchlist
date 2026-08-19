@@ -44,3 +44,5 @@ jobs:
           fi
           git commit -m 'Add same-session stale-source guard'
           git push origin HEAD:main
+
+# trigger after workflow exists on default branch
