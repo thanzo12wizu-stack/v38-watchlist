@@ -23,45 +23,36 @@ concurrency:
 
 jobs:
   audit:
-    if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
-
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Audit provisional clinical-stage revenue rule
-        env:
-          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      - name: Apply one-shot Stage A source patch
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/audit_bio_revenue.py \
-            --state state.json \
-            --universe universe.csv \
-            --output bio_revenue_audit.json \
-            --mcap-max 10000000000 \
-            --revenue-max 50000000
-
-      - name: Commit diagnostic only
+          python scripts/finalize_stageA.py
+          python -m py_compile build_dashboard.py
+          git diff --check
+          grep -q 'for _typ in ("stock", "dr")' build_dashboard.py
+          grep -q 'selection_excluded' build_dashboard.py
+          grep -q 'V38_BIO_REVENUE_MAX' .github/workflows/dashboard.yml
+      - name: Commit source and restore normal audit workflow
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bio_revenue_audit.json
-          if git diff --staged --quiet; then
-            echo "Bio revenue diagnostic already current"
-            exit 0
-          fi
-          session_date="$(python -c 'import json; print(json.load(open("state.json"))["date"])')"
-          git commit -m "Bio revenue diagnostic ${session_date}"
+          # Restore this workflow to its pre-one-shot version before committing.
+          git show HEAD^:.github/workflows/bio-revenue-audit.yml > .github/workflows/bio-revenue-audit.yml
+          git add build_dashboard.py .github/workflows/dashboard.yml .github/workflows/bio-revenue-audit.yml
+          git rm -f scripts/finalize_stageA.py .github/workflows/finalize-stageA.yml 2>/dev/null || true
+          git rm -f scripts/stage2c_patch.py .github/workflows/stage2c-bio-preview-patch.yml 2>/dev/null || true
+          git commit -m "Include US DRs and isolate clinical-stage names from selection"
           git push origin HEAD:main
