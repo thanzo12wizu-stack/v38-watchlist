@@ -8,14 +8,16 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/options.yml'
+      - 'tools/build_options_positioning_directional.py'
   workflow_dispatch: {}
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: options-positioning-main
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: false
 
 jobs:
   options:
@@ -26,14 +28,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Repair directional wall semantics
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/fix_directional_option_walls.py
-          python -m py_compile tools/build_options_positioning.py
-
       - run: pip install --disable-pip-version-check -r requirements.txt
 
       - name: Build options positioning
@@ -46,38 +40,45 @@ jobs:
           V38_OPT_TICKERS: ''
           V38_OPT_MAX_EXPIRY: '4'
           V38_OPT_HTML: options-positioning.html
-          # 定時runは全銘柄履歴を継続。今回のpush修正runだけは表示対象に絞って速く反映する。
+          # 定時runは全銘柄履歴を継続。ソース変更のpush runだけは表示対象に絞って速く反映する。
           V38_OPT_SCAN_ALL: ${{ github.event_name == 'schedule' && '1' || '0' }}
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_SCAN_WORKERS: '8'
           V38_OPT_TARGETS: options_targets.json
         run: |
-          python tools/build_options_positioning.py
+          python -m py_compile tools/build_options_positioning.py tools/build_options_positioning_directional.py
+          python tools/build_options_positioning_directional.py
           python tools/render_options_html.py
 
-      - name: Commit
+      - name: Commit and refresh dashboard
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for f in options_positioning.json options_history.csv \
-                   options-positioning.html options_scan_history.csv \
-                   tools/build_options_positioning.py .github/workflows/dashboard.yml; do
+                   options-positioning.html options_scan_history.csv; do
             [[ -f "$f" ]] && git add -- "$f"
           done
           [[ -d options_cache ]] && git add -A options_cache || true
-          git rm -f --ignore-unmatch scripts/fix_directional_option_walls.py \
-                                      .github/workflows/fix-directional-option-walls.yml
           if git diff --staged --quiet; then
-            echo "no options changes"; exit 0
+            echo "no options changes"
+            gh workflow run dashboard.yml --ref main || true
+            exit 0
           fi
-          git commit -m "Fix directional option walls and refresh positioning"
+          git commit -m "Options positioning $(date +%F)"
+          pushed=false
           for a in 1 2 3; do
-            git push origin HEAD:main && exit 0
+            if git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
             git fetch origin main
             git rebase origin/main || { git rebase --abort || true; exit 1; }
             sleep $((a*2))
           done
-          exit 1
+          [[ "$pushed" == true ]] || exit 1
+          gh workflow run dashboard.yml --ref main || true
