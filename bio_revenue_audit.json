@@ -1,7 +1,7 @@
 {
   "version": 1,
   "mode": "warning_only_no_selection_effect",
-  "checked_at": "2026-08-18T23:25:36+00:00",
+  "checked_at": "2026-08-19T05:07:18+00:00",
   "state_date": "2026-08-18",
   "thresholds": {
     "healthcare_like": true,
@@ -156,6 +156,41 @@
       "revenue_period_end": "2026-06-28",
       "method": "fy_plus_current_ytd_minus_prior_ytd",
       "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"
+    },
+    "TWST": {
+      "status": "missing_revenue_fact",
+      "cik": 1581280,
+      "checked_at": "2026-08-19T05:07:16+00:00"
+    },
+    "ETON": {
+      "status": "ok",
+      "cik": 1710340,
+      "checked_at": "2026-08-19T05:07:17+00:00",
+      "revenue_ttm": 105595000.0,
+      "revenue_latest_fy": 79950000.0,
+      "revenue_period_end": "2026-06-30",
+      "method": "fy_plus_current_ytd_minus_prior_ytd",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"
+    },
+    "TXG": {
+      "status": "ok",
+      "cik": 1770787,
+      "checked_at": "2026-08-19T05:07:17+00:00",
+      "revenue_ttm": 616911000.0,
+      "revenue_latest_fy": 642823000.0,
+      "revenue_period_end": "2026-06-30",
+      "method": "fy_plus_current_ytd_minus_prior_ytd",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"
+    },
+    "RVMD": {
+      "status": "annual_fallback",
+      "cik": 1628171,
+      "checked_at": "2026-08-19T05:07:18+00:00",
+      "revenue_ttm": null,
+      "revenue_latest_fy": 0.0,
+      "revenue_period_end": "2025-12-31",
+      "method": "latest_fy_fallback",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"
     }
   },
   "diagnostics": [
@@ -174,22 +209,6 @@
       "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
       "would_exclude_at_50m": false,
       "missing_revenue_passes": false
-    },
-    {
-      "ticker": "SYRE",
-      "in_core12": true,
-      "sector": "Health Technology",
-      "industry": "Pharmaceuticals: Major",
-      "market_cap": 9506895428.88585,
-      "healthcare_like": true,
-      "under_mcap_cap": true,
-      "revenue_ttm": null,
-      "revenue_latest_fy": 0.0,
-      "revenue_status": "annual_fallback",
-      "revenue_method": "latest_fy_fallback",
-      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
-      "would_exclude_at_50m": false,
-      "missing_revenue_passes": true
     },
     {
       "ticker": "ATEX",
@@ -240,6 +259,22 @@
       "missing_revenue_passes": false
     },
     {
+      "ticker": "TWST",
+      "in_core12": true,
+      "sector": "Health Technology",
+      "industry": "Biotechnology",
+      "market_cap": 7643144227.776706,
+      "healthcare_like": true,
+      "under_mcap_cap": true,
+      "revenue_ttm": null,
+      "revenue_latest_fy": null,
+      "revenue_status": "missing_revenue_fact",
+      "revenue_method": "",
+      "revenue_tag": "",
+      "would_exclude_at_50m": false,
+      "missing_revenue_passes": true
+    },
+    {
       "ticker": "BLZE",
       "in_core12": true,
       "sector": "Electronic Technology",
@@ -249,6 +284,22 @@
       "under_mcap_cap": true,
       "revenue_ttm": 156303000.0,
       "revenue_latest_fy": 145835000.0,
+      "revenue_status": "ok",
+      "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
+      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "would_exclude_at_50m": false,
+      "missing_revenue_passes": false
+    },
+    {
+      "ticker": "ETON",
+      "in_core12": true,
+      "sector": "Health Technology",
+      "industry": "Pharmaceuticals: Major",
+      "market_cap": 1813028278.1733356,
+      "healthcare_like": true,
+      "under_mcap_cap": true,
+      "revenue_ttm": 105595000.0,
+      "revenue_latest_fy": 79950000.0,
       "revenue_status": "ok",
       "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
       "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
@@ -268,6 +319,38 @@
       "revenue_status": "ok",
       "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
       "revenue_tag": "Revenues",
+      "would_exclude_at_50m": false,
+      "missing_revenue_passes": false
+    },
+    {
+      "ticker": "TXG",
+      "in_core12": true,
+      "sector": "Health Technology",
+      "industry": "Biotechnology",
+      "market_cap": 7248097859.719262,
+      "healthcare_like": true,
+      "under_mcap_cap": true,
+      "revenue_ttm": 616911000.0,
+      "revenue_latest_fy": 642823000.0,
+      "revenue_status": "ok",
+      "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
+      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "would_exclude_at_50m": false,
+      "missing_revenue_passes": false
+    },
+    {
+      "ticker": "RVMD",
+      "in_core12": true,
+      "sector": "Health Technology",
+      "industry": "Pharmaceuticals: Other",
+      "market_cap": 46296667969.13208,
+      "healthcare_like": true,
+      "under_mcap_cap": false,
+      "revenue_ttm": null,
+      "revenue_latest_fy": 0.0,
+      "revenue_status": "annual_fallback",
+      "revenue_method": "latest_fy_fallback",
+      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
       "would_exclude_at_50m": false,
       "missing_revenue_passes": false
     },
@@ -304,24 +387,24 @@
       "missing_revenue_passes": false
     },
     {
-      "ticker": "CDNA",
-      "in_core12": true,
+      "ticker": "SYRE",
+      "in_core12": false,
       "sector": "Health Technology",
-      "industry": "Medical Specialties",
-      "market_cap": 2389086446.2781367,
+      "industry": "Pharmaceuticals: Major",
+      "market_cap": 9506895428.88585,
       "healthcare_like": true,
       "under_mcap_cap": true,
-      "revenue_ttm": 458089000.0,
-      "revenue_latest_fy": 379805000.0,
-      "revenue_status": "ok",
-      "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
+      "revenue_ttm": null,
+      "revenue_latest_fy": 0.0,
+      "revenue_status": "annual_fallback",
+      "revenue_method": "latest_fy_fallback",
       "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
       "would_exclude_at_50m": false,
-      "missing_revenue_passes": false
+      "missing_revenue_passes": true
     },
     {
       "ticker": "AMLX",
-      "in_core12": true,
+      "in_core12": false,
       "sector": "Health Technology",
       "industry": "Pharmaceuticals: Major",
       "market_cap": 3912063338.746617,
@@ -334,22 +417,6 @@
       "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
       "would_exclude_at_50m": false,
       "missing_revenue_passes": true
-    },
-    {
-      "ticker": "FET",
-      "in_core12": true,
-      "sector": "Industrial Services",
-      "industry": "Oilfield Services/Equipment",
-      "market_cap": 927931772.2966055,
-      "healthcare_like": false,
-      "under_mcap_cap": true,
-      "revenue_ttm": 806895000.0,
-      "revenue_latest_fy": 791474000.0,
-      "revenue_status": "ok",
-      "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
-      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
-      "would_exclude_at_50m": false,
-      "missing_revenue_passes": false
     },
     {
       "ticker": "LLY",
