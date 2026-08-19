@@ -32,90 +32,82 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # 1) VWAP near: observation/display only.
           bp = Path('build_dashboard.py')
           s = bp.read_text(encoding='utf-8')
           old_near = '    near = bool(np.isfinite(dist) and abs(dist) <= 0.02)\n'
           near_marker = '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))'
-          new_near = '''    # Observation-only near zone. ADR20 = ordinary 20-day average range%.
-              # Keep touch/support/reclaim unchanged. If near later affects Core12 ranking,
-              # entry eligibility or position sizing, validate it before promotion.
-              try:
-                  _adr20 = (((aligned["h"] - aligned["l"]) / aligned["c"].replace(0, np.nan))
-                            .replace([np.inf, -np.inf], np.nan).dropna().tail(20).mean())
-                  _adr20 = float(_adr20) if np.isfinite(_adr20) else 0.0
-              except Exception:
-                  _adr20 = 0.0
-              _near_threshold = min(0.05, max(0.02, 0.5 * _adr20))
-              near = bool(np.isfinite(dist) and abs(dist) <= _near_threshold)
-          '''
-          # Remove only the 12-space indentation added by this embedded literal after line 1.
-          _lines = new_near.splitlines(True)
-          new_near = _lines[0] + ''.join(line[12:] if line.startswith('            ') else line for line in _lines[1:])
+          new_near = (
+              '    # Observation-only near zone. ADR20 = ordinary 20-day average range%.\n'
+              '    # Keep touch/support/reclaim unchanged. If near later affects Core12 ranking,\n'
+              '    # entry eligibility or position sizing, validate it before promotion.\n'
+              '    try:\n'
+              '        _adr20 = (((aligned["h"] - aligned["l"]) / aligned["c"].replace(0, np.nan))\n'
+              '                  .replace([np.inf, -np.inf], np.nan).dropna().tail(20).mean())\n'
+              '        _adr20 = float(_adr20) if np.isfinite(_adr20) else 0.0\n'
+              '    except Exception:\n'
+              '        _adr20 = 0.0\n'
+              '    _near_threshold = min(0.05, max(0.02, 0.5 * _adr20))\n'
+              '    near = bool(np.isfinite(dist) and abs(dist) <= _near_threshold)\n'
+          )
           if near_marker not in s:
               if s.count(old_near) != 1:
                   raise SystemExit(f'VWAP near anchor count={s.count(old_near)}')
               s = s.replace(old_near, new_near, 1)
           bp.write_text(s, encoding='utf-8')
 
-          # 2) Same-session stale-source protection.
           wf = Path('.github/workflows/dashboard.yml')
           y = wf.read_text(encoding='utf-8')
 
-          setup_anchor = """      - uses: actions/setup-python@v5
-                with:
-                  python-version: '3.11'
-
-          """
-          _lines = setup_anchor.splitlines(True)
-          setup_anchor = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
-          sync_block = """      - name: Sync latest main before build
-                shell: bash
-                run: |
-                  set -euo pipefail
-                  git fetch --depth=1 origin main
-                  git reset --hard origin/main
-                  echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
-          """
-          _lines = sync_block.splitlines(True)
-          sync_block = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          setup_anchor = (
+              "      - uses: actions/setup-python@v5\n"
+              "        with:\n"
+              "          python-version: '3.11'\n"
+              "\n"
+          )
+          sync_block = (
+              "      - name: Sync latest main before build\n"
+              "        shell: bash\n"
+              "        run: |\n"
+              "          set -euo pipefail\n"
+              "          git fetch --depth=1 origin main\n"
+              "          git reset --hard origin/main\n"
+              "          echo \"V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)\" >> \"$GITHUB_ENV\"\n"
+              "\n"
+          )
           if 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' not in y:
               if y.count(setup_anchor) != 1:
                   raise SystemExit(f'dashboard setup anchor count={y.count(setup_anchor)}')
               y = y.replace(setup_anchor, sync_block + setup_anchor, 1)
 
-          persist_anchor = '''          git config user.name "github-actions[bot]"
-                  git config user.email \\
-                    "41898282+github-actions[bot]@users.noreply.github.com"
-
-                  # --- なぜrebaseをやめたか -------------------------------------------
-          '''
-          _lines = persist_anchor.splitlines(True)
-          persist_anchor = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
-          persist_block = '''          git config user.name "github-actions[bot]"
-                  git config user.email \\
-                    "41898282+github-actions[bot]@users.noreply.github.com"
-                  echo "source_drift=false" >> "$GITHUB_OUTPUT"
-
-                  # Same-session stale-source guard. Generated artifacts and options data are not
-                  # source drift; generation logic and explicit dashboard inputs are.
-                  git fetch --depth=1 origin main
-                  if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && \\
-                     ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- \\
-                       build_dashboard.py .github/workflows/dashboard.yml requirements.txt \\
-                       scripts/export_public_site.py scripts/privacy_audit.py \\
-                       sar_state.txt equity.csv; then
-                    echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
-                    echo "source_drift=true" >> "$GITHUB_OUTPUT"
-                    echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
-                    exit 0
-                  fi
-
-                  # --- なぜrebaseをやめたか -------------------------------------------
-          '''
-          _lines = persist_block.splitlines(True)
-          persist_block = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          persist_anchor = (
+              '          git config user.name "github-actions[bot]"\n'
+              '          git config user.email \\\n'
+              '            "41898282+github-actions[bot]@users.noreply.github.com"\n'
+              '\n'
+              '          # --- なぜrebaseをやめたか -------------------------------------------\n'
+          )
+          persist_block = (
+              '          git config user.name "github-actions[bot]"\n'
+              '          git config user.email \\\n'
+              '            "41898282+github-actions[bot]@users.noreply.github.com"\n'
+              '          echo "source_drift=false" >> "$GITHUB_OUTPUT"\n'
+              '\n'
+              '          # Same-session stale-source guard. Artifact/options commits are harmless;\n'
+              '          # generation logic and explicit dashboard inputs are not.\n'
+              '          git fetch --depth=1 origin main\n'
+              '          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && \\\n'
+              '             ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- \\\n'
+              '               build_dashboard.py .github/workflows/dashboard.yml requirements.txt \\\n'
+              '               scripts/export_public_site.py scripts/privacy_audit.py \\\n'
+              '               sar_state.txt equity.csv; then\n'
+              '            echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"\n'
+              '            echo "source_drift=true" >> "$GITHUB_OUTPUT"\n'
+              '            echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"\n'
+              '            exit 0\n'
+              '          fi\n'
+              '\n'
+              '          # --- なぜrebaseをやめたか -------------------------------------------\n'
+          )
           drift_marker = 'source drift after build; skip persistence/public publish for stale same-session run'
           if drift_marker not in y:
               if y.count(persist_anchor) != 1:
@@ -144,20 +136,19 @@ jobs:
               y = y.replace(old_failure, new_failure, 1)
 
           report_anchor = "      - name: Audit public privacy boundary\n"
-          report_block = """      - name: Report skipped stale-source run
-                if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift == 'true'
-                shell: bash
-                run: |
-                  {
-                    echo "### Dashboard build"
-                    echo "- Status: skipped after build"
-                    echo "- Reason: generation/input source changed while this run was executing"
-                    echo "- Safety: stale same-session artifacts were not persisted or published"
-                  } >> "$GITHUB_STEP_SUMMARY"
-
-          """
-          _lines = report_block.splitlines(True)
-          report_block = _lines[0] + ''.join(line[8:] if line.startswith('        ') else line for line in _lines[1:])
+          report_block = (
+              "      - name: Report skipped stale-source run\n"
+              "        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift == 'true'\n"
+              "        shell: bash\n"
+              "        run: |\n"
+              "          {\n"
+              "            echo \"### Dashboard build\"\n"
+              "            echo \"- Status: skipped after build\"\n"
+              "            echo \"- Reason: generation/input source changed while this run was executing\"\n"
+              "            echo \"- Safety: stale same-session artifacts were not persisted or published\"\n"
+              "          } >> \"$GITHUB_STEP_SUMMARY\"\n"
+              "\n"
+          )
           if 'name: Report skipped stale-source run' not in y:
               if report_anchor not in y:
                   raise SystemExit('stale-source report anchor missing')
