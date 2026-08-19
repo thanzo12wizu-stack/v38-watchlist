@@ -1,0 +1,490 @@
+name: Dashboard daily build
+
+on:
+  schedule:
+    # 朝一: JST 7時 = UTC 22時。UTC22時はJST翌日なので曜日はUTC月〜金。
+    # 2-6 だと月曜引け後（JST火曜朝）が抜け、JST日曜朝が空打ちになる。
+    - cron: '17 22 * * 1-5'
+    # 昼: JST 13時 = UTC 4時（同日）。朝の取得漏れ・FRED障害を再確認。
+    - cron: '17 4 * * 2-6'
+  push:
+    branches:
+      - main
+    paths:
+      - 'sar_state.txt'
+      - 'equity.csv'
+      - 'build_dashboard.py'
+      - 'scripts/export_public_site.py'
+      - 'scripts/privacy_audit.py'
+      - '.github/workflows/dashboard.yml'
+  workflow_dispatch: {}
+
+# deploy-pagesは使わず、clean Pagesリポジトリへ限定tokenで反映する。
+# GITHUB_TOKENはこのリポジトリの生成物commitにだけ使用する。
+permissions:
+  contents: write
+
+concurrency:
+  group: dashboard-build-main
+  # 既に走っている同系統runは止めず、順番に処理する。
+  # 古いas-ofの後勝ちはbuild_dashboard.py側の巻き戻りガードで防ぐ。
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TZ: Asia/Tokyo
+      # commitする生成物の唯一の定義。commitステップの復元処理と共有する。
+      # ここに挙げたファイルは「このワークフローが唯一の書き手」であり、
+      # remoteと衝突したら常にこのrunの出力を採用する（後述のconflict-free commit）。
+      V38_ARTIFACTS: >-
+        command-center.html
+        command-center_share.html
+        mktcap.json
+        trend_history.json
+        fred_cache.json
+        fmp_reference_cache.json
+        state.json
+        daily_log.csv
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 生成物のcommitはrebaseせず origin/main へ載せ直す方式にしたため、
+          # 完全履歴は不要。command-center.htmlが1回11MBあり、fetch-depth:0だと
+          # checkoutだけで9分近くかかっていた。
+          fetch-depth: 1
+
+      - name: Sync latest main before build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Build dashboard
+        id: build
+        env:
+          V38_UNIVERSE_CSV: universe.csv
+          # ユニバースをTradingViewスクリーナーAPIから毎回生成する。
+          # 手作業のCSVエクスポートが不要になり、上場廃止・新規上場が自動で反映される。
+          # 取得失敗・件数が前回の80%未満なら既存CSVを温存する。
+          V38_UNIVERSE_AUTO: '1'
+          V38_UNIVERSE_MIN_MCAP: '200000000'
+          V38_UNIVERSE_MIN_PRICE: '1'
+          V38_SECTOR_JSON: sector_snapshot.json
+          V38_OUT_HTML: command-center.html
+          V38_MKTCAP_JSON: mktcap.json
+          V38_TREND_JSON: trend_history.json
+          V38_LOG_CSV: daily_log.csv
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          V38_FRED_CACHE: fred_cache.json
+          # Yahoo価格を主系統とし、FMP無料枠は欠損tickerの照合だけに使う。
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          V38_FMP_REFERENCE_CACHE: fmp_reference_cache.json
+          V38_FMP_REFERENCE_BUDGET: '40'
+          V38_STATE_JSON: state.json
+          V38_EQUITY_CSV: equity.csv
+          # 決算キャッシュ。未設定だとrunnerで書けないパスに落ちて毎回再取得になる。
+          V38_ER_JSON: earnings.json
+          # 上場来VWAPの累積和キャッシュ。初回だけ period="max" を全銘柄ぶん取得し、
+          # 以降は差分更新なので所要はほぼゼロ。
+          V38_INCEPT_VWAP_JSON: inception_vwap.json
+          V38_INCEPT_VWAP_BUDGET: '1400'
+          # 業種分類（TradingViewスキャナー）。7日ごとに自動更新し、失敗時は前回値へ退避。
+          V38_INDUSTRY_JSON: industry_map.json
+          V38_INDUSTRY_MAX_AGE_DAYS: '7'
+          # オプションの壁。別ワークフローが吐いたものを読むだけ。無くても動く。
+          V38_OPT_JSON: options_positioning.json
+          V38_OPT_SCAN_HISTORY: options_scan_history.csv
+          V38_OPT_TARGETS: options_targets.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          python build_dashboard.py 2>&1 | tee build-dashboard.log
+          if grep -q "::warning::as-of regression:" build-dashboard.log; then
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report skipped stale run
+        if: steps.build.outputs.skipped == 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard build"
+            echo "- Status: skipped"
+            echo "- Reason: as-of regression guard kept the newer persisted session intact"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "As-of regression guard fired; validation, persistence and public publish are intentionally skipped."
+
+      - name: Validate generated files
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv
+          import json
+          import re
+          from pathlib import Path
+
+          required = {
+              "command-center.html": 200_000,
+              "command-center_share.html": 2_500,
+          }
+          for name, minimum in required.items():
+              path = Path(name)
+              if not path.is_file():
+                  raise SystemExit(f"missing generated file: {name}")
+              size = path.stat().st_size
+              if size < minimum:
+                  raise SystemExit(
+                      f"generated file too small: {name}={size} bytes < {minimum}"
+                  )
+              text = path.read_text(encoding="utf-8", errors="strict")
+              if "<!doctype html>" not in text.lower():
+                  raise SystemExit(f"doctype missing: {name}")
+
+          main = Path("command-center.html").read_text(encoding="utf-8")
+          if "Command Center" not in main:
+              raise SystemExit("Command Center marker missing from main HTML")
+
+          state = json.loads(
+              Path("state.json").read_text(encoding="utf-8")
+          )
+          if not state.get("date"):
+              raise SystemExit(
+                  "state.json has no completed market-session date"
+              )
+
+          # Date consistency is a hard publication invariant.
+          iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+          state_date = str(state.get("date") or "")
+          if not iso.fullmatch(state_date):
+              raise SystemExit(f"invalid state market-session date: {state_date!r}")
+
+          log_dates = []
+          with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
+              for row in csv.DictReader(fh):
+                  d = str(row.get("date") or "")
+                  if iso.fullmatch(d):
+                      log_dates.append(d)
+          if not log_dates:
+              raise SystemExit("daily_log.csv has no valid market-session dates")
+          log_latest = max(log_dates)
+
+          trend_raw = json.loads(
+              Path("trend_history.json").read_text(encoding="utf-8")
+          )
+          trend_dates = []
+          if isinstance(trend_raw, list):
+              for item in trend_raw:
+                  d = ""
+                  if isinstance(item, (list, tuple)) and item:
+                      d = str(item[0] or "")
+                  elif isinstance(item, dict):
+                      d = str(item.get("date") or "")
+                  if iso.fullmatch(d):
+                      trend_dates.append(d)
+          if not trend_dates:
+              raise SystemExit("trend_history.json has no valid market-session dates")
+          trend_latest = max(trend_dates)
+
+          if state_date != log_latest or state_date != trend_latest:
+              raise SystemExit(
+                  "market-session mismatch: "
+                  f"state={state_date} log={log_latest} trend={trend_latest}"
+              )
+
+          prior_dates = sorted(
+              {d for d in (log_dates + trend_dates) if d < state_date}
+          )
+          prevday = state.get("prevday")
+          if isinstance(prevday, dict) and prevday.get("date"):
+              prev_date = str(prevday.get("date"))
+              if not iso.fullmatch(prev_date) or prev_date >= state_date:
+                  raise SystemExit(
+                      f"invalid prevday ordering: prevday={prev_date!r} state={state_date}"
+                  )
+              if prior_dates and prev_date != prior_dates[-1]:
+                  raise SystemExit(
+                      "prevday is not the latest prior market session: "
+                      f"prevday={prev_date} expected={prior_dates[-1]}"
+                  )
+          elif prior_dates:
+              raise SystemExit(
+                  f"prevday missing; latest prior market session is {prior_dates[-1]}"
+              )
+
+          mm = re.search(r"分析基準日\s+(\d{4}-\d{2}-\d{2})", main)
+          if not mm:
+              raise SystemExit("main HTML market-session date marker missing")
+          main_date = mm.group(1)
+
+          share_text = Path("command-center_share.html").read_text(encoding="utf-8")
+          sm = re.search(
+              r"class=[\"']asof[\"'][^>]*>(\d{4}-\d{2}-\d{2})<",
+              share_text,
+          )
+          if not sm:
+              raise SystemExit("share HTML market-session date marker missing")
+          share_date = sm.group(1)
+
+          if main_date != state_date or share_date != state_date:
+              raise SystemExit(
+                  "HTML market-session mismatch: "
+                  f"state={state_date} main={main_date} share={share_date}"
+              )
+
+          manifest = json.loads(
+              Path("commit_manifest.json").read_text(encoding="utf-8")
+          )
+          failed = [
+              key
+              for key in ("html", "share", "state", "trend", "log")
+              if manifest.get(key) != "ok"
+          ]
+          if failed:
+              raise SystemExit(
+                  f"critical persistence did not complete: {failed}"
+              )
+          PY
+
+      - name: Report persistence and data date
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -s commit_manifest.json ]]; then
+            cat commit_manifest.json
+          else
+            echo '::warning::commit_manifest.json was not generated'
+          fi
+
+          read -r asof gate < <(
+            python -c 'import json; s=json.load(open("state.json", encoding="utf-8")); print(s.get("date", ""), s.get("gate", ""))'
+          )
+
+          {
+            echo "### Dashboard build"
+            echo "- Data session: ${asof:-unknown}"
+            echo "- Gate: ${gate:-unknown}"
+            echo "- Main HTML: $(wc -c < command-center.html) bytes"
+            echo "- Share HTML: $(wc -c < command-center_share.html) bytes"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit dashboard and caches
+        if: steps.build.outputs.skipped != 'true'
+        id: persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "source_drift=false" >> "$GITHUB_OUTPUT"
+
+          # Same-session stale-source guard. Artifact/options commits are harmless;
+          # generation logic and explicit dashboard inputs are not.
+          git fetch --depth=1 origin main
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+            echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
+            echo "source_drift=true" >> "$GITHUB_OUTPUT"
+            echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # --- なぜrebaseをやめたか -------------------------------------------
+          # 生成物は毎回ファイル全体が書き換わるため、runが競合すると rebase は
+          # 必ず content conflict になる（command-center.html / mktcap.json /
+          # inception_vwap.json / universe.csv 等）。行単位のマージに意味がない
+          # ファイルを3-way mergeさせていたのが誤り。
+          # このワークフローがこれらの唯一の書き手なので、「最新のorigin/mainに
+          # このrunの出力を載せ直す」= 常にこのrunが勝つ、に変更する。
+          # ソースコード側は触らないので、他者の変更を潰すことはない。
+          # --------------------------------------------------------------------
+
+          staging="$(mktemp -d)"
+          for file in $V38_ARTIFACTS; do
+            if [[ -f "$file" ]]; then
+              mkdir -p "$staging/$(dirname "$file")"
+              cp -a "$file" "$staging/$file"
+            fi
+          done
+
+          pushed=false
+          committed=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard FETCH_HEAD          # 生成物以外は必ず最新のremoteに合わせる
+
+            for file in $V38_ARTIFACTS; do
+              if [[ -f "$staging/$file" ]]; then
+                mkdir -p "$(dirname "$file")"
+                cp -a "$staging/$file" "$file"
+                git add -- "$file"
+              fi
+            done
+
+            if git diff --staged --quiet; then
+              echo "No dashboard changes to commit"
+              pushed=true
+              break
+            fi
+
+            git commit -m "Daily dashboard rebuild + cache refresh"
+            committed=true
+
+            if git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
+
+            echo "Push attempt ${attempt} failed; reloading latest origin/main and retrying"
+            sleep $((attempt * 3))
+          done
+
+          if [[ "$pushed" != true ]]; then
+            echo "Push failed after 3 attempts (committed=${committed})"
+            exit 1
+          fi
+
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Report skipped stale-source run
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift == 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard build"
+            echo "- Status: skipped after build"
+            echo "- Reason: generation/input source changed while this run was executing"
+            echo "- Safety: stale same-session artifacts were not persisted or published"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Audit public privacy boundary
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        run: |
+          python scripts/privacy_audit.py \
+            --root . \
+            --output /tmp/privacy-audit-status.json
+          cat /tmp/privacy-audit-status.json
+
+      - name: Export allowlisted public site
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/export_public_site.py \
+            --root . \
+            --output /tmp/v38-public-site \
+            --source-commit "${{ steps.persist.outputs.source_sha }}"
+
+      - name: Publish clean public mirror
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        id: publish
+        continue-on-error: true
+        shell: bash
+        env:
+          PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
+          PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
+            echo "::warning::Public mirror is not configured; build and privacy validation completed"
+            exit 0
+          fi
+
+          if [[ ! "$PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid V38_PUBLIC_PAGES_REPOSITORY: expected owner/repository"
+            exit 1
+          fi
+
+          target=/tmp/v38-pages-repository
+          git clone \
+            --depth 1 \
+            "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" \
+            "$target"
+
+          find "$target" \
+            -mindepth 1 \
+            -maxdepth 1 \
+            ! -name .git \
+            -exec rm -rf -- {} +
+
+          cp -a /tmp/v38-public-site/. "$target/"
+          cd "$target"
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "Public site mirror already current"
+            exit 0
+          fi
+
+          git commit \
+            -m "Publish dashboard ${{ steps.persist.outputs.source_sha }}"
+          git push origin HEAD:main
+
+      - name: Report publish failure
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true' && steps.publish.outcome == 'failure'
+        shell: bash
+        env:
+          FAILURE_WEBHOOK: ${{ secrets.V38_WEBHOOK }}
+        run: |
+          set -euo pipefail
+
+          message="Dashboard build succeeded, but public mirror publish failed: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          echo "::error::$message"
+          echo "### Public publish failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ -n "${FAILURE_WEBHOOK:-}" ]]; then
+            MESSAGE="$message" python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          body = json.dumps(
+              {"content": os.environ["MESSAGE"]}
+          ).encode("utf-8")
+
+          req = urllib.request.Request(
+              os.environ["FAILURE_WEBHOOK"],
+              data=body,
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "dashboard-actions/1.0",
+              },
+          )
+
+          with urllib.request.urlopen(req, timeout=10) as response:
+              if response.status >= 300:
+                  raise SystemExit(
+                      f"webhook returned HTTP {response.status}"
+                  )
+          PY
+          fi
+
+          exit 1
