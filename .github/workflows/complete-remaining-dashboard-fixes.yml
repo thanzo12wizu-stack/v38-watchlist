@@ -81,25 +81,28 @@ jobs:
 
           persist_anchor = (
               '          git config user.name "github-actions[bot]"\n'
-              '          git config user.email \\\n'
+              '          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"\n'
+              '\n'
+              '          # --- なぜrebaseをやめたか -------------------------------------------\n'
+          )
+          # The current workflow uses a two-line git-config email command. Normalize only
+          # this tiny anchor before inserting the guard, avoiding any escaped-newline patching.
+          old_email = (
+              '          git config user.name "github-actions[bot]"\n'
+              '          git config user.email ' + chr(92) + '\n'
               '            "41898282+github-actions[bot]@users.noreply.github.com"\n'
               '\n'
               '          # --- なぜrebaseをやめたか -------------------------------------------\n'
           )
           persist_block = (
               '          git config user.name "github-actions[bot]"\n'
-              '          git config user.email \\\n'
-              '            "41898282+github-actions[bot]@users.noreply.github.com"\n'
+              '          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"\n'
               '          echo "source_drift=false" >> "$GITHUB_OUTPUT"\n'
               '\n'
               '          # Same-session stale-source guard. Artifact/options commits are harmless;\n'
               '          # generation logic and explicit dashboard inputs are not.\n'
               '          git fetch --depth=1 origin main\n'
-              '          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && \\\n'
-              '             ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- \\\n'
-              '               build_dashboard.py .github/workflows/dashboard.yml requirements.txt \\\n'
-              '               scripts/export_public_site.py scripts/privacy_audit.py \\\n'
-              '               sar_state.txt equity.csv; then\n'
+              '          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then\n'
               '            echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"\n'
               '            echo "source_drift=true" >> "$GITHUB_OUTPUT"\n'
               '            echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"\n'
@@ -110,9 +113,12 @@ jobs:
           )
           drift_marker = 'source drift after build; skip persistence/public publish for stale same-session run'
           if drift_marker not in y:
-              if y.count(persist_anchor) != 1:
-                  raise SystemExit(f'dashboard persist anchor count={y.count(persist_anchor)}')
-              y = y.replace(persist_anchor, persist_block, 1)
+              if y.count(old_email) == 1:
+                  y = y.replace(old_email, persist_block, 1)
+              elif y.count(persist_anchor) == 1:
+                  y = y.replace(persist_anchor, persist_block, 1)
+              else:
+                  raise SystemExit(f'dashboard persist anchor mismatch old={y.count(old_email)} normalized={y.count(persist_anchor)}')
 
           replacements = [
               ("      - name: Audit public privacy boundary\n        if: steps.build.outputs.skipped != 'true'",
