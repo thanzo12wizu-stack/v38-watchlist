@@ -37,6 +37,11 @@ jobs:
           grep -F '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' build_dashboard.py
           grep -F 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' .github/workflows/dashboard.yml
           grep -F 'source drift after build; skip persistence/public publish' .github/workflows/dashboard.yml
-          printf 'PATCHED_DASHBOARD_B64=' 
-          base64 -w0 .github/workflows/dashboard.yml
-          printf '\n'
+
+      - name: Upload patched dashboard workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-dashboard-workflow
+          path: .github/workflows/dashboard.yml
+          if-no-files-found: error
+          retention-days: 1
