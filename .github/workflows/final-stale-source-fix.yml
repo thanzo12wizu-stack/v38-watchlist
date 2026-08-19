@@ -1,0 +1,46 @@
+name: Final stale-source fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/final-stale-source-fix.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Apply remaining dashboard fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/apply_remaining_dashboard_fixes.py
+          grep -F 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' .github/workflows/dashboard.yml
+          grep -F 'source drift after build; skip persistence/public publish for stale same-session run' .github/workflows/dashboard.yml
+          grep -F "steps.persist.outputs.source_drift != 'true'" .github/workflows/dashboard.yml
+          git diff --check
+
+      - name: Persist fix and self-clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/dashboard.yml
+          git rm .github/workflows/final-stale-source-fix.yml
+          if git diff --staged --quiet; then
+            echo 'No changes to persist'
+            exit 0
+          fi
+          git commit -m 'Add same-session stale-source guard'
+          git push origin HEAD:main
