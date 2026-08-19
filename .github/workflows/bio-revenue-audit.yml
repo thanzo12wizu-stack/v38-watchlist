@@ -1,40 +1,32 @@
-# Stage A merge trigger
+# Temporary Stage A PR applicator. Restored to normal audit immediately after merge.
 name: Bio revenue audit
 
 on:
-  workflow_run:
-    workflows:
-      - Dashboard daily build
-    types:
-      - completed
-  push:
-    branches:
-      - main
-    paths:
-      - 'scripts/audit_bio_revenue.py'
-      - '.github/workflows/bio-revenue-audit.yml'
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: bio-revenue-audit-main
+  group: bio-stageA-pr-apply
   cancel-in-progress: true
 
 jobs:
-  audit:
+  apply-stageA:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.head_ref }}
           fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Apply one-shot Stage A source patch
+      - name: Apply and validate Stage A
         shell: bash
         run: |
           set -euo pipefail
@@ -44,7 +36,7 @@ jobs:
           grep -q 'for _typ in ("stock", "dr")' build_dashboard.py
           grep -q 'selection_excluded' build_dashboard.py
           grep -q 'V38_BIO_REVENUE_MAX' .github/workflows/dashboard.yml
-      - name: Commit source and restore normal audit workflow
+      - name: Commit completed source to PR head
         shell: bash
         run: |
           set -euo pipefail
@@ -53,5 +45,6 @@ jobs:
           git add build_dashboard.py .github/workflows/dashboard.yml
           git rm -f scripts/finalize_stageA.py .github/workflows/finalize-stageA.yml 2>/dev/null || true
           git rm -f scripts/stage2c_patch.py .github/workflows/stage2c-bio-preview-patch.yml 2>/dev/null || true
-          git commit -m "Include US DRs and isolate clinical-stage names from selection"
-          git push origin HEAD:main
+          git rm -f .github/workflows/stageA-pr-apply.yml 2>/dev/null || true
+          git commit -m "Apply final Stage A universe and biotech eligibility"
+          git push origin HEAD:${{ github.head_ref }}
