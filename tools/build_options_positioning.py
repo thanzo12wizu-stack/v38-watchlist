@@ -106,8 +106,16 @@ def aggregate_profile(chain, spot, T, lo, hi, n=61):
     return xs, ys, flip
 
 
-def top_walls(g, kind, n=3):
+def top_walls(g, kind, n=3, spot=None):
+    """Return directional walls only.
+
+    Call resistance must be above spot and Put support must be below spot.
+    Wrong-side concentrations can be pins, but must not be labelled as a wall.
+    """
     sub = g[g["kind"] == kind].groupby("strike")["gex"].sum()
+    if spot is not None and not sub.empty:
+        spot = float(spot)
+        sub = sub[sub.index > spot] if kind == "C" else sub[sub.index < spot]
     if sub.empty:
         return []
     sub = sub.abs().sort_values(ascending=False).head(n)
@@ -130,7 +138,7 @@ def analyse_expiry(calls, puts, spot, expiry, asof):
     T = max(T, 1.0 / 365.0)
     g = gex_by_strike(chain, spot, T)
     xs, ys, flip = aggregate_profile(chain, spot, T, lo_k, hi_k)
-    cw = top_walls(g, "C"); pw = top_walls(g, "P")
+    cw = top_walls(g, "C", spot=spot); pw = top_walls(g, "P", spot=spot)
     total_oi = float(chain["openInterest"].sum())
     return dict(
         expiry=str(expiry), dte=int(round(T * 365)),

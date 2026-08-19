@@ -13078,7 +13078,12 @@ def build_multi_vwap_card(m, cap=24):
         return (state, min(dists) if dists else 99, -float(r.get("rs189") or 0))
 
     sub["_vw_sort"] = [str(_action_rank(r)) for _t, r in sub.iterrows()]
-    ordered = sorted(sub.iterrows(), key=lambda x: _action_rank(x[1]))[:cap]
+    # INCEPTION_VWAP_BYPASS_PRESENTATION_CAP_V1
+    _all_ordered = sorted(sub.iterrows(), key=lambda x: _action_rank(x[1]))
+    ordered = _all_ordered[:cap]
+    _inception_idx = set(m.index[keep_all])
+    _already = {t for t, _r in ordered}
+    ordered += [(t, r) for t, r in _all_ordered if t in _inception_idx and t not in _already]
 
     def _cell(r, key):
         if key == "vwap_all" and not bool(r.get("vwap_all_valid")):
