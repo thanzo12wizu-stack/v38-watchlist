@@ -13053,8 +13053,13 @@ def build_multi_vwap_card(m, cap=24):
     # 下落トレンドや伸び切りの銘柄を出さない（VWAP接触は上昇中でこそ意味がある）
     # 63/252はRS189でリーダーを絞る。上場来VWAPはRS189条件を課さない（稀少イベント＋IPO対応）。
     ipo = ipo_recent(m)
-    keep = elig & (entry_worthy(m) | ipo) & \
-        ((loc_roll & ((rs >= MULTI_VWAP_RS189_MIN) | ipo)) | loc_all)
+    # 63/252 VWAP keep the existing leader/IPO gate.
+    keep_roll = elig & (entry_worthy(m) | ipo) & loc_roll & \
+        ((rs >= MULTI_VWAP_RS189_MIN) | ipo)
+    # Inception VWAP is independent of RS189/short-term leadership.
+    # Use the existing base quality/liquidity/security gate only.
+    keep_all = setup_eligible_core(m) & loc_all
+    keep = keep_roll | keep_all
     sub = m[keep].copy()
     if sub.empty:
         return ('<div class="card"><h2>Multi VWAPセットアップ</h2>'
