@@ -6,10 +6,13 @@ on:
     paths:
       - '.github/workflows/finalize-dashboard-patch.yml'
       - 'scripts/finalize_dashboard_patch.py'
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   patch:
@@ -66,3 +69,16 @@ jobs:
             git commit -m "Capture final patch diagnostic"
           fi
           git push origin HEAD:main
+      - name: Trigger production dashboard
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ -f /tmp/final_patch_ok ]]; then
+            gh workflow run dashboard.yml --ref main
+            echo "Production dashboard workflow dispatched"
+          else
+            echo "Final patch failed; production dashboard not dispatched"
+          fi
