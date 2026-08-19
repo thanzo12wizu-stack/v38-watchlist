@@ -2850,7 +2850,17 @@ def _vwap_flags(vw, aligned):
     recent = aligned.iloc[-3:]
     recent_vw = vw.reindex(recent.index)
     touched = bool((recent["l"] <= recent_vw * 1.0075).any())
-    near = bool(np.isfinite(dist) and abs(dist) <= 0.02)
+    # Observation-only near zone. ADR20 = ordinary 20-day average range%.
+    # Keep touch/support/reclaim unchanged. If near later affects Core12 ranking,
+    # entry eligibility or position sizing, validate it before promotion.
+    try:
+        _adr20 = (((aligned["h"] - aligned["l"]) / aligned["c"].replace(0, np.nan))
+                  .replace([np.inf, -np.inf], np.nan).dropna().tail(20).mean())
+        _adr20 = float(_adr20) if np.isfinite(_adr20) else 0.0
+    except Exception:
+        _adr20 = 0.0
+    _near_threshold = min(0.05, max(0.02, 0.5 * _adr20))
+    near = bool(np.isfinite(dist) and abs(dist) <= _near_threshold)
     support = bool(touched and close >= value and dist <= 0.025 and slope5 >= -0.005)
     reclaim = bool(prev_close < prev_vwap and close >= value and slope5 >= -0.005)
     return dict(value=value, dist=dist, slope5=slope5, near=near,
