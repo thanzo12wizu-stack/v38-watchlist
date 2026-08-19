@@ -58,3 +58,5 @@ jobs:
           git rm scripts/fix_directional_option_walls.py .github/workflows/fix-directional-option-walls.yml
           git commit -m "Make option walls directional around spot"
           git push origin HEAD:main
+
+# retrigger
