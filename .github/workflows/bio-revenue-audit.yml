@@ -1,60 +1,67 @@
-# Temporary Stage A PR applicator. Restored to normal audit immediately after merge.
 name: Bio revenue audit
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows:
+      - Dashboard daily build
+    types:
+      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/audit_bio_revenue.py'
+      - '.github/workflows/bio-revenue-audit.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: bio-stageA-pr-apply
+  group: bio-revenue-audit-main
   cancel-in-progress: true
 
 jobs:
-  apply-stageA:
-    if: github.event_name == 'pull_request'
+  audit:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
+          ref: main
+          fetch-depth: 1
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Apply and validate Stage A
+
+      - name: Audit provisional clinical-stage revenue rule
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('scripts/finalize_stageA.py')
-          s = p.read_text(encoding='utf-8')
-          old = 'pat.subn(new, s, count=1)'
-          if s.count(old) != 2:
-              raise SystemExit(f'unexpected pat.subn count={s.count(old)}')
-          p.write_text(s.replace(old, 'pat.subn(lambda _m: new, s, count=1)'), encoding='utf-8')
-          PY
-          python scripts/finalize_stageA.py
-          python -m py_compile build_dashboard.py
-          git diff --check
-          grep -q 'for _typ in ("stock", "dr")' build_dashboard.py
-          grep -q 'selection_excluded' build_dashboard.py
-          grep -q 'V38_BIO_REVENUE_MAX' .github/workflows/dashboard.yml
-      - name: Commit source-only patch to PR head
+          python scripts/audit_bio_revenue.py \
+            --state state.json \
+            --universe universe.csv \
+            --output bio_revenue_audit.json \
+            --mcap-max 10000000000 \
+            --revenue-max 50000000
+
+      - name: Commit diagnostic only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # GITHUB_TOKEN cannot update workflow files. Restore the helper's dashboard.yml edit;
-          # the connector will add those env lines after this source commit lands.
-          git checkout -- .github/workflows/dashboard.yml
-          git add build_dashboard.py
-          git rm -f scripts/finalize_stageA.py scripts/stage2c_patch.py 2>/dev/null || true
-          git commit -m "Apply final Stage A universe and biotech eligibility"
-          git push origin HEAD:${{ github.head_ref }}
+          git add bio_revenue_audit.json
+          if git diff --staged --quiet; then
+            echo "Bio revenue diagnostic already current"
+            exit 0
+          fi
+          session_date="$(python -c 'import json; print(json.load(open("state.json"))["date"])')"
+          git commit -m "Bio revenue diagnostic ${session_date}"
+          git push origin HEAD:main
