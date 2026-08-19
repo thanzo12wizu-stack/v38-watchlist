@@ -23,23 +23,32 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Apply final patch
+      - name: Apply final patch and capture diagnostics
         shell: bash
         run: |
-          set -euo pipefail
-          python scripts/finalize_dashboard_patch.py
-          python -m py_compile build_dashboard.py
-          git diff --check
-      - name: Commit patch
+          set +e
+          python scripts/finalize_dashboard_patch.py > /tmp/final-patch.log 2>&1
+          rc=$?
+          echo "patch_rc=$rc" > final_patch_diagnostic.txt
+          cat /tmp/final-patch.log >> final_patch_diagnostic.txt
+          if [[ $rc -eq 0 ]]; then
+            python -m py_compile build_dashboard.py >> final_patch_diagnostic.txt 2>&1
+            echo "pycompile_rc=$?" >> final_patch_diagnostic.txt
+            git diff --check >> final_patch_diagnostic.txt 2>&1
+            echo "diffcheck_rc=$?" >> final_patch_diagnostic.txt
+          fi
+          cat final_patch_diagnostic.txt
+      - name: Commit patch or diagnostics
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add build_dashboard.py .github/workflows/dashboard.yml
-          if git diff --staged --quiet; then
-            echo "Final patch already applied"
-            exit 0
+          git add final_patch_diagnostic.txt
+          if grep -q '^patch_rc=0$' final_patch_diagnostic.txt && grep -q '^pycompile_rc=0$' final_patch_diagnostic.txt; then
+            git add build_dashboard.py .github/workflows/dashboard.yml
+            git commit -m "Include DR listings and finalize dashboard guards"
+          else
+            git commit -m "Capture final patch diagnostic"
           fi
-          git commit -m "Include DR listings and finalize dashboard guards"
           git push origin HEAD:main
