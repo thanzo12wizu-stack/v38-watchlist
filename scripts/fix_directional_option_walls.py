@@ -175,31 +175,35 @@ if hpath.exists():
 print(f'REPAIRED_OPTION_HISTORY_FIELDS={history_changed}')
 
 # -----------------------------------------------------------------------------
-# 4) Multi VWAP presentation: keep the existing 24-row / industry ranking for
-#    rolling 63/252 VWAP, but never let that presentation cap silently remove a
-#    valid inception-VWAP candidate. No ticker hard-code; no new score/filter.
+# 4) Multi VWAP presentation: keep the existing 24-row ranking for 63/252,
+#    but never let that presentation cap silently remove a valid inception-
+#    VWAP candidate. No ticker hard-code; no new score/filter.
 # -----------------------------------------------------------------------------
 bp = root / 'build_dashboard.py'
 bs = bp.read_text(encoding='utf-8')
 marker = '# INCEPTION_VWAP_BYPASS_PRESENTATION_CAP_V1'
 if marker not in bs:
-    # Find the one truncation that caps the Multi VWAP candidate table.
-    pat = re.compile(r'(?m)^(?P<indent>[ \t]*)sub\s*=\s*sub\.loc\[picked\[:cap\]\]\.copy\(\)\s*$')
+    # Current implementation caps the already-ranked iterable directly:
+    # ordered = sorted(... )[:cap]
+    pat = re.compile(
+        r'(?m)^(?P<indent>[ \t]*)ordered\s*=\s*sorted\(sub\.iterrows\(\),\s*key=lambda x:\s*_action_rank\(x\[1\]\)\)\[:cap\]\s*$'
+    )
     matches = list(pat.finditer(bs))
     if len(matches) != 1:
-        raise SystemExit(f'expected one Multi VWAP picked[:cap] truncation, found {len(matches)}; refusing broad edit')
-    m = matches[0]
-    indent = m.group('indent')
+        raise SystemExit(
+            f'expected one Multi VWAP ordered=sorted(... )[:cap] truncation, found {len(matches)}; refusing broad edit'
+        )
+    m0 = matches[0]
+    indent = m0.group('indent')
     repl = (
         f"{indent}{marker}\n"
-        f"{indent}_all_vwap_candidates = sub.copy()\n"
-        f"{indent}sub = sub.loc[picked[:cap]].copy()\n"
-        f"{indent}_inception_idx = _all_vwap_candidates.index[_all_vwap_candidates.index.isin(m.index[keep_all])]\n"
-        f"{indent}_missing_inception = [ix for ix in _inception_idx if ix not in sub.index]\n"
-        f"{indent}if _missing_inception:\n"
-        f"{indent}    sub = pd.concat([sub, _all_vwap_candidates.loc[_missing_inception]], axis=0)\n"
+        f"{indent}_all_ordered = sorted(sub.iterrows(), key=lambda x: _action_rank(x[1]))\n"
+        f"{indent}ordered = _all_ordered[:cap]\n"
+        f"{indent}_inception_idx = set(m.index[keep_all])\n"
+        f"{indent}_already = {{t for t, _r in ordered}}\n"
+        f"{indent}ordered += [(t, r) for t, r in _all_ordered if t in _inception_idx and t not in _already]\n"
     )
-    bs = bs[:m.start()] + repl + bs[m.end():]
+    bs = bs[:m0.start()] + repl + bs[m0.end():]
 
 # Regression invariants: existing adaptive near rule and separate inception gate stay intact.
 if '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' not in bs:
