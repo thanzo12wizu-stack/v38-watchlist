@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: options-positioning-main
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   options:
@@ -46,9 +46,8 @@ jobs:
           V38_OPT_TICKERS: ''
           V38_OPT_MAX_EXPIRY: '4'
           V38_OPT_HTML: options-positioning.html
-          # 履歴用の全銘柄スキャン。表示はせず1銘柄1行のサマリーだけ残す。
-          # 検証に必要なサンプル数は表示対象60〜70銘柄だけでは足りないため。
-          V38_OPT_SCAN_ALL: '1'
+          # 定時runは全銘柄履歴を継続。今回のpush修正runだけは表示対象に絞って速く反映する。
+          V38_OPT_SCAN_ALL: ${{ github.event_name == 'schedule' && '1' || '0' }}
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_SCAN_WORKERS: '8'
