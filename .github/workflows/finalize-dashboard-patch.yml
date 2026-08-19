@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/finalize-dashboard-patch.yml'
+      - 'scripts/finalize_dashboard_patch.py'
   workflow_dispatch: {}
 
 permissions:
