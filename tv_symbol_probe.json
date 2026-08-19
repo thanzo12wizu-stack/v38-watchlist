@@ -1,0 +1,49 @@
+{
+  "targets": {
+    "SKHY": {
+      "name": "SKHY",
+      "description": "SK hynix Inc. Sponsored ADR",
+      "type": "dr",
+      "typespecs": [
+        ""
+      ],
+      "exchange": "NASDAQ",
+      "market_cap_basic": 841686565935.0585,
+      "close": 155.62,
+      "sector": "Electronic Technology",
+      "industry": "Semiconductors"
+    },
+    "ASML": {
+      "name": "ASML",
+      "description": "ASML Holding NV Sponsored ADR",
+      "type": "dr",
+      "typespecs": [
+        ""
+      ],
+      "exchange": "NASDAQ",
+      "market_cap_basic": 716982753881.095,
+      "close": 1802.98,
+      "sector": "Electronic Technology",
+      "industry": "Semiconductors"
+    },
+    "ARM": {
+      "name": "ARM",
+      "description": "ARM Holdings PLC Sponsored ADR",
+      "type": "dr",
+      "typespecs": [
+        ""
+      ],
+      "exchange": "NASDAQ",
+      "market_cap_basic": 289887232178,
+      "close": 253.32,
+      "sector": "Electronic Technology",
+      "industry": "Semiconductors"
+    }
+  },
+  "type_counts": {
+    "stock": 3962,
+    "dr": 281,
+    "fund": 387
+  },
+  "missing": []
+}
