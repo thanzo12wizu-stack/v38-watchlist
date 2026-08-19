@@ -1,0 +1,60 @@
+name: Fix directional option walls
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/fix_directional_option_walls.py'
+      - '.github/workflows/fix-directional-option-walls.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/fix_directional_option_walls.py
+          python -m py_compile tools/build_options_positioning.py
+          git diff --check
+          python - <<'PY'
+          import json
+          p=json.load(open('options_positioning.json', encoding='utf-8'))
+          bad=[]
+          for tk,r in (p.get('tickers') or {}).items():
+              s=r.get('spot')
+              cw=(r.get('call_wall') or {}).get('px')
+              pw=(r.get('put_wall') or {}).get('px')
+              if s is None: continue
+              if cw is not None and not (float(cw) > float(s)): bad.append((tk,'call',s,cw))
+              if pw is not None and not (float(pw) < float(s)): bad.append((tk,'put',s,pw))
+              if cw is not None and pw is not None and float(cw) == float(pw): bad.append((tk,'same',s,cw))
+          if bad:
+              raise SystemExit(f'directional wall invariant failed: {bad[:10]}')
+          print('DIRECTIONAL_WALL_INVARIANTS_OK')
+          PY
+          grep -F "sub = sub[sub.index > spot] if kind == \"C\" else sub[sub.index < spot]" tools/build_options_positioning.py
+          grep -F "      - 'options_positioning.json'" .github/workflows/dashboard.yml
+      - name: Persist and self-clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/build_options_positioning.py options_positioning.json .github/workflows/dashboard.yml
+          git rm scripts/fix_directional_option_walls.py .github/workflows/fix-directional-option-walls.yml
+          git commit -m "Make option walls directional around spot"
+          git push origin HEAD:main
