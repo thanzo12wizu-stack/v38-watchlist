@@ -1,67 +1,164 @@
 name: Bio revenue audit
 
 on:
-  workflow_run:
-    workflows:
-      - Dashboard daily build
-    types:
-      - completed
   push:
     branches:
       - main
     paths:
-      - 'scripts/audit_bio_revenue.py'
       - '.github/workflows/bio-revenue-audit.yml'
+      - 'scripts/apply_remaining_dashboard_fixes.py'
   workflow_dispatch: {}
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
-  group: bio-revenue-audit-main
-  cancel-in-progress: true
+  group: final-dashboard-completion
+  cancel-in-progress: false
 
 jobs:
-  audit:
-    if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+  complete:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 2
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Audit provisional clinical-stage revenue rule
-        env:
-          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      - name: Apply remaining fixes
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/audit_bio_revenue.py \
-            --state state.json \
-            --universe universe.csv \
-            --output bio_revenue_audit.json \
-            --mcap-max 10000000000 \
-            --revenue-max 50000000
+          python scripts/apply_remaining_dashboard_fixes.py
+          python -m py_compile build_dashboard.py scripts/apply_remaining_dashboard_fixes.py
+          git diff --check
+          grep -F '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' build_dashboard.py
+          grep -F 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' .github/workflows/dashboard.yml
+          grep -F 'source drift after build; skip persistence/public publish' .github/workflows/dashboard.yml
 
-      - name: Commit diagnostic only
+      - name: Commit fixes, restore audit workflow, and clean temporary files
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bio_revenue_audit.json
-          if git diff --staged --quiet; then
-            echo "Bio revenue diagnostic already current"
-            exit 0
+
+          git checkout HEAD^ -- .github/workflows/bio-revenue-audit.yml
+          git add build_dashboard.py .github/workflows/dashboard.yml .github/workflows/bio-revenue-audit.yml
+          git rm -f --ignore-unmatch scripts/apply_remaining_dashboard_fixes.py
+          git rm -f --ignore-unmatch .github/workflows/complete-remaining-dashboard-fixes.yml
+          git commit -m "Complete VWAP near and stale-run protection"
+
+          pushed=false
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
+            echo "Source-fix push attempt $attempt failed; rebasing onto latest main"
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          if [[ "$pushed" != true ]]; then
+            echo "Could not persist source fixes" >&2
+            exit 1
           fi
-          session_date="$(python -c 'import json; print(json.load(open("state.json"))["date"])')"
-          git commit -m "Bio revenue diagnostic ${session_date}"
-          git push origin HEAD:main
+          echo "FIX_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Dispatch production dashboard and wait
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run dashboard.yml --ref main
+          run_id=""
+          for _ in $(seq 1 60); do
+            sleep 2
+            run_id="$(gh run list --workflow dashboard.yml --branch main --event workflow_dispatch --limit 15 --json databaseId,headSha --jq ".[] | select(.headSha == \"$FIX_SHA\") | .databaseId" | head -n1)"
+            if [[ -n "$run_id" ]]; then
+              break
+            fi
+          done
+          if [[ -z "$run_id" ]]; then
+            echo "Could not identify production Dashboard run for $FIX_SHA" >&2
+            exit 1
+          fi
+          echo "DASHBOARD_RUN_ID=$run_id" >> "$GITHUB_ENV"
+          echo "Production dashboard run: $run_id"
+          gh run watch "$run_id" --exit-status --interval 15
+          gh run view "$run_id" --json databaseId,status,conclusion,event,headSha,url
+
+      - name: Verify final main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          python - <<'PY'
+          import csv
+          import json
+          import re
+          from pathlib import Path
+
+          src = Path('build_dashboard.py').read_text(encoding='utf-8')
+          wf = Path('.github/workflows/dashboard.yml').read_text(encoding='utf-8')
+          bio_wf = Path('.github/workflows/bio-revenue-audit.yml').read_text(encoding='utf-8')
+          assert '_near_threshold = min(0.05, max(0.02, 0.5 * _adr20))' in src
+          assert 'V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)' in wf
+          assert 'source drift after build; skip persistence/public publish' in wf
+          assert "steps.persist.outputs.source_drift != 'true'" in wf
+          assert 'Audit provisional clinical-stage revenue rule' in bio_wf
+          assert not Path('scripts/apply_remaining_dashboard_fixes.py').exists()
+          assert not Path('.github/workflows/complete-remaining-dashboard-fixes.yml').exists()
+
+          with Path('universe.csv').open(encoding='utf-8', newline='') as fh:
+              rows = {str(r.get('シンボル') or '').upper(): r for r in csv.DictReader(fh)}
+          for ticker in ('ASML', 'ARM', 'SKHY'):
+              assert ticker in rows, f'{ticker} missing from Master Universe'
+              assert str(rows[ticker].get('証券種別') or '').lower() == 'dr', (ticker, rows[ticker].get('証券種別'))
+          assert 'SYRE' in rows, 'SYRE must remain in Master Universe'
+
+          state = json.loads(Path('state.json').read_text(encoding='utf-8'))
+          state_date = str(state.get('date') or '')
+          prevday = state.get('prevday') or {}
+          assert str(prevday.get('date') or '') < state_date
+
+          with Path('daily_log.csv').open(encoding='utf-8', newline='') as fh:
+              log_dates = [str(r.get('date') or '') for r in csv.DictReader(fh) if r.get('date')]
+          trend = json.loads(Path('trend_history.json').read_text(encoding='utf-8'))
+          trend_dates = []
+          for item in trend:
+              if isinstance(item, (list, tuple)) and item:
+                  trend_dates.append(str(item[0]))
+              elif isinstance(item, dict) and item.get('date'):
+                  trend_dates.append(str(item['date']))
+
+          share = Path('command-center_share.html').read_text(encoding='utf-8')
+          main = Path('command-center.html').read_text(encoding='utf-8')
+          share_match = re.search(r'class=["\']asof["\'][^>]*>(\d{4}-\d{2}-\d{2})<', share)
+          main_match = re.search(r'分析基準日\s+(\d{4}-\d{2}-\d{2})', main)
+          assert share_match, 'share date missing'
+          assert main_match, 'main date missing'
+          assert state_date == max(log_dates) == max(trend_dates) == share_match.group(1) == main_match.group(1), (
+              state_date, max(log_dates), max(trend_dates), share_match.group(1), main_match.group(1)
+          )
+
+          targets = set(json.loads(Path('options_targets.json').read_text(encoding='utf-8')))
+          missing = [t for t in state.get('picks', []) if t not in targets]
+          assert not missing, f'options targets missing Core12: {missing}'
+          assert 'SYRE' not in state.get('picks', []), 'SYRE surfaced in Core12'
+          assert 'AMLX' not in state.get('picks', []), 'AMLX surfaced in Core12'
+
+          print('FINAL_VERIFY_OK')
+          print('session_date=', state_date)
+          print('universe_count=', len(rows))
+          print('core12=', state.get('picks', []))
+          PY
