@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Apply patch and validate source
+      - name: Apply narrowed final patch and validate source
         shell: bash
         run: |
           set +e
