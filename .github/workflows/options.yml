@@ -40,8 +40,8 @@ jobs:
           V38_OPT_TICKERS: ''
           V38_OPT_MAX_EXPIRY: '4'
           V38_OPT_HTML: options-positioning.html
-          # 定時runは全銘柄履歴を継続。ソース変更のpush runだけは表示対象に絞って速く反映する。
-          V38_OPT_SCAN_ALL: ${{ github.event_name == 'schedule' && '1' || '0' }}
+          # 今回だけ全銘柄を再走査し、既存の誤った同一/逆側Wall行を最新行で上書きする。
+          V38_OPT_SCAN_ALL: '1'
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_SCAN_WORKERS: '8'
