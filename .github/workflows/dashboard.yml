@@ -75,6 +75,129 @@ jobs:
         with:
           python-version: '3.11'
 
+      # ONE_TIME_MULTI_VWAP_STAGE12_BEGIN
+      - name: Apply and persist Multi VWAP Stage 1-2 filter
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path("build_dashboard.py")
+          s = p.read_text(encoding="utf-8")
+
+          def replace_once(old, new, label):
+              global s
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected 1 anchor, found {n}")
+              s = s.replace(old, new, 1)
+
+          replace_once(
+              "/* SETUP_STAGE_BADGE_V1: display only; no setup eligibility/ranking changes. */",
+              "/* MULTI_VWAP_STAGE12_BADGE_V1: display is restricted to the filtered Multi VWAP table. */",
+              "stage badge marker",
+          )
+          replace_once(
+              "document.querySelectorAll('#t-today [data-tkone]').forEach(function(el){",
+              "document.querySelectorAll('#t-today .vwtbl [data-tkone]').forEach(function(el){",
+              "stage badge selector",
+          )
+
+          rs_anchor = (
+              '    rs = pd.to_numeric(m.get("rs189", pd.Series(0, index=m.index)), '
+              'errors="coerce").fillna(0)\n'
+          )
+          stage_block = rs_anchor + (
+              '    # MULTI_VWAP_WEEKLY_STAGE12_FILTER_V1\n'
+              '    # VWAP proximity is actionable only in Weinstein weekly Stage 1/2.\n'
+              '    # Stage 3/4 and missing stage data are excluded from every VWAP path.\n'
+              '    _wst = pd.to_numeric(m.get("wst", pd.Series(np.nan, index=m.index)), errors="coerce")\n'
+              '    stage12 = _wst.isin([1, 2]).fillna(False)\n'
+          )
+          replace_once(rs_anchor, stage_block, "stage12 insertion")
+
+          replace_once(
+              '    keep_roll = elig & (entry_worthy(m) | ipo) & loc_roll & \\\n'
+              '        ((rs >= MULTI_VWAP_RS189_MIN) | ipo)\n',
+              '    keep_roll = stage12 & elig & (entry_worthy(m) | ipo) & loc_roll & \\\n'
+              '        ((rs >= MULTI_VWAP_RS189_MIN) | ipo)\n',
+              "rolling VWAP stage gate",
+          )
+          replace_once(
+              '    keep_all = setup_eligible_core(m) & loc_all\n',
+              '    keep_all = stage12 & setup_eligible_core(m) & loc_all\n',
+              "inception VWAP stage gate",
+          )
+          replace_once(
+              '        \'ステージ2かつ50日線から6ATR以内・ピボットから+12%以内に限定。\'\n',
+              '        \'週足ステージ1または2に限定。ステージ3・4・判定欠損は表示しない。\'\n',
+              "empty-card stage copy",
+          )
+          normal_copy = (
+              '            \'63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。\'\n'
+              '            \'上場来VWAPは取得期間内に上場し、全履歴がある銘柄のみ算出。古い銘柄は対象外表示で、不利に採点しない。</div>\'\n'
+          )
+          normal_copy_new = (
+              '            \'63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。\'\n'
+              '            \'週足ステージ1または2の銘柄だけを表示し、ステージ3・4・判定欠損は除外。\'\n'
+              '            \'上場来VWAPは取得期間内に上場し、全履歴がある銘柄のみ算出。古い銘柄は対象外表示で、不利に採点しない。</div>\'\n'
+          )
+          replace_once(normal_copy, normal_copy_new, "normal-card stage copy")
+          replace_once(
+              '    """63/252/all-time VWAP watch with a dedicated all-time break column."""\n',
+              '    """Stage-1/2-only 63/252/all-time VWAP watch with a dedicated all-time break column."""\n',
+              "VWAP function docstring",
+          )
+
+          required = [
+              "SPLIT_EVENT_CONFIRM_V1",
+              "TRUE_PRICE_LEVEL_CONFLUENCE_V1",
+              'if ov_n < 2 or ov_dist > 0.08:',
+              '_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100',
+              "MULTI_VWAP_WEEKLY_STAGE12_FILTER_V1",
+              "keep_roll = stage12 & elig",
+              "keep_all = stage12 & setup_eligible_core(m) & loc_all",
+              "document.querySelectorAll('#t-today .vwtbl [data-tkone]')",
+          ]
+          for needle in required:
+              if needle not in s:
+                  raise SystemExit("required invariant missing: " + needle)
+          if "SETUP_STAGE_BADGE_V1" in s:
+              raise SystemExit("old display-only stage marker survived")
+          p.write_text(s, encoding="utf-8")
+
+          wf = Path(".github/workflows/dashboard.yml")
+          wy = wf.read_text(encoding="utf-8")
+          begin = "      # ONE_TIME_MULTI_VWAP_STAGE12_BEGIN\n"
+          end = "      # ONE_TIME_MULTI_VWAP_STAGE12_END\n"
+          if wy.count(begin) != 1 or wy.count(end) != 1:
+              raise SystemExit("one-time workflow markers missing or duplicated")
+          a = wy.index(begin)
+          b = wy.index(end, a) + len(end)
+          wf.write_text(wy[:a] + wy[b:], encoding="utf-8")
+          PY
+
+          python -m py_compile build_dashboard.py
+          git diff --check
+          grep -F 'MULTI_VWAP_WEEKLY_STAGE12_FILTER_V1' build_dashboard.py
+          grep -F 'keep_roll = stage12 & elig' build_dashboard.py
+          grep -F 'keep_all = stage12 & setup_eligible_core(m) & loc_all' build_dashboard.py
+          grep -F 'SPLIT_EVENT_CONFIRM_V1' build_dashboard.py
+          grep -F 'TRUE_PRICE_LEVEL_CONFLUENCE_V1' build_dashboard.py
+          grep -F '_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100' build_dashboard.py
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- build_dashboard.py .github/workflows/dashboard.yml
+          if [[ -e .github/workflows/apply-multi-vwap-stage12.yml ]]; then
+            git rm -- .github/workflows/apply-multi-vwap-stage12.yml
+          fi
+          git commit -m "Restrict Multi VWAP setups to weekly Stage 1 and 2"
+          git push origin HEAD:main
+          echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      # ONE_TIME_MULTI_VWAP_STAGE12_END
+
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
 
