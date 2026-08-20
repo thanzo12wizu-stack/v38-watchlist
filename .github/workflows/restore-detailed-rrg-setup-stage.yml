@@ -1,0 +1,47 @@
+name: Restore detailed RRG and Setup stages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/restore_detailed_rrg_and_setup_stage.py'
+      - '.github/workflows/restore-detailed-rrg-setup-stage.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Restore detailed RRG and add Setup stage badges
+        run: |
+          set -euo pipefail
+          python scripts/restore_detailed_rrg_and_setup_stage.py
+          python -m py_compile build_dashboard.py
+          git diff --check
+          grep -F 'INCEPTION_VWAP_BYPASS_PRESENTATION_CAP_V1' build_dashboard.py
+          grep -F 'SETUP_STAGE_BADGE_V1' build_dashboard.py
+          grep -F '_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier")' build_dashboard.py
+          grep -F 'sub = sub[sub.index > spot] if kind == "C" else sub[sub.index < spot]' tools/build_options_positioning.py
+      - name: Commit source fix
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build_dashboard.py
+          if git diff --cached --quiet; then
+            echo 'No source change needed'
+            exit 0
+          fi
+          git commit -m "Restore detailed sector RRG and show Setup stages"
+          git push origin HEAD:main
