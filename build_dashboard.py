@@ -14958,6 +14958,30 @@ td.hl{background:rgba(56,80,140,.20);font-weight:800}
 """
 
 JS = r"""
+/* SETUP_STAGE_BADGE_V1: display only; no setup eligibility/ranking changes. */
+function setupStageBadges(){
+  try{
+    if(!document.getElementById('setupStageBadgeStyle')){
+      var st=document.createElement('style'); st.id='setupStageBadgeStyle';
+      st.textContent='.setup-stage-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;padding:1px 5px;border-radius:999px;font-size:9px;font-weight:800;line-height:1.45;vertical-align:1px;white-space:nowrap;border:1px solid currentColor}.setup-stage-badge.s1{color:#60a5fa;background:rgba(96,165,250,.10)}.setup-stage-badge.s2{color:#4ade80;background:rgba(74,222,128,.10)}.setup-stage-badge.s3{color:#fbbf24;background:rgba(251,191,36,.10)}.setup-stage-badge.s4{color:#f87171;background:rgba(248,113,113,.10)}.setup-stage-badge.s0{color:#94a3b8;background:rgba(148,163,184,.08)}';
+      document.head.appendChild(st);
+    }
+    var names={1:'ステージ1：底固め・移行期',2:'ステージ2：上昇トレンド',3:'ステージ3：天井圏',4:'ステージ4：下降トレンド'};
+    document.querySelectorAll('#t-today [data-tkone]').forEach(function(el){
+      if(el.getAttribute('data-stage-decorated')==='1') return;
+      var tk=(el.getAttribute('data-tkone')||'').toUpperCase();
+      var d=(window.DET||{})[tk]||{}; var n=Number(d.wst); var ok=(n>=1&&n<=4);
+      var tgt=(el.matches&&el.matches('.tk,.pretk,.tbtk,.cft'))?el:el.querySelector('.tk,.pretk,.tbtk,.cft');
+      if(!tgt) tgt=el.querySelector('b')||el.firstElementChild||el;
+      if(!tgt) return;
+      var b=document.createElement('span'); b.className='setup-stage-badge '+(ok?('s'+n):'s0');
+      b.textContent=ok?('S'+n):'S—'; b.title=ok?names[n]:'ステージ判定データなし';
+      tgt.appendChild(b); el.setAttribute('data-stage-decorated','1');
+    });
+  }catch(e){}
+}
+if(document.readyState!=='loading'){setupStageBadges();}
+else{document.addEventListener('DOMContentLoaded',setupStageBadges);}
 function escHtml(v){
   /* #1 innerHTMLへ外部由来文字列(テーマ/サブテーマ/社名/note等)を入れる際のエスケープ。
      DET(window.DET)のsec/sth/flags等はPython側で既にエスケープ済みなので二重には通さない。 */
@@ -18377,7 +18401,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             + _mkt_section("⑤ 一覧で確認する", "見出しタップで並べ替え・行タップで構成銘柄", en="Full Rankings")
             + f'{_sector_rank_card(mkt.get("sector_ranks"))}'
             + f'{sector}'
-            + f'{_rrg_card(mkt.get("rrg_etf"), None, None, 100, "テーマETFの温度計（重複あり）", _RRG_ETF_DESC)}</section>'
+            + f'{_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100, "テーマETFの温度計（重複あり）", _RRG_ETF_DESC)}</section>'
             f'<section id="t-movers">{build_movers_tab(m, s2t)}</section>'
             f'<section id="t-rs">{rs_compare}</section>'
             f'<section id="t-today">'
