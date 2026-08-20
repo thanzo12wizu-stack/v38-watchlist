@@ -1,4 +1,4 @@
-name: Diagnose split confluence patch
+name: Apply split validation and true confluence
 
 on:
   push:
@@ -9,43 +9,111 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
-  diagnose:
+  apply:
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Count patch anchors
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Patch and static-check
         shell: bash
         run: |
           set -euo pipefail
+          python -m py_compile scripts/_oneoff_fix_split_confluence.py
+          python scripts/_oneoff_fix_split_confluence.py
+          python -m py_compile build_dashboard.py
+          grep -F 'SPLIT_EVENT_CONFIRM_V1' build_dashboard.py
+          grep -F 'TRUE_PRICE_LEVEL_CONFLUENCE_V1' build_dashboard.py
+          grep -F 'if ov_n < 2 or ov_dist > 0.08:' build_dashboard.py
+          git diff --check
+
+      - name: Validate confluence logic and Moderna action
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet pandas numpy yfinance
           python - <<'PY'
+          import ast, json
           from pathlib import Path
-          import json,re
-          s=Path('build_dashboard.py').read_text(encoding='utf-8')
-          anchors={
-            'compute_metrics': 'def compute_metrics(W, order, s2i=None, macro=None, incept=None):\n',
-            'maxabs': '        maxabs1d = float(c.pct_change(fill_method=None).iloc[-200:].abs().max()) if len(c) >= 2 else np.nan\n',
-            'rec_maxabs': '            maxabs1d=maxabs1d, lo10=lo10, lo10_prev=lo10_prev, ema21_10ago=ema21_10ago,\n',
-            'old_split': '    df["split_suspect"] = (df["maxabs1d"] > 1.50).fillna(False)\n',
-            'rs_pool': '    _pool = ((~df["split_suspect"]) & (df["close"] >= 5) & (df["dvol"] >= DVOL_FLOOR)\n',
-            'w30': '        if bool(r.get("split_suspect")) or bool(r.get("excluded_theme")):\n',
-            'setup_guard': '        mask &= ~m.get("split_suspect", pd.Series(True, index=m.index)).fillna(True)\n',
-            'cf_anchor': '# コンフルエンスは採点しない。\n',
-            'cf_return': '    return dict(setup=setups, trigger=triggers, confirm=confirms,\n                location=locations, warning=warnings,\n                has_setup=bool(setups), has_trigger=bool(triggers))\n',
-            'cf_sort': '        items = sorted(buckets[order], key=lambda x: (x[0], x[1]))\n',
-          }
-          out={'anchors':{k:s.count(v) for k,v in anchors.items()}}
-          out['tier_pattern']=len(re.findall(r'def _cf_tier\(a, r\):\n.*?\n\n\ndef _cf_row\(',s,re.S))
-          out['cf_sections']={str(i):len(re.findall(rf'\({i},\s*"[ABCD][^"]*",\s*(?:True|False)\),',s)) for i in range(4)}
-          out['markers']={'split': 'SPLIT_EVENT_CONFIRM_V1' in s,'cf':'TRUE_PRICE_LEVEL_CONFLUENCE_V1' in s}
-          Path('fix_diag.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
-          print(json.dumps(out,ensure_ascii=False,indent=2))
+          import numpy as np
+          import pandas as pd
+
+          src=Path('build_dashboard.py').read_text(encoding='utf-8')
+          tree=ast.parse(src)
+          fn=next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name=='_confluence_overlap')
+          ns={'np':np,'pd':pd}
+          exec(compile(ast.Module(body=[fn],type_ignores=[]),'<confluence>','exec'),ns)
+          f=ns['_confluence_overlap']
+          dense=f(dict(close=100,adr=.04,ema21=99.5,sma50=100.2,sma200=89,pivot40=100.6,
+                       vwap63=99.8,vwap252=111,vwap_all_valid=False))
+          sparse=f(dict(close=100,adr=.04,ema21=91,sma50=100,sma200=109,pivot40=106,
+                        vwap63=94,vwap252=103,vwap_all_valid=False))
+          assert dense['count'] >= 3, dense
+          assert sparse['count'] < 2, sparse
+
+          result={'patch_ok':True,'confluence_dense_fixture':dense,'confluence_sparse_fixture':sparse}
+          try:
+              import yfinance as yf
+              h=yf.Ticker('MRNA').history(period='1y',auto_adjust=False,actions=True)
+              c=h['Close'].dropna()
+              chg=c.pct_change(fill_method=None).dropna().iloc[-200:]
+              if len(chg):
+                  ji=chg.abs().idxmax(); jd=pd.Timestamp(ji)
+                  if jd.tzinfo is not None: jd=jd.tz_localize(None)
+                  splits=pd.to_numeric(h.get('Stock Splits',pd.Series(index=h.index,dtype=float)),errors='coerce').fillna(0)
+                  nearby=[]
+                  for ix,ratio in splits[splits != 0].items():
+                      ed=pd.Timestamp(ix)
+                      if ed.tzinfo is not None: ed=ed.tz_localize(None)
+                      if abs((ed.normalize()-jd.normalize()).days) <= 5:
+                          nearby.append({'date':ed.strftime('%Y-%m-%d'),'ratio':float(ratio)})
+                  maxabs=float(chg.abs().max())
+                  result['MRNA']={'max_abs_1d':maxabs,'jump_date':jd.strftime('%Y-%m-%d'),
+                                  'nearby_stock_splits':nearby,
+                                  'would_split_exclude':bool(maxabs>1.5 and nearby),
+                                  'would_hard_data_exclude':bool(maxabs>10.0 and not nearby)}
+              else:
+                  result['MRNA']={'error':'no_change_data'}
+          except Exception as e:
+              result['MRNA']={'error':type(e).__name__}
+          Path('fix_validation.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(result,ensure_ascii=False,indent=2))
           PY
+
+      - name: Commit and clean one-off files
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fix_diag.json
-          git commit -m "Persist split confluence patch diagnostics"
+          git add build_dashboard.py fix_validation.json
+          for f in \
+            scripts/_oneoff_fix_split_confluence.py \
+            .github/workflows/fix-split-confluence.yml \
+            .github/workflows/diag-dashboard-logic.yml \
+            .github/workflows/complete-remaining-dashboard-fixes.yml \
+            dashboard_logic_diag.txt dashboard_logic_focused.txt dashboard_source_slices.txt fix_diag.json; do
+            if [[ -e "$f" ]]; then git rm -f -- "$f"; fi
+          done
+          git commit -m "Confirm split events and restore true price confluence"
           git push origin HEAD:main
+          echo "FIX_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Dispatch production dashboard
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run dashboard.yml --ref main
+          echo "Production dashboard dispatched from $FIX_SHA"
