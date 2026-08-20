@@ -8489,10 +8489,11 @@ def load_options():
         except Exception:
             return None
 
-    def _dte(exp):
+    def _dte(exp, ref=None):
         try:
-            return int((pd.Timestamp(exp).normalize()
-                        - pd.Timestamp.utcnow().tz_localize(None).normalize()).days)
+            base = pd.Timestamp(ref) if ref is not None else pd.Timestamp.utcnow()
+            base = base.tz_convert(None) if base.tzinfo is not None else base
+            return int((pd.Timestamp(exp).normalize() - base.normalize()).days)
         except Exception:
             return None
 
@@ -8525,7 +8526,7 @@ def load_options():
             if not tk:
                 continue
             exp = r.get("expiry")
-            dte = _dte(exp)
+            dte = _dte(exp, r.get("date"))
             conf = str(r.get("confidence") or "").upper() or None
             out[tk] = dict(
                 cw=_num(r.get("call_wall")), pw=_num(r.get("put_wall")),
@@ -8549,7 +8550,7 @@ def load_options():
             for exp, rec in per.items():
                 if not isinstance(rec, dict):
                     continue
-                dte = _dte(exp)
+                dte = _dte(exp, v.get("asof") or d.get("asof"))
                 if dte is not None:
                     choices.append((exp, rec, dte))
             swing = [x for x in choices if 7 <= x[2] <= 24]
@@ -8560,7 +8561,8 @@ def load_options():
                 exp, rec, dte = min(choices, key=lambda x: abs(x[2]))
                 basis = "nearest"
             else:
-                exp, rec, dte, basis = v.get("nearest"), {}, _dte(v.get("nearest")), "nearest"
+                exp, rec, dte, basis = v.get("nearest"), {}, _dte(
+                    v.get("nearest"), v.get("asof") or d.get("asof")), "nearest"
 
             spot, atr = _num(v.get("spot")), _num(v.get("atr14"))
             cw, cwp, cwa = _dist(rec.get("call_wall"), spot, atr)
