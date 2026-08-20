@@ -8,37 +8,46 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   diagnose:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Locate split, confluence and inception VWAP logic
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python - <<'PY' > /tmp/diag.txt
           from pathlib import Path
           s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          lines = s.splitlines()
           needles = [
-              'split', 'Stock Splits', '分割疑', '併合',
+              'split', 'Stock Splits', '分割疑', '併合', 'corporate action',
               'confluence', 'コンフルエンス',
               'inception_vwap', '上場来VWAP', '_near_threshold',
               'rs189', 'RS189', 'leader_ok', 'leader'
           ]
-          lines = s.splitlines()
           seen = set()
+          print('TOTAL_LINES', len(lines))
           for needle in needles:
               print(f'\n===== {needle} =====')
               hits = [i for i,line in enumerate(lines) if needle.lower() in line.lower()]
               print('HITS', len(hits))
-              for i in hits[:80]:
-                  a=max(0,i-7); b=min(len(lines),i+10)
+              for i in hits[:120]:
+                  a=max(0,i-9); b=min(len(lines),i+13)
                   key=(a,b)
                   if key in seen: continue
                   seen.add(key)
                   print(f'--- lines {a+1}-{b} ---')
                   for j in range(a,b): print(f'{j+1:06d}: {lines[j]}')
           PY
+          cp /tmp/diag.txt dashboard_logic_diag.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard_logic_diag.txt
+          git commit -m "Persist dashboard logic diagnostic" || true
+          git push origin HEAD:main
