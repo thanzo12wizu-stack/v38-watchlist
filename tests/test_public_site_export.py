@@ -5,20 +5,13 @@ import pytest
 from scripts.export_public_site import PUBLIC_FILES, export_public_site
 
 
-def _source(
-    root: Path,
-    *,
-    intelligence: str = "<h1>Private intelligence</h1>",
-    research: str = "<h1>Private research</h1>",
-) -> None:
+def _source(root: Path) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command Center</h1>", encoding="utf-8")
     swinote = root / "swinote"
     swinote.mkdir()
     (swinote / "index.html").write_text("<h1>Swinote</h1>", encoding="utf-8")
     (swinote / "live.js").write_text("window.SWINOTE = {};", encoding="utf-8")
-    (root / "intelligence-dashboard.html").write_text(intelligence, encoding="utf-8")
-    (root / "research-dashboard.html").write_text(research, encoding="utf-8")
     (root / "data").mkdir()
     (root / "data" / "secret.json").write_text('{"entry_candidates":[]}', encoding="utf-8")
 
@@ -41,21 +34,17 @@ def test_export_copies_only_allowlisted_site_files(tmp_path: Path):
     }
     assert actual == set(PUBLIC_FILES) | {".nojekyll", "public-site-manifest.json"}
     assert not (output / "data").exists()
-    assert not (output / "intelligence-dashboard.html").exists()
-    assert not (output / "research-dashboard.html").exists()
 
 
-def test_export_ignores_non_allowlisted_plaintext_dashboards(tmp_path: Path):
+def test_export_ignores_non_allowlisted_files(tmp_path: Path):
     source = tmp_path / "source"
     output = tmp_path / "public"
     source.mkdir()
-    _source(
-        source,
-        intelligence="<h1>V38 Private Intelligence</h1><div class='candidate-grid'>発注可能候補</div>",
-    )
+    _source(source)
+    (source / "debug.html").write_text("not public", encoding="utf-8")
     manifest = export_public_site(source, output)
     assert manifest["allowlist"] == list(PUBLIC_FILES)
-    assert not (output / "intelligence-dashboard.html").exists()
+    assert not (output / "debug.html").exists()
 
 
 def test_export_requires_every_public_entrypoint(tmp_path: Path):

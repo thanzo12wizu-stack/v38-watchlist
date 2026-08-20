@@ -8533,6 +8533,14 @@ def load_options():
         except Exception:
             return None
 
+    def _asof_jst(ts):
+        try:
+            t = pd.Timestamp(ts)
+            t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+            return t.tz_convert("Asia/Tokyo").strftime("%m/%d %H:%M JST")
+        except Exception:
+            return None
+
     def _dist(level, spot, atr):
         level, spot, atr = _num(level), _num(spot), _num(atr)
         if level is None or spot is None or spot <= 0:
@@ -8563,6 +8571,7 @@ def load_options():
                 gf=_num(r.get("gamma_flip")),
                 cwp=_num(r.get("call_wall_pct")), pwp=_num(r.get("put_wall_pct")),
                 gfp=_num(r.get("flip_pct")),
+                spot=None, asof=r.get("date"), asof_label=_asof_jst(r.get("date")),
                 reg=r.get("regime"), conf=conf, exp=exp, near_exp=exp, near_dte=dte,
                 dte=dte, basis=("swing" if dte is not None and 7 <= dte <= 24 else "nearest"),
                 total_oi=_num(r.get("total_oi")), nstr=_num(r.get("n_strikes")),
@@ -8613,6 +8622,9 @@ def load_options():
             out[str(tk).upper()] = dict(
                 cw=cw, pw=pw, gf=gf, cwp=cwp, pwp=pwp, gfp=gfp,
                 cwa=cwa, pwa=pwa, gfa=gfa,
+                spot=round(spot, 2) if spot is not None else None,
+                asof=v.get("asof") or d.get("asof"),
+                asof_label=_asof_jst(v.get("asof") or d.get("asof")),
                 reg=_regime(spot, gf, atr), conf=conf, exp=exp,
                 near_exp=v.get("nearest"),
                 near_dte=_dte(v.get("nearest"), v.get("asof") or d.get("asof")),
@@ -15654,6 +15666,33 @@ function showDet(tk){
     else if(sd!==null)effect='中期需給。反応は遅めで日々の入口より大局向け';
     return selected+' ／ '+nearest+' ｜ '+effect;
   }
+  function _optBasis(o){
+    if(!o)return '未取得';
+    var s=(o.spot===null||o.spot===undefined)?'—':('$'+Number(o.spot).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+    return '取得時スポット '+s+(o.asof_label?' ／ '+o.asof_label:'');
+  }
+  function _optSwingConclusion(o){
+    if(!o)return '未取得のため判定しない';
+    if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '古いデータのためスイング根拠にしない';
+    if(o.basis!=='swing'||o.dte===null||o.dte===undefined||Number(o.dte)<7||Number(o.dte)>24)return '満期が2週間スイング窓外。短期参考に留める';
+    if(String(o.conf||'').toUpperCase()==='LOW')return '建玉が薄いため壁をスイング根拠にしない';
+    var parts=[];
+    var g=(o.gfa===null||o.gfa===undefined)?null:Math.abs(Number(o.gfa));
+    if(g!==null&&g<=0.25)parts.push('境目付近・方向確認待ち');
+    else if(String(o.reg||'')==='POSITIVE_GAMMA')parts.push('境目より上・値動き安定側');
+    else if(String(o.reg||'')==='NEGATIVE_GAMMA')parts.push('境目より下・値動き増幅側');
+    var pwa=(o.pwa===null||o.pwa===undefined)?null:Math.abs(Number(o.pwa));
+    if(o.pw!==null&&o.pw!==undefined){
+      if(o.pwp!==null&&o.pwp!==undefined&&Number(o.pwp)<0)parts.push((pwa!==null&&pwa<=1?'下値支持候補 ':'遠い下値壁 ' )+'$'+Number(o.pw).toLocaleString(undefined,{maximumFractionDigits:2})+(pwa!==null?'（'+pwa.toFixed(1)+' ADR）':'');
+      else parts.push('下値壁を下回っており支持扱いしない');
+    }
+    var cwa=(o.cwa===null||o.cwa===undefined)?null:Math.abs(Number(o.cwa));
+    if(o.cw!==null&&o.cw!==undefined){
+      if(o.cwp!==null&&o.cwp!==undefined&&Number(o.cwp)>0)parts.push((cwa!==null&&cwa<=1?'上値障害候補 ':'遠い上値壁 ' )+'$'+Number(o.cw).toLocaleString(undefined,{maximumFractionDigits:2})+(cwa!==null?'（'+cwa.toFixed(1)+' ADR）':'');
+      else parts.push('上値壁を上回っており抵抗扱いは弱い');
+    }
+    return (parts.join('。')||'有効な壁なし')+'。壁単独では入らず、価格反応を確認';
+  }
   function _optcell(o,k){
     if(!o)return '<span class="rsoff">未取得</span>';
     if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '<span class="rsoff">古いデータ</span>';
@@ -15665,7 +15704,7 @@ function showDet(tk){
     var px='$'+Number(o[k]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
     var p=o[k+'p'],a=o[k+'a'],t=px;
     if(p!==null&&p!==undefined)t+=' '+(p>=0?'+':'')+(p*100).toFixed(1)+'%';
-    if(a!==null&&a!==undefined)t+=' ・'+Math.abs(a).toFixed(1)+'日分';
+    if(a!==null&&a!==undefined)t+=' ・'+Math.abs(a).toFixed(1)+' ADR';
     if(String(o.conf||'').toUpperCase()==='LOW')t+=' <span class="rsoff">建玉薄</span>';
     return t;
   }
@@ -15698,7 +15737,9 @@ function showDet(tk){
     ['ピボットまで',_fsg(d.pdist,'%'),'mut','ベース上抜け基準までの距離。プラスは上抜け後、マイナスは手前。上抜け後+5％超は追わない目安。'],
     ['VCP形状',_f(d.vcpq),'mut','値幅と出来高の収縮を0〜100で形状評価。90は成功確率90％ではなく、形が整っている度合い。'],
     ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、建玉薄、有効な壁なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
+    ['オプション基準',_optBasis(d.opt),'mut','壁までの％とADR距離は、確定終値ではなくオプション取得時スポットを基準に計算する。取得時刻も併記する。'],
     ['満期の違い',_optExpiryEffect(d.opt),'mut','DTEは満期までの日数。0〜3DTEは反応が速い一方、壁が動いたり満期で消えやすい。7〜24DTEは2週間スイング用、25DTE以上は大局寄り。選択満期と最短満期を分けて表示する。'],
+    ['スイング結論',_optSwingConclusion(d.opt),'mut','DTE 7〜24日、取得鮮度、建玉、取得時スポットからのADR距離をまとめる。壁単独で売買せず、実際の価格反応を待つ。'],
     ['上値の壁',_optcell(d.opt,'cw'),'mut','Call Wall。コール建玉が集中する上値候補。未表示は状態欄で、未取得か建玉薄か有効な壁なしを確認する。'],
     ['下値の支え',_optcell(d.opt,'pw'),'mut','Put Wall。プット建玉が集中する下値候補。支えの上にいる時だけ押し目根拠の一つにする。'],
     ['性質の境目',_optcell(d.opt,'gf'),'mut','Gamma Flip。上は値動きが落ち着きやすく、下は増幅しやすいと推定する境目。'],

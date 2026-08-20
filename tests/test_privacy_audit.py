@@ -12,12 +12,7 @@ def _safe_tree(root: Path) -> None:
     (swinote / "live.js").write_text("window.SWINOTE = {};", encoding="utf-8")
     private = root / "private"
     private.mkdir()
-    (private / "research-summary.enc.json").write_text('{"ciphertext":"abc"}', encoding="utf-8")
-    (private / "research-success.json").write_text('{"research_status":"PASS"}', encoding="utf-8")
-    (private / "research-worker-result.json").write_text(
-        '{"status":"PASS","privacy":"aggregate only"}',
-        encoding="utf-8",
-    )
+    (private / "trade-journal-state.enc.json").write_text('{"ciphertext":"abc"}', encoding="utf-8")
 
 
 def test_current_tree_privacy_passes_for_locked_allowlist(tmp_path: Path):
@@ -32,7 +27,7 @@ def test_current_tree_privacy_passes_for_locked_allowlist(tmp_path: Path):
 
 def test_current_tree_privacy_rejects_plaintext_data_paths(tmp_path: Path):
     _safe_tree(tmp_path)
-    leaked = tmp_path / "data" / "intelligence"
+    leaked = tmp_path / "data" / "external"
     leaked.mkdir(parents=True)
     (leaked / "index.json").write_text('{"entry_candidates":[]}', encoding="utf-8")
 

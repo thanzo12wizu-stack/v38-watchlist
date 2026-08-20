@@ -14,9 +14,6 @@ PUBLIC_FILES = (
     "swinote/live.js",
 )
 
-LOCKED_DASHBOARDS = ()
-
-
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -25,49 +22,12 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _validate_locked_dashboard(path: Path) -> None:
-    text = path.read_text(encoding="utf-8")
-    placeholder = "Private Dashboard Locked" in text
-    if placeholder:
-        required = (
-            "<title>V38 Private Intelligence</title>",
-            "<h1>Private Dashboard Locked</h1>",
-            'href="index.html"',
-        )
-    else:
-        required = ("V38 Private Intelligence", "ciphertext", "PBKDF2", "AES-GCM")
-    missing = [token for token in required if token not in text]
-    if missing:
-        raise ValueError(f"private dashboard is not a valid encrypted shell: missing {missing}")
-    forbidden = (
-        "発注可能候補",
-        "candidate-grid",
-        '"entry_candidates"',
-        '"portfolio_doctor"',
-        "Research Decision</h1>",
-        '"current_rankings"',
-        '"model_audit"',
-        "候補選択の検証",
-        "candidate-selection",
-        "holdings_normalized.csv",
-        "window.V38_DATA",
-        '"account_equity_jpy"',
-        '"net_pnl_jpy"',
-    )
-    leaked = [token for token in forbidden if token in text]
-    if leaked:
-        raise ValueError(f"private dashboard contains plaintext intelligence markers: {leaked}")
-
-
 def export_public_site(root: Path, output: Path, *, source_commit: str | None = None) -> dict:
     root = root.resolve()
     output = output.resolve()
     missing = [name for name in PUBLIC_FILES if not (root / name).is_file()]
     if missing:
         raise FileNotFoundError(f"missing public site files: {missing}")
-
-    for name in LOCKED_DASHBOARDS:
-        _validate_locked_dashboard(root / name)
 
     if output.exists():
         shutil.rmtree(output)
@@ -93,7 +53,7 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source_commit": source_commit,
         "allowlist": list(PUBLIC_FILES),
-        "locked_dashboards": list(LOCKED_DASHBOARDS),
+        "locked_dashboards": [],
         "files": files,
     }
     (output / "public-site-manifest.json").write_text(

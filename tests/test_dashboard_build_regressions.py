@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 import numpy as np
 import pandas as pd
@@ -33,3 +34,52 @@ def test_selftest_markers_match_checked_in_dashboard_artifact():
     )
     missing = [marker for marker in dashboard.SELFTEST_REQUIRED_MARKERS if marker not in html]
     assert not missing
+
+
+def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
+    option_json = tmp_path / "options.json"
+    option_json.write_text(
+        json.dumps(
+            {
+                "asof": "2026-08-20T13:33:45+00:00",
+                "tickers": {
+                    "MU": {
+                        "asof": "2026-08-20T13:33:45+00:00",
+                        "spot": 940.85,
+                        "atr14": 56.2407,
+                        "nearest": "2026-08-21",
+                        "expiries": {
+                            "2026-08-21": {"call_wall": 955, "put_wall": 910},
+                            "2026-08-28": {
+                                "call_wall": 975,
+                                "put_wall": 925,
+                                "gamma_flip": 940.9165,
+                                "confidence": "OK",
+                                "total_oi": 57935,
+                                "n_strikes": 101,
+                            },
+                        },
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(dashboard, "OPT_JSON", str(option_json))
+    monkeypatch.setattr(dashboard, "OPT_SCAN_CSV", str(tmp_path / "missing.csv"))
+
+    option = dashboard.load_options()["MU"]
+
+    assert option["basis"] == "swing"
+    assert option["dte"] == 8
+    assert option["spot"] == 940.85
+    assert option["asof_label"] == "08/20 22:33 JST"
+    assert option["cwp"] == round(975 / 940.85 - 1, 5)
+    assert option["pwp"] == round(925 / 940.85 - 1, 5)
+
+
+def test_options_ui_uses_adr_units_and_exposes_snapshot_basis():
+    source = Path(dashboard.__file__).read_text(encoding="utf-8")
+    assert "['オプション基準',_optBasis(d.opt)" in source
+    assert "['スイング結論',_optSwingConclusion(d.opt)" in source
+    assert "+Math.abs(a).toFixed(1)+' ADR'" in source
