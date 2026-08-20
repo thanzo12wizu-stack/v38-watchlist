@@ -1,0 +1,25 @@
+{
+  "anchors": {
+    "compute_metrics": 1,
+    "maxabs": 1,
+    "rec_maxabs": 1,
+    "old_split": 1,
+    "rs_pool": 1,
+    "w30": 1,
+    "setup_guard": 1,
+    "cf_anchor": 1,
+    "cf_return": 1,
+    "cf_sort": 1
+  },
+  "tier_pattern": 1,
+  "cf_sections": {
+    "0": 1,
+    "1": 1,
+    "2": 1,
+    "3": 1
+  },
+  "markers": {
+    "split": false,
+    "cf": false
+  }
+}
