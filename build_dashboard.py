@@ -13426,8 +13426,12 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
         if _flag(r, "rsline_newhigh"):
             structure.append("RS線高値")
 
+        try:
+            min_risk = max(0.02, min(0.05, float(r.get("adr") or 0) * 0.6))
+        except Exception:
+            min_risk = 0.02
         stops = [(lab, px, dist) for lab, px, dist in _cf_stops(r)
-                 if -0.08 <= dist < 0]
+                 if -0.08 <= dist <= -min_risk]
         stop = max(stops, key=lambda x: x[2]) if stops else None
 
         reject = []
@@ -13452,7 +13456,7 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
         if erd is not None and 0 <= erd <= 5:
             reject.append("決算まで" + ("当日" if erd == 0 else f"{erd}日"))
         if stop is None:
-            reject.append("8%以内の撤退線なし")
+            reject.append("2〜8%の実用的な撤退線なし")
         if not signals:
             reject.append("反応待ち")
 
@@ -13498,7 +13502,7 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
             '<span class="h2en">Swing Focus</span></h2>'
             + _cp([d["t"] for d in ready]) + '</div>')
     intro = ('<div class="sub">発注リストではなく、<b>今日チャートを開く順</b>。'
-             'RS189≥85・週足Stage 1/2・反応発生・8%以内の撤退線・決算5日超・伸び切りなしを同時に満たすもの。'
+             'RS189≥85・週足Stage 1/2・反応発生・2〜8%の実用的な撤退線・決算5日超・伸び切りなしを同時に満たすもの。'
              '合計点は作らず、63VWAP/Put Wall → 21EMA → PP → ブレイクの順で並べる。'
              '<b>表示がゼロなら無理に入らない。</b></div>')
     if ready:
