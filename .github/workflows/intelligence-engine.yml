@@ -296,6 +296,7 @@ jobs:
         timeout-minutes: 25
         run: python -m intelligence_engine.command_layer --root data/intelligence --prices prices.pkl --portfolio portfolio.csv --external-root data/external
       - name: Build five-year point-in-time research
+        continue-on-error: true
         timeout-minutes: 45
         shell: bash
         run: |
