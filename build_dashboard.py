@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# SWING_FOCUS_V1: explainable metrics, comparable option expiries, and an actionable shortlist.
 """
 Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
   A. 個別スリーブ(70%): N=12, 189日RS上位 × 50日SMA>200日SMA × 出来高金額$10M/日 × 株価$5以上,
