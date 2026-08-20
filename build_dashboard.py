@@ -8121,7 +8121,10 @@ def _confluence_event_axes(r, new_entry=None, opt=None):
         conf = str(opt.get("conf") or "").upper()
         age = opt.get("age")
         fresh = age is None or (isinstance(age, (int, float)) and age <= OPT_STALE_DAYS)
-        if conf in ("MEDIUM", "HIGH") and fresh and any(opt.get(k) is not None for k in ("pw", "cw", "gf")):
+        dte = opt.get("dte")
+        swing_expiry = (opt.get("basis") == "swing" and isinstance(dte, (int, float))
+                        and 7 <= dte <= 24)
+        if conf in ("OK", "MEDIUM", "HIGH") and fresh and swing_expiry and any(opt.get(k) is not None for k in ("pw", "cw", "gf")):
             reg = str(opt.get("reg") or "OI確認")
             derivatives.append("オプション建玉 " + reg[:18])
 
@@ -8473,9 +8476,11 @@ OPT_STALE_DAYS = 3          # これより古ければ画面に古さを出す
 
 
 def load_options():
-    """{ticker: {cw,pw,gf,reg,stale}} を返す。
-       詳細JSON(Core12+候補) を主、全銘柄スキャンCSVの最新行を副として合流する。"""
+    """オプション建玉を銘柄間で比較可能な満期に正規化して返す。
+       詳細JSONは2週間スイング向けDTE 7〜24日（14日に最も近い満期）を優先し、
+       無ければ最短満期を短期参考として使う。スキャンCSVは取得済み/薄い/期限切れを区別する。"""
     out = {}
+
     def _age(ts):
         try:
             t = pd.Timestamp(ts)
@@ -8483,51 +8488,111 @@ def load_options():
             return int((pd.Timestamp.utcnow().tz_localize(None) - t).days)
         except Exception:
             return None
-    # 副: 全銘柄スキャン（1銘柄1行サマリー）。同一tickerは最終行が最新。
+
+    def _dte(exp):
+        try:
+            return int((pd.Timestamp(exp).normalize()
+                        - pd.Timestamp.utcnow().tz_localize(None).normalize()).days)
+        except Exception:
+            return None
+
+    def _num(v):
+        try:
+            return float(v) if v not in (None, "", "None") else None
+        except Exception:
+            return None
+
+    def _dist(level, spot, atr):
+        level, spot, atr = _num(level), _num(spot), _num(atr)
+        if level is None or spot is None or spot <= 0:
+            return (None, None, None)
+        pct = level / spot - 1.0
+        ad = ((level - spot) / atr) if atr is not None and atr > 0 else None
+        return (round(level, 2), round(pct, 5), round(ad, 2) if ad is not None else None)
+
+    def _regime(spot, flip, atr):
+        spot, flip, atr = _num(spot), _num(flip), _num(atr)
+        if spot is None or flip is None:
+            return "UNKNOWN"
+        if atr is not None and atr > 0 and abs(spot - flip) / atr <= 1.0:
+            return "NEAR_FLIP"
+        return "POSITIVE_GAMMA" if spot > flip else "NEGATIVE_GAMMA"
+
+    # 副: 全銘柄スキャンは最近満期1本だけ。満期窓外は「短期参考」と明示する。
     try:
         for r in csv.DictReader(open(OPT_SCAN_CSV, encoding="utf-8-sig")):
             tk = (r.get("ticker") or "").strip().upper()
             if not tk:
                 continue
-            def f(k):
-                try:
-                    v = r.get(k)
-                    return float(v) if v not in (None, "", "None") else None
-                except Exception:
-                    return None
-            out[tk] = dict(cw=f("call_wall"), pw=f("put_wall"), gf=f("gamma_flip"),
-                           cwp=f("call_wall_pct"), pwp=f("put_wall_pct"), gfp=f("flip_pct"),
-                           reg=r.get("regime"), conf=r.get("confidence"),
-                           exp=r.get("expiry"), age=_age(r.get("date")), src="scan")
+            exp = r.get("expiry")
+            dte = _dte(exp)
+            conf = str(r.get("confidence") or "").upper() or None
+            out[tk] = dict(
+                cw=_num(r.get("call_wall")), pw=_num(r.get("put_wall")),
+                gf=_num(r.get("gamma_flip")),
+                cwp=_num(r.get("call_wall_pct")), pwp=_num(r.get("put_wall_pct")),
+                gfp=_num(r.get("flip_pct")),
+                reg=r.get("regime"), conf=conf, exp=exp, near_exp=exp,
+                dte=dte, basis=("swing" if dte is not None and 7 <= dte <= 24 else "nearest"),
+                total_oi=_num(r.get("total_oi")), nstr=_num(r.get("n_strikes")),
+                nexp=1, age=_age(r.get("date")), stale=False,
+                fetched=True, src="scan")
     except Exception:
         pass
-    # 主: 詳細JSON。距離・ATR・重なりまで持つのでこちらで上書きする。
+
+    # 主: 最大4満期の詳細JSON。DTE 7〜24日のうち14日に最も近い満期を採用。
     try:
         d = json.load(open(OPT_JSON, encoding="utf-8"))
-        age = _age(d.get("asof"))
         for tk, v in (d.get("tickers") or {}).items():
-            g = lambda k: (v.get(k) or {})
+            per = v.get("expiries") or {}
+            choices = []
+            for exp, rec in per.items():
+                if not isinstance(rec, dict):
+                    continue
+                dte = _dte(exp)
+                if dte is not None:
+                    choices.append((exp, rec, dte))
+            swing = [x for x in choices if 7 <= x[2] <= 24]
+            if swing:
+                exp, rec, dte = min(swing, key=lambda x: (abs(x[2] - 14), x[2]))
+                basis = "swing"
+            elif choices:
+                exp, rec, dte = min(choices, key=lambda x: abs(x[2]))
+                basis = "nearest"
+            else:
+                exp, rec, dte, basis = v.get("nearest"), {}, _dte(v.get("nearest")), "nearest"
+
+            spot, atr = _num(v.get("spot")), _num(v.get("atr14"))
+            cw, cwp, cwa = _dist(rec.get("call_wall"), spot, atr)
+            pw, pwp, pwa = _dist(rec.get("put_wall"), spot, atr)
+            gf, gfp, gfa = _dist(rec.get("gamma_flip"), spot, atr)
+            conf = str(rec.get("confidence") or v.get("confidence") or "").upper() or None
+
             conf_names = []
-            for key in ("call_wall", "put_wall", "gamma_flip"):
-                for c in ((v.get("confluence") or {}).get(key) or []):
-                    if c.get("name") not in conf_names:
-                        conf_names.append(c["name"])
+            tol = max((spot or 0) * 0.005, (atr or 0) * 0.35)
+            for level in (cw, pw, gf):
+                if level is None:
+                    continue
+                for name, px in (v.get("tech") or {}).items():
+                    px = _num(px)
+                    if px is not None and abs(px - level) <= tol and name not in conf_names:
+                        conf_names.append(name)
+
             out[str(tk).upper()] = dict(
-                cw=g("call_wall").get("px"), pw=g("put_wall").get("px"),
-                gf=g("gamma_flip").get("px"),
-                cwp=g("call_wall").get("pct"), pwp=g("put_wall").get("pct"),
-                gfp=g("gamma_flip").get("pct"),
-                cwa=g("call_wall").get("atr"), pwa=g("put_wall").get("atr"),
-                gfa=g("gamma_flip").get("atr"),
-                reg=v.get("regime"), conf=v.get("confidence"), exp=v.get("nearest"),
-                rpos=v.get("range_pos"), cfl=conf_names,
-                age=age, stale=bool(v.get("stale")), src="full")
+                cw=cw, pw=pw, gf=gf, cwp=cwp, pwp=pwp, gfp=gfp,
+                cwa=cwa, pwa=pwa, gfa=gfa,
+                reg=_regime(spot, gf, atr), conf=conf, exp=exp,
+                near_exp=v.get("nearest"), dte=dte, basis=basis,
+                total_oi=_num(rec.get("total_oi")), nstr=_num(rec.get("n_strikes")),
+                nexp=len(choices), rpos=None, cfl=conf_names,
+                age=_age(v.get("asof") or d.get("asof")),
+                stale=bool(v.get("stale")), fetched=True, src="full")
     except Exception:
         pass
-    if out:
-        sys.stderr.write("[options] %d tickers loaded\n" % len(out))
-    return out
 
+    if out:
+        sys.stderr.write("[options] %d tickers loaded (swing expiry DTE 7-24 preferred)\n" % len(out))
+    return out
 
 def write_option_targets(picks, pre_rows, entry_rows, path=None):
     """次回のオプション取得対象を吐く。本体→オプションの一方向依存にする。
@@ -8573,12 +8638,20 @@ OPTWALL_MIN_RS189 = 80       # 強い銘柄に限定（弱い銘柄の支えは�
 
 
 def build_optwall_touch(m, opts, cap=20):
-    """RSが高く、下値の支えに接触している銘柄。"""
+    """RSが高く、2週間スイング向け満期のPut Wallに接触している銘柄。"""
     if m is None or m.empty or not opts:
         return []
     rows = []
     for t, o in opts.items():
         if t not in m.index:
+            continue
+        dte = o.get("dte")
+        if o.get("basis") != "swing" or dte is None or not (7 <= dte <= 24):
+            continue
+        if str(o.get("conf") or "").upper() != "OK" or o.get("stale"):
+            continue
+        age = o.get("age")
+        if isinstance(age, (int, float)) and age > OPT_STALE_DAYS:
             continue
         r = m.loc[t]
         pw = o.get("pw")
@@ -8603,9 +8676,11 @@ def build_optwall_touch(m, opts, cap=20):
                          rs189=(int(rs189) if rs189 == rs189 else None),
                          rs21=(int(rs21) if rs21 == rs21 else None),
                          reg=o.get("reg"), conf=o.get("conf"), age=o.get("age"),
-                         exp=o.get("exp"), above=bool(close >= float(pw)),
+                         exp=o.get("exp"), dte=dte, basis=o.get("basis"),
+                         total_oi=o.get("total_oi"), nstr=o.get("nstr"),
+                         above=bool(close >= float(pw)),
                          dvol=float(r.get("dvol") or 0)))
-    rows.sort(key=lambda d: abs(d["atr"]))
+    rows.sort(key=lambda d: (abs(d["atr"]), -float(d.get("rs189") or 0)))
     return rows[:cap]
 
 
@@ -8613,13 +8688,17 @@ def _optwall_touch_card(rows):
     head = ('<div class="card"><div class="hdr"><h2>支えへの接触 '
             '<span class="h2en">Put Wall Touch</span></h2></div>')
     if not rows:
-        return (head + '<div class="sub">RSが高く、オプションの下値の支えに接触している銘柄。'
-                'オプション取得がまだか、該当なし。</div><div class="empty">該当なし</div></div>')
+        return (head + '<div class="sub">2週間スイング用の共通条件'
+                '（DTE 7〜24日・建玉OK・取得3日以内）でPut Wallに±0.5ATR以内の銘柄はなし。'
+                '各銘柄の未表示理由は銘柄詳細の「オプション状態」をタップ。</div>'
+                '<div class="empty">該当なし</div></div>')
     body = ""
     for d in rows:
         side = ("支えの上" if d["above"] else "支えを割っている")
         cls = "pos" if d["above"] else "neg"
         rs = (f'RS189 {d["rs189"]}' if d["rs189"] is not None else f'RS21 {d["rs21"]}・新規上場')
+        oi = f'{float(d["total_oi"]):,.0f}' if d.get("total_oi") is not None else "—"
+        ns = f'{int(float(d["nstr"]))}' if d.get("nstr") is not None else "—"
         body += (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
                  f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
                  f'<span class="mut">{rs}</span>'
@@ -8630,14 +8709,13 @@ def _optwall_touch_card(rows):
                  f'<div><i>距離</i>{d["pct"]*100:+.1f}%</div>'
                  f'<div><i>ATR</i>{d["atr"]:+.2f}</div>'
                  f'<div><i>局面</i>{_h(str(d["reg"] or "—"))[:8]}</div></div>'
-                 + f'<div class="pretail">満期 {_h(str(d.get("exp") or "—"))}'
-                   f' ・ 取得 {d["age"] if d.get("age") is not None else "—"}日前'
-                   f' ・ 信頼度 {_h(str(d.get("conf") or "—"))}</div>'
-                 + '</div>')
-    return (head + '<div class="sub">RSが高く、オプションの<b>下値の支え</b>（建玉が最も積み上がった価格）'
-            'に±0.5ATR以内で接触している銘柄。支えの上なら押し目が拾われやすく、'
-            '割っていれば下げが速くなりやすい。距離の近い順。'
-            '建玉からの推定であり、売買判定ではない。</div>'
+                 f'<div class="pretail">スイング満期 {_h(str(d.get("exp") or "—"))}'
+                 f'（DTE {d.get("dte")}） ・ OI {oi} / {ns}ストライク'
+                 f' ・ 取得 {d["age"] if d.get("age") is not None else "—"}日前</div></div>')
+    return (head + '<div class="sub">銘柄ごとの最短満期ではなく、<b>DTE 7〜24日で14日に最も近い満期</b>に統一。'
+            'RSが高く、そのPut Wallに±0.5ATR以内の銘柄だけ。'
+            '0〜3DTEは当日〜数日の需給なので2週間スイングの根拠には使わない。'
+            '支えを割った行は警戒。建玉からの推定であり発注判定ではない。</div>'
             f'<div class="prelist">{body}</div></div>')
 
 def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
@@ -13267,64 +13345,204 @@ def eligible_or_ipo(m):
         return base
 
 
-def build_multi_vwap_card(m, cap=24, er=None, asof_bar=None):
-    """Stage-1/2-only 63/252/all-time VWAP watch with a dedicated all-time break column."""
+def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait_cap=6):
+    """2週間の裁量スイングで、今日チャートを開く順を合否ではなく階層で返す。"""
+    if m is None or m.empty:
+        return ""
+
+    def _flag(r, key):
+        v = r.get(key)
+        try:
+            return False if v is None or pd.isna(v) else bool(v)
+        except Exception:
+            return bool(v)
+
+    def _days_to_er(t):
+        try:
+            d = pd.Timestamp(_er_next((er or {}).get(t))).normalize()
+            a = pd.Timestamp(asof_bar).normalize()
+            return int((d - a).days)
+        except Exception:
+            return None
+
+    ready, wait = [], []
+    eligible = setup_eligible(m)
+    for t, r in m.iterrows():
+        if not bool(eligible.get(t, False)):
+            continue
+        try:
+            wst = int(float(r.get("wst")))
+        except Exception:
+            continue
+        if wst not in (1, 2):
+            continue
+        rs189 = r.get("rs189")
+        try:
+            rsv = float(rs189) if pd.notna(rs189) else None
+        except Exception:
+            rsv = None
+        if rsv is None or rsv < 85:
+            continue
+
+        signals, structure = [], []
+        if _flag(r, "vwap63_reclaim"):
+            signals.append(("63VWAP回復", 0))
+        elif _flag(r, "vwap63_support"):
+            signals.append(("63VWAP反発", 0))
+        if _flag(r, "ema21_touch3"):
+            signals.append(("21EMA反発", 1))
+        try:
+            pp = int(float(r.get("pp_days")))
+            if 0 <= pp <= 5:
+                signals.append(("PP本日" if pp == 0 else f"PP {pp}日前", 2))
+        except Exception:
+            pass
+
+        o = (opts or {}).get(t)
+        if isinstance(o, dict):
+            dte, age = o.get("dte"), o.get("age")
+            fresh = age is None or (isinstance(age, (int, float)) and age <= OPT_STALE_DAYS)
+            swing_ok = (o.get("basis") == "swing" and isinstance(dte, (int, float))
+                        and 7 <= dte <= 24 and str(o.get("conf") or "").upper() == "OK"
+                        and fresh and not o.get("stale"))
+            try:
+                pw_gap = (float(r.get("close")) - float(o.get("pw"))) / float(r.get("atr14"))
+            except Exception:
+                pw_gap = None
+            if swing_ok and pw_gap is not None and 0 <= pw_gap <= OPTWALL_TOUCH_ATR:
+                signals.append(("Put Wall上", 0))
+
+        if _flag(r, "true_breakout") or _flag(r, "cup_breakout"):
+            signals.append(("ブレイク確認", 3))
+        if _flag(r, "vcp_ready"):
+            structure.append("VCP")
+        if _flag(r, "cup_ready"):
+            structure.append("カップ")
+        if _flag(r, "higher_lows"):
+            structure.append("安値切上")
+        if _flag(r, "rsline_newhigh"):
+            structure.append("RS線高値")
+
+        stops = [(lab, px, dist) for lab, px, dist in _cf_stops(r)
+                 if -0.08 <= dist < 0]
+        stop = max(stops, key=lambda x: x[2]) if stops else None
+
+        reject = []
+        try:
+            if float(r.get("ext50_atr")) > 3.0:
+                reject.append("50MAから3ATR超")
+        except Exception:
+            pass
+        try:
+            if float(r.get("ret5")) > 0.15:
+                reject.append("5日で+15%超")
+        except Exception:
+            pass
+        try:
+            if float(r.get("pivot_dist")) > 0.05:
+                reject.append("ピボット+5%超")
+        except Exception:
+            pass
+        if _flag(r, "breakout_failure"):
+            reject.append("ブレイク失敗")
+        erd = _days_to_er(t)
+        if erd is not None and 0 <= erd <= 5:
+            reject.append("決算まで" + ("当日" if erd == 0 else f"{erd}日"))
+        if stop is None:
+            reject.append("8%以内の撤退線なし")
+        if not signals:
+            reject.append("反応待ち")
+
+        is_ready = bool(signals) and not reject
+        if not is_ready and not (signals or structure or _flag(r, "vwap63_near")):
+            continue
+
+        sig_txt = "＋".join(x[0] for x in signals[:3]) or "まだ発火なし"
+        struct_txt = "・".join(structure[:3]) or "—"
+        first = min((x[1] for x in signals), default=9)
+        if signals and signals[0][0].startswith("63VWAP"):
+            entry = "63VWAP上を終値で維持"
+        elif any(x[0] == "Put Wall上" for x in signals):
+            entry = "Put Wall上を維持"
+        elif any(x[0] == "21EMA反発" for x in signals):
+            entry = "21EMA反発を継続"
+        elif any(x[0].startswith("PP") for x in signals):
+            entry = "PP日の高値更新"
+        else:
+            entry = "ピボット上を維持"
+        stop_txt = (f'{stop[0]} ${stop[1]:,.2f}（{stop[2]*100:.1f}%）'
+                    if stop is not None else "未設定")
+        row = dict(t=t, rs=rsv, wst=wst, sig=sig_txt, struct=struct_txt,
+                   entry=entry, stop=stop_txt, stopd=(abs(stop[2]) if stop else 99),
+                   why=(reject[0] if reject else ""), pri=first,
+                   dvol=float(r.get("dvol") or 0), erd=erd)
+        (ready if is_ready else wait).append(row)
+
+    ready.sort(key=lambda x: (x["pri"], x["stopd"], -x["rs"], x["t"]))
+    wait.sort(key=lambda x: (0 if x["why"] == "反応待ち" else 1, x["stopd"], -x["rs"], x["t"]))
+    ready, wait = ready[:now_cap], wait[:wait_cap]
+
+    def _row(d, waiting=False):
+        badge = (f'<span class="prestage {"warnc" if waiting else "pos"}">'
+                 f'{"待ち：" + d["why"] if waiting else "監視優先"}</span>')
+        return (f'<div class="prerow swingrow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
+                f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
+                f'<span class="mut">RS189 {d["rs"]:.0f}・Stage {d["wst"]}</span>{badge}</div>'
+                f'<div class="swwhy"><b>{_h(d["sig"])}</b><span>{_h(d["struct"])}</span></div>'
+                f'<div class="pretail">確認：{_h(d["entry"])} ／ 撤退候補：{_h(d["stop"])}</div></div>')
+
+    head = ('<div class="card swingfocus"><div class="hdr"><h2>結論：2週間スイングで見る銘柄 '
+            '<span class="h2en">Swing Focus</span></h2>'
+            + _cp([d["t"] for d in ready]) + '</div>')
+    intro = ('<div class="sub">発注リストではなく、<b>今日チャートを開く順</b>。'
+             'RS189≥85・週足Stage 1/2・反応発生・8%以内の撤退線・決算5日超・伸び切りなしを同時に満たすもの。'
+             '合計点は作らず、63VWAP/Put Wall → 21EMA → PP → ブレイクの順で並べる。'
+             '<b>表示がゼロなら無理に入らない。</b></div>')
+    if ready:
+        now_html = '<div class="prelist">' + ''.join(_row(d) for d in ready) + '</div>'
+    else:
+        now_html = '<div class="empty">今すぐ監視優先に上げる銘柄なし</div>'
+    wait_html = ('<details class="swait"><summary>次点・待ち ' + str(len(wait)) + '銘柄</summary>'
+                 '<div class="prelist">' + ''.join(_row(d, True) for d in wait) + '</div></details>') if wait else ""
+    return head + intro + now_html + wait_html + '</div>'
+
+def build_multi_vwap_card(m, cap=12, er=None, asof_bar=None):
+    """2週間スイングの入口に使えるVWAP反応だけを先に出し、近接だけは畳む。"""
     needed = ("vwap63", "vwap252", "vwap_all")
     if m is None or m.empty or not all(x in m.columns for x in needed):
         return ""
-    elig = eligible_or_ipo(m)          # 上場来VWAPは189日を必要としない
+    elig = eligible_or_ipo(m)
     rs = pd.to_numeric(m.get("rs189", pd.Series(0, index=m.index)), errors="coerce").fillna(0)
-    # MULTI_VWAP_WEEKLY_STAGE12_FILTER_V1
-    # VWAP proximity is actionable only in Weinstein weekly Stage 1/2.
-    # Stage 3/4 and missing stage data are excluded from every VWAP path.
-    _wst = pd.to_numeric(m.get("wst", pd.Series(np.nan, index=m.index)), errors="coerce")
-    stage12 = _wst.isin([1, 2]).fillna(False)
-
-    def _any_loc(keys):
-        out = pd.Series(False, index=m.index)
-        for key in keys:
-            for suffix in ("_near", "_support", "_reclaim"):
-                if key + suffix in m.columns:
-                    out |= m[key + suffix].fillna(False).astype(bool)
-        return out
-
-    loc_roll = _any_loc(("vwap63", "vwap252"))
-    all_valid = m.get("vwap_all_valid", pd.Series(False, index=m.index)).fillna(False).astype(bool)
-    loc_all = _any_loc(("vwap_all",)) & all_valid
-    # 下落トレンドや伸び切りの銘柄を出さない（VWAP接触は上昇中でこそ意味がある）
-    # 63/252はRS189でリーダーを絞る。上場来VWAPはRS189条件を課さない（稀少イベント＋IPO対応）。
+    wst = pd.to_numeric(m.get("wst", pd.Series(np.nan, index=m.index)), errors="coerce")
+    stage12 = wst.isin([1, 2]).fillna(False)
     ipo = ipo_recent(m)
-    # 63/252 VWAP keep the existing leader/IPO gate.
-    keep_roll = stage12 & elig & (entry_worthy(m) | ipo) & loc_roll & \
-        ((rs >= MULTI_VWAP_RS189_MIN) | ipo)
-    # Inception VWAP is independent of RS189/short-term leadership.
-    # Use the existing base quality/liquidity/security gate only.
-    keep_all = stage12 & setup_eligible_core(m) & loc_all
-    keep = keep_roll | keep_all
-    sub = m[keep].copy()
-    if sub.empty:
-        return ('<div class="card"><h2>Multi VWAPセットアップ</h2>'
-                '<div class="sub">63/252/上場来VWAPの近接・支持反発・回復に該当なし。'
-                '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
-                '週足ステージ1または2に限定。ステージ3・4・判定欠損は表示しない。'
-                '合否と総合点は計算しない。</div>'
-                '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
-                '<th>上場来VWAP</th><th>上場来ブレイク</th></tr></table></div>')
 
-    def _action_rank(r):
-        has_reclaim = any(bool(r.get(k + "_reclaim")) for k in needed)
-        has_support = any(bool(r.get(k + "_support")) for k in needed)
-        state = 0 if has_reclaim else (1 if has_support else 2)
-        dists = [abs(float(r.get(k + "_dist"))) for k in needed if pd.notna(r.get(k + "_dist"))]
-        return (state, min(dists) if dists else 99, -float(r.get("rs189") or 0))
+    def _flagcol(name):
+        return (m.get(name, pd.Series(False, index=m.index))
+                .fillna(False).astype(bool))
 
-    sub["_vw_sort"] = [str(_action_rank(r)) for _t, r in sub.iterrows()]
-    # INCEPTION_VWAP_BYPASS_PRESENTATION_CAP_V1
-    _all_ordered = sorted(sub.iterrows(), key=lambda x: _action_rank(x[1]))
-    ordered = _all_ordered[:cap]
-    _inception_idx = set(m.index[keep_all])
-    _already = {t for t, _r in ordered}
-    ordered += [(t, r) for t, r in _all_ordered if t in _inception_idx and t not in _already]
+    roll_action = (_flagcol("vwap63_support") | _flagcol("vwap63_reclaim")
+                   | _flagcol("vwap252_support") | _flagcol("vwap252_reclaim"))
+    roll_near = (_flagcol("vwap63_near") | _flagcol("vwap252_near"))
+    all_valid = _flagcol("vwap_all_valid")
+    all_action = all_valid & (_flagcol("vwap_all_support") | _flagcol("vwap_all_reclaim"))
+    all_near = all_valid & _flagcol("vwap_all_near")
+
+    base_roll = stage12 & elig & (entry_worthy(m) | ipo) & ((rs >= MULTI_VWAP_RS189_MIN) | ipo)
+    base_all = stage12 & setup_eligible_core(m)
+    action_mask = (base_roll & roll_action) | (base_all & all_action)
+    near_mask = (((base_roll & roll_near) | (base_all & all_near)) & ~action_mask)
+
+    def _rank(item):
+        t, r = item
+        p63 = 0 if bool(r.get("vwap63_reclaim")) or bool(r.get("vwap63_support")) else 1
+        pbig = 0 if any(bool(r.get(k + s)) for k in ("vwap252", "vwap_all")
+                       for s in ("_reclaim", "_support")) else 1
+        ds = [abs(float(r.get(k + "_dist"))) for k in needed if pd.notna(r.get(k + "_dist"))]
+        return (p63, pbig, min(ds) if ds else 99, -float(r.get("rs189") or 0), str(t))
+
+    actionable = sorted(m[action_mask].iterrows(), key=_rank)[:cap]
+    nearby = sorted(m[near_mask].iterrows(), key=_rank)
 
     def _cell(r, key):
         if key == "vwap_all" and not bool(r.get("vwap_all_valid")):
@@ -13336,30 +13554,36 @@ def build_multi_vwap_card(m, cap=24, er=None, asof_bar=None):
         if bool(r.get(key + "_support")):
             return f'<b class="pos">タッチ反発</b><div class="mut" style="font-size:9px">{d}</div>'
         if bool(r.get(key + "_near")):
-            return f'<span class="warnc">近接</span><div class="mut" style="font-size:9px">{d}</div>'
-        return f'<span class="mut">{d}</span>'
+            return f'<span class="warnc">近いだけ</span><div class="mut" style="font-size:9px">{d}</div>'
+        return '<span class="mut">—</span>'
 
-    rows = []
-    tks = []
-    for t, r in ordered:
-        tks.append(t)
-        ath_break = bool(r.get("vwap_all_valid")) and bool(r.get("vwap_all_reclaim"))
-        ath = ('<b class="pos">発生</b>' if ath_break else
-               '<span class="mut">—</span>' if bool(r.get("vwap_all_valid")) else '<span class="mut">対象外</span>')
-        rows.append(
-            f'<tr data-liq="{(r.get("dvol") or 0)/1e6:.1f}" data-tkone="{t}">'
-            f'<td class="l tk"><b>{_h(t)}</b>{_er_badge(t, er, asof_bar) if asof_bar is not None else ""}'
-            f'<div class="mut" style="font-size:9.5px">Stage {int(float(r.get("wst")))} ・ RS189 {float(r.get("rs189") or 0):.0f}</div></td>'
-            f'<td>{_cell(r, "vwap63")}</td><td>{_cell(r, "vwap252")}</td>'
-            f'<td>{_cell(r, "vwap_all")}</td><td>{ath}</td></tr>')
-    return (f'<div class="card"><div class="hdr"><h2>Multi VWAPセットアップ</h2>{_cp(tks)}</div>'
-            '<div class="sub">近接・タッチ後上・下から回復と終値のVWAP差を表示。合否、配点、RS加点はなし。'
-            '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
-            '週足ステージ1または2の銘柄だけを表示し、ステージ3・4・判定欠損は除外。'
-            '上場来VWAPは取得期間内に上場し、全履歴がある銘柄のみ算出。古い銘柄は対象外表示で、不利に採点しない。</div>'
-            '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
-            '<th>上場来VWAP</th><th>上場来ブレイク</th></tr>' + ''.join(rows) + '</table></div>')
+    def _rows(items):
+        out = []
+        for t, r in items:
+            out.append(
+                f'<tr data-liq="{(r.get("dvol") or 0)/1e6:.1f}" data-tkone="{t}">'
+                f'<td class="l tk"><b>{_h(t)}</b>{_er_badge(t, er, asof_bar) if asof_bar is not None else ""}'
+                f'<div class="mut" style="font-size:9.5px">Stage {int(float(r.get("wst")))} ・ RS189 {float(r.get("rs189") or 0):.0f}</div></td>'
+                f'<td>{_cell(r, "vwap63")}</td><td>{_cell(r, "vwap252")}</td>'
+                f'<td>{_cell(r, "vwap_all")}</td></tr>')
+        return ''.join(out)
 
+    head = (f'<div class="card"><div class="hdr"><h2>VWAPタイミング '
+            f'<span class="h2en">VWAP Timing</span></h2>{_cp([t for t, _r in actionable])}</div>')
+    intro = ('<div class="sub"><b>見る順は3つだけ：</b>①63VWAPの反発/回復＝2週間の入口、'
+             '②252/上場来VWAPの反発/回復＝大局転換の確認、③近接だけ＝まだ待つ。'
+             '週足Stage 1/2のみ。距離が大きくプラスでも強い入口とは限らず、離れすぎは使わない。</div>')
+    table_head = ('<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP<br><small>入口</small></th>'
+                  '<th>252 VWAP<br><small>大局</small></th><th>上場来<br><small>大局</small></th></tr>')
+    if actionable:
+        main = table_head + _rows(actionable) + '</table>'
+    else:
+        main = '<div class="empty">反発・回復の発生なし。近接だけなら待つ。</div>'
+    hidden = ""
+    if nearby:
+        hidden = ('<details class="swait"><summary>近いだけ・反応待ち ' + str(len(nearby)) + '銘柄</summary>'
+                  + table_head + _rows(nearby) + '</table></details>')
+    return head + intro + main + hidden + '</div>'
 
 _PAT_DESC = {
     "アンダーカット&ラリー": "安値割れから即回復",
@@ -14867,6 +15091,18 @@ ul.chlog li{margin-bottom:2px}
 .dov-k{font-size:11px;color:#7d8da1}
 .dov-v{font-size:16px;font-weight:800;margin-top:2px}
 .dov-note{font-size:10px;color:#7d8da1;text-align:center;margin-top:12px}
+.dov-c.metric-help{cursor:pointer;transition:border-color .15s,background .15s}
+.dov-c.metric-help:active{border-color:#2f81f7;background:#111d30}
+.dov-c.metric-help .dov-k:after{content:" ?";color:#58a6ff;font-weight:900}
+.dov-help{display:none;margin:10px 0 2px;padding:11px 12px;border:1px solid #2f81f7;border-radius:10px;background:#0b2038;color:#c9d7e8;font-size:12px;line-height:1.65}
+.dov-help.open{display:block}
+.dov-help b{display:block;color:#9ecbff;font-size:13px;margin-bottom:3px}
+.swingfocus{border-left:3px solid #2f81f7}
+.swingrow .swwhy{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:7px 0 2px}
+.swwhy b{color:#7ee787;font-size:13px}.swwhy span{color:#9fb0c5;font-size:11px}
+.swait{margin-top:10px;border-top:1px solid #243349;padding-top:8px}
+.swait>summary{cursor:pointer;color:#9fb0c5;font-size:12px;font-weight:800;padding:7px 2px}
+.vwtbl small{font-size:8px;color:#7d8da1;font-weight:500}
 /* 銘柄検索 */
 .tksearch{width:100%;background:#0b1220;border:1px solid #243349;border-radius:9px;color:#e6edf3;font-size:15px;padding:10px 12px;margin-top:4px}
 .tksearch:focus{outline:none;border-color:#2f81f7}
@@ -15303,9 +15539,18 @@ function thDrill(i){
   document.querySelectorAll('.thtile').forEach(function(x){x.classList.remove('on');});
   if(!open){ pan.style.display='block'; if(til) til.classList.add('on'); pan.scrollIntoView({block:'nearest',behavior:'smooth'}); }
 }
+function showMetricHelp(i){
+  var h=(window.DOV_HELP||[])[i], box=document.getElementById('dov-help');
+  if(!box||!h) return;
+  document.getElementById('dov-help-title').textContent=h[0];
+  document.getElementById('dov-help-body').textContent=h[1];
+  box.classList.add('open');
+  box.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
 function showDet(tk){
   var d=(window.DET||{})[tk]; if(!d) return;
   document.getElementById('dov-tk').textContent=tk;
+  var hb=document.getElementById('dov-help'); if(hb) hb.classList.remove('open');
   var _tv=document.getElementById('dov-tv'); if(_tv){ _tv.href='https://jp.tradingview.com/chart/?symbol='+encodeURIComponent(tk); }
   var _sp=document.getElementById('dov-spark');
   if(_sp){ var _svg=(window.SPARK||{})[tk];
@@ -15315,11 +15560,10 @@ function showDet(tk){
   var fls=d.flags||(d.flag?[d.flag]:[]);
   if(fls.length){ fb=fls.map(function(f){
     var fc=(f.sev==='crit')?'dov-flag-crit':(f.sev==='high')?'dov-flag-hi':'dov-flag-md';
-    return '<div class="dov-flag '+fc+'">'
-      +'⚠ '+(f.type||'赤旗')+'アラート'
+    return '<div class="dov-flag '+fc+'">⚠ '+(f.type||'赤旗')+'アラート'
       +'<div class="dov-flag-n">'+(f.note||'')+'</div></div>'; }).join('')
     +'<div class="dov-flag-s">※キュレーション/自動判定（履歴含む・網羅でない）。売買判断は自身で確認を。</div>'; }
-  var NUNOTE={'急落中':'下げが速い（急落局面）。急落注意・投げ（セリングクライマックス）の有無を確認。急落注意・投げの有無を確認',
+  var NUNOTE={'急落中':'下げが速い（急落局面）。投げの有無を確認',
               '反発中':'下げ止まって切り返し。押し目なら入りやすい局面',
               '堅調':'値持ちが良く落ち着いた値動き・押しが浅い',
               '軟調':'じり安で方向感に乏しい・様子見'};
@@ -15334,10 +15578,10 @@ function showDet(tk){
       +(d.nut?'<span class="dov-st-nu '+d.nucls+'">'+d.nut+'</span>':'')+'</div>'
       +(nunote?'<div class="dov-st-note">'+nunote+'</div>':'');
   }
-  var STG={1:['ステージ1','stg1','底固め・移行期（30週線の上に出たが線はまだ下向き）。ステージ2入り＝線が上向くのを確認してから'],
-           2:['ステージ2','stg2','上昇トレンド（30週線の上×線が上向き）。押し目・ブレイクの対象'],
-           3:['ステージ3','stg3','天井圏の兆候（30週線割れ・線はまだ上向き）。新規は避け、利確・トレール管理を優先'],
-           4:['ステージ4','stg4','下降トレンド（30週線の下×線が下向き）。買い禁止・戻りは売り場']};
+  var STG={1:['ステージ1','stg1','底固め・移行期。30週線が上向くまでは確認優先'],
+           2:['ステージ2','stg2','上昇トレンド。押し目・ブレイクの対象'],
+           3:['ステージ3','stg3','天井圏の兆候。新規より利確・トレール管理'],
+           4:['ステージ4','stg4','下降トレンド。新規ロング対象外']};
   if(d.wst&&STG[d.wst]){
     var sg=STG[d.wst],ex='';
     if(d.wst==2){
@@ -15351,77 +15595,93 @@ function showDet(tk){
        +'<div class="dov-st-note">'+sg[2]+'</div>'+sb;
   }
   document.getElementById('dov-status').innerHTML=fb+sb;
-  // セクター/サブテーマ/時価総額
   var meta='';
-  if(d.sec||d.sth){
-    meta='<span class="dov-sec">'+(d.sec||'')+(d.sth&&d.sth!==d.sec?' ・ '+d.sth:'')+'</span>';
-  }
-  if(d.cap){ meta+='<span class="dov-cap">'+d.cap+'</span>'; }
+  if(d.sec||d.sth){meta='<span class="dov-sec">'+(d.sec||'')+(d.sth&&d.sth!==d.sec?' ・ '+d.sth:'')+'</span>';}
+  if(d.cap){meta+='<span class="dov-cap">'+d.cap+'</span>';}
   var sr=(window.SECROT||{})[d.sth];
-  if(sr){ meta+='<span class="dov-rot" style="border-color:'+(sr.c||'#9fb0c5')+';color:'+(sr.c||'#9fb0c5')+'">ローテ: '+sr.rot+'（#'+sr.rk+'/'+sr.n+'・RS'+Math.round(sr.med)+'・週'+((sr.d1w>=0?'+':'')+sr.d1w.toFixed(1))+'）</span>'; }
+  if(sr){meta+='<span class="dov-rot" style="border-color:'+(sr.c||'#9fb0c5')+';color:'+(sr.c||'#9fb0c5')+'">ローテ: '+sr.rot+'（#'+sr.rk+'/'+sr.n+'・RS'+Math.round(sr.med)+'・週'+((sr.d1w>=0?'+':'')+sr.d1w.toFixed(1))+'）</span>';}
   document.getElementById('dov-meta').innerHTML=meta;
-  // 登場箇所（保有/控え/ピックアップ/新高値/ウォッチ）
-  var lc=d.loc||[];
-  var isHold=lc.some(function(x){return x.indexOf('保有')===0;});
-  var sinceHtml='';
-  if(isHold && d.since && d.since.d){
-    var nn=(d.since.n!==null&&d.since.n!==undefined)?('（'+d.since.n+'営業日）'):'';
-    sinceHtml='<div class="dov-since">ランキング入り <b>'+d.since.d+'</b>'+nn+'</div>';
+  var lc=d.loc||[],isHold=lc.some(function(x){return x.indexOf('保有')===0;}),sinceHtml='';
+  if(isHold&&d.since&&d.since.d){var nn=(d.since.n!==null&&d.since.n!==undefined)?('（'+d.since.n+'営業日）'):'';
+    sinceHtml='<div class="dov-since">ランキング入り <b>'+d.since.d+'</b>'+nn+'</div>';}
+  document.getElementById('dov-loc').innerHTML=(lc.length?'<span class="dov-loc-l">登場</span>'+lc.map(function(x){
+    var c='loc-w';if(x.indexOf('保有')===0)c='loc-p';else if(x.indexOf('控え')===0)c='loc-d';
+    else if(x.indexOf('ピックアップ')===0)c='loc-k';else if(x.indexOf('新高値')===0)c='loc-h';
+    return '<span class="dov-loc-b '+c+'">'+x+'</span>';}).join(''):'')+sinceHtml;
+
+  function _fsg(x,u){if(x===null||x===undefined)return '—';var t=_f(x,u);return(Number(x)>0&&t.charAt(0)!=='+')?('+'+t):t;}
+  function _optStatus(o){
+    if(!o)return '未取得（現在の取得対象外）';
+    if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '取得済み・古いデータ（'+(o.age===null||o.age===undefined?'日数不明':o.age+'日前')+'）';
+    if(o.dte!==null&&o.dte!==undefined&&Number(o.dte)<0)return '取得済み・満期経過（更新待ち）';
+    if(String(o.conf||'').toUpperCase()==='LOW')return '取得済み・建玉薄';
+    var win=o.basis==='swing'?'スイング満期':'短期参考';
+    var oi=(o.total_oi!==null&&o.total_oi!==undefined)?'・OI '+Number(o.total_oi).toLocaleString():'';
+    var ns=(o.nstr!==null&&o.nstr!==undefined)?'・'+Math.round(Number(o.nstr))+'ストライク':'';
+    return '取得済み・'+win+' '+(o.exp||'—')+(o.dte!==null&&o.dte!==undefined?'（DTE '+o.dte+'）':'')+oi+ns;
   }
-  document.getElementById('dov-loc').innerHTML = (lc.length
-    ? '<span class="dov-loc-l">登場</span>'+lc.map(function(x){
-        var c='loc-w'; if(x.indexOf('保有')===0)c='loc-p'; else if(x.indexOf('控え')===0)c='loc-d';
-        else if(x.indexOf('ピックアップ')===0)c='loc-k'; else if(x.indexOf('新高値')===0)c='loc-h';
-        return '<span class="dov-loc-b '+c+'">'+x+'</span>'; }).join('')
-    : '') + sinceHtml;
-  /* 距離系は必ず符号を出す。'—'は「イベントなし」であって負号ではない。 */
-  function _fsg(x,u){ if(x===null||x===undefined) return '—';
-    var t=_f(x,u); return (Number(x)>0 && t.charAt(0)!=='+') ? ('+'+t) : t; }
-  /* オプションの壁。建玉からの推定なので「目安」。データが無ければ「—」。 */
   function _optcell(o,k){
-    if(!o || o[k]===null || o[k]===undefined) return '—';
+    if(!o)return '<span class="rsoff">未取得</span>';
+    if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '<span class="rsoff">古いデータ</span>';
+    if(o[k]===null||o[k]===undefined){
+      return String(o.conf||'').toUpperCase()==='LOW'
+        ?'<span class="rsoff">取得済み・建玉薄</span>'
+        :'<span class="rsoff">取得済み・有効な壁なし</span>';
+    }
     var px='$'+Number(o[k]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-    var p=o[k+'p'], a=o[k+'a'], t=px;
-    if(p!==null&&p!==undefined) t+=' '+(p>=0?'+':'')+(p*100).toFixed(1)+'%';
-    if(a!==null&&a!==undefined) t+=' ・'+Math.abs(a).toFixed(1)+'日分';
-    if(o.age!==null&&o.age!==undefined&&o.age>=3) t+=' <span class="rsoff">'+o.age+'日前</span>';
-    if(o.conf==='LOW') t+=' <span class="rsoff">建玉薄</span>';
-    return t; }
+    var p=o[k+'p'],a=o[k+'a'],t=px;
+    if(p!==null&&p!==undefined)t+=' '+(p>=0?'+':'')+(p*100).toFixed(1)+'%';
+    if(a!==null&&a!==undefined)t+=' ・'+Math.abs(a).toFixed(1)+'日分';
+    if(String(o.conf||'').toUpperCase()==='LOW')t+=' <span class="rsoff">建玉薄</span>';
+    return t;
+  }
   function _vwcell(st,val){
-    /* イベントが無いときは距離だけを出す。'—' や 'イベントなし' の前置きは
-       負号と読み間違えるうえ、情報を足していないので出さない。 */
     var v=(val===null||val===undefined)?'':_fsg(val,'%');
-    if(st && st!=='—') return v ? (st+' '+v) : st;
-    return v || '対象外'; }
-  function _rsc(v){ return (v===null||v===undefined)
-    ? '<span class="rsoff" title="'+(d.offh||'')+'">'+(d.off||'対象外')+'</span>' : _f(v); }
-  var rows=[['RS(63日)',_rsc(d.rs),'mut'],
-            ['RS(189日・選定)',_rsc(d.rs189),'mut'],
-            ['RS(21日・短期)',_rsc(d.rs21),'mut'],
-            ['価格',(d.px===null||d.px===undefined)?'—':('$'+d.px),'mut'],
-            ['前日比',_f(d.ch,'%'),_sg(d.ch)],
-            ['vs50MA',_f(d.v50,'%'),_sg(d.v50)],
-            ['vs200MA',_f(d.v200,'%'),_sg(d.v200)],
-            ['21EMA乖離',_f(d.d21,'%'),'mut'],
-            ['高値からの押し',_fsg(d.pb,'%'),'mut'],
-            ['ADR',_f(d.adr,'%'),'mut'],
-            ['RVOL',_f(d.rv),'mut'],
-            ['ピボットまで',_fsg(d.pdist,'%'),'mut'],
-            ['VCP形状',_f(d.vcpq),'mut'],
-            ['上値の壁',_optcell(d.opt,'cw'),'mut'],
-            ['下値の支え',_optcell(d.opt,'pw'),'mut'],
-            ['性質の境目',_optcell(d.opt,'gf'),'mut'],
-            ['63 VWAP',_vwcell(d.vws63,d.vw63),(d.vws63==='下から回復'||d.vws63==='タッチ反発')?'pos':'mut'],
-            ['252 VWAP',_vwcell(d.vws252,d.vw252),(d.vws252==='下から回復'||d.vws252==='タッチ反発')?'pos':'mut'],
-            ['上場来VWAP',_vwcell(d.vwsall,d.vwall)+(d.vwab?' ブレイク':''),d.vwab?'pos':'mut'],
-            ['収縮 / HL',_f(d.contract)+' / '+(d.hl?'○':'—'),'mut'],
-            ['出来高枯れ',_f(d.vdry,'×'),'mut'],
-            ['RS線高値',d.rsline?'○':'—',d.rsline?'pos':'mut'],
-            ['構造',[(d.truebr?'真ブレイク':''),(d.cup?'カップ':''),(d.turn?'転換':''),(d.p204?'20/4':'')].filter(Boolean).join('・')||'—','mut'],
-            ['β(市場感応度)',(d.beta===null||d.beta===undefined)?'—':_f(d.beta),(d.beta>=1.3?'neg':d.beta<=0.9?'pos':'mut')],
-            ['出来高$',(d.dvol===null||d.dvol===undefined)?'—':(d.dvol+'M'),'mut']];
-  document.getElementById('dov-body').innerHTML=rows.map(function(r){
-    return '<div class="dov-c"><div class="dov-k">'+r[0]+'</div><div class="dov-v '+r[2]+'">'+r[1]+'</div></div>';
+    if(st&&st!=='—')return v?(st+' '+v):st;
+    return v||'対象外';
+  }
+  function _vwConclusion(){
+    if(d.vws63==='下から回復'||d.vws63==='タッチ反発')return '最優先：63VWAPの反応';
+    if(d.vws252==='下から回復'||d.vws252==='タッチ反発'||d.vwsall==='下から回復'||d.vwsall==='タッチ反発')return '大局転換の確認用';
+    if(d.vws63==='近接'||d.vws252==='近接'||d.vwsall==='近接')return '近いだけ・反応待ち';
+    if(d.vw63!==null&&d.vw63!==undefined&&Math.abs(Number(d.vw63))>8)return '離れすぎ・今の入口には使わない';
+    return '反応なし・VWAPは見送る';
+  }
+  function _rsc(v){return(v===null||v===undefined)?'<span class="rsoff" title="'+(d.offh||'')+'">'+(d.off||'対象外')+'</span>':_f(v);}
+
+  var rows=[
+    ['RS(63日)',_rsc(d.rs),'mut','直近63営業日の値動きを全銘柄内で順位化。短中期の勢い確認で、価格の割安度ではない。'],
+    ['RS(189日・選定)',_rsc(d.rs189),'mut','約9か月の相対強度順位。Core 12と主導株の母集団に使う。高いほど市場より強かった。'],
+    ['RS(21日・短期)',_rsc(d.rs21),'mut','直近21営業日の相対強度。急な加速や失速を見る補助で、単独では入口にしない。'],
+    ['価格',(d.px===null||d.px===undefined)?'—':('$'+d.px),'mut','直近の確定終値。ザラ場の現在値ではない。'],
+    ['前日比',_f(d.ch,'%'),_sg(d.ch),'前営業日の終値からの変化率。1日だけの強弱なので継続性は別に確認する。'],
+    ['vs50MA',_f(d.v50,'%'),_sg(d.v50),'終値が50日移動平均から何％離れているか。大幅プラスは強さと同時に追いかけリスクも示す。'],
+    ['vs200MA',_f(d.v200,'%'),_sg(d.v200),'終値と200日移動平均の距離。長期上昇基調かを見る。'],
+    ['21EMA乖離',_f(d.d21,'%'),'mut','終値と21日指数移動平均の距離。2週間スイングの押し目位置に使う。'],
+    ['高値からの押し',_fsg(d.pb,'%'),'mut','直近高値からどれだけ下にいるか。浅すぎると追い、高すぎると崩れの可能性がある。'],
+    ['ADR',_f(d.adr,'%'),'mut','平均的な1日の値幅。大きいほど動くが、必要な損切り幅とポジションサイズも大きくなる。'],
+    ['RVOL',_f(d.rv),'mut','通常比の出来高。1.0が平常、2.0なら概ね2倍。価格反応の信頼確認に使う。'],
+    ['ピボットまで',_fsg(d.pdist,'%'),'mut','ベース上抜け基準までの距離。プラスは上抜け後、マイナスは手前。上抜け後+5％超は追わない目安。'],
+    ['VCP形状',_f(d.vcpq),'mut','値幅と出来高の収縮を0〜100で形状評価。90は成功確率90％ではなく、形が整っている度合い。'],
+    ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、建玉薄、有効な壁なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
+    ['上値の壁',_optcell(d.opt,'cw'),'mut','Call Wall。コール建玉が集中する上値候補。未表示は状態欄で、未取得か建玉薄か有効な壁なしを確認する。'],
+    ['下値の支え',_optcell(d.opt,'pw'),'mut','Put Wall。プット建玉が集中する下値候補。支えの上にいる時だけ押し目根拠の一つにする。'],
+    ['性質の境目',_optcell(d.opt,'gf'),'mut','Gamma Flip。上は値動きが落ち着きやすく、下は増幅しやすいと推定する境目。'],
+    ['VWAP結論',_vwConclusion(),'mut','2週間では63VWAPの反発か回復を最優先。252日と上場来は大局確認。近いだけ、または大きく上に離れた状態は入口に使わない。'],
+    ['63 VWAP',_vwcell(d.vws63,d.vw63),(d.vws63==='下から回復'||d.vws63==='タッチ反発')?'pos':'mut','約3か月の出来高加重平均価格。2週間スイングの主要な需給コスト線。反発か下から回復だけを見る。'],
+    ['252 VWAP',_vwcell(d.vws252,d.vw252),(d.vws252==='下から回復'||d.vws252==='タッチ反発')?'pos':'mut','約1年の出来高加重平均価格。大局の支持・転換確認用で、日々の入口優先度は63VWAPより下。'],
+    ['上場来VWAP',_vwcell(d.vwsall,d.vwall)+(d.vwab?' ブレイク':''),d.vwab?'pos':'mut','取得できる全履歴の平均取得コスト。長期の大局転換確認用。古い銘柄で履歴不足なら対象外。'],
+    ['収縮 / HL',_f(d.contract)+' / '+(d.hl?'○':'—'),'mut','左は値幅収縮の回数、右のHLは安値切り上げ。ベースの質を示すが発火そのものではない。'],
+    ['出来高枯れ',_f(d.vdry,'×'),'mut','直近出来高の通常比。1未満は売り圧力が細る状態。枯れだけでは買わず、反発を待つ。'],
+    ['RS線高値',d.rsline?'○':'—',d.rsline?'pos':'mut','指数に対する相対価格が新高値。価格以外のリーダー確認としてコンフルエンスに使う。'],
+    ['構造',[(d.truebr?'真ブレイク':''),(d.cup?'カップ':''),(d.turn?'転換':''),(d.p204?'20/4':'')].filter(Boolean).join('・')||'—','mut','ブレイク、カップ、トレンド転換など価格形状の検出結果。単独ではなく入口と撤退線を合わせる。'],
+    ['β(市場感応度)',(d.beta===null||d.beta===undefined)?'—':_f(d.beta),(d.beta>=1.3?'neg':d.beta<=0.9?'pos':'mut'),'市場が1％動いた時の動きやすさの目安。1.3なら概ね市場の1.3倍動きやすい。'],
+    ['出来高$',(d.dvol===null||d.dvol===undefined)?'—':(d.dvol+'M'),'mut','平均売買代金。流動性と滑りやすさの目安。ダッシュボードの最低条件は1日1000万ドル。']
+  ];
+  window.DOV_HELP=rows.map(function(r){return [r[0],r[3]];});
+  document.getElementById('dov-body').innerHTML=rows.map(function(r,idx){
+    return '<div class="dov-c metric-help" role="button" tabindex="0" onclick="showMetricHelp('+idx+')">'
+      +'<div class="dov-k">'+r[0]+'</div><div class="dov-v '+r[2]+'">'+r[1]+'</div></div>';
   }).join('');
   document.getElementById('dov-bg').classList.add('open');
 }
@@ -18248,7 +18508,8 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
            '<div id="dov-meta" class="dov-meta"></div>'
            '<div id="dov-loc" class="dov-loc"></div>'
            '<div id="dov-body" class="dov-grid"><div class="mut" style="grid-column:1/-1;font-size:11px;padding:6px 2px">銘柄をタップすると全指標を表示します。</div></div>'
-           '<div class="dov-note">タップした銘柄のデータ（全リスト共通）</div>'
+           '<div id="dov-help" class="dov-help"><b id="dov-help-title"></b><span id="dov-help-body"></span></div>'
+           '<div class="dov-note">各項目をタップで解説（全リスト共通）</div>'
            '</div></div>')
 
     # ---- TAB 業種RS（サブテーマ単位）
@@ -18537,6 +18798,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             + search_card
             # 流動性フィルタはタブ全体に効くので、セクション②の中ではなく最上段に置く。
             + _liq_bar()
+            + build_swing_focus_card(m, mkt.get("options"), mkt.get("er"), mkt.get("asof_bar"))
             # 買い点のsignatureは静けさなので、発火前を発火済みより先に置く。
             + _mkt_section("① 発火前（構造が整い、静かなもの）",
                            "出来高が枯れ21EMA/VWAPに張り付いた未発火銘柄。発火を待たずに構造で拾う",
