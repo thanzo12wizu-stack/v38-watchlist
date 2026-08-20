@@ -13175,12 +13175,17 @@ def eligible_or_ipo(m):
 
 
 def build_multi_vwap_card(m, cap=24):
-    """63/252/all-time VWAP watch with a dedicated all-time break column."""
+    """Stage-1/2-only 63/252/all-time VWAP watch with a dedicated all-time break column."""
     needed = ("vwap63", "vwap252", "vwap_all")
     if m is None or m.empty or not all(x in m.columns for x in needed):
         return ""
     elig = eligible_or_ipo(m)          # 上場来VWAPは189日を必要としない
     rs = pd.to_numeric(m.get("rs189", pd.Series(0, index=m.index)), errors="coerce").fillna(0)
+    # MULTI_VWAP_WEEKLY_STAGE12_FILTER_V1
+    # VWAP proximity is actionable only in Weinstein weekly Stage 1/2.
+    # Stage 3/4 and missing stage data are excluded from every VWAP path.
+    _wst = pd.to_numeric(m.get("wst", pd.Series(np.nan, index=m.index)), errors="coerce")
+    stage12 = _wst.isin([1, 2]).fillna(False)
 
     def _any_loc(keys):
         out = pd.Series(False, index=m.index)
@@ -13197,18 +13202,18 @@ def build_multi_vwap_card(m, cap=24):
     # 63/252はRS189でリーダーを絞る。上場来VWAPはRS189条件を課さない（稀少イベント＋IPO対応）。
     ipo = ipo_recent(m)
     # 63/252 VWAP keep the existing leader/IPO gate.
-    keep_roll = elig & (entry_worthy(m) | ipo) & loc_roll & \
+    keep_roll = stage12 & elig & (entry_worthy(m) | ipo) & loc_roll & \
         ((rs >= MULTI_VWAP_RS189_MIN) | ipo)
     # Inception VWAP is independent of RS189/short-term leadership.
     # Use the existing base quality/liquidity/security gate only.
-    keep_all = setup_eligible_core(m) & loc_all
+    keep_all = stage12 & setup_eligible_core(m) & loc_all
     keep = keep_roll | keep_all
     sub = m[keep].copy()
     if sub.empty:
         return ('<div class="card"><h2>Multi VWAPセットアップ</h2>'
                 '<div class="sub">63/252/上場来VWAPの近接・支持反発・回復に該当なし。'
                 '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
-                'ステージ2かつ50日線から6ATR以内・ピボットから+12%以内に限定。'
+                '週足ステージ1または2に限定。ステージ3・4・判定欠損は表示しない。'
                 '合否と総合点は計算しない。</div>'
                 '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
                 '<th>上場来VWAP</th><th>上場来ブレイク</th></tr></table></div>')
@@ -13256,6 +13261,7 @@ def build_multi_vwap_card(m, cap=24):
     return (f'<div class="card"><div class="hdr"><h2>Multi VWAPセットアップ</h2>{_cp(tks)}</div>'
             '<div class="sub">近接・タッチ後上・下から回復と終値のVWAP差を表示。合否、配点、RS加点はなし。'
             '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
+            '週足ステージ1または2の銘柄だけを表示し、ステージ3・4・判定欠損は除外。'
             '上場来VWAPは取得期間内に上場し、全履歴がある銘柄のみ算出。古い銘柄は対象外表示で、不利に採点しない。</div>'
             '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
             '<th>上場来VWAP</th><th>上場来ブレイク</th></tr>' + ''.join(rows) + '</table></div>')
@@ -14958,7 +14964,7 @@ td.hl{background:rgba(56,80,140,.20);font-weight:800}
 """
 
 JS = r"""
-/* SETUP_STAGE_BADGE_V1: display only; no setup eligibility/ranking changes. */
+/* MULTI_VWAP_STAGE12_BADGE_V1: display is restricted to the filtered Multi VWAP table. */
 function setupStageBadges(){
   try{
     if(!document.getElementById('setupStageBadgeStyle')){
@@ -14967,7 +14973,7 @@ function setupStageBadges(){
       document.head.appendChild(st);
     }
     var names={1:'ステージ1：底固め・移行期',2:'ステージ2：上昇トレンド',3:'ステージ3：天井圏',4:'ステージ4：下降トレンド'};
-    document.querySelectorAll('#t-today [data-tkone]').forEach(function(el){
+    document.querySelectorAll('#t-today .vwtbl [data-tkone]').forEach(function(el){
       if(el.getAttribute('data-stage-decorated')==='1') return;
       var tk=(el.getAttribute('data-tkone')||'').toUpperCase();
       var d=(window.DET||{})[tk]||{}; var n=Number(d.wst); var ok=(n>=1&&n<=4);
