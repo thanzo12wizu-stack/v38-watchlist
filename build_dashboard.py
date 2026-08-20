@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# SWING_FOCUS_V1: explainable metrics, comparable option expiries, and an actionable shortlist.
 """
 Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
   A. 個別スリーブ(70%): N=12, 189日RS上位 × 50日SMA>200日SMA × 出来高金額$10M/日 × 株価$5以上,
@@ -8534,7 +8533,7 @@ def load_options():
                 gf=_num(r.get("gamma_flip")),
                 cwp=_num(r.get("call_wall_pct")), pwp=_num(r.get("put_wall_pct")),
                 gfp=_num(r.get("flip_pct")),
-                reg=r.get("regime"), conf=conf, exp=exp, near_exp=exp,
+                reg=r.get("regime"), conf=conf, exp=exp, near_exp=exp, near_dte=dte,
                 dte=dte, basis=("swing" if dte is not None and 7 <= dte <= 24 else "nearest"),
                 total_oi=_num(r.get("total_oi")), nstr=_num(r.get("n_strikes")),
                 nexp=1, age=_age(r.get("date")), stale=False,
@@ -8585,7 +8584,9 @@ def load_options():
                 cw=cw, pw=pw, gf=gf, cwp=cwp, pwp=pwp, gfp=gfp,
                 cwa=cwa, pwa=pwa, gfa=gfa,
                 reg=_regime(spot, gf, atr), conf=conf, exp=exp,
-                near_exp=v.get("nearest"), dte=dte, basis=basis,
+                near_exp=v.get("nearest"),
+                near_dte=_dte(v.get("nearest"), v.get("asof") or d.get("asof")),
+                dte=dte, basis=basis,
                 total_oi=_num(rec.get("total_oi")), nstr=_num(rec.get("n_strikes")),
                 nexp=len(choices), rpos=None, cfl=conf_names,
                 age=_age(v.get("asof") or d.get("asof")),
@@ -13453,9 +13454,7 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
         if _flag(r, "breakout_failure"):
             reject.append("ブレイク失敗")
         erd = _days_to_er(t)
-        if erd is None:
-            reject.append("決算日未確認")
-        elif 0 <= erd <= 5:
+        if erd is not None and 0 <= erd <= 5:
             reject.append("決算まで" + ("当日" if erd == 0 else f"{erd}日"))
         if stop is None:
             reject.append("2〜8%の実用的な撤退線なし")
@@ -13494,13 +13493,13 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
     def _row(d, waiting=False):
         badge = (f'<span class="prestage {"warnc" if waiting else "pos"}">'
                  f'{"待ち：" + d["why"] if waiting else "監視優先"}</span>')
-        return (f'<div class="prerow swingrow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
+        return (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
                 f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
                 f'<span class="mut">RS189 {d["rs"]:.0f}・Stage {d["wst"]}</span>{badge}</div>'
-                f'<div class="swwhy"><b>{_h(d["sig"])}</b><span>{_h(d["struct"])}</span></div>'
-                f'<div class="pretail">確認：{_h(d["entry"])} ／ 撤退候補：{_h(d["stop"])}</div></div>')
+                f'<div class="pretail"><b class="pos">{_h(d["sig"])}</b>'
+                f' ・ {_h(d["struct"])}<br>確認：{_h(d["entry"])} ／ 撤退候補：{_h(d["stop"])}</div></div>')
 
-    head = ('<div class="card swingfocus"><div class="hdr"><h2>結論：2週間スイングで見る銘柄 '
+    head = ('<div class="card"><div class="hdr"><h2>結論：2週間スイングで見る銘柄 '
             '<span class="h2en">Swing Focus</span></h2>'
             + _cp([d["t"] for d in ready]) + '</div>')
     intro = ('<div class="sub">発注リストではなく、<b>今日チャートを開く順</b>。'
@@ -13511,7 +13510,7 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
         now_html = '<div class="prelist">' + ''.join(_row(d) for d in ready) + '</div>'
     else:
         now_html = '<div class="empty">今すぐ監視優先に上げる銘柄なし</div>'
-    wait_html = ('<details class="swait"><summary>次点・待ち ' + str(len(wait)) + '銘柄</summary>'
+    wait_html = ('<details class="cfdet"><summary>次点・待ち ' + str(len(wait)) + '銘柄</summary>'
                  '<div class="prelist">' + ''.join(_row(d, True) for d in wait) + '</div></details>') if wait else ""
     return head + intro + now_html + wait_html + '</div>'
 
@@ -13582,15 +13581,15 @@ def build_multi_vwap_card(m, cap=12, er=None, asof_bar=None):
     intro = ('<div class="sub"><b>見る順は3つだけ：</b>①63VWAPの反発/回復＝2週間の入口、'
              '②252/上場来VWAPの反発/回復＝大局転換の確認、③近接だけ＝まだ待つ。'
              '週足Stage 1/2のみ。距離が大きくプラスでも強い入口とは限らず、離れすぎは使わない。</div>')
-    table_head = ('<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP<br><small>入口</small></th>'
-                  '<th>252 VWAP<br><small>大局</small></th><th>上場来<br><small>大局</small></th></tr>')
+    table_head = ('<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP（入口）</th>'
+                  '<th>252 VWAP（大局）</th><th>上場来（大局）</th></tr>')
     if actionable:
         main = table_head + _rows(actionable) + '</table>'
     else:
         main = '<div class="empty">反発・回復の発生なし。近接だけなら待つ。</div>'
     hidden = ""
     if nearby:
-        hidden = ('<details class="swait"><summary>近いだけ・反応待ち ' + str(len(nearby)) + '銘柄</summary>'
+        hidden = ('<details class="cfdet"><summary>近いだけ・反応待ち ' + str(len(nearby)) + '銘柄</summary>'
                   + table_head + _rows(nearby) + '</table></details>')
     return head + intro + main + hidden + '</div>'
 
@@ -15100,18 +15099,6 @@ ul.chlog li{margin-bottom:2px}
 .dov-k{font-size:11px;color:#7d8da1}
 .dov-v{font-size:16px;font-weight:800;margin-top:2px}
 .dov-note{font-size:10px;color:#7d8da1;text-align:center;margin-top:12px}
-.dov-c.metric-help{cursor:pointer;transition:border-color .15s,background .15s}
-.dov-c.metric-help:active{border-color:#2f81f7;background:#111d30}
-.dov-c.metric-help .dov-k:after{content:" ?";color:#58a6ff;font-weight:900}
-.dov-help{display:none;margin:10px 0 2px;padding:11px 12px;border:1px solid #2f81f7;border-radius:10px;background:#0b2038;color:#c9d7e8;font-size:12px;line-height:1.65}
-.dov-help.open{display:block}
-.dov-help b{display:block;color:#9ecbff;font-size:13px;margin-bottom:3px}
-.swingfocus{border-left:3px solid #2f81f7}
-.swingrow .swwhy{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:7px 0 2px}
-.swwhy b{color:#7ee787;font-size:13px}.swwhy span{color:#9fb0c5;font-size:11px}
-.swait{margin-top:10px;border-top:1px solid #243349;padding-top:8px}
-.swait>summary{cursor:pointer;color:#9fb0c5;font-size:12px;font-weight:800;padding:7px 2px}
-.vwtbl small{font-size:8px;color:#7d8da1;font-weight:500}
 /* 銘柄検索 */
 .tksearch{width:100%;background:#0b1220;border:1px solid #243349;border-radius:9px;color:#e6edf3;font-size:15px;padding:10px 12px;margin-top:4px}
 .tksearch:focus{outline:none;border-color:#2f81f7}
@@ -15549,17 +15536,12 @@ function thDrill(i){
   if(!open){ pan.style.display='block'; if(til) til.classList.add('on'); pan.scrollIntoView({block:'nearest',behavior:'smooth'}); }
 }
 function showMetricHelp(i){
-  var h=(window.DOV_HELP||[])[i], box=document.getElementById('dov-help');
-  if(!box||!h) return;
-  document.getElementById('dov-help-title').textContent=h[0];
-  document.getElementById('dov-help-body').textContent=h[1];
-  box.classList.add('open');
-  box.scrollIntoView({block:'nearest',behavior:'smooth'});
+  var h=(window.DOV_HELP||[])[i];
+  if(h) window.alert(h[0]+'\n\n'+h[1]);
 }
 function showDet(tk){
   var d=(window.DET||{})[tk]; if(!d) return;
   document.getElementById('dov-tk').textContent=tk;
-  var hb=document.getElementById('dov-help'); if(hb) hb.classList.remove('open');
   var _tv=document.getElementById('dov-tv'); if(_tv){ _tv.href='https://jp.tradingview.com/chart/?symbol='+encodeURIComponent(tk); }
   var _sp=document.getElementById('dov-spark');
   if(_sp){ var _svg=(window.SPARK||{})[tk];
@@ -15621,13 +15603,26 @@ function showDet(tk){
   function _fsg(x,u){if(x===null||x===undefined)return '—';var t=_f(x,u);return(Number(x)>0&&t.charAt(0)!=='+')?('+'+t):t;}
   function _optStatus(o){
     if(!o)return '未取得（現在の取得対象外）';
-    if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '取得済み・古いデータ（'+(o.age===null||o.age===undefined?'日数不明':o.age+'日前')+'）';
-    if(o.dte!==null&&o.dte!==undefined&&Number(o.dte)<0)return '取得済み・満期経過（更新待ち）';
-    if(String(o.conf||'').toUpperCase()==='LOW')return '取得済み・建玉薄';
-    var win=o.basis==='swing'?'スイング満期':'短期参考';
-    var oi=(o.total_oi!==null&&o.total_oi!==undefined)?'・OI '+Number(o.total_oi).toLocaleString():'';
-    var ns=(o.nstr!==null&&o.nstr!==undefined)?'・'+Math.round(Number(o.nstr))+'ストライク':'';
-    return '取得済み・'+win+' '+(o.exp||'—')+(o.dte!==null&&o.dte!==undefined?'（DTE '+o.dte+'）':'')+oi+ns;
+    var sel=(o.exp||'—')+(o.dte!==null&&o.dte!==undefined?' DTE '+o.dte:'');
+    var state='';
+    if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))state='古いデータ';
+    else if(o.dte!==null&&o.dte!==undefined&&Number(o.dte)<0)state='満期経過';
+    else if(String(o.conf||'').toUpperCase()==='LOW')state='建玉薄';
+    else state=o.basis==='swing'?'スイング満期':'短期参考';
+    return '取得済み・'+state+'・'+sel;
+  }
+  function _optExpiryEffect(o){
+    if(!o)return '未取得';
+    var sd=(o.dte===null||o.dte===undefined)?null:Number(o.dte);
+    var nd=(o.near_dte===null||o.near_dte===undefined)?null:Number(o.near_dte);
+    var selected='選択 '+(o.exp||'—')+(sd===null?'':'（DTE '+sd+'）');
+    var nearest='最短 '+(o.near_exp||'—')+(nd===null?'':'（DTE '+nd+'）');
+    var effect='満期差の判定不可';
+    if(sd!==null&&sd<=3)effect='当日〜数日需給。壁が急変・消失しやすく、持越し根拠には弱い';
+    else if(sd!==null&&sd<=6)effect='短期需給。反応は速いが2週間保有には短い';
+    else if(sd!==null&&sd<=24)effect='2週間スイング用。短期ノイズと中期需給の中間';
+    else if(sd!==null)effect='中期需給。反応は遅めで日々の入口より大局向け';
+    return selected+' ／ '+nearest+' ｜ '+effect;
   }
   function _optcell(o,k){
     if(!o)return '<span class="rsoff">未取得</span>';
@@ -15673,6 +15668,7 @@ function showDet(tk){
     ['ピボットまで',_fsg(d.pdist,'%'),'mut','ベース上抜け基準までの距離。プラスは上抜け後、マイナスは手前。上抜け後+5％超は追わない目安。'],
     ['VCP形状',_f(d.vcpq),'mut','値幅と出来高の収縮を0〜100で形状評価。90は成功確率90％ではなく、形が整っている度合い。'],
     ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、建玉薄、有効な壁なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
+    ['満期の違い',_optExpiryEffect(d.opt),'mut','DTEは満期までの日数。0〜3DTEは反応が速い一方、壁が動いたり満期で消えやすい。7〜24DTEは2週間スイング用、25DTE以上は大局寄り。選択満期と最短満期を分けて表示する。'],
     ['上値の壁',_optcell(d.opt,'cw'),'mut','Call Wall。コール建玉が集中する上値候補。未表示は状態欄で、未取得か建玉薄か有効な壁なしを確認する。'],
     ['下値の支え',_optcell(d.opt,'pw'),'mut','Put Wall。プット建玉が集中する下値候補。支えの上にいる時だけ押し目根拠の一つにする。'],
     ['性質の境目',_optcell(d.opt,'gf'),'mut','Gamma Flip。上は値動きが落ち着きやすく、下は増幅しやすいと推定する境目。'],
@@ -18517,8 +18513,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
            '<div id="dov-meta" class="dov-meta"></div>'
            '<div id="dov-loc" class="dov-loc"></div>'
            '<div id="dov-body" class="dov-grid"><div class="mut" style="grid-column:1/-1;font-size:11px;padding:6px 2px">銘柄をタップすると全指標を表示します。</div></div>'
-           '<div id="dov-help" class="dov-help"><b id="dov-help-title"></b><span id="dov-help-body"></span></div>'
-           '<div class="dov-note">各項目をタップで解説（全リスト共通）</div>'
+           '<div class="dov-note">各項目をタップすると解説を表示（全リスト共通）</div>'
            '</div></div>')
 
     # ---- TAB 業種RS（サブテーマ単位）
@@ -20296,26 +20291,7 @@ def main():
                                              soxl_ok=_soxl_ok, turnover_dir=_turn_dir, updown_reg=_ud_reg,
                                              emergency_active=bool((mkt.get("emergency") or {}).get("active")))
     mkt["chlog"], mkt["chref"] = _chlog, _chref
-    # スイング候補を「決算日未確認」のままREADYへ通さないため、反応が出た主導株も
-    # 決算取得対象へ先回りで追加する（全ユニバース取得ではなくRS順上位60に限定）。
-    _sw_er = []
-    try:
-        _wst_er = pd.to_numeric(m.get("wst"), errors="coerce")
-        _pp_er = pd.to_numeric(m.get("pp_days"), errors="coerce")
-        _trigger_er = (
-            m.get("vwap63_reclaim", pd.Series(False, index=m.index)).fillna(False).astype(bool)
-            | m.get("vwap63_support", pd.Series(False, index=m.index)).fillna(False).astype(bool)
-            | m.get("ema21_touch3", pd.Series(False, index=m.index)).fillna(False).astype(bool)
-            | m.get("true_breakout", pd.Series(False, index=m.index)).fillna(False).astype(bool)
-            | m.get("cup_breakout", pd.Series(False, index=m.index)).fillna(False).astype(bool)
-            | _pp_er.between(0, 5)
-        )
-        _sw_mask = setup_eligible(m) & _wst_er.isin([1, 2]) & m["rs189"].ge(85) & _trigger_er
-        _sw_er = list(m[_sw_mask].sort_values("rs189", ascending=False).index[:60])
-    except Exception:
-        _sw_er = []
-    _er_tickers = list(dict.fromkeys(
-        [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15]) + _sw_er))
+    _er_tickers = [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15])
     mkt["er"] = load_earnings(_er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest)
     # #19 カバー率: universe(order) のうち価格Close列に存在する率・RS189算出可能率。「候補なし」と「データ欠損」を区別。
     try:
