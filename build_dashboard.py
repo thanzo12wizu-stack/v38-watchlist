@@ -13503,7 +13503,7 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
             '<span class="h2en">Swing Focus</span></h2>'
             + _cp([d["t"] for d in ready]) + '</div>')
     intro = ('<div class="sub">発注リストではなく、<b>今日チャートを開く順</b>。'
-             'RS189≥85・週足Stage 1/2・反応発生・2〜8%の実用的な撤退線・決算5日超・伸び切りなしを同時に満たすもの。'
+             'RS189≥85・週足Stage 1/2・反応発生・2〜8%の実用的な撤退線・既知の決算が5日以内でない・伸び切りなしを同時に満たすもの。'
              '合計点は作らず、63VWAP/Put Wall → 21EMA → PP → ブレイクの順で並べる。'
              '<b>表示がゼロなら無理に入らない。</b></div>')
     if ready:
