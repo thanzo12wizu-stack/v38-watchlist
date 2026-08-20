@@ -8080,7 +8080,7 @@ def _confluence_overlap(r):
 
 # コンフルエンスは「価格レベルの重なり」を主語にする。
 # VCP/PP/RS等は文脈情報。重なりの有無そのものを代用しない。発注候補の合否には使わない。
-def _confluence_event_axes(r, new_entry=None):
+def _confluence_event_axes(r, new_entry=None, opt=None):
     """Independent non-price evidence. No weights, total score or order verdict."""
     def flag(name):
         value = r.get(name)
@@ -8116,8 +8116,18 @@ def _confluence_event_axes(r, new_entry=None):
     if isinstance(new_entry, str) and new_entry:
         leadership.append("RS新規参入")
 
+    derivatives = []
+    if isinstance(opt, dict):
+        conf = str(opt.get("conf") or "").upper()
+        age = opt.get("age")
+        fresh = age is None or (isinstance(age, (int, float)) and age <= OPT_STALE_DAYS)
+        if conf in ("MEDIUM", "HIGH") and fresh and any(opt.get(k) is not None for k in ("pw", "cw", "gf")):
+            reg = str(opt.get("reg") or "OI確認")
+            derivatives.append("オプション建玉 " + reg[:18])
+
     axes = []
-    for label, items in (("需要発火", demand), ("構造形成", structure), ("リーダー発火", leadership)):
+    for label, items in (("需要発火", demand), ("構造形成", structure),
+                         ("リーダー発火", leadership), ("デリバティブ", derivatives)):
         if items:
             axes.append(label)
 
@@ -8129,10 +8139,10 @@ def _confluence_event_axes(r, new_entry=None):
     except Exception:
         pass
     return dict(count=len(axes), axes=axes, demand=demand, structure=structure,
-                leadership=leadership, flow=flow)
+                leadership=leadership, derivatives=derivatives, flow=flow)
 
 
-def _confluence_facts(r, new_entry=None):
+def _confluence_facts(r, new_entry=None, opt=None):
     """Classify existing observations without weights, totals or an ENTRY flag."""
     def ok(v):
         try:
@@ -8204,7 +8214,7 @@ def _confluence_facts(r, new_entry=None):
     if flag("breakout_failure"):
         warnings.append("ブレイク失敗")
     overlap = _confluence_overlap(r)
-    events = _confluence_event_axes(r, new_entry)
+    events = _confluence_event_axes(r, new_entry, opt)
     return dict(setup=setups, trigger=triggers, confirm=confirms,
                 location=locations, warning=warnings, overlap=overlap, events=events,
                 has_setup=bool(setups), has_trigger=bool(triggers))
@@ -8317,7 +8327,7 @@ def _cf_tier(a, r):
     return 2, (fresh if fresh is not None else 99), dist
 
 
-def _cf_row(t, r, a, rs):
+def _cf_row(t, r, a, rs, er=None, asof_bar=None):
     def flag(k):
         v = r.get(k)
         try:
@@ -8338,7 +8348,8 @@ def _cf_row(t, r, a, rs):
 
     events = a.get("events") or {}
     event_chunks = []
-    for label, key in (("需要", "demand"), ("構造", "structure"), ("RS", "leadership")):
+    for label, key in (("需要", "demand"), ("構造", "structure"),
+                       ("RS", "leadership"), ("建玉", "derivatives")):
         vals = events.get(key) or []
         if vals:
             event_chunks.append('<span><b class="pos">' + label + '</b> ' + _h(" / ".join(vals)) + '</span>')
@@ -8359,7 +8370,9 @@ def _cf_row(t, r, a, rs):
             pivot_cls = "mut"
 
     stops = _cf_stops(r)
-    risk = min((abs(d) for _l, _v, d in stops if d < 0), default=None)
+    downside_stops = [(lab, val, dist) for lab, val, dist in stops if dist < 0]
+    overhead_levels = [(lab, val, dist) for lab, val, dist in stops if dist >= 0]
+    risk = min((abs(d) for _l, _v, d in downside_stops), default=None)
     nums = (_cf_num(pivot, "{:+.1f}%", "piv", pivot_cls, 100.0)
             + _cf_num(r.get("ext50_atr"), "{:+.1f}", "50MAσ")
             + _cf_num(r.get("uvdv20"), "{:.2f}", "U/D")
@@ -8380,22 +8393,26 @@ def _cf_row(t, r, a, rs):
         if flag(key + "_near") and _cf_fin(r.get(key + "_dist")):
             tail.append(f"{lab} {float(r.get(key + '_dist')) * 100:+.1f}%")
     tail.extend(f'<span class="neg">⚠ {_h(w)}</span>' for w in a["warning"])
-    if stops:
+    if downside_stops:
         tail.append("損切候補 " + " ／ ".join(
-            f"{lab} ${val:,.2f}({dist*100:+.1f}%)" for lab, val, dist in stops))
+            f"{lab} ${val:,.2f}({dist*100:+.1f}%)" for lab, val, dist in downside_stops))
+    if overhead_levels:
+        tail.append("上値候補 " + " ／ ".join(
+            f"{lab} ${val:,.2f}({dist*100:+.1f}%)" for lab, val, dist in overhead_levels))
     tail_html = f'<div class="cftail">{" ・ ".join(tail)}</div>' if tail else ""
 
     return (f'<div class="cfrow" data-liq="{(r.get("dvol") or 0)/1e6:.1f}" data-tkone="{t}">'
             f'<div class="cfmain"><b class="cft">{_h(t)}</b>'
             f'<span class="mut">RS189 {int(round(rs))}</span>'
+            f'{_er_badge(t, er, asof_bar) if asof_bar is not None else ""}'
             f'<div class="cfflow">{flow}</div></div>'
             f'<div class="cfnums">{nums}</div>{tail_html}</div>')
 
 
 _CF_SECTIONS = (
-    (0, "価格＋非価格3軸（需要・構造・RS）", True),
-    (1, "価格＋非価格2軸", True),
-    (2, "価格＋非価格1軸", False),
+    (0, "価格帯＋独立イベント3軸以上", True),
+    (1, "価格帯＋独立イベント2軸", True),
+    (2, "価格帯＋独立イベント1軸（監視）", False),
 )
 
 
@@ -8586,7 +8603,7 @@ def build_optwall_touch(m, opts, cap=20):
                          rs189=(int(rs189) if rs189 == rs189 else None),
                          rs21=(int(rs21) if rs21 == rs21 else None),
                          reg=o.get("reg"), conf=o.get("conf"), age=o.get("age"),
-                         above=bool(close >= float(pw)),
+                         exp=o.get("exp"), above=bool(close >= float(pw)),
                          dvol=float(r.get("dvol") or 0)))
     rows.sort(key=lambda d: abs(d["atr"]))
     return rows[:cap]
@@ -8613,7 +8630,9 @@ def _optwall_touch_card(rows):
                  f'<div><i>距離</i>{d["pct"]*100:+.1f}%</div>'
                  f'<div><i>ATR</i>{d["atr"]:+.2f}</div>'
                  f'<div><i>局面</i>{_h(str(d["reg"] or "—"))[:8]}</div></div>'
-                 + (f'<div class="pretail">建玉薄・信頼度低</div>' if d["conf"] == "LOW" else "")
+                 + f'<div class="pretail">満期 {_h(str(d.get("exp") or "—"))}'
+                   f' ・ 取得 {d["age"] if d.get("age") is not None else "—"}日前'
+                   f' ・ 信頼度 {_h(str(d.get("conf") or "—"))}</div>'
                  + '</div>')
     return (head + '<div class="sub">RSが高く、オプションの<b>下値の支え</b>（建玉が最も積み上がった価格）'
             'に±0.5ATR以内で接触している銘柄。支えの上なら押し目が拾われやすく、'
@@ -8783,7 +8802,7 @@ def _pre_breakout_card(rows, ftd=None):
             f'<div class="prelist">{body}</div></div>')
 
 
-def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
+def build_confluence_watch(m, cand=None, opts=None, er=None, asof_bar=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
     """Price overlap plus independent non-price events; no weights or total score."""
     idx = m.index
     _wst = pd.to_numeric(m.get("wst", pd.Series(np.nan, index=idx)), errors="coerce")
@@ -8794,7 +8813,7 @@ def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
         ne = {t: v for t, v in cand["new_entry"].items() if isinstance(v, str)}
     buckets = {order: [] for order, _title, _open in _CF_SECTIONS}
     for t, r in pool.iterrows():
-        a = _confluence_facts(r, ne.get(t))
+        a = _confluence_facts(r, ne.get(t), (opts or {}).get(t))
         ov = a.get("overlap") or {}
         events = a.get("events") or {}
         ov_n = int(ov.get("count") or 0)
@@ -8812,9 +8831,9 @@ def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
            'コンフルエンス＝価格位置×独立した非価格イベント。価格軸は21EMA・50MA・200MA・ピボット・'
            '63/252VWAP・上場来VWAPから、現値±10%内かつADR連動幅 min(2%, max(1%, 0.25×ADR)) 内に'
            '2本以上集まる帯。<br>'
-           '非価格軸は①需要発火＝5営業日以内のPP／本物のブレイク／カップ・ハンドルブレイク、'
-           '②構造形成＝VCP／カップ・ハンドル、③リーダー発火＝RSライン新高値／RS新規参入。'
-           '少なくとも1軸が必要。<br>'
+           '独立イベント軸は①需要発火＝5営業日以内のPP／本物のブレイク／カップ・ハンドルブレイク、'
+           '②構造形成＝VCP／カップ・ハンドル、③リーダー発火＝RSライン新高値／RS新規参入、'
+           '④デリバティブ＝3日以内・信頼度MEDIUM/HIGHのオプション建玉局面。少なくとも1軸が必要。<br>'
            '21EMAタッチ・VWAP回復は価格軸との二重計上になるためイベント数に含めない。'
            'U/D・RS値・週足Stageは確認情報で、イベント数にも配点にも使わない。'
            '母集団はRS189≥95かつ週足Stage 1/2。区分は非価格イベント軸数で、総合点・発注判定はない。<br>'
@@ -8831,25 +8850,28 @@ def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
     sections = []
     shown = []
     all_tickers = []
+    has_default_open = any(bool(buckets[o]) and op for o, _t, op in _CF_SECTIONS)
     for order, title, is_open in _CF_SECTIONS:
         items = sorted(buckets[order], key=lambda x: x[0])
         if not items:
             continue
         all_tickers.extend(t for _k, t, _r, _a in items)
-        if is_open:
+        section_open = is_open or (not has_default_open and not sections)
+        if section_open:
             shown.extend(t for _k, t, _r, _a in items[:cap])
-        rendered = [_cf_row(t, r, a, float(r.get("rs189") or 0)) for _k, t, r, a in items]
+        rendered = [_cf_row(t, r, a, float(r.get("rs189") or 0), er, asof_bar)
+                    for _k, t, r, a in items]
         body = "".join(rendered[:cap])
         if len(rendered) > cap:
             body += (f'<details class="cfdet cfmore"><summary>残り{len(rendered)-cap}件</summary>'
                      f'{"".join(rendered[cap:])}</details>')
-        sections.append(f'<details class="cfsec"{" open" if is_open else ""}>'
+        sections.append(f'<details class="cfsec"{" open" if section_open else ""}>'
                         f'<summary><span>{title}</span><span class="cfcount">{len(items)}件</span></summary>'
                         f'{body}</details>')
     return (f'<div class="card"><div class="hdr"><h2>エントリー候補ボード '
             f'<span class="h2en">Confluence</span></h2>{_cp(shown, all_tickers)}</div>'
-            f'<div class="sub">価格レベル2本以上の実際の重なりに、需要・構造・RSの非価格イベントを1軸以上併記。'
-            f'区分は非価格イベントの独立軸数で、合計点ではない。{det}</div>'
+            f'<div class="sub">価格レベル2本以上の実際の重なりに、需要・構造・RS・オプション建玉の独立イベントを1軸以上併記。'
+            f'区分は独立イベント軸数で、合計点ではない。決算8日以内はリスク表示。{det}</div>'
             f'<div class="cfwrap">{"".join(sections)}</div></div>')
 
 
@@ -13245,7 +13267,7 @@ def eligible_or_ipo(m):
         return base
 
 
-def build_multi_vwap_card(m, cap=24):
+def build_multi_vwap_card(m, cap=24, er=None, asof_bar=None):
     """Stage-1/2-only 63/252/all-time VWAP watch with a dedicated all-time break column."""
     needed = ("vwap63", "vwap252", "vwap_all")
     if m is None or m.empty or not all(x in m.columns for x in needed):
@@ -13326,7 +13348,8 @@ def build_multi_vwap_card(m, cap=24):
                '<span class="mut">—</span>' if bool(r.get("vwap_all_valid")) else '<span class="mut">対象外</span>')
         rows.append(
             f'<tr data-liq="{(r.get("dvol") or 0)/1e6:.1f}" data-tkone="{t}">'
-            f'<td class="l tk"><b>{_h(t)}</b><div class="mut" style="font-size:9.5px">RS189 {float(r.get("rs189") or 0):.0f}</div></td>'
+            f'<td class="l tk"><b>{_h(t)}</b>{_er_badge(t, er, asof_bar) if asof_bar is not None else ""}'
+            f'<div class="mut" style="font-size:9.5px">Stage {int(float(r.get("wst")))} ・ RS189 {float(r.get("rs189") or 0):.0f}</div></td>'
             f'<td>{_cell(r, "vwap63")}</td><td>{_cell(r, "vwap252")}</td>'
             f'<td>{_cell(r, "vwap_all")}</td><td>{ath}</td></tr>')
     return (f'<div class="card"><div class="hdr"><h2>Multi VWAPセットアップ</h2>{_cp(tks)}</div>'
@@ -15415,12 +15438,32 @@ function rowSort(key, th){
   tbl.querySelectorAll('th.sortable').forEach(function(h){h.classList.remove('act');h.removeAttribute('data-asc');});
   th.classList.add('act'); th.setAttribute('data-asc', asc?'0':'1');
 }
+function _secFold(tbl){
+  if(!tbl) return;
+  var gs=Array.prototype.slice.call(tbl.querySelectorAll('tbody.secgrp'));
+  var expanded=tbl.getAttribute('data-expanded')==='1';
+  gs.forEach(function(g,i){
+    var mid=gs.length>20 && i>=10 && i<gs.length-10;
+    g.classList.toggle('secmid',mid);
+    g.style.display=(!expanded&&mid)?'none':'';
+    var n=g.querySelector('.secnum');if(n)n.textContent=(i+1);
+  });
+}
+function secMiddleToggle(btn){
+  var card=btn.closest('.card'),tbl=card?card.querySelector('table.secrs'):null;if(!tbl)return;
+  var expanded=tbl.getAttribute('data-expanded')==='1';
+  tbl.setAttribute('data-expanded',expanded?'0':'1');
+  _secFold(tbl);
+  var n=Math.max(0,tbl.querySelectorAll('tbody.secgrp').length-20);
+  btn.textContent=expanded?'中間'+n+'テーマを表示':'中間'+n+'テーマを折りたたむ';
+}
 function secSort(key, th){
   var tbl=th.closest('table'); if(!tbl) return;
   var gs=Array.prototype.slice.call(tbl.querySelectorAll('tbody.secgrp'));
   var val=function(g){var v=parseFloat(g.getAttribute('data-'+key));return isNaN(v)?-Infinity:v;};
   gs.sort(function(a,b){return val(b)-val(a);});
-  gs.forEach(function(g,i){tbl.appendChild(g);var n=g.querySelector('.secnum');if(n)n.textContent=(i+1);});
+  gs.forEach(function(g){tbl.appendChild(g);});
+  _secFold(tbl);
   tbl.querySelectorAll('th.sortable').forEach(function(h){h.classList.remove('act');});
   th.classList.add('act');
 }
@@ -17973,7 +18016,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     try:   # 重なり: セットアップと発火が同時に観測された事実のみ。合否/配点には使わない。
         _cf = []
         for _t, _r in m[_elig & (m["rs189"] >= CONFLUENCE_RS189_MIN)].iterrows():
-            _facts = _confluence_facts(_r, _ne_map.get(_t))
+            _facts = _confluence_facts(_r, _ne_map.get(_t), (mkt.get("options") or {}).get(_t))
             if _facts["has_setup"] and _facts["has_trigger"]:
                 _cf.append(_t)
         _wadd(_cf, "重なり")
@@ -18125,11 +18168,11 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     # ---- TAB ピックアップ：コンフルエンス事実 → 発火 → セットアップの順。
     today = (
              _mkt_section("③ コンフルエンス（事実表示）", "発火・確認・位置/警戒を分類した一覧", en="Confluence Facts")
-             + build_confluence_watch(m, cand)
+             + build_confluence_watch(m, cand, mkt.get("options"), mkt.get("er"), mkt.get("asof_bar"))
              + _mkt_section("④ 発火トリガー", "PP・ブレイク・出来高伴う反発", en="Entry Triggers")
              + build_pocket_pivots(m) + _buy_today_card(buytoday) + _patterns_card(patterns)
              + _mkt_section("⑤ セットアップ評価", "VCP・21EMA・63/252/上場来VWAP", en="Setup Quality")
-             + _vcp_card(vcp_rows) + (mkt.get("ema_touch") or "") + build_multi_vwap_card(m)
+             + _vcp_card(vcp_rows) + (mkt.get("ema_touch") or "") + build_multi_vwap_card(m, er=mkt.get("er"), asof_bar=mkt.get("asof_bar"))
              + _mkt_section("⑥ 底打ち（構造ピボット）", "安値切り上げ＋出来高減で下げ止まり。RS63主軸・構造のみ", en="Structure Pivot")
              + build_structure_pivot_screen(m, s2t)
              + _mkt_section("⑦ W30ブレイク（30週線）", "金曜クローズ確定→翌週寄り。◎本格が本線・△ギリ抜けは警戒", en="W30 Breakout")
@@ -18222,8 +18265,9 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
         chips = "".join(_chip(t, rs) for t, rs in s.get("members", []))
         _rot = s.get("rot", "弱い"); _rc = _rotcol.get(_rot, "#9fb0c5")
         _rotord = {"初動": 5, "改善": 4, "強い継続": 3, "監視": 2, "弱い": 1}.get(_rot, 0)
+        _mid = len(sectors) > 20 and 10 < i <= len(sectors) - 10
         srows.append(
-            f'<tbody class="secgrp" data-score="{s["score"]:.3f}" data-d1="{_dz(s.get("d1"))}" '
+            f'<tbody class="secgrp{" secmid" if _mid else ""}" style="{"display:none" if _mid else ""}" data-score="{s["score"]:.3f}" data-d1="{_dz(s.get("d1"))}" '
             f'data-w1="{_dz(s.get("w1"))}" data-m1="{_dz(s.get("m1"))}" data-rot="{_rotord}">'
             f'<tr class="secrow" onclick="secToggle(\'sec{i}\')">'
             f'<td class="l mut secnum">{i}</td>'
@@ -18245,32 +18289,25 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                   + (('<span class="shl">改善</span>' + "".join(f'<span class="chip shp">{_h(x["ja"])} <b>+{x["drs"]:.0f}</b></span>' for x in _imp)) if _imp else "")
                   + (('<span class="shl shl-n">悪化</span>' + "".join(f'<span class="chip shn">{_h(x["ja"])} <b>{x["drs"]:.0f}</b></span>' for x in _wor)) if _wor else "")
                   + '</div>')
-    _edge_rows = srows if len(srows) <= 20 else (srows[:10] + srows[-10:])
-    _middle_rows = [] if len(srows) <= 20 else srows[10:-10]
-    _middle_fold = ""
-    if _middle_rows:
-        _middle_fold = (
-            f'<details class="cfdet secmiddle"><summary>中間{len(_middle_rows)}テーマを表示</summary>'
-            f'<table class="secrs"><thead><tr><th class="l">#</th>'
-            f'<th class="l sortable" onclick="secSort(\'score\',this)">サブテーマ <span class="so">⇅RS</span></th>'
-            f'<th class="sortable" onclick="secSort(\'rot\',this)">状態</th>'
-            f'<th class="sortable" onclick="secSort(\'d1\',this)">日</th>'
-            f'<th class="sortable" onclick="secSort(\'w1\',this)">週</th>'
-            f'<th class="sortable" onclick="secSort(\'m1\',this)">月</th></tr></thead>'
-            + "".join(_middle_rows) + '</table></details>')
+    _middle_n = max(0, len(srows) - 20)
+    _middle_toggle = ""
+    if _middle_n:
+        _middle_toggle = (
+            f'<button type="button" class="lqf-b secmiddle-btn" '
+            f'onclick="secMiddleToggle(this)">中間{_middle_n}テーマを表示</button>')
 
     sector = (f'<div class="card"><h2>サブテーマ別RS（ユニバース内）</h2>'
               f'<div class="sub">構成銘柄の<b>63日RS×189日RS</b>（中央値・均等ブレンド）をサブテーマ単位で0-100ランク（≥2社）。'
               f'<b>状態</b>＝ローテの局面（初動→改善→強い継続→監視→弱い）。▲▼＝約1ヶ月前との差＝資金の向き。'
-              f'<b>初期表示は上位10・下位10</b>。中間テーマは折りたたみ。見出しタップで並べ替え・行タップで構成銘柄。</div>'
-              + _shift +
-              f'<table class="secrs"><thead><tr><th class="l">#</th>'
+              f'<b>初期表示は上位10・下位10</b>。中間テーマは折りたたみ。見出しタップで全テーマを並べ替え・行タップで構成銘柄。</div>'
+              + _shift + _middle_toggle +
+              f'<table class="secrs" data-expanded="0"><thead><tr><th class="l">#</th>'
               f'<th class="l sortable act" onclick="secSort(\'score\',this)">サブテーマ <span class="so">⇅RS</span></th>'
               f'<th class="sortable" onclick="secSort(\'rot\',this)">状態</th>'
               f'<th class="sortable" onclick="secSort(\'d1\',this)">日</th>'
               f'<th class="sortable" onclick="secSort(\'w1\',this)">週</th>'
               f'<th class="sortable" onclick="secSort(\'m1\',this)">月</th></tr></thead>'
-              + "".join(_edge_rows) + '</table>' + _middle_fold + '</div>')
+              + "".join(srows) + '</table></div>')
 
     # 強い業種の主導株（強いグループ×その中で個別も強い銘柄＝O'Neil「強い株を強いグループで」）
     _sl_rows = ""
@@ -18491,7 +18528,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             + f'{sector_leaders}'
             + _mkt_section("⑤ 一覧で確認する", "見出しタップで並べ替え・行タップで構成銘柄", en="Full Rankings")
             + f'{_sector_rank_card(mkt.get("sector_ranks"))}'
-            + f'{_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100, "詳細セクターRRG（重複あり）", _RRG_ETF_DESC)}'
+            + f'{_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100, "詳細セクターRRG（テーマETF 56本・重複あり）", _RRG_ETF_DESC)}'
             + f'{sector}</section>'
             f'<section id="t-movers">{build_movers_tab(m, s2t)}</section>'
             f'<section id="t-rs">{rs_compare}</section>'

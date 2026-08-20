@@ -16,7 +16,7 @@
     .badge{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-top:12px;padding:5px 8px;border-radius:999px;background:rgba(85,213,138,.09);color:var(--green);font-size:10px;font-weight:800}.badge.weekly{background:rgba(230,189,104,.09);color:var(--gold)}.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
     footer{padding:18px 4px 0;color:var(--muted);font-size:10px;line-height:1.5}
     @media(min-width:680px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.card{min-height:210px}}
-    @media(min-width:960px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(min-width:960px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
@@ -24,7 +24,7 @@
     <header>
       <div class="eyebrow">V38 Watchlist</div>
       <h1>Command Hub</h1>
-      <p class="lead">日々の市場判断、銘柄の中身、過去期待値の研究を役割別に分けた3つの入口。</p>
+      <p class="lead">日々の市場判断、銘柄の中身、過去期待値の研究を日々の判断と運用記録をつなぐ2つの入口。</p>
     </header>
     <section class="grid" aria-label="ダッシュボード選択">
       <a class="card primary" href="command-center.html">
@@ -34,22 +34,15 @@
         <div class="go"><span>日々の運用を開く</span><span aria-hidden="true">→</span></div>
         <div class="badge"><span class="dot"></span>毎日</div>
       </a>
-      <a class="card intel" href="intelligence-dashboard.html">
-        <div class="eyebrow">Company Evidence</div>
-        <h2>Intelligence</h2>
-        <p class="desc">財務変曲、RS強度、Story、Entry品質を確認し、候補の中身とリスクを深掘り。</p>
-        <div class="go"><span>銘柄分析を開く</span><span aria-hidden="true">→</span></div>
-        <div class="badge"><span class="dot"></span>毎日・候補確認</div>
-      </a>
-      <a class="card research" href="research-dashboard.html">
-        <div class="eyebrow">Expected Edge</div>
-        <h2>Research Decision</h2>
-        <p class="desc">財務×RS×Entryの過去期待値、期間一貫性、Walk-forward、モデル健全性を検証。</p>
-        <div class="go"><span>期待値研究を開く</span><span aria-hidden="true">→</span></div>
-        <div class="badge weekly"><span class="dot"></span>週末・検証用</div>
+      <a class="card intel" href="swinote/">
+        <div class="eyebrow">Trading Journal</div>
+        <h2>Swinote</h2>
+        <p class="desc">保有・資産推移・実取引・Setup別の結果を、Command Centerの最新データと同期して確認。</p>
+        <div class="go"><span>運用ノートを開く</span><span aria-hidden="true">→</span></div>
+        <div class="badge weekly"><span class="dot"></span>記録・振り返り</div>
       </a>
     </section>
-    <footer>3画面は独立更新。研究処理の障害が既存Command Centerを止めない構成です。</footer>
+    <footer>Command Centerで判断し、Swinoteで計画と実績を振り返ります。</footer>
   </main>
 </body>
 </html>

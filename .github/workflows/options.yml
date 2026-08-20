@@ -40,8 +40,8 @@ jobs:
           V38_OPT_TICKERS: ''
           V38_OPT_MAX_EXPIRY: '4'
           V38_OPT_HTML: options-positioning.html
-          # 今回だけ全銘柄を再走査し、既存の誤った同一/逆側Wall行を最新行で上書きする。
-          V38_OPT_SCAN_ALL: '1'
+          # 全銘柄再走査は修復時だけ手動で有効化。通常日次はCore12＋候補に限定する。
+          V38_OPT_SCAN_ALL: '0'
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_SCAN_WORKERS: '8'

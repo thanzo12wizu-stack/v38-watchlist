@@ -10,14 +10,11 @@ from pathlib import Path
 PUBLIC_FILES = (
     "index.html",
     "command-center.html",
-    "intelligence-dashboard.html",
-    "research-dashboard.html",
+    "swinote/index.html",
+    "swinote/live.js",
 )
 
-LOCKED_DASHBOARDS = (
-    "intelligence-dashboard.html",
-    "research-dashboard.html",
-)
+LOCKED_DASHBOARDS = ()
 
 
 def _sha256(path: Path) -> str:
@@ -80,6 +77,7 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
     for name in PUBLIC_FILES:
         source = root / name
         target = output / name
+        target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
         files.append(
             {
