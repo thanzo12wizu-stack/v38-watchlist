@@ -1,0 +1,892 @@
+===== SPLIT =====
+HITS=2293,2749,2815,3053,3230,3259,3267,5510,5535,6548,8051,8060,13133,13365,13366,19756
+--- SOURCE 2285-2301 ---
+002285:     try:
+002286:         c = r.get("close"); dv = r.get("dvol"); mc = r.get("mcap")
+002287:         if mc is None or mc != mc or float(mc) < 1e9:      # 時価総額≥$1B（他タブ共通・欠損は除外）
+002288:             return False
+002289:         if c is None or c != c or float(c) < 5:
+002290:             return False
+002291:         if dv is None or dv != dv or float(dv) < DVOL_FLOOR:
+002292:             return False
+002293:         if bool(r.get("split_suspect")) or bool(r.get("excluded_theme")):
+002294:             return False
+002295:         return True
+002296:     except Exception:
+002297:         return False
+002298: 
+002299: def _w30_cohort_card(m, e2j=None):
+002300:     _ok = m.apply(_w30_disp_ok, axis=1) if len(m) else pd.Series(dtype=bool)
+002301:     m = m[_ok] if len(m) else m
+--- SOURCE 2741-2757 ---
+002741: # 3年窓では古い銘柄の「上場来」は作れない。累積和(Σ HLC3×出来高, Σ出来高)を
+002742: # キャッシュしておけば、以降は日次の差分を足すだけで全銘柄に拡張できる。
+002743: INCEPT_VWAP_JSON = os.environ.get("V38_INCEPT_VWAP_JSON",
+002744:                                   os.path.join(os.path.dirname(CACHE), "inception_vwap.json"))
+002745: # 1回のビルドで period="max" を新規取得する上限（初回は複数回に分けて埋める）。
+002746: # 1回の実行で period="max" を取りに行く上限。実測で1,198銘柄が約7分。
+002747: # 初回だけ全部取れば以降は差分更新なので、既定でユニバース全量を賄える値にする。
+002748: INCEPT_VWAP_BUDGET = max(0, min(3000, int(os.environ.get("V38_INCEPT_VWAP_BUDGET", "1400"))))
+002749: # 分割・併合でYahooの調整値が変わったことを検知する許容誤差。
+002750: INCEPT_VWAP_DRIFT = 0.01
+002751: 
+002752: 
+002753: def _incept_load(path=None):
+002754:     try:
+002755:         with open(path or INCEPT_VWAP_JSON, "r", encoding="utf-8") as fh:
+002756:             d = json.load(fh)
+002757:         return d if isinstance(d, dict) else {}
+--- SOURCE 2807-2823 ---
+002807: def _incept_series(rec, frame, keep=24):
+002808:     """累積和 + 直近バーから、末尾keep本の上場来VWAP系列を復元する。"""
+002809:     f = frame.replace([np.inf, -np.inf], np.nan).dropna()
+002810:     f = f[(f["v"] > 0) & (f["c"] > 0)]
+002811:     if f.empty:
+002812:         return None, None
+002813:     thr = pd.Timestamp(rec.get("through"))
+002814:     add = f[f.index > thr]
+002815:     # 調整係数のドリフト検知（分割・併合でYahooの遡及値が変わった場合）
+002816:     same = f[f.index <= thr]
+002817:     if len(same) and rec.get("anchor_close"):
+002818:         got = float(same["c"].iloc[-1])
+002819:         base = float(rec["anchor_close"])
+002820:         if base > 0 and abs(got / base - 1.0) > INCEPT_VWAP_DRIFT:
+002821:             return None, "drift"
+002822:     s_pv, s_v = float(rec["sum_pv"]), float(rec["sum_v"])
+002823:     if len(add):
+--- SOURCE 3045-3061 ---
+003045:         except Exception:
+003046:             capit5 = False
+003047:         # --- structure / base / breakout metrics ---
+003048:         hi40 = float(h.iloc[-40:].max()) if len(h) >= 40 else float(h.max())
+003049:         pivot40 = float(h.iloc[-41:-1].max()) if len(h) >= 41 else np.nan   # current bar excluded
+003050:         pivot20 = float(h.iloc[-21:-1].max()) if len(h) >= 21 else np.nan
+003051:         pb = close / hi40 - 1 if hi40 and np.isfinite(hi40) else np.nan
+003052:         adr = float((h.iloc[-20:] / l.iloc[-20:] - 1).mean())
+003053:         maxabs1d = float(c.pct_change(fill_method=None).iloc[-200:].abs().max()) if len(c) >= 2 else np.nan
+003054:         # #4/#5: 52週高値/安値は「過去252営業日のHigh/Low最大最小」に統一。252本未満はNaN
+003055:         #   （上場浅い銘柄を52週高値扱いしない／終値と日中高値の定義混在も解消）
+003056:         if len(h) >= 252:
+003057:             hi52 = float(h.iloc[-252:].max()); lo52 = float(l.iloc[-252:].min())
+003058:             dist52 = close / hi52 - 1 if hi52 > 0 else np.nan
+003059:             hi52_prev = float(h.iloc[-253:-1].max()) if len(h) >= 253 else np.nan
+003060:             pos52 = (close - lo52) / (hi52 - lo52) * 100 if hi52 > lo52 else np.nan
+003061:         else:
+--- SOURCE 3222-3238 ---
+003222:             triangle_ready=triangle_ready, trend_change=trend_change, trend_pivot=trend_pivot, trend_hl=trend_hl,
+003223:             sp=_structure_pivot(c, L[t], H[t], V[t]),
+003224:             brk_days=brk_days, brk_pivot=brk_pivot, brk_ret=brk_ret, brk_rvol=brk_rvol,
+003225:             brk_quality=brk_quality, brk_depth=brk_depth, brk_prior_run=brk_prior_run,
+003226:             power20_4=power20_4, breakout_failure=breakout_failure,
+003227:             cup_ready=cup.get("cup_ready"), cup_breakout=cup.get("cup_breakout"), cup_pivot=cup.get("cup_pivot"),
+003228:             cup_depth=cup.get("cup_depth"), handle_depth=cup.get("handle_depth"), handle_vdry=cup.get("handle_vdry"), cup_days=cup.get("cup_days"),
+003229:             rsline_newhigh=rsline_newhigh, rsline_dist=rsline_dist,
+003230:             maxabs1d=maxabs1d, lo10=lo10, lo10_prev=lo10_prev, ema21_10ago=ema21_10ago,
+003231:             ema21_touch3=ema21_touch3, ema21_touch_days=ema21_touch_days,
+003232:             atr14=atr14, ext50_atr=ext50_atr,
+003233:             vwap63=_vw63["value"], vwap63_dist=_vw63["dist"], vwap63_slope5=_vw63["slope5"],
+003234:             vwap63_near=_vw63["near"], vwap63_support=_vw63["support"], vwap63_reclaim=_vw63["reclaim"],
+003235:             vwap252=_vw252["value"], vwap252_dist=_vw252["dist"], vwap252_slope5=_vw252["slope5"],
+003236:             vwap252_near=_vw252["near"], vwap252_support=_vw252["support"], vwap252_reclaim=_vw252["reclaim"],
+003237:             vwap_all=_vwall["value"], vwap_all_dist=_vwall["dist"], vwap_all_slope5=_vwall["slope5"],
+003238:             vwap_all_near=_vwall["near"], vwap_all_support=_vwall["support"],
+--- SOURCE 3251-3275 ---
+003251:             volx=(vol/vol20) if vol20 and not np.isnan(vol20) and vol20 > 0 else np.nan,
+003252:             bbw=bbw, bbw_pct=bbw_pct, sar_bull=sar_bull,
+003253:             wst=wsx.get("wst"), wstw=wsx.get("wstw"),
+003254:             wsb=wsx.get("wsb"), wsbf=(1 if wsx.get("wsbf") else 0),
+003255:         ))
+003256:     df = pd.DataFrame(recs).set_index("t")
+003257:     # A1 分割アーティファクト・ガード: 直近200日の単日変化率>150%はスプリット/データ異常のゴースト
+003258:     #   （CHRD +80,376% 等）。RSランキングから除外＝RS=NaNで選定・リーダー判定から自然脱落。
+003259:     df["split_suspect"] = (df["maxabs1d"] > 1.50).fillna(False)
+003260:     # A2 プール内RS: RSは「非サスペクト × 株価≥$5 × 20日$出来高≥$10M」内の順位で付ける。
+003261:     #   RS85 の意味が微小株で希釈されるのを解消＝リーダー判定/選定の母集団を統一（バグ⑤も解消）。
+003262:     #   プール外は RS=NaN → 選定・リーダーから自然脱落。順位の相対順は保たれるので採用12の並びは不変。
+003263:     _bio_excluded, _bio_unknown = _bio_selection_masks(df.index)
+003264:     df["selection_excluded"] = _bio_excluded
+003265:     df["excluded_theme"] = _bio_excluded                 # existing UI/filters use this canonical flag
+003266:     df["bio_revenue_unknown"] = _bio_unknown
+003267:     _pool = ((~df["split_suspect"]) & (df["close"] >= 5) & (df["dvol"] >= DVOL_FLOOR)
+003268:              & (~_bio_excluded))
+003269:     df["rs_pool"] = _pool
+003270:     def _rank_with_excluded_reference(col, pool):
+003271:         out = df[col].where(pool).rank(pct=True) * 100
+003272:         # Structural exclusions do not enter the denominator, but get an empirical-CDF
+003273:         # reference RS for display/candidate audit. Other non-tradable names remain NaN.
+003274:         try:
+003275:             refmask = _bio_excluded & df[col].notna()
+--- SOURCE 5502-5518 ---
+005502: # ─────────────────────────────────────────────────────────────────────────────
+005503: # 業種分類（TradingView）。universe.csv と同じ体系なので既存の「セクター」列と整合する。
+005504: # 手動メンテの sector_snapshot.json(s2i) は2026-06以降更新されず、新規上場が未分類のまま
+005505: # 集計から抜けていた。スキャナーは12,000銘柄を約16秒で返し、被覆99.6%。
+005506: # ─────────────────────────────────────────────────────────────────────────────
+005507: # RSが付かない理由。RSは「株価≥$5 × 20日$出来高≥$10M × 分割異常なし」の母集団内でのみ
+005508: # 百分位を付けるため、プール外はNaNになる。画面には「—」ではなく理由を出す。
+005509: RS_OFF_LABEL = {
+005510:     "liq": "流動性外", "price": "低位株", "split": "分割疑い",
+005511:     "hist": "履歴不足", "ipo": "新規上場", "none": "データなし",
+005512: }
+005513: RS_OFF_HELP = {
+005514:     "liq": "20日平均$出来高が$10M未満。RSの母集団に入れていない",
+005515:     "price": "株価が$5未満。RSの母集団に入れていない",
+005516:     "split": "直近200日に単日±150%超の変化。分割/データ異常としてRSから除外",
+005517:     "hist": "価格履歴が不足していてRSを算出できない",
+005518:     "ipo": "上場から日が浅く189日RSを算出できない。短期RS(21/63日)で判断する",
+--- SOURCE 5527-5543 ---
+005527:     def _num(k):
+005528:         try:
+005529:             v = r.get(k)
+005530:             return float(v) if v is not None and np.isfinite(float(v)) else None
+005531:         except Exception:
+005532:             return None
+005533:     if _num("rs189") is not None:
+005534:         return ""
+005535:     if bool(r.get("split_suspect")):
+005536:         return "split"
+005537:     close, dvol = _num("close"), _num("dvol")
+005538:     if close is None:
+005539:         return "none"
+005540:     if close < 5:
+005541:         return "price"
+005542:     if dvol is None or dvol < DVOL_FLOOR:
+005543:         return "liq"
+--- SOURCE 6540-6556 ---
+006540:         ("Yahoo価格カバー率", _pcovtxt),
+006541:         ("Yahoo取得経路", _yahoo),
+006542:         ("最終未取得ticker", "・".join(q.get("missing_tickers") or []) or "なし"),
+006543:         ("FMP無料参照", (f'API {q.get("fmp_queries", 0)}回・cache {q.get("fmp_cache_hits", 0)}件・確認 {q.get("fmp_confirmed", 0)}件・変更候補 {q.get("fmp_aliases", 0)}件'
+006544:                         if q.get("fmp_mode") else "未使用（価格キャッシュ）")),
+006545:         ("ticker変更候補", _alias_txt),
+006546:         ("FMP用途", "銘柄照合のみ（価格・一覧・screenerの有料APIは不使用）"),
+006547:         ("時価総額カバー率", _covtxt),
+006548:         ("分割サスペクト", (f'{q.get("split_suspect")}銘柄 除外' if q.get("split_suspect") else "0（クリーン）")),
+006549:         ("RSプール幅", f'{q.get("rs_pool", 0)}銘柄（非サスペクト×$5×$10M内で順位付け）'),
+006550:         ("地合いソース", {"file": "手動(TradingView)＝正", "estimate": "自動推定(FSM復元)", "none": "無判定"}.get(q.get("nq_src"), q.get("nq_src") or "—")),
+006551:         ("次回リバランス", q.get("next_rebal") or "—"),
+006552:         ("マクロ未取得", "・".join(q.get("macro_missing") or []) or "なし"),
+006553:         ("地合い除外指標", "・".join(q.get("mri_dropped") or []) or "なし"),
+006554:         ("センチメント源", "・".join(q.get("senti_src") or []) or "なし"),
+006555:         ("決算日キャッシュ", f'{q.get("er_n", 0)}銘柄'),
+006556:         ("エクイティCSV", "あり" if q.get("eq") else "未設定"),
+--- SOURCE 8043-8068 ---
+008043:     try:
+008044:         _nan = pd.Series(np.nan, index=m.index)
+008045:         return (setup_eligible_core(m) & m.get("adr", _nan).ge(SETUP_MIN_ADR)).fillna(False)
+008046:     except Exception:
+008047:         return pd.Series(False, index=m.index)
+008048: 
+008049: 
+008050: def setup_eligible_core(m):
+008051:     """Setups全カード共通の適格母集団：株価≥5・売買代金≥$10M・時価総額≥$1B・分割疑い除外・除外テーマ除外。
+008052:        RSや200MA等の個別条件はこれに & して各カードで足す（早期転換でRSを緩めるのは可・株価/流動性/時価総額/除外は共通）。
+008053:        列欠損・例外時はフェイルクローズ（全除外）——適格側に倒すより安全。"""
+008054:     try:
+008055:         _nan = pd.Series(np.nan, index=m.index)
+008056:         mask = pd.Series(True, index=m.index)
+008057:         mask &= m.get("close", _nan).ge(5)
+008058:         mask &= m.get("dvol", _nan).ge(DVOL_FLOOR)
+008059:         mask &= m.get("mcap", _nan).ge(1e9)
+008060:         mask &= ~m.get("split_suspect", pd.Series(True, index=m.index)).fillna(True)
+008061:         mask &= ~m.get("excluded_theme", pd.Series(True, index=m.index)).fillna(True)
+008062:         return mask.fillna(False)
+008063:     except Exception as _e:
+008064:         sys.stderr.write("[setup_eligible] eligibility failed: %r\n" % (_e,))
+008065:         return pd.Series(False, index=m.index)
+008066: 
+008067: 
+008068: CONFLUENCE_RS189_MIN = 95
+--- SOURCE 13125-13141 ---
+013125:     "カップ・ハンドル": "上半分の浅いハンドルと出来高枯れ",
+013126:     "ハイタイトフラグ": "8週で約90%上昇後の浅い保ち合い",
+013127: }
+013128: 
+013129: def build_patterns(m, s2i, e2j, s2t, k=8):
+013130:     """Conservative pattern candidates. Exact chart review remains necessary for shape-sensitive patterns."""
+013131:     up50 = m["close"] > m["sma50"]
+013132:     near = m["dist52"] >= -0.25
+013133:     liq = setup_eligible(m)   # 株価・流動性・時価総額・分割疑い・除外テーマを共通適用
+013134:     pats = {
+013135:         "アンダーカット&ラリー": m[(m["ucr"] == True) & up50 & (m["rs189"] >= 70) & liq],
+013136:         "3タイトクローズ": m[(m["tc3"] <= 0.015) & (m["vdry_pre"] <= 0.90) & up50 & near & (m["rs189"] >= 80) & liq],
+013137:         "フラットベース": m[(m["stage2"] == True) & near & (m["base_depth25"] <= 0.15)
+013138:                            & (m["range20"] <= 0.15) & (m["vdry_pre"] <= 0.95) & (m["rs189"] >= 80) & liq],
+013139:         "カップ・ハンドル": m[((m["cup_ready"] == True) | (m["cup_breakout"] == True)) & (m["rs189"] >= 80) & liq],
+013140:         "ハイタイトフラグ": m[(m["ret20"] >= 0.20) & (m["ret63"] >= 0.70)
+013141:                               & (m["base_depth25"] <= 0.20) & up50 & (m["rs189"] >= 85) & liq],
+--- SOURCE 13357-13374 ---
+013357:             return None
+013358:         cols = [t for t in m.index if t in C.columns and t in V.columns]
+013359:         if len(cols) < 30:
+013360:             return None
+013361:         # 189d return + 63d observation window + volume warm-up.
+013362:         C = C[cols].sort_index().iloc[-320:]
+013363:         V = V[cols].reindex(C.index).sort_index()
+013364:         pool = (C >= 5) & ((C * V.rolling(20).mean()) >= DVOL_FLOOR)
+013365:         if "split_suspect" in m.columns:
+013366:             bad = [t for t in cols if bool(m.at[t, "split_suspect"])]
+013367:             if bad:
+013368:                 pool.loc[:, bad] = False
+013369: 
+013370:         def _rs(period):
+013371:             ret = C.pct_change(period, fill_method=None)
+013372:             return ret.where(pool).rank(axis=1, pct=True) * 100.0
+013373:         r63, r126, r189 = _rs(63), _rs(126), _rs(189)
+013374:         rk189 = r189.rank(axis=1, ascending=False, method="min")
+--- SOURCE 19748-19764 ---
+019748:         missing_tickers=_missing_tk,
+019749:         yf_requested=_fq.get("yf_requested"), yf_batch_have=_fq.get("yf_batch_have"),
+019750:         yf_serial_recovered=_fq.get("yf_serial_recovered", 0),
+019751:         yf_reference_recovered=_fq.get("yf_reference_recovered", 0),
+019752:         fmp_mode=_fq.get("fmp_mode"), fmp_queries=_fq.get("fmp_queries", 0),
+019753:         fmp_cache_hits=_fq.get("fmp_cache_hits", 0), fmp_confirmed=_fq.get("fmp_confirmed", 0),
+019754:         fmp_aliases=_fq.get("fmp_aliases", 0), alias_suggestions=_fq.get("alias_suggestions") or [],
+019755:         fmp_paid_endpoints_used=bool(_fq.get("fmp_paid_endpoints_used", False)),
+019756:         split_suspect=int(m["split_suspect"].sum()) if "split_suspect" in m else 0,
+019757:         rs_pool=int(m["rs_pool"].sum()) if "rs_pool" in m else len(m),
+019758:         nq_src=sar[1],
+019759:         next_rebal=f"{_rebal_next}（隔週・月曜）",
+019760:         macro_missing=[k for k in MACRO_TICKERS if k not in macro],
+019761:         mri_dropped=list(dropped),
+019762:         senti_src=(mkt["senti"] or {}).get("avail") or [],
+019763:         er_n=len(mkt["er"] or {}), eq=bool(mkt["equity"]),
+019764:         emergency_available=bool((mkt.get("emergency") or {}).get("available")),
+===== CONFLUENCE =====
+HITS=7952,7955,8033,8068,8295,8586,8594,8613,8636,8866,13244,17730,17731,17880,17882,17883,18566,18612,18620,18621,18622,18726,18728,18730,18735,18737,18739,18915
+--- SOURCE 7944-7963 ---
+007944:     rtxt = f"（下げ日最大出来高の{rt:.1f}倍）" if rt == rt else ""
+007945:     lab = "PP" if d == 0 else f"PP {d}日前"
+007946:     cls = "ppb ppb-now" if d == 0 else "ppb"
+007947:     return (f'<span class="{cls}" title="ポケットピボット(10D){rtxt}: 上げ日かつ出来高が直近10営業日の'
+007948:             f'「下げ日の最大出来高」を上回る（10日線・50日線の上のみ）。Kacher/Morales。'
+007949:             f'">{lab}</span>')
+007950: 
+007951: 
+007952: # コンフルエンスは採点しない。
+007953: # 既存指標が示す「セットアップ/発火/確認/位置・警戒」を分類して、
+007954: # 観測値とブール値をそのまま表示する。発注候補の合否には使わない。
+007955: def _confluence_facts(r, new_entry=None):
+007956:     """Classify existing observations without weights, totals or an ENTRY flag."""
+007957:     def ok(v):
+007958:         try:
+007959:             return v is not None and np.isfinite(float(v))
+007960:         except Exception:
+007961:             return False
+007962:     def flag(name):
+007963:         value = r.get(name)
+--- SOURCE 8025-8041 ---
+008025:         warnings.append("ブレイク失敗")
+008026:     return dict(setup=setups, trigger=triggers, confirm=confirms,
+008027:                 location=locations, warning=warnings,
+008028:                 has_setup=bool(setups), has_trigger=bool(triggers))
+008029: 
+008030: 
+008031: def _signals_of(r, new_entry=None):
+008032:     """Compatibility helper used by the displayed-location index."""
+008033:     a = _confluence_facts(r, new_entry)
+008034:     return a["setup"] + a["trigger"] + a["confirm"]
+008035: 
+008036: 
+008037: SETUP_MIN_ADR = 0.035     # ADR3.5%未満は値幅不足。Setups全カード共通で除外。
+008038: 
+008039: 
+008040: def setup_eligible(m):
+008041:     """Setups全カード共通の適格。コア条件（株価/流動性/時価総額/分割/除外テーマ）に
+--- SOURCE 8060-8076 ---
+008060:         mask &= ~m.get("split_suspect", pd.Series(True, index=m.index)).fillna(True)
+008061:         mask &= ~m.get("excluded_theme", pd.Series(True, index=m.index)).fillna(True)
+008062:         return mask.fillna(False)
+008063:     except Exception as _e:
+008064:         sys.stderr.write("[setup_eligible] eligibility failed: %r\n" % (_e,))
+008065:         return pd.Series(False, index=m.index)
+008066: 
+008067: 
+008068: CONFLUENCE_RS189_MIN = 95
+008069: 
+008070: 
+008071: def _cf_fin(v):
+008072:     try:
+008073:         return v is not None and np.isfinite(float(v))
+008074:     except Exception:
+008075:         return False
+008076: 
+--- SOURCE 8287-8303 ---
+008287:     # 主: 詳細JSON。距離・ATR・重なりまで持つのでこちらで上書きする。
+008288:     try:
+008289:         d = json.load(open(OPT_JSON, encoding="utf-8"))
+008290:         age = _age(d.get("asof"))
+008291:         for tk, v in (d.get("tickers") or {}).items():
+008292:             g = lambda k: (v.get(k) or {})
+008293:             conf_names = []
+008294:             for key in ("call_wall", "put_wall", "gamma_flip"):
+008295:                 for c in ((v.get("confluence") or {}).get(key) or []):
+008296:                     if c.get("name") not in conf_names:
+008297:                         conf_names.append(c["name"])
+008298:             out[str(tk).upper()] = dict(
+008299:                 cw=g("call_wall").get("px"), pw=g("put_wall").get("px"),
+008300:                 gf=g("gamma_flip").get("px"),
+008301:                 cwp=g("call_wall").get("pct"), pwp=g("put_wall").get("pct"),
+008302:                 gfp=g("gamma_flip").get("pct"),
+008303:                 cwa=g("call_wall").get("atr"), pwa=g("put_wall").get("atr"),
+--- SOURCE 8578-8602 ---
+008578:     return (head + '<div class="sub">ベースが整い、出来高が枯れ、21EMA/VWAPに張り付いている'
+008579:             '<b>未発火</b>銘柄。発火を待たずに構造で拾う。'
+008580:             'ベース4週未満・深さ8%未満または35%超・3本目以降のベース・50日線から4ATR超は除外。'
+008581:             '並びは「ベース段階 → 静けさ（出来高×ATR収縮）→ ピボットまでの距離」の3キーのみで、'
+008582:             '配点も合否判定もしない。業種名が緑＝業種RS65以上かつブレッドス30%以上。</div>'
+008583:             f'<div class="prelist">{body}</div></div>')
+008584: 
+008585: 
+008586: def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
+008587:     """Fact-only board: no weights, totals, rankings or order recommendations."""
+008588:     pool = m[setup_eligible(m) & (m["rs189"] >= min_rs)]
+008589:     ne = {}
+008590:     if cand is not None and "new_entry" in cand.columns:
+008591:         ne = {t: v for t, v in cand["new_entry"].items() if isinstance(v, str)}
+008592:     buckets = {order: [] for order, _title, _open in _CF_SECTIONS}
+008593:     for t, r in pool.iterrows():
+008594:         a = _confluence_facts(r, ne.get(t))
+008595:         if not (a["setup"] or a["trigger"] or a["location"]):
+008596:             continue
+008597:         order, fresh, pdist = _cf_tier(a, r)
+008598:         # 並びは「執行の近さ」。第1キー=発火の鮮度、第2キー=ピボットまでの距離。
+008599:         # どちらも事実の量で、重み付けや総合点は使っていない。
+008600:         buckets[order].append(((fresh, round(pdist, 2), -float(r.get("rs189") or 0)), t, r, a))
+008601:     det = ('<details class="cfdet"><summary>並べ方と列の意味</summary>'
+008602:            '<div class="cflg">'
+--- SOURCE 8605-8621 ---
+008605:            'A/B/C/D の区分もこの2つの閾値で切っているだけで、合否判定ではない。<br>'
+008606:            'piv=ピボットまでの距離／50MAσ=50日線からのATR距離／U/D=20日の上昇下降出来高比／'
+008607:            'ADR=1日の平均値幅／損切まで=下にある損切候補のうち最も近いものまでの距離。<br>'
+008608:            '損切候補は 10日安値・21EMA・ピボット−1ATR の実価格。どれを使うかは自分で決める。'
+008609:            '</div></details>')
+008610:     total = sum(len(items) for items in buckets.values())
+008611:     if not total:
+008612:         return (f'<div class="card"><div class="hdr"><h2>エントリー候補ボード '
+008613:                 f'<span class="h2en">Confluence</span></h2></div>'
+008614:                 f'<div class="sub">RS189≥{min_rs}の該当なし。{det}</div>'
+008615:                 '<div class="empty">該当なし</div></div>')
+008616: 
+008617:     sections = []
+008618:     shown = []
+008619:     all_tickers = []
+008620:     for order, title, is_open in _CF_SECTIONS:
+008621:         items = sorted(buckets[order], key=lambda x: (x[0], x[1]))
+--- SOURCE 8628-8644 ---
+008628:         body = ''.join(rendered[:cap])
+008629:         if len(rendered) > cap:
+008630:             body += (f'<details class="cfdet cfmore"><summary>残り{len(rendered)-cap}件</summary>'
+008631:                      f'{"".join(rendered[cap:])}</details>')
+008632:         sections.append(f'<details class="cfsec"{" open" if is_open else ""}>'
+008633:                         f'<summary><span>{title}</span><span class="cfcount">{len(items)}件</span></summary>'
+008634:                         f'{body}</details>')
+008635:     return (f'<div class="card"><div class="hdr"><h2>エントリー候補ボード '
+008636:             f'<span class="h2en">Confluence</span></h2>{_cp(shown, all_tickers)}</div>'
+008637:             f'<div class="sub">RS189≥{min_rs}。発火の新しい順・ピボットに近い順。pivは±3%以内を強調、'
+008638:             f'-15%より下を淡色表示（距離表示のみ・合否ではない）。{det}</div>'
+008639:             f'<div class="cfwrap">{"".join(sections)}</div></div>')
+008640: 
+008641: 
+008642: def build_pocket_pivots(m, cap=10):
+008643:     """ポケットピボット(10D)ウォッチリスト。当日発生を優先し、出来高の増加率(下げ日最大比)上位。"""
+008644:     if "pp_days" not in m.columns:
+--- SOURCE 8858-8874 ---
+008858:         return []
+008859:     sub = m[base.fillna(False)].copy()
+008860:     if sub.empty:
+008861:         return []
+008862:     sub = sub.sort_values(["rs189"], ascending=[False])
+008863:     out = []
+008864:     for t, r in sub.head(k).iterrows():
+008865:         ind = s2i.get(t); indja = e2j.get(ind, ind) if ind else "—"
+008866:         _a = _confluence_facts(r)
+008867:         out.append(dict(t=t, rs=float(r["rs189"]),
+008868:                         contractions=int(r.get("contractions") or 0), higher_lows=bool(r.get("higher_lows")),
+008869:                         vdry=r.get("vdry_pre"), atrc=r.get("atr_contract"), pivot_dist=r.get("pivot_dist"),
+008870:                         touches=int(r.get("pivot_touches") or 0), rsline=bool(r.get("rsline_newhigh")),
+008871:                         uvdv=r.get("uvdv20"),
+008872:                         adr=float(r["adr"]), d52=float(r["dist52"]), pb=r.get("pb"), dvol=r.get("dvol"),
+008873:                         trigger_state=("発火あり" if _a["trigger"] else "未発火"),
+008874:                         triggers=_a["trigger"],
+--- SOURCE 13236-13252 ---
+013236:         '<button type="button" class="stratbtn" data-strat="swing" onclick="hldStratPick(this)">裁量スイング</button>'
+013237:         '</div></div>'
+013238:         '<div class="ci-row2" style="margin-top:6px;gap:6px">'
+013239:         '<input id="hldSh" type="number" inputmode="decimal" placeholder="株数(任意)">'
+013240:         '<input id="hldPx" type="number" inputmode="decimal" placeholder="建値$(任意)">'
+013241:         '<input id="hldDt" type="date"></div>'
+013242:         '<div class="ci-row2" style="margin-top:6px;gap:6px">'
+013243:         '<select id="hldSetup" class="hldsel" style="flex:1"><option value="">セットアップ（なぜ入る？・任意）</option>'
+013244:         '<option>重なり(confluence)</option><option>ポケットピボット</option><option>VCPブレイク</option>'
+013245:         '<option>底打ち(構造ピボット)</option><option>本日ブレイク</option><option>押し目(21EMA)</option>'
+013246:         '<option>リーダー継続</option><option>レバETFゲート</option><option>裁量</option><option>その他</option></select>'
+013247:         '<select id="hldConv" class="hldsel" style="flex:0 0 auto"><option value="">確信度</option>'
+013248:         '<option>高</option><option>中</option><option>低</option></select></div>'
+013249:         '<div class="ci-row2" style="margin-top:6px">'
+013250:         '<input id="hldMemo" type="text" placeholder="エントリー理由・見立て（なぜ今か／トリガー／想定リスク）" style="width:100%"></div>'
+013251:         '<details class="cxpl"><summary>記録のコツ（何を書くと後で役立つか）</summary><div class="cxpl-b">'
+013252:         '<b>入る前に一言で言語化</b>すると後の振り返りが効きます。'
+--- SOURCE 17722-17739 ---
+017722:         _sp.sort(key=lambda t: (0 if (m.at[t, "sp"] or {}).get("vdry") else 1,
+017723:                                 -(float(m.at[t, "rs63"]) if ("rs63" in m.columns and m.at[t, "rs63"] == m.at[t, "rs63"]) else -1)))
+017724:         _wadd(_sp[:24], "底打ち")
+017725:     except Exception: pass
+017726:     try: _wadd(list(m.index[_elig & m["pp_days"].notna() & (m["close"] > m["sma200"]) & (m["rs189"] >= LEADER_RS)]), "ポケット")
+017727:     except Exception: pass
+017728:     try:   # 重なり: セットアップと発火が同時に観測された事実のみ。合否/配点には使わない。
+017729:         _cf = []
+017730:         for _t, _r in m[_elig & (m["rs189"] >= CONFLUENCE_RS189_MIN)].iterrows():
+017731:             _facts = _confluence_facts(_r, _ne_map.get(_t))
+017732:             if _facts["has_setup"] and _facts["has_trigger"]:
+017733:                 _cf.append(_t)
+017734:         _wadd(_cf, "重なり")
+017735:     except Exception: pass
+017736:     try:
+017737:         _vw = pd.Series(False, index=m.index)
+017738:         for _vk in ("vwap63", "vwap252", "vwap_all"):
+017739:             for _vs in ("_near", "_support", "_reclaim"):
+--- SOURCE 17872-17891 ---
+017872:             + _mkt_section(f"{_deck_num} 控え", "次の入替で上がってくる候補", en="Bench") + deck_card
+017873:             + _tenbagger)
+017874:     search_card = (
+017875:         '<div class="card"><h2>銘柄検索</h2>'
+017876:         '<div class="sub">ティッカーで全ユニバースを検索（タップで詳細）</div>'
+017877:         '<input id="tksearch" class="tksearch" type="text" inputmode="search" autocomplete="off" '
+017878:         'placeholder="例: NVDA" oninput="tkSearch(this.value)">'
+017879:         '<div id="tkresults" class="tkresults"></div></div>')
+017880:     # ---- TAB ピックアップ：コンフルエンス事実 → 発火 → セットアップの順。
+017881:     today = (
+017882:              _mkt_section("③ コンフルエンス（事実表示）", "発火・確認・位置/警戒を分類した一覧", en="Confluence Facts")
+017883:              + build_confluence_watch(m, cand)
+017884:              + _mkt_section("④ 発火トリガー", "PP・ブレイク・出来高伴う反発", en="Entry Triggers")
+017885:              + build_pocket_pivots(m) + _buy_today_card(buytoday) + _patterns_card(patterns)
+017886:              + _mkt_section("⑤ セットアップ評価", "VCP・21EMA・63/252/上場来VWAP", en="Setup Quality")
+017887:              + _vcp_card(vcp_rows) + (mkt.get("ema_touch") or "") + build_multi_vwap_card(m)
+017888:              + _mkt_section("⑥ 底打ち（構造ピボット）", "安値切り上げ＋出来高減で下げ止まり。RS63主軸・構造のみ", en="Structure Pivot")
+017889:              + build_structure_pivot_screen(m, s2t)
+017890:              + _mkt_section("⑦ W30ブレイク（30週線）", "金曜クローズ確定→翌週寄り。◎本格が本線・△ギリ抜けは警戒", en="W30 Breakout")
+017891:              + build_w30_breakouts(m, e2j=e2j)
+--- SOURCE 18558-18574 ---
+018558:     "オプション想定変動幅": "Expected Move", "クレジット推移": "Credit Spread",
+018559:     "サブテーマ別RS": "Sub-Theme RS", "スイング・プランナー": "Trade Planner",
+018560:     "テーマ・ローテーション": "Theme Rotation (RRG)", "ディストリビューション・デイ": "Distribution Days",
+018561:     "ブレッドス推移": "Breadth Trend", "ポートフォリオ": "Portfolio",
+018562:     "レバレッジ・コンディション": "Leverage Conditions", "売買代金 参加度": "Volume Participation",
+018563:     "広がりの勢い": "McClellan Oscillator", "攻守ローテーション": "Risk-On/Off Rotation",
+018564:     "集積／分散": "Accumulation/Distribution", "ポジション・サイザー": "Position Sizer",
+018565:     "エントリー候補ボード": "Entry Board", "セクター・ローテーション": "Sector Rotation (RRG)", "ポケットピボット": "Pocket Pivots (10D)",
+018566:     "新規参入": "New Entrants", "兆候の重なり": "Signal Confluence",
+018567: }
+018568: 
+018569: def _inject_en_titles(html):
+018570:     """全<h2>タイトルにサーバー側で英語併記を注入（JS非依存で確実）。"""
+018571:     import re as _re
+018572:     keys = sorted(_EN_TITLE_MAP.keys(), key=len, reverse=True)
+018573:     def _rep(mobj):
+018574:         inner = mobj.group(1)
+--- SOURCE 18604-18630 ---
+018604:             if _rcov is not None and _rcov < 0.80:
+018605:                 warns.append(f"RS189 coverage low: {_rcov*100:.0f}% (<80%)")
+018606:             _mm = _q.get("macro_missing") or []
+018607:             if len(_mm) >= 3:
+018608:                 warns.append(f"macro series missing: {len(_mm)}")
+018609:     except Exception:
+018610:         pass
+018611:     # Setups回帰ガード: 特徴個数・任意配点・発注合否へ戻さない。
+018612:     for _label in ('<div class="msec-l">③ コンフルエンス（事実表示）',
+018613:                    '<h2>エントリー候補ボード',
+018614:                    '<h2>Multi VWAPセットアップ</h2>',
+018615:                    '<th>63 VWAP</th>', '<th>252 VWAP</th>', '<th>上場来ブレイク</th>'):
+018616:         if _label not in html:
+018617:             errs.append("setups required block missing: " + _label)
+018618:     if ("兆候が4つ以上そろった銘柄" in html or "52週高値−15%以内" in html
+018619:             or "ENTRY候補だけ" in html or "スコア65以上" in html):
+018620:         errs.append("旧/未検証コンフルエンス（個数数え/高値圏加点/配点合否）が残存")
+018621:     if CONFLUENCE_RS189_MIN != 95:
+018622:         errs.append("confluence facts: RS189表示下限が95から変更")
+018623:     if MULTI_VWAP_RS189_MIN != 85:
+018624:         errs.append("multi vwap: 63/252のRS189下限が85から変更")
+018625:     if "VIX反転シーケンス" not in html or "VIX FEAR CYCLE" not in html:
+018626:         errs.append("VIX fear-cycle card missing from Daily")
+018627:     try:
+018628:         _h2 = (mkt or {}).get("etf_hier") or {}
+018629:         if _h2:
+018630:             _cov = sum(int(x.get("n") or 0) for v in _h2.values() for x in v)
+--- SOURCE 18718-18747 ---
+018718:     try:
+018719:         _base = dict(vcp_ready=True, ema21_touch3=False, stage2=True, higher_lows=True,
+018720:                      contractions=2, pivot_dist=-0.02, true_breakout=False, pp_days=0,
+018721:                      rvol_pre=1.1, pchg=0.01, close_pos=0.7, rs189=94, rs=91,
+018722:                      rsline_newhigh=True, uvdv20=1.2, ext50_atr=4.5, adr=0.05,
+018723:                      ret5=0.01, breakout_failure=False, vwap63_support=False,
+018724:                      vwap63_reclaim=False, vwap252_support=False, vwap252_reclaim=False,
+018725:                      vwap_all_support=False, vwap_all_reclaim=False)
+018726:         _ca = _confluence_facts(pd.Series(_base))
+018727:         if "VCP" not in _ca.get("setup", []) or "PP本日" not in _ca.get("trigger", []):
+018728:             errs.append("confluence facts: VCP/PPの観測分類が不正")
+018729:         if any(_k in _ca for _k in ("score", "ready", "setup_score", "trigger_score")):
+018730:             errs.append("confluence facts: 配点/合否キーが残存")
+018731:         _near = dict(_base)
+018732:         _near.update(vcp_ready=False, pp_days=None, rsline_newhigh=False, uvdv20=0.9,
+018733:                      vwap63_near=True, vwap63_dist=0.01,
+018734:                      vwap63_support=False, vwap63_reclaim=False, rvol_pre=1.0)
+018735:         _na = _confluence_facts(pd.Series(_near))
+018736:         if _na.get("has_trigger") or "63VWAP" not in " ".join(_na.get("location", [])):
+018737:             errs.append("confluence facts: VWAP近接の位置/発火分離が不正")
+018738:     except Exception as _e:
+018739:         errs.append("confluence facts self-test raised: " + repr(_e)[:100])
+018740:     # -- #3/#4 XSS検査: 外部文字列(テーマ/社名/業種/note/日付)からの実注入だけを検出する。
+018741:     #   重要: エスケープ済み外部文字列を「属性値」に入れると、値内の > は &gt; になりリテラル > が消える。
+018742:     #   そのため素朴な `<[^>]*onerror=` は、安全にエスケープされた属性内テキストまで誤検知する（実害無しでビルドを止める）。
+018743:     #   → 検出は「リテラル<タグ かつ 実ハンドラ(値が & で始まらない=エスケープされていない)」に限定する。
+018744:     try:
+018745:         import re as _re4
+018746:         # 開発者由来の<script>...</script>（CALC/DET/SPARK等の埋め込みJS・中身はエスケープ済みデータ）は除外して本文だけ見る
+018747:         _body_only = _re4.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=_re4.S | _re4.I)
+--- SOURCE 18907-18923 ---
+018907:         try:
+018908:             if _cc2.get("next_rebal") and _cc2.get("rebal_anchor") and not is_rebalance_date(_cc2["next_rebal"], _cc2["rebal_anchor"]):
+018909:                 errs.append("次回リバランス日が隔週アンカーと不整合")
+018910:         except Exception:
+018911:             errs.append("リバランス日検証に失敗")
+018912:     for sid in ["t-today","t-movers","t-market","t-weekly","t-port","t-alloc","t-rs","t-rotation","t-rules","t-post1"]:
+018913:         if f'id="{sid}"' not in html:
+018914:             errs.append(f"missing tab {sid}")
+018915:     for _lab in ("③ コンフルエンス（事実表示）", "④ 発火トリガー", "⑤ セットアップ評価", "⑥ 底打ち（構造ピボット）", "⑦ W30ブレイク（30週線）", "⑧ リーダー母集団"):
+018916:         if _lab not in html:
+018917:             errs.append(f"pickup section missing: {_lab}")
+018918:     if "Setups</button>" not in html and "Setups</a>" not in html:
+018919:         errs.append("setups(pickup) tab label missing")
+018920:     if "RSマルチタイムフレーム比較" not in html: errs.append("RS comparison tab missing")
+018921:     for _lab in ("RS63 Top10", "RS126 Top10", "RS189 Top10"):
+018922:         if _lab not in html: errs.append(f"RS comparison ranking missing: {_lab}")
+018923:     if "Top10 IN / OUT履歴" not in html: errs.append("RS Top10 IN/OUT history missing")
+===== INCEPTION =====
+HITS=2740,2744,2808,2862,2863,3085,5544,7987,8011,8176,13039,13054,13066,13067,13071,13081,13115,13116,13118,15148,17886,18648,18659,18664,18666,18670,18672,19435
+--- SOURCE 2732-2752 ---
+002732:     rv = float(v.iloc[-1] / vv.mean()) if len(vv) >= 20 and float(vv.mean()) > 0 else np.nan
+002733:     breakout = bool(base_ok and float(c.iloc[-2]) <= left and float(c.iloc[-1]) > left and rv == rv and rv >= 1.35)
+002734:     out.update(cup_ready=ready, cup_breakout=breakout, cup_pivot=left, cup_depth=depth,
+002735:                handle_depth=hdepth, handle_vdry=hvdry, cup_days=int(duration))
+002736:     return out
+002737: 
+002738: 
+002739: 
+002740: # ---------------------------------------------------------------- 上場来VWAP
+002741: # 3年窓では古い銘柄の「上場来」は作れない。累積和(Σ HLC3×出来高, Σ出来高)を
+002742: # キャッシュしておけば、以降は日次の差分を足すだけで全銘柄に拡張できる。
+002743: INCEPT_VWAP_JSON = os.environ.get("V38_INCEPT_VWAP_JSON",
+002744:                                   os.path.join(os.path.dirname(CACHE), "inception_vwap.json"))
+002745: # 1回のビルドで period="max" を新規取得する上限（初回は複数回に分けて埋める）。
+002746: # 1回の実行で period="max" を取りに行く上限。実測で1,198銘柄が約7分。
+002747: # 初回だけ全部取れば以降は差分更新なので、既定でユニバース全量を賄える値にする。
+002748: INCEPT_VWAP_BUDGET = max(0, min(3000, int(os.environ.get("V38_INCEPT_VWAP_BUDGET", "1400"))))
+002749: # 分割・併合でYahooの調整値が変わったことを検知する許容誤差。
+002750: INCEPT_VWAP_DRIFT = 0.01
+002751: 
+002752: 
+--- SOURCE 2800-2816 ---
+002800:                     out[t] = rec
+002801:             except Exception:
+002802:                 continue
+002803:     sys.stderr.write("[incept-vwap] bootstrapped %d/%d\n" % (len(out), len(todo)))
+002804:     return out
+002805: 
+002806: 
+002807: def _incept_series(rec, frame, keep=24):
+002808:     """累積和 + 直近バーから、末尾keep本の上場来VWAP系列を復元する。"""
+002809:     f = frame.replace([np.inf, -np.inf], np.nan).dropna()
+002810:     f = f[(f["v"] > 0) & (f["c"] > 0)]
+002811:     if f.empty:
+002812:         return None, None
+002813:     thr = pd.Timestamp(rec.get("through"))
+002814:     add = f[f.index > thr]
+002815:     # 調整係数のドリフト検知（分割・併合でYahooの遡及値が変わった場合）
+002816:     same = f[f.index <= thr]
+--- SOURCE 2854-2871 ---
+002854:     # Keep touch/support/reclaim unchanged. If near later affects Core12 ranking,
+002855:     # entry eligibility or position sizing, validate it before promotion.
+002856:     try:
+002857:         _adr20 = (((aligned["h"] - aligned["l"]) / aligned["c"].replace(0, np.nan))
+002858:                   .replace([np.inf, -np.inf], np.nan).dropna().tail(20).mean())
+002859:         _adr20 = float(_adr20) if np.isfinite(_adr20) else 0.0
+002860:     except Exception:
+002861:         _adr20 = 0.0
+002862:     _near_threshold = min(0.05, max(0.02, 0.5 * _adr20))
+002863:     near = bool(np.isfinite(dist) and abs(dist) <= _near_threshold)
+002864:     support = bool(touched and close >= value and dist <= 0.025 and slope5 >= -0.005)
+002865:     reclaim = bool(prev_close < prev_vwap and close >= value and slope5 >= -0.005)
+002866:     return dict(value=value, dist=dist, slope5=slope5, near=near,
+002867:                 support=support, reclaim=reclaim, valid=True)
+002868: 
+002869: 
+002870: def _incept_vwap_features(rec, c, h, l, v):
+002871:     empty = dict(value=np.nan, dist=np.nan, slope5=np.nan, near=False,
+--- SOURCE 3077-3093 ---
+003077:         # i.e. listings whose full history exists inside this dataset.
+003078:         _common_start = idx.min() if len(idx) else c.index.min()
+003079:         try:
+003080:             _recent_listing = bool(c.index.min() > (_common_start + pd.Timedelta(days=35)))
+003081:         except Exception:
+003082:             _recent_listing = False
+003083:         _vw63 = _vwap_features(c, h, l, v, window=63)
+003084:         _vw252 = _vwap_features(c, h, l, v, window=252)
+003085:         # 上場来VWAP: 累積和キャッシュがあれば全銘柄で有効。無ければ従来どおり
+003086:         # 「取得窓より後に上場した銘柄」だけ expanding で代用する。
+003087:         _rec = (incept or {}).get(t)
+003088:         if _rec:
+003089:             _vwall, _newrec = _incept_vwap_features(_rec, c, h, l, v)
+003090:             if _newrec:
+003091:                 (incept or {})[t] = _newrec
+003092:             elif _newrec is None and incept is not None:
+003093:                 incept.pop(t, None)          # 調整ドリフト検知 → 次回に再取得
+--- SOURCE 5536-5552 ---
+005536:         return "split"
+005537:     close, dvol = _num("close"), _num("dvol")
+005538:     if close is None:
+005539:         return "none"
+005540:     if close < 5:
+005541:         return "price"
+005542:     if dvol is None or dvol < DVOL_FLOOR:
+005543:         return "liq"
+005544:     # 上場来VWAPが算出できている、または一定本数あるのにRS189だけ無い＝新規上場。
+005545:     # RS189は189営業日を要するので、上場1年未満は必ずNaNになる（弱いのではない）。
+005546:     if bool(r.get("vwap_all_valid")):
+005547:         return "ipo"
+005548:     try:
+005549:         _b = r.get("bars")
+005550:         if _b is not None and IPO_MIN_BARS <= float(_b) < 250:
+005551:             return "ipo"
+005552:     except Exception:
+--- SOURCE 7979-7995 ---
+007979:     triggers = []
+007980:     if flag("true_breakout"):
+007981:         triggers.append("ブレイク")
+007982:     if flag("cup_breakout"):
+007983:         triggers.append("カップ・ハンドルブレイク")
+007984:     pp = r.get("pp_days")
+007985:     if ok(pp):
+007986:         triggers.append("PP本日" if int(pp) == 0 else f"PP {int(pp)}日前")
+007987:     for key, lab in (("vwap63", "63VWAP"), ("vwap252", "252VWAP"), ("vwap_all", "上場来VWAP")):
+007988:         if flag(key + "_reclaim"):
+007989:             triggers.append(lab + "下から回復")
+007990:         elif flag(key + "_support"):
+007991:             triggers.append(lab + "タッチ後上")
+007992: 
+007993:     confirms = []
+007994:     rs189, rs63 = r.get("rs189"), r.get("rs")
+007995:     if ok(rs189):
+--- SOURCE 8003-8019 ---
+008003:     if isinstance(new_entry, str) and new_entry:
+008004:         confirms.append("RS新規参入")
+008005: 
+008006:     locations = []
+008007:     if flag("stage2"):
+008008:         locations.append("ステージ2")
+008009:     if ok(r.get("pivot_dist")):
+008010:         locations.append(f"ピボット差 {float(r.get('pivot_dist'))*100:+.1f}%")
+008011:     for key, lab in (("vwap63", "63VWAP"), ("vwap252", "252VWAP"), ("vwap_all", "上場来VWAP")):
+008012:         if key == "vwap_all" and not flag("vwap_all_valid"):
+008013:             continue
+008014:         if flag(key + "_near") and ok(r.get(key + "_dist")):
+008015:             locations.append(f"{lab} {float(r.get(key + '_dist'))*100:+.1f}%")
+008016:     if ok(r.get("ext50_atr")):
+008017:         locations.append(f"50MA {float(r.get('ext50_atr')):+.1f}ATR")
+008018:     if ok(r.get("ret5")):
+008019:         locations.append(f"5日 {float(r.get('ret5'))*100:+.1f}%")
+--- SOURCE 8168-8184 ---
+008168: 
+008169:     tail = []
+008170:     if flag("stage2"):
+008171:         tail.append("ステージ2")
+008172:     if flag("rsline_newhigh"):
+008173:         tail.append("RSライン新高値")
+008174:     if "RS新規参入" in a["confirm"]:
+008175:         tail.append("RS新規参入")
+008176:     for key, lab in (("vwap63", "63VWAP"), ("vwap252", "252VWAP"), ("vwap_all", "上場来VWAP")):
+008177:         if key == "vwap_all" and not flag("vwap_all_valid"):
+008178:             continue
+008179:         if flag(key + "_near") and _cf_fin(r.get(key + "_dist")):
+008180:             tail.append(f"{lab} {float(r.get(key + '_dist')) * 100:+.1f}%")
+008181:     tail.extend(f'<span class="neg">⚠ {_h(w)}</span>' for w in a["warning"])
+008182:     if stops:
+008183:         tail.append("損切候補 " + " ／ ".join(
+008184:             f"{lab} ${val:,.2f}({dist*100:+.1f}%)" for lab, val, dist in stops))
+--- SOURCE 13031-13089 ---
+013031:         return base
+013032: 
+013033: 
+013034: def build_multi_vwap_card(m, cap=24):
+013035:     """63/252/all-time VWAP watch with a dedicated all-time break column."""
+013036:     needed = ("vwap63", "vwap252", "vwap_all")
+013037:     if m is None or m.empty or not all(x in m.columns for x in needed):
+013038:         return ""
+013039:     elig = eligible_or_ipo(m)          # 上場来VWAPは189日を必要としない
+013040:     rs = pd.to_numeric(m.get("rs189", pd.Series(0, index=m.index)), errors="coerce").fillna(0)
+013041: 
+013042:     def _any_loc(keys):
+013043:         out = pd.Series(False, index=m.index)
+013044:         for key in keys:
+013045:             for suffix in ("_near", "_support", "_reclaim"):
+013046:                 if key + suffix in m.columns:
+013047:                     out |= m[key + suffix].fillna(False).astype(bool)
+013048:         return out
+013049: 
+013050:     loc_roll = _any_loc(("vwap63", "vwap252"))
+013051:     all_valid = m.get("vwap_all_valid", pd.Series(False, index=m.index)).fillna(False).astype(bool)
+013052:     loc_all = _any_loc(("vwap_all",)) & all_valid
+013053:     # 下落トレンドや伸び切りの銘柄を出さない（VWAP接触は上昇中でこそ意味がある）
+013054:     # 63/252はRS189でリーダーを絞る。上場来VWAPはRS189条件を課さない（稀少イベント＋IPO対応）。
+013055:     ipo = ipo_recent(m)
+013056:     # 63/252 VWAP keep the existing leader/IPO gate.
+013057:     keep_roll = elig & (entry_worthy(m) | ipo) & loc_roll & \
+013058:         ((rs >= MULTI_VWAP_RS189_MIN) | ipo)
+013059:     # Inception VWAP is independent of RS189/short-term leadership.
+013060:     # Use the existing base quality/liquidity/security gate only.
+013061:     keep_all = setup_eligible_core(m) & loc_all
+013062:     keep = keep_roll | keep_all
+013063:     sub = m[keep].copy()
+013064:     if sub.empty:
+013065:         return ('<div class="card"><h2>Multi VWAPセットアップ</h2>'
+013066:                 '<div class="sub">63/252/上場来VWAPの近接・支持反発・回復に該当なし。'
+013067:                 '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
+013068:                 'ステージ2かつ50日線から6ATR以内・ピボットから+12%以内に限定。'
+013069:                 '合否と総合点は計算しない。</div>'
+013070:                 '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
+013071:                 '<th>上場来VWAP</th><th>上場来ブレイク</th></tr></table></div>')
+013072: 
+013073:     def _action_rank(r):
+013074:         has_reclaim = any(bool(r.get(k + "_reclaim")) for k in needed)
+013075:         has_support = any(bool(r.get(k + "_support")) for k in needed)
+013076:         state = 0 if has_reclaim else (1 if has_support else 2)
+013077:         dists = [abs(float(r.get(k + "_dist"))) for k in needed if pd.notna(r.get(k + "_dist"))]
+013078:         return (state, min(dists) if dists else 99, -float(r.get("rs189") or 0))
+013079: 
+013080:     sub["_vw_sort"] = [str(_action_rank(r)) for _t, r in sub.iterrows()]
+013081:     # INCEPTION_VWAP_BYPASS_PRESENTATION_CAP_V1
+013082:     _all_ordered = sorted(sub.iterrows(), key=lambda x: _action_rank(x[1]))
+013083:     ordered = _all_ordered[:cap]
+013084:     _inception_idx = set(m.index[keep_all])
+013085:     _already = {t for t, _r in ordered}
+013086:     ordered += [(t, r) for t, r in _all_ordered if t in _inception_idx and t not in _already]
+013087: 
+013088:     def _cell(r, key):
+013089:         if key == "vwap_all" and not bool(r.get("vwap_all_valid")):
+--- SOURCE 13107-13126 ---
+013107:                '<span class="mut">—</span>' if bool(r.get("vwap_all_valid")) else '<span class="mut">対象外</span>')
+013108:         rows.append(
+013109:             f'<tr data-liq="{(r.get("dvol") or 0)/1e6:.1f}" data-tkone="{t}">'
+013110:             f'<td class="l tk"><b>{_h(t)}</b><div class="mut" style="font-size:9.5px">RS189 {float(r.get("rs189") or 0):.0f}</div></td>'
+013111:             f'<td>{_cell(r, "vwap63")}</td><td>{_cell(r, "vwap252")}</td>'
+013112:             f'<td>{_cell(r, "vwap_all")}</td><td>{ath}</td></tr>')
+013113:     return (f'<div class="card"><div class="hdr"><h2>Multi VWAPセットアップ</h2>{_cp(tks)}</div>'
+013114:             '<div class="sub">近接・タッチ後上・下から回復と終値のVWAP差を表示。合否、配点、RS加点はなし。'
+013115:             '63/252VWAPはRS189≥85のリーダーのみ。上場来VWAPはRS条件なし（稀少イベントのため）。'
+013116:             '上場来VWAPは取得期間内に上場し、全履歴がある銘柄のみ算出。古い銘柄は対象外表示で、不利に採点しない。</div>'
+013117:             '<table class="vwtbl"><tr><th class="l">銘柄</th><th>63 VWAP</th><th>252 VWAP</th>'
+013118:             '<th>上場来VWAP</th><th>上場来ブレイク</th></tr>' + ''.join(rows) + '</table></div>')
+013119: 
+013120: 
+013121: _PAT_DESC = {
+013122:     "アンダーカット&ラリー": "安値割れから即回復",
+013123:     "3タイトクローズ": "直近3終値が1.5%以内",
+013124:     "フラットベース": "5週前後・深さ15%以内",
+013125:     "カップ・ハンドル": "上半分の浅いハンドルと出来高枯れ",
+013126:     "ハイタイトフラグ": "8週で約90%上昇後の浅い保ち合い",
+--- SOURCE 15140-15156 ---
+015140:             ['RVOL',_f(d.rv),'mut'],
+015141:             ['ピボットまで',_fsg(d.pdist,'%'),'mut'],
+015142:             ['VCP形状',_f(d.vcpq),'mut'],
+015143:             ['上値の壁',_optcell(d.opt,'cw'),'mut'],
+015144:             ['下値の支え',_optcell(d.opt,'pw'),'mut'],
+015145:             ['性質の境目',_optcell(d.opt,'gf'),'mut'],
+015146:             ['63 VWAP',_vwcell(d.vws63,d.vw63),(d.vws63==='下から回復'||d.vws63==='タッチ反発')?'pos':'mut'],
+015147:             ['252 VWAP',_vwcell(d.vws252,d.vw252),(d.vws252==='下から回復'||d.vws252==='タッチ反発')?'pos':'mut'],
+015148:             ['上場来VWAP',_vwcell(d.vwsall,d.vwall)+(d.vwab?' ブレイク':''),d.vwab?'pos':'mut'],
+015149:             ['収縮 / HL',_f(d.contract)+' / '+(d.hl?'○':'—'),'mut'],
+015150:             ['出来高枯れ',_f(d.vdry,'×'),'mut'],
+015151:             ['RS線高値',d.rsline?'○':'—',d.rsline?'pos':'mut'],
+015152:             ['構造',[(d.truebr?'真ブレイク':''),(d.cup?'カップ':''),(d.turn?'転換':''),(d.p204?'20/4':'')].filter(Boolean).join('・')||'—','mut'],
+015153:             ['β(市場感応度)',(d.beta===null||d.beta===undefined)?'—':_f(d.beta),(d.beta>=1.3?'neg':d.beta<=0.9?'pos':'mut')],
+015154:             ['出来高$',(d.dvol===null||d.dvol===undefined)?'—':(d.dvol+'M'),'mut']];
+015155:   document.getElementById('dov-body').innerHTML=rows.map(function(r){
+015156:     return '<div class="dov-c"><div class="dov-k">'+r[0]+'</div><div class="dov-v '+r[2]+'">'+r[1]+'</div></div>';
+--- SOURCE 17878-17894 ---
+017878:         'placeholder="例: NVDA" oninput="tkSearch(this.value)">'
+017879:         '<div id="tkresults" class="tkresults"></div></div>')
+017880:     # ---- TAB ピックアップ：コンフルエンス事実 → 発火 → セットアップの順。
+017881:     today = (
+017882:              _mkt_section("③ コンフルエンス（事実表示）", "発火・確認・位置/警戒を分類した一覧", en="Confluence Facts")
+017883:              + build_confluence_watch(m, cand)
+017884:              + _mkt_section("④ 発火トリガー", "PP・ブレイク・出来高伴う反発", en="Entry Triggers")
+017885:              + build_pocket_pivots(m) + _buy_today_card(buytoday) + _patterns_card(patterns)
+017886:              + _mkt_section("⑤ セットアップ評価", "VCP・21EMA・63/252/上場来VWAP", en="Setup Quality")
+017887:              + _vcp_card(vcp_rows) + (mkt.get("ema_touch") or "") + build_multi_vwap_card(m)
+017888:              + _mkt_section("⑥ 底打ち（構造ピボット）", "安値切り上げ＋出来高減で下げ止まり。RS63主軸・構造のみ", en="Structure Pivot")
+017889:              + build_structure_pivot_screen(m, s2t)
+017890:              + _mkt_section("⑦ W30ブレイク（30週線）", "金曜クローズ確定→翌週寄り。◎本格が本線・△ギリ抜けは警戒", en="W30 Breakout")
+017891:              + build_w30_breakouts(m, e2j=e2j)
+017892:              + _mkt_section("⑧ リーダー母集団", "RS≥85・200MA上を状態別に", en="Leaders")
+017893:              + leaders_card)
+017894: 
+--- SOURCE 18640-18680 ---
+018640:             warns.append("universe.csv の掃除を推奨: 業種が付かない銘柄が%d件" % _unk)
+018641:         elif _unk > INDUSTRY_UNK_WARN:
+018642:             warns.append("業種が付かない銘柄が%d件（universe.csv が古い可能性）" % _unk)
+018643:     except Exception:
+018644:         pass
+018645:     if VIX_CYCLE_START != pd.Timestamp("1990-01-01") or VIX_CYCLE_MIN_MONTHS != 120:
+018646:         errs.append("VIX fear-cycle native history settings changed")
+018647:     try:
+018648:         # 上場来VWAP: 累積和からの復元がフル計算と一致すること
+018649:         _ix = pd.bdate_range("2015-01-01", "2026-08-14")
+018650:         _rng = np.random.default_rng(11)
+018651:         _c = pd.Series(20 * np.exp(np.cumsum(_rng.normal(0, .015, len(_ix)))), index=_ix)
+018652:         _f = pd.DataFrame({"c": _c, "h": _c * 1.01, "l": _c * .99,
+018653:                            "v": _rng.integers(1e5, 1e6, len(_ix)).astype(float)}, index=_ix)
+018654:         _pv = ((_f["h"] + _f["l"] + _f["c"]) / 3) * _f["v"]
+018655:         _full = (_pv.cumsum() / _f["v"].cumsum())
+018656:         _rec = _incept_accumulate(_f[_f.index <= _f.index[-31]])
+018657:         _got, _nr = _incept_series(_rec, _f, keep=24)
+018658:         if not _got:
+018659:             errs.append("上場来VWAP: 累積和からの復元に失敗")
+018660:         else:
+018661:             _vw, _al = _got
+018662:             _err = float((_vw - _full.reindex(_vw.index)).abs().max())
+018663:             if not (_err < 1e-6):
+018664:                 errs.append("上場来VWAP: 復元値がフル計算と不一致 (max err=%.3g)" % _err)
+018665:             if not _vwap_flags(_vw, _al)["valid"]:
+018666:                 errs.append("上場来VWAP: フラグ生成に失敗")
+018667:         # 分割ドリフトを検知して無効化すること
+018668:         _bad = dict(_rec, anchor_close=float(_rec["anchor_close"]) * 2.0)
+018669:         if _incept_series(_bad, _f)[1] != "drift":
+018670:             errs.append("上場来VWAP: 調整ドリフトを検知できない")
+018671:     except Exception as _e:
+018672:         errs.append("上場来VWAP self-check failed: " + repr(_e)[:80])
+018673:     if VIX_CYCLE_FAST != 5 or VIX_CYCLE_SLOW != 10:
+018674:         errs.append("VIX fear-cycle LWMA lengths changed from 5/10")
+018675:     if not (0 <= VIX_CYCLE_MAX_MISSING_MONTHS <= 12):
+018676:         errs.append("VIX fear-cycle missing-month tolerance out of range")
+018677:     try:
+018678:         # 欠損耐性: 完了月を数か月間引いてもDEGRADEDで走り続けること
+018679:         _vd = pd.bdate_range("1990-01-01", "2026-08-14")
+018680:         _rng = np.random.default_rng(7)
+--- SOURCE 19427-19443 ---
+019427:             sys.stderr.write(_msg + "（--diagのため続行）\n")
+019428:         else:
+019429:             raise SystemExit(_msg + " — 劣化データでのビルドを中止します。")
+019430:     try:
+019431:         _wlast = W["Close"].index[-1]
+019432:         macro = {k: (v[v.index <= _wlast] if hasattr(v, "index") else v) for k, v in macro.items()}   # guardが1日落とした場合の再ズレ防止（監査#次点2）
+019433:     except Exception as _e:
+019434:         print("[warn] macro re-cut failed:", _e)                        # A5: 部分/不完全な最終バーを落としてから計算
+019435:     # --- 上場来VWAP: 累積和キャッシュを読み、未登録ぶんを予算内で埋める ---
+019436:     _incept = _incept_load()
+019437:     try:
+019438:         _missing = [t for t in order if t not in _incept]
+019439:         if _missing:
+019440:             _incept.update(_incept_bootstrap(_missing))
+019441:     except Exception as _e:
+019442:         sys.stderr.write("[incept-vwap] bootstrap skipped: %s\n" % type(_e).__name__)
+019443:     _incept_before = len(_incept)
