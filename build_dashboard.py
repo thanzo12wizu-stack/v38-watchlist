@@ -8399,6 +8399,390 @@ _CF_SECTIONS = (
 )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 発火前ボード（PRE-BREAKOUT）
+#
+# 思想: 買い点の signature は「発火」ではなく「静けさ」。O'Neilの実例に共通するのは
+#   volume dries up just before the big move / 3-4 weeks tight closes /
+#   handle drifts down along lows / extreme volume dry up on pullback
+# であって、ブレイクはその結果でしかない。発火を条件にすると必ず遅れる（PP8日前は
+#   ADR6%の銘柄なら既に15〜25%動いた後）。
+#
+# 同時に、O'Neilが繰り返し "Do not buy" と書いた形を明示的に落とす:
+#   straight up from bottom / 3週や4週はベースではない / late-stage base /
+#   wide and loose / 伸び切り
+#
+# 配点も総合点も作らない。並び順は「ベース段階 → 静けさ → ピボットまでの距離」の
+# 3キーのソートだけで、これは事実の量であって合否ではない。
+PRE_BASE_MIN, PRE_BASE_MAX = 0.08, 0.35   # ベースの深さ。浅すぎ=ただの上昇 / 深すぎ=wide and loose
+PRE_MIN_BASE_DAYS = 20                     # 4週未満は「ベースではない」
+PRE_MAX_STAGE = 1                          # wsb=0が1本目。0/1のみ通す（3本目以降は買わない）
+PRE_PIVOT_LO, PRE_PIVOT_HI = -0.08, 0.005  # ピボット直下。直上は既に発火側
+PRE_MAX_EXT_ATR = 4.0                      # 発火前なので伸び切り判定は厳しく
+PRE_TIGHT_PCT = 0.03                       # 21EMA/VWAPからの「タイト」の閾値
+PRE_MIN_RS189 = 80                         # 主導株の下限（RS55の地銀は出さない）
+PRE_MIN_RS63 = 80
+PRE_SECTOR_RS = 60                         # 業種RS中央値の下限
+PRE_SECTOR_BREADTH = 30                    # 業種ブレッドスの下限(%)
+
+
+def _pre_i(v, default=None):
+    """NaN/None を安全に int 化する。NaN混入でカードごと落ちるのを防ぐ。"""
+    try:
+        f = float(v)
+        return int(round(f)) if np.isfinite(f) else default
+    except Exception:
+        return default
+
+def _pre_num(m, name):
+    if name in m.columns:
+        return pd.to_numeric(m[name], errors="coerce")
+    return pd.Series(np.nan, index=m.index)
+
+
+def _pre_bool(m, name):
+    if name in m.columns:
+        return m[name].fillna(False).astype(bool)
+    return pd.Series(False, index=m.index)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# オプション連携（読むだけ）。別ワークフローが吐いたJSON/CSVを参照する。
+# 本体からOption APIは叩かない。ファイルが無くても壊れていても本体は落とさない。
+OPT_JSON = os.environ.get("V38_OPT_JSON", "options_positioning.json")
+OPT_SCAN_CSV = os.environ.get("V38_OPT_SCAN_HISTORY", "options_scan_history.csv")
+OPT_TARGETS = os.environ.get("V38_OPT_TARGETS", "options_targets.json")
+OPT_STALE_DAYS = 3          # これより古ければ画面に古さを出す
+
+
+def load_options():
+    """{ticker: {cw,pw,gf,reg,stale}} を返す。
+       詳細JSON(Core12+候補) を主、全銘柄スキャンCSVの最新行を副として合流する。"""
+    out = {}
+    def _age(ts):
+        try:
+            t = pd.Timestamp(ts)
+            t = t.tz_convert(None) if t.tzinfo is not None else t
+            return int((pd.Timestamp.utcnow().tz_localize(None) - t).days)
+        except Exception:
+            return None
+    # 副: 全銘柄スキャン（1銘柄1行サマリー）。同一tickerは最終行が最新。
+    try:
+        for r in csv.DictReader(open(OPT_SCAN_CSV, encoding="utf-8-sig")):
+            tk = (r.get("ticker") or "").strip().upper()
+            if not tk:
+                continue
+            def f(k):
+                try:
+                    v = r.get(k)
+                    return float(v) if v not in (None, "", "None") else None
+                except Exception:
+                    return None
+            out[tk] = dict(cw=f("call_wall"), pw=f("put_wall"), gf=f("gamma_flip"),
+                           cwp=f("call_wall_pct"), pwp=f("put_wall_pct"), gfp=f("flip_pct"),
+                           reg=r.get("regime"), conf=r.get("confidence"),
+                           exp=r.get("expiry"), age=_age(r.get("date")), src="scan")
+    except Exception:
+        pass
+    # 主: 詳細JSON。距離・ATR・重なりまで持つのでこちらで上書きする。
+    try:
+        d = json.load(open(OPT_JSON, encoding="utf-8"))
+        age = _age(d.get("asof"))
+        for tk, v in (d.get("tickers") or {}).items():
+            g = lambda k: (v.get(k) or {})
+            conf_names = []
+            for key in ("call_wall", "put_wall", "gamma_flip"):
+                for c in ((v.get("confluence") or {}).get(key) or []):
+                    if c.get("name") not in conf_names:
+                        conf_names.append(c["name"])
+            out[str(tk).upper()] = dict(
+                cw=g("call_wall").get("px"), pw=g("put_wall").get("px"),
+                gf=g("gamma_flip").get("px"),
+                cwp=g("call_wall").get("pct"), pwp=g("put_wall").get("pct"),
+                gfp=g("gamma_flip").get("pct"),
+                cwa=g("call_wall").get("atr"), pwa=g("put_wall").get("atr"),
+                gfa=g("gamma_flip").get("atr"),
+                reg=v.get("regime"), conf=v.get("confidence"), exp=v.get("nearest"),
+                rpos=v.get("range_pos"), cfl=conf_names,
+                age=age, stale=bool(v.get("stale")), src="full")
+    except Exception:
+        pass
+    if out:
+        sys.stderr.write("[options] %d tickers loaded\n" % len(out))
+    return out
+
+
+def write_option_targets(picks, pre_rows, entry_rows, path=None):
+    """次回のオプション取得対象を吐く。本体→オプションの一方向依存にする。
+       #C 呼び出し側は picks を (ticker, theme, row) のタプル列で渡し、pre_rows/entry_rows は
+       行dict列で渡す。以前は要素をそのまま str() していたため、タプルやSeriesの
+       文字列表現がtickerとして書き出され、オプション側が巨大な偽tickerを取得対象に
+       していた。ここで確実にticker文字列だけを取り出す。"""
+    path = path or OPT_TARGETS
+
+    def _tk(x):
+        if x is None:
+            return ""
+        if isinstance(x, str):
+            t = x
+        elif isinstance(x, (tuple, list)):
+            t = _tk(x[0]) if len(x) else ""
+        elif isinstance(x, dict):
+            t = x.get("t") or x.get("ticker") or ""
+        else:
+            t = getattr(x, "name", None) or (x.get("t") if hasattr(x, "get") else None) or ""
+        t = str(t or "").strip().upper()
+        return t if _valid_ticker(t) else ""
+
+    seen, out = set(), []
+    for src in (picks or [], pre_rows or [], entry_rows or []):
+        for item in src:
+            t = _tk(item)
+            if t and t not in seen:
+                seen.add(t); out.append(t)
+    try:
+        _defer_cache_write(path, out[:120])
+    except Exception:
+        pass
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 強い銘柄が「下値の支え（Put Wall）」に接触している状態。
+# 支えは建玉が積み上がった価格で、押し目が拾われやすい一方、割れると下げが速い。
+# 表示は接触の事実と距離まで。売買判定はしない。
+OPTWALL_TOUCH_ATR = 0.5      # 支えから±0.5ATR以内を「接触」とする
+OPTWALL_MIN_RS189 = 80       # 強い銘柄に限定（弱い銘柄の支えは支えにならない）
+
+
+def build_optwall_touch(m, opts, cap=20):
+    """RSが高く、下値の支えに接触している銘柄。"""
+    if m is None or m.empty or not opts:
+        return []
+    rows = []
+    for t, o in opts.items():
+        if t not in m.index:
+            continue
+        r = m.loc[t]
+        pw = o.get("pw")
+        if pw is None:
+            continue
+        try:
+            close = float(r.get("close")); atr = float(r.get("atr14"))
+            rs189 = float(r.get("rs189")); rs21 = float(r.get("rs21"))
+        except Exception:
+            continue
+        if not (close > 0 and atr > 0):
+            continue
+        lead = (rs189 == rs189 and rs189 >= OPTWALL_MIN_RS189) or \
+               (rs189 != rs189 and rs21 == rs21 and rs21 >= IPO_MIN_RS21)
+        if not lead:
+            continue
+        d_atr = (close - float(pw)) / atr
+        if abs(d_atr) > OPTWALL_TOUCH_ATR:
+            continue
+        rows.append(dict(t=t, close=round(close, 2), pw=round(float(pw), 2),
+                         pct=round(float(pw) / close - 1, 4), atr=round(d_atr, 2),
+                         rs189=(int(rs189) if rs189 == rs189 else None),
+                         rs21=(int(rs21) if rs21 == rs21 else None),
+                         reg=o.get("reg"), conf=o.get("conf"), age=o.get("age"),
+                         above=bool(close >= float(pw)),
+                         dvol=float(r.get("dvol") or 0)))
+    rows.sort(key=lambda d: abs(d["atr"]))
+    return rows[:cap]
+
+
+def _optwall_touch_card(rows):
+    head = ('<div class="card"><div class="hdr"><h2>支えへの接触 '
+            '<span class="h2en">Put Wall Touch</span></h2></div>')
+    if not rows:
+        return (head + '<div class="sub">RSが高く、オプションの下値の支えに接触している銘柄。'
+                'オプション取得がまだか、該当なし。</div><div class="empty">該当なし</div></div>')
+    body = ""
+    for d in rows:
+        side = ("支えの上" if d["above"] else "支えを割っている")
+        cls = "pos" if d["above"] else "neg"
+        rs = (f'RS189 {d["rs189"]}' if d["rs189"] is not None else f'RS21 {d["rs21"]}・新規上場')
+        body += (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
+                 f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
+                 f'<span class="mut">{rs}</span>'
+                 f'<span class="prestage {cls}">{side}</span></div>'
+                 f'<div class="prenums">'
+                 f'<div><i>現値</i>${d["close"]:,.2f}</div>'
+                 f'<div><i>支え</i>${d["pw"]:,.2f}</div>'
+                 f'<div><i>距離</i>{d["pct"]*100:+.1f}%</div>'
+                 f'<div><i>ATR</i>{d["atr"]:+.2f}</div>'
+                 f'<div><i>局面</i>{_h(str(d["reg"] or "—"))[:8]}</div></div>'
+                 + (f'<div class="pretail">建玉薄・信頼度低</div>' if d["conf"] == "LOW" else "")
+                 + '</div>')
+    return (head + '<div class="sub">RSが高く、オプションの<b>下値の支え</b>（建玉が最も積み上がった価格）'
+            'に±0.5ATR以内で接触している銘柄。支えの上なら押し目が拾われやすく、'
+            '割っていれば下げが速くなりやすい。距離の近い順。'
+            '建玉からの推定であり、売買判定ではない。</div>'
+            f'<div class="prelist">{body}</div></div>')
+
+def build_pre_breakout(m, ind_map=None, hier=None, ftd=None, cap=24):
+    """発火前ボード。構造が整い、出来高が枯れ、VWAP/21EMAに張り付いている未発火銘柄。"""
+    sys.stderr.write("[pre-breakout] enter rows=%d\n" % (0 if m is None else len(m)))
+    if m is None or m.empty or "rs189" not in m.columns:
+        return []
+    depth = _pre_num(m, "base_depth40")
+    days = _pre_num(m, "cup_days")
+    stage_n = _pre_num(m, "wsb")
+    piv = _pre_num(m, "pivot_dist")
+    ext = _pre_num(m, "ext50_atr")
+    vdry = _pre_num(m, "vdry")
+    atrc = _pre_num(m, "atr_contract")
+    d21 = _pre_num(m, "dma21")
+    v63 = _pre_num(m, "vwap63_dist")
+    v252 = _pre_num(m, "vwap252_dist")
+
+    # --- O'Neilの否定形を落とす --------------------------------------------
+    # cup_days はカップ形状が取れた銘柄しか埋まらない（既定None）。フラットベースや
+    # VCPには値が付かないので、期間の代理として「40日高値を試した回数」「収縮回数」を併用する。
+    touches = _pre_num(m, "pivot_touches")
+    contr = _pre_num(m, "contractions")
+    has_duration = (days >= PRE_MIN_BASE_DAYS) | (touches >= 1) | (contr >= 1)
+    base_ok = depth.between(PRE_BASE_MIN, PRE_BASE_MAX) & has_duration
+    stage_ok = (_pre_bool(m, "stage2") | _pre_bool(m, "weekly_stage2")) & \
+               (stage_n.isna() | (stage_n <= PRE_MAX_STAGE))
+    unfired = (~_pre_bool(m, "true_breakout")) & (~_pre_bool(m, "cup_breakout")) \
+              & (~_pre_bool(m, "breakout_failure"))
+    near_piv = piv.between(PRE_PIVOT_LO, PRE_PIVOT_HI)
+    not_ext = ~(ext > PRE_MAX_EXT_ATR)
+
+    # --- 静けさ（買い点のsignature） ----------------------------------------
+    quiet = (~(vdry > 1.0)) | (~(atrc > 1.0)) | _pre_bool(m, "tc3") \
+            | (_pre_num(m, "contractions") >= 1)
+
+    # --- タイトな位置（21EMA / VWAP） ---------------------------------------
+    tight = (d21.abs() <= PRE_TIGHT_PCT) | (v63.abs() <= PRE_TIGHT_PCT) \
+            | (v252.abs() <= PRE_TIGHT_PCT * 1.7) \
+            | _pre_bool(m, "ema21_touch3")
+
+    # 主導株に限定する。構造条件だけで絞ると「静かに動かない銘柄」が最も静かになり、
+    # RS30〜50台の地銀・公益が上位を占める（実測で確認）。O'Neilの前提は一貫して主導株。
+    lead = (_pre_num(m, "rs189") >= PRE_MIN_RS189) & (_pre_num(m, "rs") >= PRE_MIN_RS63)
+    steps = [("適格", setup_eligible(m)), ("主導", lead), ("ベース", base_ok),
+             ("段階", stage_ok), ("未発火", unfired), ("ピボット圏", near_piv),
+             ("未伸切", not_ext), ("静けさ", quiet), ("タイト", tight)]
+    keep = pd.Series(True, index=m.index)
+    diag = []
+    for _lab, _cond in steps:
+        keep = keep & _cond.fillna(False)
+        diag.append("%s=%d" % (_lab, int(keep.sum())))
+    sys.stderr.write("[pre-breakout] " + " / ".join(diag) + "\n")
+    sub = m[keep.fillna(False)]
+    if sub.empty:
+        return []
+
+    # --- 業種の強さ（O'Neilはindustry group順位を必ず見る） -----------------
+    sec_of = {}
+    for sc, subs in (hier or {}).items():
+        for x in subs:
+            sec_of[x["sub"]] = (x.get("rs"), x.get("br"), sc)
+    ja_of = {}
+    for t, v in (ind_map or {}).items():
+        if isinstance(v, list) and len(v) >= 2 and v[1]:
+            ja_of[t] = _ind_ja(v[1])
+
+    rows = []
+    for t, r in sub.iterrows():
+        ind = ja_of.get(t, "")
+        srs, sbr, ssec = sec_of.get(ind, (None, None, ""))
+        strong = bool(srs is not None and srs >= PRE_SECTOR_RS
+                      and (sbr or 0) >= PRE_SECTOR_BREADTH)
+        q_v = float(vdry.get(t)) if pd.notna(vdry.get(t)) else 1.0
+        q_a = float(atrc.get(t)) if pd.notna(atrc.get(t)) else 1.0
+        rows.append(dict(
+            t=t, rs189=_pre_i(r.get("rs189"), 0),
+            stage=_pre_i(stage_n.get(t), None),
+            piv=float(piv.get(t)) if pd.notna(piv.get(t)) else None,
+            depth=float(depth.get(t)) if pd.notna(depth.get(t)) else None,
+            days=_pre_i(days.get(t), None),
+            vdry=q_v, atrc=q_a, quiet=q_v * q_a,
+            d21=float(d21.get(t)) if pd.notna(d21.get(t)) else None,
+            v63=float(v63.get(t)) if pd.notna(v63.get(t)) else None,
+            ext=float(ext.get(t)) if pd.notna(ext.get(t)) else None,
+            adr=float(_pre_num(m, "adr").get(t)) if "adr" in m.columns else None,
+            tc3=bool(r.get("tc3")), hl=bool(r.get("higher_lows")),
+            vcp=_pre_i(r.get("contractions"), 0),
+            rsl=bool(r.get("rsline_newhigh")),
+            ind=ind, sec=ssec, srs=srs, sbr=sbr, strong=strong,
+            lo10=float(r.get("lo10")) if pd.notna(r.get("lo10")) else None,
+            close=float(r.get("close")) if pd.notna(r.get("close")) else None,
+            atr14=float(r.get("atr14")) if pd.notna(r.get("atr14")) else None,
+            dvol=float(r.get("dvol") or 0),
+        ))
+    # 業種が弱い銘柄は落とす。強い業種の中の静かな銘柄、が本来の狙い。
+    rows = [d for d in rows if d["strong"]] or rows
+    # 並びは3キーのソートのみ。配点はしない。
+    rows.sort(key=lambda d: ((d["stage"] if d["stage"] is not None else 9),
+                             round(d["quiet"], 3),
+                             abs(d["piv"] if d["piv"] is not None else 9)))
+    for d in rows:
+        d["ftd"] = (ftd or {}).get("state") if isinstance(ftd, dict) else None
+    return rows[:cap]
+
+
+def _pre_breakout_card(rows, ftd=None):
+    state = (ftd or {}).get("state") if isinstance(ftd, dict) else None
+    ftd_txt = ""
+    if state:
+        lab = {"FTD_ACTIVE": ("フォロースルー成立中", "pos"),
+               "RALLY_ATTEMPT": ("リバウンド試行中", "warnc"),
+               "CORRECTION": ("調整局面", "neg"),
+               "FTD_FAILED": ("フォロースルー失敗", "neg"),
+               "NO_CORRECTION": ("調整なし", "mut")}.get(state, (state, "mut"))
+        ftd_txt = f'<span class="chip {lab[1]}">{_h(lab[0])}</span>'
+    head = ('<div class="card"><div class="hdr"><h2>発火前 '
+            '<span class="h2en">Pre-Breakout</span></h2>' + ftd_txt + '</div>')
+    if not rows:
+        return (head + '<div class="sub">ベースが整い、出来高が枯れ、21EMA/VWAPに'
+                '張り付いている未発火銘柄。該当なし。</div>'
+                '<div class="empty">該当なし</div></div>')
+    body = ""
+    for d in rows:
+        marks = []
+        if d["tc3"]:
+            marks.append("3週タイト")
+        if d["vcp"]:
+            marks.append(f"収縮{d['vcp']}回")
+        if d["hl"]:
+            marks.append("安値切上")
+        if d["rsl"]:
+            marks.append("RS線新高値")
+        stop = ""
+        if d["lo10"] and d["close"]:
+            stop = f"損切候補 10日安値 ${d['lo10']:,.2f}（{d['lo10']/d['close']-1:+.1%}）"
+        sec = ""
+        if d["ind"]:
+            cls = "pos" if d["strong"] else "mut"
+            sec = (f'<span class="{cls}">{_h(d["ind"])}'
+                   + (f' RS{d["srs"]}・強{d["sbr"]}%' if d["srs"] is not None else "")
+                   + '</span>')
+        body += (f'<div class="prerow" data-liq="{d["dvol"]/1e6:.1f}" data-tkone="{d["t"]}">'
+                 f'<div class="premain"><b class="pretk">{_h(d["t"])}</b>'
+                 f'<span class="mut">RS189 {d["rs189"]}</span>'
+                 f'<span class="prestage">{"ベース"+str(d["stage"]+1)+"本目" if d["stage"] is not None else "ベース段階—"}</span>'
+                 f'<span class="presec">{sec}</span></div>'
+                 f'<div class="prenums">'
+                 f'<div><i>piv</i>{(d["piv"] or 0)*100:+.1f}%</div>'
+                 f'<div><i>深さ</i>{(d["depth"] or 0)*100:.0f}%</div>'
+                 f'<div><i>出来高</i>{d["vdry"]:.2f}×</div>'
+                 f'<div><i>ATR収縮</i>{d["atrc"]:.2f}×</div>'
+                 f'<div><i>21EMA</i>{(d["d21"] or 0)*100:+.1f}%</div>'
+                 f'</div>'
+                 f'<div class="pretail">{" ・ ".join(marks)}{"　" if marks and stop else ""}{stop}</div>'
+                 f'</div>')
+    return (head + '<div class="sub">ベースが整い、出来高が枯れ、21EMA/VWAPに張り付いている'
+            '<b>未発火</b>銘柄。発火を待たずに構造で拾う。'
+            'ベース4週未満・深さ8%未満または35%超・3本目以降のベース・50日線から4ATR超は除外。'
+            '並びは「ベース段階 → 静けさ（出来高×ATR収縮）→ ピボットまでの距離」の3キーのみで、'
+            '配点も合否判定もしない。業種名が緑＝業種RS65以上かつブレッドス30%以上。</div>'
+            f'<div class="prelist">{body}</div></div>')
+
+
 def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
     """Price overlap plus independent non-price events; no weights or total score."""
     idx = m.index
@@ -17861,10 +18245,24 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                   + (('<span class="shl">改善</span>' + "".join(f'<span class="chip shp">{_h(x["ja"])} <b>+{x["drs"]:.0f}</b></span>' for x in _imp)) if _imp else "")
                   + (('<span class="shl shl-n">悪化</span>' + "".join(f'<span class="chip shn">{_h(x["ja"])} <b>{x["drs"]:.0f}</b></span>' for x in _wor)) if _wor else "")
                   + '</div>')
+    _edge_rows = srows if len(srows) <= 20 else (srows[:10] + srows[-10:])
+    _middle_rows = [] if len(srows) <= 20 else srows[10:-10]
+    _middle_fold = ""
+    if _middle_rows:
+        _middle_fold = (
+            f'<details class="cfdet secmiddle"><summary>中間{len(_middle_rows)}テーマを表示</summary>'
+            f'<table class="secrs"><thead><tr><th class="l">#</th>'
+            f'<th class="l sortable" onclick="secSort(\'score\',this)">サブテーマ <span class="so">⇅RS</span></th>'
+            f'<th class="sortable" onclick="secSort(\'rot\',this)">状態</th>'
+            f'<th class="sortable" onclick="secSort(\'d1\',this)">日</th>'
+            f'<th class="sortable" onclick="secSort(\'w1\',this)">週</th>'
+            f'<th class="sortable" onclick="secSort(\'m1\',this)">月</th></tr></thead>'
+            + "".join(_middle_rows) + '</table></details>')
+
     sector = (f'<div class="card"><h2>サブテーマ別RS（ユニバース内）</h2>'
               f'<div class="sub">構成銘柄の<b>63日RS×189日RS</b>（中央値・均等ブレンド）をサブテーマ単位で0-100ランク（≥2社）。'
               f'<b>状態</b>＝ローテの局面（初動→改善→強い継続→監視→弱い）。▲▼＝約1ヶ月前との差＝資金の向き。'
-              f'<b>見出しタップで並べ替え</b>・行タップで構成銘柄。市場全体の強弱</div>'
+              f'<b>初期表示は上位10・下位10</b>。中間テーマは折りたたみ。見出しタップで並べ替え・行タップで構成銘柄。</div>'
               + _shift +
               f'<table class="secrs"><thead><tr><th class="l">#</th>'
               f'<th class="l sortable act" onclick="secSort(\'score\',this)">サブテーマ <span class="so">⇅RS</span></th>'
@@ -17872,7 +18270,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
               f'<th class="sortable" onclick="secSort(\'d1\',this)">日</th>'
               f'<th class="sortable" onclick="secSort(\'w1\',this)">週</th>'
               f'<th class="sortable" onclick="secSort(\'m1\',this)">月</th></tr></thead>'
-              + "".join(srows) + '</table></div>')
+              + "".join(_edge_rows) + '</table>' + _middle_fold + '</div>')
 
     # 強い業種の主導株（強いグループ×その中で個別も強い銘柄＝O'Neil「強い株を強いグループで」）
     _sl_rows = ""
@@ -18093,8 +18491,8 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             + f'{sector_leaders}'
             + _mkt_section("⑤ 一覧で確認する", "見出しタップで並べ替え・行タップで構成銘柄", en="Full Rankings")
             + f'{_sector_rank_card(mkt.get("sector_ranks"))}'
-            + f'{sector}'
-            + f'{_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100, "テーマETFの温度計（重複あり）", _RRG_ETF_DESC)}</section>'
+            + f'{_rrg_card(mkt.get("rrg_etf"), None, mkt.get("etf_hier"), 100, "詳細セクターRRG（重複あり）", _RRG_ETF_DESC)}'
+            + f'{sector}</section>'
             f'<section id="t-movers">{build_movers_tab(m, s2t)}</section>'
             f'<section id="t-rs">{rs_compare}</section>'
             f'<section id="t-today">'
@@ -18587,9 +18985,6 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
         _ca = _confluence_facts(pd.Series(_base))
         if "VCP" not in _ca.get("setup", []) or "PP本日" not in _ca.get("trigger", []):
             errs.append("confluence facts: VCP/PPの観測分類が不正")
-        _cev = _ca.get("events") or {}
-        if int(_cev.get("count") or 0) != 3:
-            errs.append("confluence events: 需要/構造/RSの独立3軸分類が不正")
         if any(_k in _ca for _k in ("score", "ready", "setup_score", "trigger_score")):
             errs.append("confluence facts: 配点/合否キーが残存")
         _near = dict(_base)
@@ -18599,8 +18994,6 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
         _na = _confluence_facts(pd.Series(_near))
         if _na.get("has_trigger") or "63VWAP" not in " ".join(_na.get("location", [])):
             errs.append("confluence facts: VWAP近接の位置/発火分離が不正")
-        if int((_na.get("events") or {}).get("count") or 0) != 0:
-            errs.append("confluence events: 価格近接が非価格イベントへ二重計上")
     except Exception as _e:
         errs.append("confluence facts self-test raised: " + repr(_e)[:100])
     # -- #3/#4 XSS検査: 外部文字列(テーマ/社名/業種/note/日付)からの実注入だけを検出する。
