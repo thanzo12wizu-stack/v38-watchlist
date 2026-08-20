@@ -20291,7 +20291,26 @@ def main():
                                              soxl_ok=_soxl_ok, turnover_dir=_turn_dir, updown_reg=_ud_reg,
                                              emergency_active=bool((mkt.get("emergency") or {}).get("active")))
     mkt["chlog"], mkt["chref"] = _chlog, _chref
-    _er_tickers = [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15])
+    # 決算日不明でも候補からは除外しない。一方で、スイング候補の表示時に
+    # 「日付不明」ではなく実データをできるだけ添えられるよう、取得対象だけ先回りで広げる。
+    _sw_er = []
+    try:
+        _wst_er = pd.to_numeric(m.get("wst"), errors="coerce")
+        _pp_er = pd.to_numeric(m.get("pp_days"), errors="coerce")
+        _trigger_er = (
+            m.get("vwap63_reclaim", pd.Series(False, index=m.index)).fillna(False).astype(bool)
+            | m.get("vwap63_support", pd.Series(False, index=m.index)).fillna(False).astype(bool)
+            | m.get("ema21_touch3", pd.Series(False, index=m.index)).fillna(False).astype(bool)
+            | m.get("true_breakout", pd.Series(False, index=m.index)).fillna(False).astype(bool)
+            | m.get("cup_breakout", pd.Series(False, index=m.index)).fillna(False).astype(bool)
+            | _pp_er.between(0, 5)
+        )
+        _sw_mask = setup_eligible(m) & _wst_er.isin([1, 2]) & m["rs189"].ge(85) & _trigger_er
+        _sw_er = list(m[_sw_mask].sort_values("rs189", ascending=False).index[:60])
+    except Exception:
+        _sw_er = []
+    _er_tickers = list(dict.fromkeys(
+        [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15]) + _sw_er))
     mkt["er"] = load_earnings(_er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest)
     # #19 カバー率: universe(order) のうち価格Close列に存在する率・RS189算出可能率。「候補なし」と「データ欠損」を区別。
     try:
