@@ -103,7 +103,7 @@ jobs:
       - name: Smoke-test live price adapter
         continue-on-error: true
         run: python -m intelligence_engine.smoke_prices --tickers AAPL,MSFT,NVDA,AMD --report /tmp/intelligence-price-smoke.json --strict
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: intelligence-validation-reports
@@ -195,14 +195,14 @@ jobs:
             fi
           fi
       - name: Restore price cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: prices.pkl
           key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             intelligence-prices-${{ runner.os }}-
       - name: Restore SEC cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             data/sec_companyfacts
@@ -234,7 +234,7 @@ jobs:
           "${command[@]}"
       - name: Persist price cache immediately
         if: always() && hashFiles('prices.pkl') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: prices.pkl
           key: intelligence-prices-${{ runner.os }}-${{ github.run_id }}
