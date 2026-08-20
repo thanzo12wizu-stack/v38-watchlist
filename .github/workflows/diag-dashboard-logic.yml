@@ -1,0 +1,44 @@
+name: Diagnose dashboard logic
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-dashboard-logic.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate split, confluence and inception VWAP logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          needles = [
+              'split', 'Stock Splits', '分割疑', '併合',
+              'confluence', 'コンフルエンス',
+              'inception_vwap', '上場来VWAP', '_near_threshold',
+              'rs189', 'RS189', 'leader_ok', 'leader'
+          ]
+          lines = s.splitlines()
+          seen = set()
+          for needle in needles:
+              print(f'\n===== {needle} =====')
+              hits = [i for i,line in enumerate(lines) if needle.lower() in line.lower()]
+              print('HITS', len(hits))
+              for i in hits[:80]:
+                  a=max(0,i-7); b=min(len(lines),i+10)
+                  key=(a,b)
+                  if key in seen: continue
+                  seen.add(key)
+                  print(f'--- lines {a+1}-{b} ---')
+                  for j in range(a,b): print(f'{j+1:06d}: {lines[j]}')
+          PY
