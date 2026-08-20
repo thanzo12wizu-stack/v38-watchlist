@@ -1,7 +1,7 @@
 {
   "version": 1,
   "mode": "warning_only_no_selection_effect",
-  "checked_at": "2026-08-19T22:50:21+00:00",
+  "checked_at": "2026-08-20T05:07:00+00:00",
   "state_date": "2026-08-19",
   "thresholds": {
     "healthcare_like": true,
@@ -211,9 +211,35 @@
       "revenue_period_end": "2026-06-30",
       "method": "fy_plus_current_ytd_minus_prior_ytd",
       "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"
+    },
+    "MRNA": {
+      "status": "ok",
+      "cik": 1682852,
+      "checked_at": "2026-08-20T05:07:00+00:00",
+      "revenue_ttm": 2228000000.0,
+      "revenue_latest_fy": 1944000000.0,
+      "revenue_period_end": "2026-06-30",
+      "method": "fy_plus_current_ytd_minus_prior_ytd",
+      "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"
     }
   },
   "diagnostics": [
+    {
+      "ticker": "MRNA",
+      "in_core12": true,
+      "sector": "Health Technology",
+      "industry": "Biotechnology",
+      "market_cap": 25135890032.0,
+      "healthcare_like": true,
+      "under_mcap_cap": false,
+      "revenue_ttm": 2228000000.0,
+      "revenue_latest_fy": 1944000000.0,
+      "revenue_status": "ok",
+      "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
+      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "would_exclude_at_50m": false,
+      "missing_revenue_passes": false
+    },
     {
       "ticker": "AEHR",
       "in_core12": true,
@@ -386,22 +412,6 @@
       "revenue_latest_fy": 263502000.0,
       "revenue_status": "ok",
       "revenue_method": "fy_plus_current_ytd_minus_prior_ytd",
-      "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
-      "would_exclude_at_50m": false,
-      "missing_revenue_passes": false
-    },
-    {
-      "ticker": "RVMD",
-      "in_core12": true,
-      "sector": "Health Technology",
-      "industry": "Pharmaceuticals: Other",
-      "market_cap": 46009457158.45157,
-      "healthcare_like": true,
-      "under_mcap_cap": false,
-      "revenue_ttm": null,
-      "revenue_latest_fy": 0.0,
-      "revenue_status": "annual_fallback",
-      "revenue_method": "latest_fy_fallback",
       "revenue_tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
       "would_exclude_at_50m": false,
       "missing_revenue_passes": false
