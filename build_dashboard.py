@@ -2290,7 +2290,7 @@ def _w30_disp_ok(r):
             return False
         if dv is None or dv != dv or float(dv) < DVOL_FLOOR:
             return False
-        if bool(r.get("split_suspect")) or bool(r.get("excluded_theme")):
+        if bool(r.get("price_event_excluded", r.get("split_suspect"))) or bool(r.get("excluded_theme")):
             return False
         return True
     except Exception:
@@ -2924,6 +2924,52 @@ def _vwap_features(c, h, l, v, window=None, allow_expanding=False):
     except Exception:
         return empty
 
+# SPLIT_EVENT_CONFIRM_V1
+SPLIT_CONFIRM_WINDOW_DAYS = 5
+SPLIT_HARD_ANOMALY = 10.0  # unmatched one-day move >1000%; broken-history guard, not split suspicion
+
+
+def _confirmed_split_events(candidates):
+    """Confirm >150% jump candidates with an actual Yahoo split/reverse-split action.
+
+    A price jump alone is never classified as a split. Lookup failure is fail-open for
+    split classification; the separate >1000% hard anomaly guard still catches obviously
+    broken histories such as legacy adjustment ghosts.
+    """
+    if not candidates or not _net_ok():
+        return set()
+    try:
+        import yfinance as yf
+    except Exception as e:
+        sys.stderr.write(f"[split] yfinance unavailable: {type(e).__name__}\n")
+        return set()
+    confirmed = set()
+    for ticker, jump_date in candidates.items():
+        try:
+            jd = pd.Timestamp(jump_date)
+            if getattr(jd, "tzinfo", None) is not None:
+                jd = jd.tz_localize(None)
+            jd = jd.normalize()
+            start = (jd - pd.Timedelta(days=SPLIT_CONFIRM_WINDOW_DAYS + 2)).strftime("%Y-%m-%d")
+            end = (jd + pd.Timedelta(days=SPLIT_CONFIRM_WINDOW_DAYS + 3)).strftime("%Y-%m-%d")
+            hist = yf.Ticker(str(ticker)).history(
+                start=start, end=end, auto_adjust=False, actions=True
+            )
+            if hist is None or hist.empty or "Stock Splits" not in hist.columns:
+                continue
+            splits = pd.to_numeric(hist["Stock Splits"], errors="coerce").fillna(0.0)
+            for event_idx, ratio in splits[splits != 0].items():
+                ed = pd.Timestamp(event_idx)
+                if getattr(ed, "tzinfo", None) is not None:
+                    ed = ed.tz_localize(None)
+                if abs((ed.normalize() - jd).days) <= SPLIT_CONFIRM_WINDOW_DAYS:
+                    confirmed.add(str(ticker))
+                    break
+        except Exception as e:
+            sys.stderr.write(f"[split] action lookup failed {ticker}: {type(e).__name__}\n")
+    return confirmed
+
+
 def compute_metrics(W, order, s2i=None, macro=None, incept=None):
     C, O, H, L, V = W["Close"], W["Open"], W["High"], W["Low"], W["Volume"]
     idx = C.index
@@ -3050,7 +3096,17 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
         pivot20 = float(h.iloc[-21:-1].max()) if len(h) >= 21 else np.nan
         pb = close / hi40 - 1 if hi40 and np.isfinite(hi40) else np.nan
         adr = float((h.iloc[-20:] / l.iloc[-20:] - 1).mean())
-        maxabs1d = float(c.pct_change(fill_method=None).iloc[-200:].abs().max()) if len(c) >= 2 else np.nan
+        _chg200 = c.pct_change(fill_method=None).iloc[-200:].replace([np.inf, -np.inf], np.nan).dropna() if len(c) >= 2 else pd.Series(dtype=float)
+        if len(_chg200):
+            _abschg200 = _chg200.abs()
+            maxabs1d = float(_abschg200.max())
+            try:
+                maxabs1d_date = pd.Timestamp(_abschg200.idxmax()).strftime("%Y-%m-%d")
+            except Exception:
+                maxabs1d_date = None
+        else:
+            maxabs1d = np.nan
+            maxabs1d_date = None
         # #4/#5: 52週高値/安値は「過去252営業日のHigh/Low最大最小」に統一。252本未満はNaN
         #   （上場浅い銘柄を52週高値扱いしない／終値と日中高値の定義混在も解消）
         if len(h) >= 252:
@@ -3227,7 +3283,7 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
             cup_ready=cup.get("cup_ready"), cup_breakout=cup.get("cup_breakout"), cup_pivot=cup.get("cup_pivot"),
             cup_depth=cup.get("cup_depth"), handle_depth=cup.get("handle_depth"), handle_vdry=cup.get("handle_vdry"), cup_days=cup.get("cup_days"),
             rsline_newhigh=rsline_newhigh, rsline_dist=rsline_dist,
-            maxabs1d=maxabs1d, lo10=lo10, lo10_prev=lo10_prev, ema21_10ago=ema21_10ago,
+            maxabs1d=maxabs1d, maxabs1d_date=maxabs1d_date, lo10=lo10, lo10_prev=lo10_prev, ema21_10ago=ema21_10ago,
             ema21_touch3=ema21_touch3, ema21_touch_days=ema21_touch_days,
             atr14=atr14, ext50_atr=ext50_atr,
             vwap63=_vw63["value"], vwap63_dist=_vw63["dist"], vwap63_slope5=_vw63["slope5"],
@@ -3254,9 +3310,17 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
             wsb=wsx.get("wsb"), wsbf=(1 if wsx.get("wsbf") else 0),
         ))
     df = pd.DataFrame(recs).set_index("t")
-    # A1 分割アーティファクト・ガード: 直近200日の単日変化率>150%はスプリット/データ異常のゴースト
-    #   （CHRD +80,376% 等）。RSランキングから除外＝RS=NaNで選定・リーダー判定から自然脱落。
-    df["split_suspect"] = (df["maxabs1d"] > 1.50).fillna(False)
+    # A1 price-event guard: >150% is only a candidate. Exclude as split/reverse-split
+    # only when Yahoo corporate actions confirms the event near the jump date.
+    _raw_split_jump = (pd.to_numeric(df["maxabs1d"], errors="coerce") > 1.50).fillna(False)
+    _split_candidates = {str(t): df.at[t, "maxabs1d_date"] for t in df.index[_raw_split_jump]
+                         if df.at[t, "maxabs1d_date"]}
+    _confirmed_splits = _confirmed_split_events(_split_candidates)
+    df["split_suspect"] = pd.Series(df.index.astype(str).isin(_confirmed_splits), index=df.index, dtype=bool)
+    # Keep clear data corruption separate from corporate actions. Genuine 150-1000% moves survive.
+    df["data_anomaly"] = ((pd.to_numeric(df["maxabs1d"], errors="coerce") > SPLIT_HARD_ANOMALY)
+                          & ~df["split_suspect"]).fillna(False)
+    df["price_event_excluded"] = (df["split_suspect"] | df["data_anomaly"]).fillna(False)
     # A2 プール内RS: RSは「非サスペクト × 株価≥$5 × 20日$出来高≥$10M」内の順位で付ける。
     #   RS85 の意味が微小株で希釈されるのを解消＝リーダー判定/選定の母集団を統一（バグ⑤も解消）。
     #   プール外は RS=NaN → 選定・リーダーから自然脱落。順位の相対順は保たれるので採用12の並びは不変。
@@ -3264,7 +3328,7 @@ def compute_metrics(W, order, s2i=None, macro=None, incept=None):
     df["selection_excluded"] = _bio_excluded
     df["excluded_theme"] = _bio_excluded                 # existing UI/filters use this canonical flag
     df["bio_revenue_unknown"] = _bio_unknown
-    _pool = ((~df["split_suspect"]) & (df["close"] >= 5) & (df["dvol"] >= DVOL_FLOOR)
+    _pool = ((~df["price_event_excluded"]) & (df["close"] >= 5) & (df["dvol"] >= DVOL_FLOOR)
              & (~_bio_excluded))
     df["rs_pool"] = _pool
     def _rank_with_excluded_reference(col, pool):
@@ -5507,13 +5571,14 @@ def build_theme_hierarchy(m, s2t):
 # RSが付かない理由。RSは「株価≥$5 × 20日$出来高≥$10M × 分割異常なし」の母集団内でのみ
 # 百分位を付けるため、プール外はNaNになる。画面には「—」ではなく理由を出す。
 RS_OFF_LABEL = {
-    "liq": "流動性外", "price": "低位株", "split": "分割疑い",
+    "liq": "流動性外", "price": "低位株", "split": "分割/併合確認", "data": "価格データ異常",
     "hist": "履歴不足", "ipo": "新規上場", "none": "データなし",
 }
 RS_OFF_HELP = {
     "liq": "20日平均$出来高が$10M未満。RSの母集団に入れていない",
     "price": "株価が$5未満。RSの母集団に入れていない",
-    "split": "直近200日に単日±150%超の変化。分割/データ異常としてRSから除外",
+    "split": "単日±150%超の変化日にYahoo corporate actionの分割/併合イベントを確認。RSから除外",
+    "data": "分割/併合イベント未確認だが単日+1000%超。価格履歴破損として別枠で除外",
     "hist": "価格履歴が不足していてRSを算出できない",
     "ipo": "上場から日が浅く189日RSを算出できない。短期RS(21/63日)で判断する",
     "none": "価格データを取得できていない",
@@ -5534,6 +5599,8 @@ def rs_off_reason(r):
         return ""
     if bool(r.get("split_suspect")):
         return "split"
+    if bool(r.get("data_anomaly")):
+        return "data"
     close, dvol = _num("close"), _num("dvol")
     if close is None:
         return "none"
@@ -6545,8 +6612,8 @@ def _quality_card(q):
         ("ticker変更候補", _alias_txt),
         ("FMP用途", "銘柄照合のみ（価格・一覧・screenerの有料APIは不使用）"),
         ("時価総額カバー率", _covtxt),
-        ("分割サスペクト", (f'{q.get("split_suspect")}銘柄 除外' if q.get("split_suspect") else "0（クリーン）")),
-        ("RSプール幅", f'{q.get("rs_pool", 0)}銘柄（非サスペクト×$5×$10M内で順位付け）'),
+        ("分割/併合確認", (f'{q.get("split_suspect")}銘柄 除外' if q.get("split_suspect") else "0（クリーン）")),
+        ("RSプール幅", f'{q.get("rs_pool", 0)}銘柄（価格イベント正常×$5×$10M内で順位付け）'),
         ("地合いソース", {"file": "手動(TradingView)＝正", "estimate": "自動推定(FSM復元)", "none": "無判定"}.get(q.get("nq_src"), q.get("nq_src") or "—")),
         ("次回リバランス", q.get("next_rebal") or "—"),
         ("マクロ未取得", "・".join(q.get("macro_missing") or []) or "なし"),
@@ -7949,9 +8016,70 @@ def _pp_badge(r):
             f'">{lab}</span>')
 
 
-# コンフルエンスは採点しない。
-# 既存指標が示す「セットアップ/発火/確認/位置・警戒」を分類して、
-# 観測値とブール値をそのまま表示する。発注候補の合否には使わない。
+# TRUE_PRICE_LEVEL_CONFLUENCE_V1
+def _confluence_overlap(r):
+    """Return the densest actual cluster of independent price levels near spot.
+
+    Levels: 21EMA, 50MA, 200MA, pivot, 63/252 VWAP and valid inception VWAP.
+    Total cluster span must fit a volatility-aware 1-2% band:
+    min(2%, max(1%, 0.25 * ADR20)). Remote levels >10% from spot are ignored.
+    """
+    def fin(v):
+        try:
+            return v is not None and np.isfinite(float(v)) and float(v) > 0
+        except Exception:
+            return False
+
+    close = r.get("close")
+    if not fin(close):
+        return dict(count=0, labels=[], center=np.nan, dist=np.nan, span=np.nan, tol=np.nan)
+    close = float(close)
+    try:
+        adr = float(r.get("adr"))
+        adr = adr if np.isfinite(adr) else np.nan
+    except Exception:
+        adr = np.nan
+    tol = min(0.02, max(0.01, 0.25 * adr)) if np.isfinite(adr) else 0.0125
+
+    levels = [
+        ("21EMA", r.get("ema21")),
+        ("50MA", r.get("sma50")),
+        ("200MA", r.get("sma200")),
+        ("ピボット", r.get("pivot40")),
+        ("63VWAP", r.get("vwap63")),
+        ("252VWAP", r.get("vwap252")),
+    ]
+    try:
+        all_valid = bool(r.get("vwap_all_valid")) and not pd.isna(r.get("vwap_all_valid"))
+    except Exception:
+        all_valid = False
+    if all_valid:
+        levels.append(("上場来VWAP", r.get("vwap_all")))
+
+    levels = [(lab, float(px)) for lab, px in levels
+              if fin(px) and abs(float(px) / close - 1.0) <= 0.10]
+    levels.sort(key=lambda x: x[1])
+    best = None
+    for i in range(len(levels)):
+        for j in range(i, len(levels)):
+            group = levels[i:j + 1]
+            center = sum(px for _lab, px in group) / len(group)
+            span = (group[-1][1] - group[0][1]) / center if center > 0 else np.inf
+            if span > tol:
+                break
+            dist = center / close - 1.0
+            key = (len(group), -abs(dist), -span)
+            if best is None or key > best[0]:
+                best = (key, group, center, dist, span)
+    if best is None:
+        return dict(count=0, labels=[], center=np.nan, dist=np.nan, span=np.nan, tol=tol)
+    _key, group, center, dist, span = best
+    return dict(count=len(group), labels=[lab for lab, _px in group],
+                center=center, dist=dist, span=span, tol=tol)
+
+
+# コンフルエンスは「価格レベルの重なり」を主語にする。
+# VCP/PP/RS等は文脈情報。重なりの有無そのものを代用しない。発注候補の合否には使わない。
 def _confluence_facts(r, new_entry=None):
     """Classify existing observations without weights, totals or an ENTRY flag."""
     def ok(v):
@@ -8023,8 +8151,9 @@ def _confluence_facts(r, new_entry=None):
     warnings = []
     if flag("breakout_failure"):
         warnings.append("ブレイク失敗")
+    overlap = _confluence_overlap(r)
     return dict(setup=setups, trigger=triggers, confirm=confirms,
-                location=locations, warning=warnings,
+                location=locations, warning=warnings, overlap=overlap,
                 has_setup=bool(setups), has_trigger=bool(triggers))
 
 
@@ -8048,7 +8177,7 @@ def setup_eligible(m):
 
 
 def setup_eligible_core(m):
-    """Setups全カード共通の適格母集団：株価≥5・売買代金≥$10M・時価総額≥$1B・分割疑い除外・除外テーマ除外。
+    """Setups全カード共通の適格母集団：株価≥5・売買代金≥$10M・時価総額≥$1B・確認済み分割/併合・価格データ異常・除外テーマ除外。
        RSや200MA等の個別条件はこれに & して各カードで足す（早期転換でRSを緩めるのは可・株価/流動性/時価総額/除外は共通）。
        列欠損・例外時はフェイルクローズ（全除外）——適格側に倒すより安全。"""
     try:
@@ -8057,7 +8186,8 @@ def setup_eligible_core(m):
         mask &= m.get("close", _nan).ge(5)
         mask &= m.get("dvol", _nan).ge(DVOL_FLOOR)
         mask &= m.get("mcap", _nan).ge(1e9)
-        mask &= ~m.get("split_suspect", pd.Series(True, index=m.index)).fillna(True)
+        _event_bad = m.get("price_event_excluded", m.get("split_suspect", pd.Series(True, index=m.index)))
+        mask &= ~_event_bad.fillna(True).astype(bool)
         mask &= ~m.get("excluded_theme", pd.Series(True, index=m.index)).fillna(True)
         return mask.fillna(False)
     except Exception as _e:
@@ -8116,17 +8246,18 @@ def _cf_stops(r):
 
 
 def _cf_tier(a, r):
-    """執行の近さで段階分け。距離と鮮度という事実だけで決める。"""
+    """Tier by literal overlap density and the cluster's distance from spot."""
+    ov = a.get("overlap") or {}
+    count = int(ov.get("count") or 0)
+    dist = abs(float(ov.get("dist")) * 100) if _cf_fin(ov.get("dist")) else 999.0
     fresh = _cf_fresh_days(a, r)
-    pd_ = abs(float(r["pivot_dist"]) * 100) if _cf_fin(r.get("pivot_dist")) else 999.0
-    has_set = bool(a.get("has_setup"))
-    if fresh is not None and fresh <= 1 and pd_ <= 5:
-        return 0, fresh, pd_
-    if (fresh is not None and fresh <= 5 and pd_ <= 8) or (has_set and pd_ <= 3):
-        return 1, (fresh if fresh is not None else 99), pd_
-    if fresh is not None or has_set:
-        return 2, (fresh if fresh is not None else 99), pd_
-    return 3, 99, pd_
+    if count >= 3 and dist <= 3:
+        return 0, (fresh if fresh is not None else 99), dist
+    if (count >= 2 and dist <= 3) or (count >= 3 and dist <= 6):
+        return 1, (fresh if fresh is not None else 99), dist
+    if count >= 2 and dist <= 6:
+        return 2, (fresh if fresh is not None else 99), dist
+    return 3, (fresh if fresh is not None else 99), dist
 
 
 def _cf_row(t, r, a, rs):
@@ -8140,11 +8271,20 @@ def _cf_row(t, r, a, rs):
         return bool(v)
 
     flow = ""
+    _ov = a.get("overlap") or {}
+    _ov_n = int(_ov.get("count") or 0)
+    if _ov_n >= 2:
+        _ov_dist = float(_ov.get("dist")) * 100 if _cf_fin(_ov.get("dist")) else 999.0
+        _ov_span = float(_ov.get("span")) * 100 if _cf_fin(_ov.get("span")) else 999.0
+        _ov_txt = f"{_ov_n}重: " + " + ".join(_ov.get("labels") or []) + f" ({_ov_dist:+.1f}%, 幅{_ov_span:.1f}%)"
+        flow += '<b class="cfnear">' + _h(_ov_txt) + '</b>'
     if a["setup"]:
+        if flow:
+            flow += '<i>＋</i>'
         flow += '<span>' + _h(" / ".join(a["setup"])) + '</span>'
-    if a["setup"] and a["trigger"]:
-        flow += '<i>→</i>'
     if a["trigger"]:
+        if flow:
+            flow += '<i>→</i>'
         flow += '<b class="pos">' + _h(" / ".join(a["trigger"])) + '</b>'
     if not flow:
         flow = '<span class="mut">—</span>'
@@ -8192,10 +8332,10 @@ def _cf_row(t, r, a, rs):
 
 
 _CF_SECTIONS = (
-    (0, "A 今夜チャートを開く（発火1日以内・ピボット±5%）", True),
-    (1, "B 数日内の候補（発火5日以内±8% / 形成済み±3%）", True),
-    (2, "C 監視（発火または形はあるが執行位置から遠い）", False),
-    (3, "D 位置のみ（形も発火もなし）", False),
+    (0, "A 3重以上・現値±3%", True),
+    (1, "B 2重近接 / 3重やや遠い", True),
+    (2, "C 2重・現値±6%", False),
+    (3, "D 2重・現値±8%（監視）", False),
 )
 
 
@@ -8592,33 +8732,36 @@ def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
     buckets = {order: [] for order, _title, _open in _CF_SECTIONS}
     for t, r in pool.iterrows():
         a = _confluence_facts(r, ne.get(t))
-        if not (a["setup"] or a["trigger"] or a["location"]):
+        ov = a.get("overlap") or {}
+        ov_n = int(ov.get("count") or 0)
+        ov_dist = abs(float(ov.get("dist"))) if _cf_fin(ov.get("dist")) else 999.0
+        if ov_n < 2 or ov_dist > 0.08:
             continue
-        order, fresh, pdist = _cf_tier(a, r)
-        # 並びは「執行の近さ」。第1キー=発火の鮮度、第2キー=ピボットまでの距離。
-        # どちらも事実の量で、重み付けや総合点は使っていない。
-        buckets[order].append(((fresh, round(pdist, 2), -float(r.get("rs189") or 0)), t, r, a))
-    det = ('<details class="cfdet"><summary>並べ方と列の意味</summary>'
+        order, fresh, cdist = _cf_tier(a, r)
+        ov_span = float(ov.get("span")) if _cf_fin(ov.get("span")) else 999.0
+        # Literal confluence first. Trigger freshness and RS are tie-break/context only.
+        buckets[order].append(((-ov_n, round(cdist, 2), round(ov_span, 5), fresh,
+                                -float(r.get("rs189") or 0)), t, r, a))
+    det = ('<details class="cfdet"><summary>重なり判定と列の意味</summary>'
            '<div class="cflg">'
-           '<b>並び順は「執行の近さ」の2キーだけ</b>。第1キー＝発火からの経過日数、'
-           '第2キー＝ピボットまでの距離。総合点も配点も無い。'
-           'A/B/C/D の区分もこの2つの閾値で切っているだけで、合否判定ではない。<br>'
+           'コンフルエンス＝価格レベルの実際の重なり。21EMA・50MA・200MA・ピボット・63/252VWAP・上場来VWAPから、'
+           '現値±10%内の独立レベルを集め、ADR連動の幅 min(2%, max(1%, 0.25×ADR)) 内で2本以上重なる場合だけ表示。<br>'
+           '並びは①重なり本数（多い順）→②重なり中心の現値からの距離→③帯の狭さ。発火鮮度とRSは文脈のみ。<br>'
            'piv=ピボットまでの距離／50MAσ=50日線からのATR距離／U/D=20日の上昇下降出来高比／'
-           'ADR=1日の平均値幅／損切まで=下にある損切候補のうち最も近いものまでの距離。<br>'
-           '損切候補は 10日安値・21EMA・ピボット−1ATR の実価格。どれを使うかは自分で決める。'
+           'ADR=1日の平均値幅／損切まで=下にある損切候補のうち最も近いものまでの距離。'
            '</div></details>')
     total = sum(len(items) for items in buckets.values())
     if not total:
         return (f'<div class="card"><div class="hdr"><h2>エントリー候補ボード '
                 f'<span class="h2en">Confluence</span></h2></div>'
-                f'<div class="sub">RS189≥{min_rs}の該当なし。{det}</div>'
+                f'<div class="sub">RS189≥{min_rs}の中に、2本以上の価格レベルが実際に重なる銘柄なし。{det}</div>'
                 '<div class="empty">該当なし</div></div>')
 
     sections = []
     shown = []
     all_tickers = []
     for order, title, is_open in _CF_SECTIONS:
-        items = sorted(buckets[order], key=lambda x: (x[0], x[1]))
+        items = sorted(buckets[order], key=lambda x: x[0])
         if not items:
             continue
         all_tickers.extend(t for _k, t, _r, _a in items)
@@ -8634,8 +8777,8 @@ def build_confluence_watch(m, cand=None, cap=20, min_rs=CONFLUENCE_RS189_MIN):
                         f'{body}</details>')
     return (f'<div class="card"><div class="hdr"><h2>エントリー候補ボード '
             f'<span class="h2en">Confluence</span></h2>{_cp(shown, all_tickers)}</div>'
-            f'<div class="sub">RS189≥{min_rs}。発火の新しい順・ピボットに近い順。pivは±3%以内を強調、'
-            f'-15%より下を淡色表示（距離表示のみ・合否ではない）。{det}</div>'
+            f'<div class="sub">RS189≥{min_rs}は候補母集団の条件のみ。表示条件は2本以上の価格レベル重なり。'
+            f'重なり本数→中心距離→帯の狭さの順。VCP/PP/RS/ブレイクは文脈で、重なりの代用にはしない。{det}</div>'
             f'<div class="cfwrap">{"".join(sections)}</div></div>')
 
 
@@ -13130,7 +13273,7 @@ def build_patterns(m, s2i, e2j, s2t, k=8):
     """Conservative pattern candidates. Exact chart review remains necessary for shape-sensitive patterns."""
     up50 = m["close"] > m["sma50"]
     near = m["dist52"] >= -0.25
-    liq = setup_eligible(m)   # 株価・流動性・時価総額・分割疑い・除外テーマを共通適用
+    liq = setup_eligible(m)   # 株価・流動性・時価総額・確認済み分割/併合・価格データ異常・除外テーマを共通適用
     pats = {
         "アンダーカット&ラリー": m[(m["ucr"] == True) & up50 & (m["rs189"] >= 70) & liq],
         "3タイトクローズ": m[(m["tc3"] <= 0.015) & (m["vdry_pre"] <= 0.90) & up50 & near & (m["rs189"] >= 80) & liq],
@@ -13362,8 +13505,9 @@ def build_rs_continuity(W, m, top_n=CONTINUE_TOP_N):
         C = C[cols].sort_index().iloc[-320:]
         V = V[cols].reindex(C.index).sort_index()
         pool = (C >= 5) & ((C * V.rolling(20).mean()) >= DVOL_FLOOR)
-        if "split_suspect" in m.columns:
-            bad = [t for t in cols if bool(m.at[t, "split_suspect"])]
+        _bad_col = "price_event_excluded" if "price_event_excluded" in m.columns else "split_suspect"
+        if _bad_col in m.columns:
+            bad = [t for t in cols if bool(m.at[t, _bad_col])]
             if bad:
                 pool.loc[:, bad] = False
 
