@@ -15683,12 +15683,12 @@ function showDet(tk){
     else if(String(o.reg||'')==='NEGATIVE_GAMMA')parts.push('境目より下・値動き増幅側');
     var pwa=(o.pwa===null||o.pwa===undefined)?null:Math.abs(Number(o.pwa));
     if(o.pw!==null&&o.pw!==undefined){
-      if(o.pwp!==null&&o.pwp!==undefined&&Number(o.pwp)<0)parts.push((pwa!==null&&pwa<=1?'下値支持候補 ':'遠い下値壁 ' )+'$'+Number(o.pw).toLocaleString(undefined,{maximumFractionDigits:2})+(pwa!==null?'（'+pwa.toFixed(1)+' ADR）':'');
+      if(o.pwp!==null&&o.pwp!==undefined&&Number(o.pwp)<0)parts.push((pwa!==null&&pwa<=1?'下値支持候補 ':'遠い下値壁 ' )+'$'+Number(o.pw).toLocaleString(undefined,{maximumFractionDigits:2})+(pwa!==null?'（'+pwa.toFixed(1)+' ADR）':''));
       else parts.push('下値壁を下回っており支持扱いしない');
     }
     var cwa=(o.cwa===null||o.cwa===undefined)?null:Math.abs(Number(o.cwa));
     if(o.cw!==null&&o.cw!==undefined){
-      if(o.cwp!==null&&o.cwp!==undefined&&Number(o.cwp)>0)parts.push((cwa!==null&&cwa<=1?'上値障害候補 ':'遠い上値壁 ' )+'$'+Number(o.cw).toLocaleString(undefined,{maximumFractionDigits:2})+(cwa!==null?'（'+cwa.toFixed(1)+' ADR）':'');
+      if(o.cwp!==null&&o.cwp!==undefined&&Number(o.cwp)>0)parts.push((cwa!==null&&cwa<=1?'上値障害候補 ':'遠い上値壁 ' )+'$'+Number(o.cw).toLocaleString(undefined,{maximumFractionDigits:2})+(cwa!==null?'（'+cwa.toFixed(1)+' ADR）':''));
       else parts.push('上値壁を上回っており抵抗扱いは弱い');
     }
     return (parts.join('。')||'有効な壁なし')+'。壁単独では入らず、価格反応を確認';

@@ -1,5 +1,7 @@
 from pathlib import Path
 import json
+import re
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -83,3 +85,21 @@ def test_options_ui_uses_adr_units_and_exposes_snapshot_basis():
     assert "['オプション基準',_optBasis(d.opt)" in source
     assert "['スイング結論',_optSwingConclusion(d.opt)" in source
     assert "+Math.abs(a).toFixed(1)+' ADR'" in source
+
+
+def test_options_swing_helpers_are_valid_javascript():
+    source = Path(dashboard.__file__).read_text(encoding="utf-8")
+    match = re.search(
+        r"  function _optBasis\(o\)\{.*?(?=  function _optcell\(o,k\)\{)",
+        source,
+        flags=re.S,
+    )
+    assert match is not None
+    checked = subprocess.run(
+        ["node", "--check", "-"],
+        input=match.group(0),
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+    assert checked.returncode == 0, checked.stderr
