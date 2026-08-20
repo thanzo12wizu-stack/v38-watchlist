@@ -6,5 +6,6 @@ def test_only_operational_workflows_remain():
     assert files == [
         'dashboard.yml',
         'intelligence-engine.yml',
+        'options.yml',
         'publish-public-site.yml',
     ]

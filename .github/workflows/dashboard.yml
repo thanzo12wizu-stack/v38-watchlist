@@ -56,7 +56,7 @@ jobs:
         commit_manifest.json
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # 生成物のcommitはrebaseせず origin/main へ載せ直す方式にしたため、
           # 完全履歴は不要。command-center.htmlが1回11MBあり、fetch-depth:0だと
@@ -71,7 +71,7 @@ jobs:
           git reset --hard origin/main
           echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 

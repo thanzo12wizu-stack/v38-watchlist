@@ -6590,6 +6590,28 @@ def _heatmap_card(ranks):
             f'<div class="hmgrid hmg-w">{g_w}</div>'
             f'<div class="hmgrid hmg-m" style="display:none">{g_m}</div></div>')
 
+def _rs189_quality(m, universe_n):
+    """Separate raw 189-day history availability from rank coverage in the tradable pool."""
+    idx = getattr(m, "index", pd.Index([]))
+    total = max(0, int(universe_n or 0))
+    ret189 = (pd.to_numeric(m["ret189"], errors="coerce")
+              if m is not None and "ret189" in m else pd.Series(np.nan, index=idx))
+    history_n = int(np.isfinite(ret189).sum())
+    pool = (m["rs_pool"].fillna(False).astype(bool)
+            if m is not None and "rs_pool" in m else pd.Series(True, index=idx))
+    pool_n = int(pool.sum())
+    ranks = (pd.to_numeric(m["rs189"], errors="coerce")
+             if m is not None and "rs189" in m else pd.Series(np.nan, index=idx))
+    rank_n = int((pool & np.isfinite(ranks)).sum())
+    return dict(
+        history_n=history_n,
+        history_cov=(history_n / total) if total else 1.0,
+        pool_n=pool_n,
+        rank_n=rank_n,
+        rank_cov=(rank_n / pool_n) if pool_n else 1.0,
+    )
+
+
 def _quality_card(q):
     if not q:
         return ""
@@ -6602,6 +6624,12 @@ def _quality_card(q):
               f'{q.get("yf_batch_have", 0)}/{_yr} batch＋{q.get("yf_serial_recovered", 0)} serial＋{q.get("yf_reference_recovered", 0)} FMP参照→Yahoo')
     _aliases = q.get("alias_suggestions") or []
     _alias_txt = "・".join(f'{x.get("from")}→{x.get("to")}({x.get("status")})' for x in _aliases[:8]) or "なし"
+    def _pct_count(rate, have, total):
+        if not _finite(rate):
+            return "—"
+        detail = (f'（{int(have)}/{int(total)}）'
+                  if have is not None and total is not None else "")
+        return f'{float(rate)*100:.1f}%{detail}'
     rows = [
         ("ユニバース", f'{q.get("uni_ok", 0)}/{q.get("uni_total", 0)} 銘柄'),
         ("Yahoo価格カバー率", _pcovtxt),
@@ -6613,6 +6641,8 @@ def _quality_card(q):
         ("FMP用途", "銘柄照合のみ（価格・一覧・screenerの有料APIは不使用）"),
         ("時価総額カバー率", _covtxt),
         ("分割/併合確認", (f'{q.get("split_suspect")}銘柄 除外' if q.get("split_suspect") else "0（クリーン）")),
+        ("RS189履歴カバー率", _pct_count(q.get("rs189_cov"), q.get("rs189_history_n"), q.get("uni_total"))),
+        ("RS189順位付与率", _pct_count(q.get("rs189_rank_cov"), q.get("rs189_rank_n"), q.get("rs_pool"))),
         ("RSプール幅", f'{q.get("rs_pool", 0)}銘柄（価格イベント正常×$5×$10M内で順位付け）'),
         ("地合いソース", {"file": "手動(TradingView)＝正", "estimate": "自動推定(FSM復元)", "none": "無判定"}.get(q.get("nq_src"), q.get("nq_src") or "—")),
         ("次回リバランス", q.get("next_rebal") or "—"),
@@ -19145,6 +19175,17 @@ def _inject_en_titles(html):
     return _re.sub(r"<h2>(.*?)</h2>", _rep, html, flags=_re.S)
 
 # ----------------------------------------------------------------------------- selftest
+SELFTEST_REQUIRED_MARKERS = (
+    '<div class="msec-l">③ コンフルエンス（事実表示）',
+    '<h2>エントリー候補ボード',
+    '<h2>結論：2週間スイングで見る銘柄 ',
+    '<h2>VWAPタイミング ',
+    '<th>63 VWAP（入口）</th>', '<th>252 VWAP（大局）</th>', '<th>上場来（大局）</th>',
+    'function showMetricHelp(i)', "['オプション状態',_optStatus(d.opt)",
+    "['満期の違い',_optExpiryEffect(d.opt)",
+)
+
+
 def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     errs = []
     warns = []          # #10 非致命（ビルドは通すが注意喚起）。critical=errs はビルド停止。
@@ -19164,17 +19205,17 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
                 warns.append(f"price coverage low: {_pcov*100:.0f}% of universe has price data (<95%)")
             _rcov = _q.get("rs189_cov")
             if _rcov is not None and _rcov < 0.80:
-                warns.append(f"RS189 coverage low: {_rcov*100:.0f}% (<80%)")
+                warns.append(f"RS189 history coverage low: {_rcov*100:.0f}% of universe (<80%)")
+            _rrcov = _q.get("rs189_rank_cov")
+            if _rrcov is not None and _rrcov < 0.98:
+                warns.append(f"RS189 rank coverage low: {_rrcov*100:.0f}% of selection pool (<98%)")
             _mm = _q.get("macro_missing") or []
             if len(_mm) >= 3:
                 warns.append(f"macro series missing: {len(_mm)}")
     except Exception:
         pass
     # Setups回帰ガード: 特徴個数・任意配点・発注合否へ戻さない。
-    for _label in ('<div class="msec-l">③ コンフルエンス（事実表示）',
-                   '<h2>エントリー候補ボード',
-                   '<h2>Multi VWAPセットアップ</h2>',
-                   '<th>63 VWAP</th>', '<th>252 VWAP</th>', '<th>上場来ブレイク</th>'):
+    for _label in SELFTEST_REQUIRED_MARKERS:
         if _label not in html:
             errs.append("setups required block missing: " + _label)
     if ("兆候が4つ以上そろった銘柄" in html or "52週高値−15%以内" in html
@@ -20312,20 +20353,24 @@ def main():
     _er_tickers = list(dict.fromkeys(
         [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15]) + _sw_er))
     mkt["er"] = load_earnings(_er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest)
-    # #19 カバー率: universe(order) のうち価格Close列に存在する率・RS189算出可能率。「候補なし」と「データ欠損」を区別。
+    # #19 カバー率: 「189日分の履歴がある率」と「選定プール内でRS順位を付与できた率」を分離する。
+    # rs189 は意図的に $5・$10M の選定プール外を NaN にするため、全mを分母にすると
+    # 流動性除外をデータ欠損と誤認する（従来の67%警告の原因）。
     try:
         _price_cols = set(W["Close"].columns) if isinstance(W, dict) and hasattr(W.get("Close"), "columns") else set()
     except Exception:
         _price_cols = set()
     _uni_n = len(order) if order else 0
     _price_cov = (sum(1 for t in order if t in _price_cols) / _uni_n) if _uni_n else 1.0
-    _rs189_cov = (int(m["rs189"].notna().sum()) / len(m)) if ("rs189" in m and len(m)) else 0.0
+    _rsq = _rs189_quality(m, _uni_n)
     _missing_tk = [t for t in order if t not in _price_cols][:20]
     _fq = dict(_LAST_FETCH_QUALITY or {})
     mkt["ticker_ref"] = _fq.get("fmp_reference_catalog") or {}
     mkt["quality"] = dict(
         uni_total=len(order), uni_ok=len(m),
-        mcap_cov=_mcap_cov, price_cov=_price_cov, rs189_cov=_rs189_cov,
+        mcap_cov=_mcap_cov, price_cov=_price_cov,
+        rs189_cov=_rsq["history_cov"], rs189_history_n=_rsq["history_n"],
+        rs189_rank_cov=_rsq["rank_cov"], rs189_rank_n=_rsq["rank_n"],
         missing_tickers=_missing_tk,
         yf_requested=_fq.get("yf_requested"), yf_batch_have=_fq.get("yf_batch_have"),
         yf_serial_recovered=_fq.get("yf_serial_recovered", 0),
@@ -20335,7 +20380,7 @@ def main():
         fmp_aliases=_fq.get("fmp_aliases", 0), alias_suggestions=_fq.get("alias_suggestions") or [],
         fmp_paid_endpoints_used=bool(_fq.get("fmp_paid_endpoints_used", False)),
         split_suspect=int(m["split_suspect"].sum()) if "split_suspect" in m else 0,
-        rs_pool=int(m["rs_pool"].sum()) if "rs_pool" in m else len(m),
+        rs_pool=_rsq["pool_n"],
         nq_src=sar[1],
         next_rebal=f"{_rebal_next}（隔週・月曜）",
         macro_missing=[k for k in MACRO_TICKERS if k not in macro],

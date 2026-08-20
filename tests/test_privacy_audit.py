@@ -3,16 +3,13 @@ from pathlib import Path
 from scripts.privacy_audit import audit_current_tree
 
 
-LOCKED_HTML = """<!doctype html><title>V38 Private Intelligence</title>
-<script>const bundle={ciphertext:'abc',kdf:'PBKDF2-SHA256',cipher:'AES-GCM'};</script>
-"""
-
-
 def _safe_tree(root: Path) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command</h1>", encoding="utf-8")
-    (root / "intelligence-dashboard.html").write_text(LOCKED_HTML, encoding="utf-8")
-    (root / "research-dashboard.html").write_text(LOCKED_HTML, encoding="utf-8")
+    swinote = root / "swinote"
+    swinote.mkdir()
+    (swinote / "index.html").write_text("<h1>Swinote</h1>", encoding="utf-8")
+    (swinote / "live.js").write_text("window.SWINOTE = {};", encoding="utf-8")
     private = root / "private"
     private.mkdir()
     (private / "research-summary.enc.json").write_text('{"ciphertext":"abc"}', encoding="utf-8")
