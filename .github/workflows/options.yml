@@ -4,13 +4,8 @@ on:
   schedule:
     # 米引け後（JST翌朝6:47）。EODのOIが載ったタイミングで取得する。
     - cron: '47 21 * * 1-5'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/options.yml'
-      - 'tools/build_options_positioning.py'
-      - 'tools/build_options_positioning_directional.py'
-      - 'tools/render_options_html.py'
+  # コードpush時はYahooのOI更新前・メンテナンス時間にも走って全滅し得るため実データ取得しない。
+  # 修復確認は明示的な手動実行、通常更新は米引け後のscheduleだけに限定する。
   workflow_dispatch: {}
 
 permissions:
@@ -49,11 +44,19 @@ jobs:
           V38_OPT_TICKERS: ''
           V38_OPT_MAX_EXPIRY: '4'
           V38_OPT_HTML: options-positioning.html
-          # 全銘柄再走査は修復時だけ手動で有効化。通常日次はCore12＋候補に限定する。
-          V38_OPT_SCAN_ALL: '0'
+          # Core＋候補は毎回詳細取得。残りは少量ローテーションし、数週間かけて広域蓄積する。
+          V38_OPT_SCAN_ALL: '1'
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
-          V38_OPT_SCAN_WORKERS: '8'
+          V38_OPT_SCAN_STATE: options_scan_state.json
+          V38_OPT_SCAN_BUDGET: '60'
+          V38_OPT_SCAN_WORKERS: '2'
+          V38_OPT_SCAN_REFRESH_DAYS: '14'
+          # 一時的な空レスポンス/429には短いバックオフ。全滅時は失敗にして前回commitを維持。
+          V38_OPT_FETCH_ATTEMPTS: '3'
+          V38_OPT_RETRY_BASE_SECONDS: '2'
+          V38_OPT_MIN_REFRESH_RATIO: '0.35'
+          V38_OPT_STALE_DAYS: '3'
           V38_OPT_TARGETS: options_targets.json
         run: |
           python tools/build_options_positioning_directional.py
@@ -68,7 +71,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for f in options_positioning.json options_history.csv \
-                   options-positioning.html options_scan_history.csv; do
+                   options-positioning.html options_scan_history.csv options_scan_state.json; do
             [[ -f "$f" ]] && git add -- "$f"
           done
           [[ -d options_cache ]] && git add -A options_cache || true

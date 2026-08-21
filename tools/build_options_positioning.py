@@ -13,7 +13,7 @@
   options_history.csv        日次追記（検証用）
   options_cache/<TK>.json    取得失敗時のフォールバック
 """
-import os, sys, json, math, csv, time
+import os, sys, json, math, csv, time, random
 from datetime import datetime, timezone
 
 import numpy as np
@@ -31,8 +31,16 @@ UNIVERSE_CSV= os.environ.get("V38_UNIVERSE_CSV", "universe.csv")
 SCAN_HIST   = os.environ.get("V38_OPT_SCAN_HISTORY", "options_scan_history.csv")
 SCAN_WORKERS= int(os.environ.get("V38_OPT_SCAN_WORKERS", "8"))
 TARGETS_JSON= os.environ.get("V38_OPT_TARGETS", "options_targets.json")
+SCAN_STATE  = os.environ.get("V38_OPT_SCAN_STATE", "options_scan_state.json")
+SCAN_BUDGET = int(os.environ.get("V38_OPT_SCAN_BUDGET", "60"))
+SCAN_REFRESH_DAYS = int(os.environ.get("V38_OPT_SCAN_REFRESH_DAYS", "14"))
+FETCH_ATTEMPTS = int(os.environ.get("V38_OPT_FETCH_ATTEMPTS", "3"))
+RETRY_BASE_SECONDS = float(os.environ.get("V38_OPT_RETRY_BASE_SECONDS", "2"))
+MIN_REFRESH_RATIO = float(os.environ.get("V38_OPT_MIN_REFRESH_RATIO", "0.35"))
+CACHE_STALE_DAYS = int(os.environ.get("V38_OPT_STALE_DAYS", "3"))
 STRIKE_PCT = float(os.environ.get("V38_OPT_STRIKE_PCT", "0.30"))  # 表示レンジ Spot±30%
 RISK_FREE  = float(os.environ.get("V38_OPT_RF", "0.042"))
+REFERENCE_TICKERS = ("SPY", "QQQ", "IWM", "TQQQ", "SOXL")
 
 # --- 品質フィルタ（実測でIV=0.00001・bid=ask=0 の行が混ざる）-------------------
 MIN_IV, MAX_IV = 0.02, 4.0
@@ -42,6 +50,31 @@ MIN_STRIKES    = 8
 
 def _now():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _age_days(ts, now=None):
+    try:
+        current = pd.Timestamp(now or _now())
+        observed = pd.Timestamp(ts)
+        current = current.tz_convert("UTC") if current.tzinfo is not None else current.tz_localize("UTC")
+        observed = observed.tz_convert("UTC") if observed.tzinfo is not None else observed.tz_localize("UTC")
+        return max(0, int((current - observed).total_seconds() // 86400))
+    except Exception:
+        return None
+
+
+def _fallback_record(cache_path, attempted_at, exc):
+    """取得失敗と経過日数を分離する。3日以内の前回値まで即staleにはしない。"""
+    try:
+        rec = json.load(open(cache_path, encoding="utf-8"))
+    except Exception:
+        return None
+    age = _age_days(rec.get("asof"), attempted_at)
+    rec["refresh_failed"] = True
+    rec["refresh_attempted_at"] = attempted_at
+    rec["refresh_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    rec["stale"] = age is None or age > CACHE_STALE_DAYS
+    return rec
 
 
 def bs_gamma(S, K, T, sigma, r=RISK_FREE):
@@ -300,7 +333,8 @@ def position_in_range(spot, pw, cw):
 
 def load_tickers():
     if TICKERS_ENV.strip():
-        return [t.strip().upper() for t in TICKERS_ENV.split(",") if t.strip()]
+        requested = [t.strip().upper() for t in TICKERS_ENV.split(",") if t.strip()]
+        return list(dict.fromkeys(list(REFERENCE_TICKERS) + requested))
     out = []
     try:
         st = json.load(open(STATE_JSON, encoding="utf-8"))
@@ -317,15 +351,164 @@ def load_tickers():
                 out.append(t.upper())
     except Exception:
         pass
-    for t in ("SPY", "QQQ", "IWM", "TQQQ", "SOXL"):
-        if t not in out:
-            out.append(t)
-    return out
+    # Yahooのオプション系統が生きているかを最初に判定できるよう、流動性の高いETFを先頭へ。
+    return list(dict.fromkeys(list(REFERENCE_TICKERS) + out))
 
 
-def scan_universe():
-    """履歴用の全銘柄スキャン。表示はせず、1銘柄1行のサマリーだけ残す。
-       Strike別の明細は保存しない（年59万行になるため）。"""
+def _expiry_dte(expiry, asof):
+    try:
+        base = pd.Timestamp(asof)
+        base = base.tz_convert(None) if base.tzinfo is not None else base
+        return int((pd.Timestamp(expiry).normalize() - base.normalize()).days)
+    except Exception:
+        return None
+
+
+def _select_expiries(expiries, asof, limit=MAX_EXPIRY, include_nearest=True):
+    """最短だけで枠を使い切らず、DTE 7〜24日の14日前後を必ず優先する。"""
+    dated = [(str(exp), _expiry_dte(exp, asof)) for exp in (expiries or [])]
+    dated = [(exp, dte) for exp, dte in dated if dte is not None and dte >= 0]
+    dated.sort(key=lambda x: (x[1], x[0]))
+    if not dated or limit <= 0:
+        return []
+    selected = []
+    if include_nearest:
+        selected.append(dated[0][0])
+    swing = sorted((x for x in dated if 7 <= x[1] <= 24),
+                   key=lambda x: (abs(x[1] - 14), x[1], x[0]))
+    for exp, _dte in swing:
+        if exp not in selected:
+            selected.append(exp)
+        if len(selected) >= limit:
+            return selected
+    for exp, _dte in dated:
+        if exp not in selected:
+            selected.append(exp)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def _build_record_once(yf, tk, asof):
+    y = yf.Ticker(tk)
+    px = y.history(period="1mo", auto_adjust=False)
+    if px is None or px.empty:
+        raise RuntimeError("no price")
+    spot = float(px["Close"].iloc[-1])
+    tr = pd.concat([px["High"] - px["Low"],
+                    (px["High"] - px["Close"].shift()).abs(),
+                    (px["Low"] - px["Close"].shift()).abs()], axis=1).max(axis=1)
+    atr = float(tr.rolling(14).mean().iloc[-1])
+    exps = _select_expiries(list(y.options or []), asof, MAX_EXPIRY, include_nearest=True)
+    if not exps:
+        raise RuntimeError("no option expiries returned")
+    per, expiry_errors = {}, []
+    for e in exps:
+        try:
+            ch = y.option_chain(e)
+            r = analyse_expiry(ch.calls, ch.puts, spot, e, asof)
+            if r:
+                per[e] = r
+        except Exception as exc:
+            expiry_errors.append(f"{e}:{type(exc).__name__}")
+    if not per:
+        tail = " (" + ",".join(expiry_errors[:3]) + ")" if expiry_errors else ""
+        raise RuntimeError("no usable expiry" + tail)
+    agg_net = sum(v["net_gex"] for v in per.values())
+    nearest_expiry = sorted(per)[0]
+    swing_expiries = [e for e in per if 7 <= (_expiry_dte(e, asof) or -999) <= 24]
+    selected_expiry = (min(swing_expiries, key=lambda e: abs(_expiry_dte(e, asof) - 14))
+                       if swing_expiries else nearest_expiry)
+    focus = per[selected_expiry]
+    selection_basis = "swing" if selected_expiry in swing_expiries else "nearest"
+    tech = tech_levels(px)
+    cw, pw, gf = focus["call_wall"], focus["put_wall"], focus["gamma_flip"]
+    return dict(
+        ticker=tk, asof=asof, spot=round(spot, 2), atr14=round(atr, 4),
+        tech={k: round(v, 2) for k, v in tech.items()},
+        confluence=dict(
+            call_wall=confluence(cw, tech, spot, atr),
+            put_wall=confluence(pw, tech, spot, atr),
+            gamma_flip=confluence(gf, tech, spot, atr)),
+        range_pos=position_in_range(spot, pw, cw),
+        explain=explain(spot, cw, pw, gf, focus["net_gex"], atr,
+                        regime(spot, gf, atr)),
+        source="yfinance", basis="positioning_proxy_not_observed_dealer_gamma",
+        oi_basis="provider_open_interest_update_time_unavailable",
+        nearest=nearest_expiry, selected_expiry=selected_expiry,
+        selection_basis=selection_basis,
+        call_wall=dist_block(cw, spot, atr),
+        put_wall=dist_block(pw, spot, atr),
+        gamma_flip=dist_block(gf, spot, atr),
+        net_gex=round(focus["net_gex"], 2), net_gex_all=round(agg_net, 2),
+        regime=regime(spot, gf, atr), confidence=focus["confidence"],
+        expiries=per, stale=False, refresh_failed=False,
+        refresh_attempted_at=asof)
+
+
+def _fetch_record(yf, tk, asof, sleep_fn=time.sleep):
+    """Yahooの一時的な空レスポンス/429を短い指数バックオフで再試行する。"""
+    last = None
+    for attempt in range(max(1, FETCH_ATTEMPTS)):
+        try:
+            return _build_record_once(yf, tk, asof)
+        except Exception as exc:
+            last = exc
+            if attempt + 1 < max(1, FETCH_ATTEMPTS):
+                delay = RETRY_BASE_SECONDS * (2 ** attempt) + random.uniform(0.0, 0.5)
+                sys.stderr.write(
+                    f"[opt] {tk} retry {attempt + 1}/{FETCH_ATTEMPTS - 1} "
+                    f"after {type(exc).__name__}: {str(exc)[:90]}\n")
+                sleep_fn(delay)
+    raise last or RuntimeError("unknown options fetch failure")
+
+
+def _refresh_gate(requested, refreshed):
+    ratio = (float(refreshed) / float(requested)) if requested else 1.0
+    return ratio >= MIN_REFRESH_RATIO, ratio
+
+
+def _scan_state_from_files():
+    state = {}
+    try:
+        raw = json.load(open(SCAN_STATE, encoding="utf-8"))
+        if isinstance(raw, dict):
+            state = raw
+    except Exception:
+        pass
+    # 既存scan履歴を初期stateとして取り込み、過去602銘柄を未取得扱いへ戻さない。
+    try:
+        for row in csv.DictReader(open(SCAN_HIST, encoding="utf-8-sig")):
+            tk = str(row.get("ticker") or "").strip().upper()
+            day = row.get("date")
+            if tk and day and day >= str((state.get(tk) or {}).get("checked_at") or "")[:10]:
+                state[tk] = dict(checked_at=day, status="ok")
+    except Exception:
+        pass
+    return state
+
+
+def _scan_targets(tickers, state, today, budget, exclude=None):
+    exclude = set(exclude or [])
+    due = []
+    for i, tk in enumerate(dict.fromkeys(tickers or [])):
+        if tk in exclude:
+            continue
+        rec = state.get(tk) if isinstance(state, dict) else None
+        if not isinstance(rec, dict) or not rec.get("checked_at"):
+            due.append((0, -10 ** 6, i, tk))
+            continue
+        age = _age_days(rec.get("checked_at"), today)
+        status = str(rec.get("status") or "error")
+        ttl = 30 if status in ("no_options", "insufficient") else (
+            3 if status in ("rate_limited", "error") else SCAN_REFRESH_DAYS)
+        if age is None or age >= ttl:
+            due.append((1, -(age if age is not None else 10 ** 6), i, tk))
+    return [tk for _p, _age, _i, tk in sorted(due)][:max(0, int(budget))]
+
+
+def scan_universe(exclude=None):
+    """全銘柄を少量ずつローテーションし、成功/対象外/失敗をstateへ残す。"""
     import yfinance as yf
     from concurrent.futures import ThreadPoolExecutor
     try:
@@ -334,17 +517,25 @@ def scan_universe():
         tks = [t for t in tks if t and t.replace(".", "").replace("-", "").isalnum()]
     except Exception as exc:
         sys.stderr.write(f"[opt-scan] universe読み込み失敗: {type(exc).__name__}\n")
-        return []
+        return [], dict(requested=0, ok=0, no_options=0, failed=0)
     asof = _now()
+    state = _scan_state_from_files()
+    targets = _scan_targets(tks, state, asof, SCAN_BUDGET, exclude=exclude)
+
+    def failure_status(exc):
+        msg = (type(exc).__name__ + " " + str(exc)).lower()
+        return "rate_limited" if any(x in msg for x in ("ratelimit", "too many", "429")) else "error"
+
     def one(tk):
         try:
             y = yf.Ticker(tk)
-            exps = list(y.options or [])[:1]        # 履歴用は最近満期1本のみ
+            # 広域側も最短満期でなく2週間スイングに近い1本を保存する。
+            exps = _select_expiries(list(y.options or []), asof, 1, include_nearest=False)
             if not exps:
-                return None
+                return tk, "no_options", None, "no option expiries"
             px = y.history(period="1mo", auto_adjust=False)
             if px is None or px.empty:
-                return None
+                return tk, "error", None, "no price"
             spot = float(px["Close"].iloc[-1])
             tr = pd.concat([px["High"] - px["Low"],
                             (px["High"] - px["Close"].shift()).abs(),
@@ -353,26 +544,50 @@ def scan_universe():
             ch = y.option_chain(exps[0])
             r = analyse_expiry(ch.calls, ch.puts, spot, exps[0], asof)
             if not r:
-                return None
+                return tk, "insufficient", None, "no usable expiry"
             gf = r["gamma_flip"]
-            return dict(date=asof[:10], ticker=tk, expiry=r["expiry"], spot=round(spot, 4),
-                        atr14=round(atr, 4),
-                        call_wall=r["call_wall"], put_wall=r["put_wall"], gamma_flip=gf,
-                        net_gex=round(r["net_gex"], 2),
-                        call_wall_pct=(round(r["call_wall"] / spot - 1, 5) if r["call_wall"] else None),
-                        put_wall_pct=(round(r["put_wall"] / spot - 1, 5) if r["put_wall"] else None),
-                        flip_pct=(round(gf / spot - 1, 5) if gf else None),
-                        total_oi=int(r["total_oi"]), n_strikes=r["n_strikes"],
-                        regime=regime(spot, gf, atr), confidence=r["confidence"])
-        except Exception:
-            return None
-    t0 = time.time(); rows = []
-    with ThreadPoolExecutor(max_workers=SCAN_WORKERS) as ex:
-        for res in ex.map(one, tks):
-            if res:
-                rows.append(res)
-    sys.stderr.write("[opt-scan] %d/%d銘柄 %.0fs\n" % (len(rows), len(tks), time.time() - t0))
-    return rows
+            row = dict(date=asof[:10], ticker=tk, expiry=r["expiry"], spot=round(spot, 4),
+                       atr14=round(atr, 4),
+                       call_wall=r["call_wall"], put_wall=r["put_wall"], gamma_flip=gf,
+                       net_gex=round(r["net_gex"], 2),
+                       call_wall_pct=(round(r["call_wall"] / spot - 1, 5) if r["call_wall"] else None),
+                       put_wall_pct=(round(r["put_wall"] / spot - 1, 5) if r["put_wall"] else None),
+                       flip_pct=(round(gf / spot - 1, 5) if gf else None),
+                       total_oi=int(r["total_oi"]), n_strikes=r["n_strikes"],
+                       regime=regime(spot, gf, atr), confidence=r["confidence"])
+            return tk, "ok", row, ""
+        except Exception as exc:
+            return tk, failure_status(exc), None, f"{type(exc).__name__}: {str(exc)[:120]}"
+
+    t0, rows, attempted = time.time(), [], 0
+    counts = dict(requested=len(targets), ok=0, no_options=0, insufficient=0,
+                  rate_limited=0, failed=0)
+    # 10件ずつ確認し、半数以上がrate-limitなら残りを叩かず次回へ回す。
+    for start in range(0, len(targets), 10):
+        batch = targets[start:start + 10]
+        with ThreadPoolExecutor(max_workers=max(1, min(SCAN_WORKERS, len(batch)))) as ex:
+            batch_results = list(ex.map(one, batch))
+        attempted += len(batch_results)
+        for tk, status, row, err in batch_results:
+            if status == "ok":
+                rows.append(row)
+                counts["ok"] += 1
+            elif status in ("no_options", "insufficient", "rate_limited"):
+                counts[status] += 1
+            else:
+                counts["failed"] += 1
+            state[tk] = dict(checked_at=asof, status=status, error=err or None)
+        if sum(1 for _tk, status, _row, _err in batch_results if status == "rate_limited") >= max(2, len(batch) // 2):
+            sys.stderr.write("[opt-scan] rate-limit circuit opened; remaining names deferred\n")
+            break
+    with open(SCAN_STATE, "w", encoding="utf-8") as fh:
+        json.dump(state, fh, ensure_ascii=False, sort_keys=True)
+    counts["attempted"] = attempted
+    sys.stderr.write(
+        "[opt-scan] attempted=%d/%d ok=%d no_options=%d insufficient=%d rate_limited=%d failed=%d %.0fs\n"
+        % (attempted, len(targets), counts["ok"], counts["no_options"],
+           counts["insufficient"], counts["rate_limited"], counts["failed"], time.time() - t0))
+    return rows, counts
 
 
 def main():
@@ -381,82 +596,57 @@ def main():
     tickers = load_tickers()
     asof = _now()
     results, hist_rows = {}, []
+    refreshed = fallback = missing = 0
+    failed_probes = set()
+    provider_circuit = False
     for tk in tickers:
         cache_path = os.path.join(CACHE_DIR, f"{tk}.json")
         try:
-            y = yf.Ticker(tk)
-            px = y.history(period="1mo", auto_adjust=False)
-            if px is None or px.empty:
-                raise RuntimeError("no price")
-            spot = float(px["Close"].iloc[-1])
-            tr = pd.concat([px["High"] - px["Low"],
-                            (px["High"] - px["Close"].shift()).abs(),
-                            (px["Low"] - px["Close"].shift()).abs()], axis=1).max(axis=1)
-            atr = float(tr.rolling(14).mean().iloc[-1])
-            exps = list(y.options or [])[:MAX_EXPIRY]
-            per = {}
-            for e in exps:
-                try:
-                    ch = y.option_chain(e)
-                    r = analyse_expiry(ch.calls, ch.puts, spot, e, asof)
-                    if r:
-                        per[e] = r
-                except Exception as exc:
-                    sys.stderr.write(f"[opt] {tk} {e}: {type(exc).__name__}\n")
-            if not per:
-                raise RuntimeError("no usable expiry")
-            # 集約: 満期を単純合算（DTE weightingは後で検証できるよう生値を残す）
-            agg_net = sum(v["net_gex"] for v in per.values())
-            first = per[sorted(per)[0]]
-            _tech = tech_levels(px)
-            _cw, _pw, _gf = first["call_wall"], first["put_wall"], first["gamma_flip"]
-            rec = dict(
-                ticker=tk, asof=asof, spot=round(spot, 2), atr14=round(atr, 4),
-                tech={k: round(v, 2) for k, v in _tech.items()},
-                confluence=dict(
-                    call_wall=confluence(_cw, _tech, spot, atr),
-                    put_wall=confluence(_pw, _tech, spot, atr),
-                    gamma_flip=confluence(_gf, _tech, spot, atr)),
-                range_pos=position_in_range(spot, _pw, _cw),
-                explain=explain(spot, _cw, _pw, _gf, first["net_gex"], atr,
-                                regime(spot, _gf, atr)),
-                source="yfinance", basis="positioning_proxy_not_observed_dealer_gamma",
-                oi_basis="provider_open_interest_update_time_unavailable",
-                nearest=first["expiry"],
-                call_wall=dist_block(first["call_wall"], spot, atr),
-                put_wall=dist_block(first["put_wall"], spot, atr),
-                gamma_flip=dist_block(first["gamma_flip"], spot, atr),
-                net_gex=round(first["net_gex"], 2),
-                net_gex_all=round(agg_net, 2),
-                regime=regime(spot, first["gamma_flip"], atr),
-                confidence=first["confidence"],
-                expiries=per, stale=False)
-            json.dump(rec, open(cache_path, "w"), ensure_ascii=False)
+            if provider_circuit:
+                raise RuntimeError("provider circuit open after reference ETF failures")
+            rec = _fetch_record(yf, tk, asof)
+            with open(cache_path, "w", encoding="utf-8") as fh:
+                json.dump(rec, fh, ensure_ascii=False)
+            refreshed += 1
         except Exception as exc:
             sys.stderr.write(f"[opt] {tk} failed: {type(exc).__name__} {exc}\n")
-            try:
-                rec = json.load(open(cache_path, encoding="utf-8"))
-                rec["stale"] = True
-            except Exception:
+            if tk in REFERENCE_TICKERS[:3]:
+                failed_probes.add(tk)
+                if all(x in failed_probes for x in REFERENCE_TICKERS[:3]):
+                    provider_circuit = True
+                    sys.stderr.write("[opt] provider circuit opened after SPY/QQQ/IWM failures\n")
+            rec = _fallback_record(cache_path, asof, exc)
+            if rec is None:
+                missing += 1
                 continue
+            fallback += 1
         results[tk] = rec
-        hist_rows.append(dict(
-            date=asof[:10], ticker=tk, expiry=rec.get("nearest"), spot=rec.get("spot"),
-            call_wall=(rec.get("call_wall") or {}).get("px"),
-            put_wall=(rec.get("put_wall") or {}).get("px"),
-            gamma_flip=(rec.get("gamma_flip") or {}).get("px"),
-            net_gex=rec.get("net_gex"),
-            call_wall_pct=(rec.get("call_wall") or {}).get("pct"),
-            put_wall_pct=(rec.get("put_wall") or {}).get("pct"),
-            flip_pct=(rec.get("gamma_flip") or {}).get("pct"),
-            regime=rec.get("regime"), confidence=rec.get("confidence"),
-            stale=rec.get("stale")))
+        # 前回値フォールバックを「本日の観測」として履歴へ混ぜない。
+        if not rec.get("refresh_failed"):
+            hist_rows.append(dict(
+                date=asof[:10], ticker=tk,
+                expiry=rec.get("selected_expiry") or rec.get("nearest"), spot=rec.get("spot"),
+                call_wall=(rec.get("call_wall") or {}).get("px"),
+                put_wall=(rec.get("put_wall") or {}).get("px"),
+                gamma_flip=(rec.get("gamma_flip") or {}).get("px"),
+                net_gex=rec.get("net_gex"),
+                call_wall_pct=(rec.get("call_wall") or {}).get("pct"),
+                put_wall_pct=(rec.get("put_wall") or {}).get("pct"),
+                flip_pct=(rec.get("gamma_flip") or {}).get("pct"),
+                regime=rec.get("regime"), confidence=rec.get("confidence"),
+                stale=False))
         time.sleep(0.4)
 
-    json.dump(dict(asof=asof, source="yfinance",
-                   basis="positioning_proxy_not_observed_dealer_gamma",
-                   oi_basis="provider_open_interest_update_time_unavailable",
-                   tickers=results), open(OUT_JSON, "w"), ensure_ascii=False)
+    gate_ok, refresh_ratio = _refresh_gate(len(tickers), refreshed)
+    quality = dict(requested=len(tickers), refreshed=refreshed, fallback=fallback,
+                   missing=missing, refresh_ratio=round(refresh_ratio, 4),
+                   min_refresh_ratio=MIN_REFRESH_RATIO,
+                   provider_circuit_open=provider_circuit, gate_ok=gate_ok)
+    with open(OUT_JSON, "w", encoding="utf-8") as fh:
+        json.dump(dict(asof=asof, source="yfinance",
+                       basis="positioning_proxy_not_observed_dealer_gamma",
+                       oi_basis="provider_open_interest_update_time_unavailable",
+                       quality=quality, tickers=results), fh, ensure_ascii=False)
 
     if hist_rows:
         cols = list(hist_rows[0].keys())
@@ -467,11 +657,21 @@ def main():
                 w.writeheader()
             for r in hist_rows:
                 w.writerow(r)
+    sys.stderr.write(
+        "[opt] quality requested=%d refreshed=%d fallback=%d missing=%d ratio=%.1f%%\n"
+        % (len(tickers), refreshed, fallback, missing, refresh_ratio * 100.0))
     sys.stderr.write(f"[opt] wrote {len(results)} tickers -> {OUT_JSON}\n")
 
-    # --- 履歴用の全銘柄スキャン（表示には使わない）-------------------------
+    if not gate_ok:
+        sys.stderr.write(
+            "::error::Options refresh degraded: %d/%d fresh (%.1f%%), required %.1f%%. "
+            "Previous committed snapshot is preserved.\n"
+            % (refreshed, len(tickers), refresh_ratio * 100.0, MIN_REFRESH_RATIO * 100.0))
+        return 2
+
+    # --- 広域銘柄を少量ずつ蓄積。詳細対象との重複は避ける。------------------
     if SCAN_ALL:
-        srows = scan_universe()
+        srows, _scan_quality = scan_universe(exclude=tickers)
         if srows:
             cols = list(srows[0].keys())
             new = not os.path.exists(SCAN_HIST)

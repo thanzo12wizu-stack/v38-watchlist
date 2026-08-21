@@ -114,7 +114,12 @@ def card(r):
                  ("gamma_flip", "Gamma Flip推定"), ("net_gex", "Net GEX Proxy")):
         v = ex.get(k) or "算出できず。"
         why += f'<div class="why">{("<b>"+t+"</b>　") if t else ""}{H.escape(v)}</div>'
-    stale = '<div class="stale">⚠ 取得に失敗したため前回値を表示</div>' if r.get("stale") else ""
+    if r.get("stale"):
+        stale = '<div class="stale">⚠ 3日超の古いデータ。売買根拠には使用しない</div>'
+    elif r.get("refresh_failed"):
+        stale = '<div class="stale">⚠ 最新取得は失敗。3日以内の前回値を表示</div>'
+    else:
+        stale = ""
     conf = {"HIGH": "高", "MEDIUM": "中", "OK": "中", "LOW": "低"}.get(
         str(r.get("confidence") or "").upper(), "—"
     )
@@ -124,7 +129,8 @@ def card(r):
             if str(r.get("confidence") or "").upper() == "LOW" else "")
     return (f'<div class="card"><div class="hd"><span class="tk">{H.escape(r["ticker"])}</span>'
             f'<span class="reg {reg_c}">{reg_t}</span>'
-            f'<span class="mut" style="font-size:10.5px">満期 {H.escape(str(r.get("nearest")))}</span>'
+            f'<span class="mut" style="font-size:10.5px">選択満期 {H.escape(str(r.get("selected_expiry") or r.get("nearest")))}'
+            f'（{"スイング" if r.get("selection_basis") == "swing" else "短期参考"}）</span>'
             f'<span class="spot">${r["spot"]:,.2f}</span></div>'
             f'{stale}{lowc}<div class="lead">{H.escape(_scenario(r))}</div>'
             f'<div class="lad">{rows}</div>{bar}{quality}{why}</div>')
@@ -140,7 +146,9 @@ def main():
            f"<div class='note'>OI×Black-Scholes GammaからCall/Putの集中帯を推定したもの。"
            f"Callをプラス、Putをマイナスと置く簡易モデルで、実際のディーラーポジションではない。"
            f"支持・抵抗を保証する壁ではなく、<b>価格反応を確認する候補帯</b>として使う。"
-           f"取得 {H.escape(d.get('asof',''))} / 出所 {H.escape(d.get('source',''))}。</div>"
+           f"取得試行 {H.escape(d.get('asof',''))} / 出所 {H.escape(d.get('source',''))}。"
+           f" 更新 {H.escape(str((d.get('quality') or {}).get('refreshed','—')))} / "
+           f"{H.escape(str((d.get('quality') or {}).get('requested','—')))}銘柄。</div>"
            f"{body}</div></body></html>")
     open(OUT, "w", encoding="utf-8").write(doc)
     sys.stderr.write(f"[opt-html] wrote {OUT} ({len(doc)} bytes)\n")

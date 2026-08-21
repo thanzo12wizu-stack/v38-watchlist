@@ -8387,7 +8387,8 @@ def _confluence_event_axes(r, new_entry=None, opt=None):
         dte = opt.get("dte")
         swing_expiry = (opt.get("basis") == "swing" and isinstance(dte, (int, float))
                         and 7 <= dte <= 24)
-        if conf in ("OK", "MEDIUM", "HIGH") and fresh and swing_expiry and any(opt.get(k) is not None for k in ("pw", "cw", "gf")):
+        if (conf in ("OK", "MEDIUM", "HIGH") and fresh and not opt.get("stale")
+                and swing_expiry and any(opt.get(k) is not None for k in ("pw", "cw", "gf"))):
             reg = str(opt.get("reg") or "OI確認")
             derivatives.append("オプション建玉 " + reg[:18])
 
@@ -8738,23 +8739,25 @@ OPT_TARGETS = os.environ.get("V38_OPT_TARGETS", "options_targets.json")
 OPT_STALE_DAYS = 3          # これより古ければ画面に古さを出す
 
 
-def load_options():
+def load_options(now=None):
     """オプション建玉を銘柄間で比較可能な満期に正規化して返す。
        詳細JSONは2週間スイング向けDTE 7〜24日（14日に最も近い満期）を優先し、
        無ければ最短満期を短期参考として使う。スキャンCSVは取得済み/薄い/期限切れを区別する。"""
     out = {}
+    _now = pd.Timestamp(now) if now is not None else pd.Timestamp.utcnow()
+    _now = _now.tz_convert(None) if _now.tzinfo is not None else _now
 
     def _age(ts):
         try:
             t = pd.Timestamp(ts)
             t = t.tz_convert(None) if t.tzinfo is not None else t
-            return int((pd.Timestamp.utcnow().tz_localize(None) - t).days)
+            return max(0, int((_now - t).days))
         except Exception:
             return None
 
     def _dte(exp, ref=None):
         try:
-            base = pd.Timestamp(ref) if ref is not None else pd.Timestamp.utcnow()
+            base = pd.Timestamp(ref) if ref is not None else _now
             base = base.tz_convert(None) if base.tzinfo is not None else base
             return int((pd.Timestamp(exp).normalize() - base.normalize()).days)
         except Exception:
@@ -8822,8 +8825,10 @@ def load_options():
             if not tk:
                 continue
             exp = r.get("expiry")
-            dte = _dte(exp, r.get("date"))
+            # 表示時点で満期済みかを正しく出す。取得日のDTEを永久に固定しない。
+            dte = _dte(exp)
             conf = str(r.get("confidence") or "").upper() or None
+            age = _age(r.get("date"))
             out[tk] = dict(
                 cw=_num(r.get("call_wall")), pw=_num(r.get("put_wall")),
                 gf=_num(r.get("gamma_flip")),
@@ -8834,7 +8839,8 @@ def load_options():
                 dte=dte, basis=("swing" if dte is not None and 7 <= dte <= 24 else "nearest"),
                 total_oi=_num(r.get("total_oi")), nstr=_num(r.get("n_strikes")),
                 nexp=1, xexp_n=1, cwx=0, pwx=0, gfx=0, cfl={},
-                age=_age(r.get("date")), stale=False,
+                age=age, stale=(age is None or age > OPT_STALE_DAYS),
+                refresh_failed=False,
                 fetched=True, src="scan",
                 oi_basis="provider_open_interest_update_time_unavailable",
                 model_basis="positioning_proxy_not_observed_dealer_gamma")
@@ -8850,7 +8856,8 @@ def load_options():
             for exp, rec in per.items():
                 if not isinstance(rec, dict):
                     continue
-                dte = _dte(exp, v.get("asof") or d.get("asof"))
+                # スイング満期の選択も現在日基準。期限切れsnapshotを有効扱いしない。
+                dte = _dte(exp)
                 if dte is not None:
                     choices.append((exp, rec, dte))
             swing = [x for x in choices if 7 <= x[2] <= 24]
@@ -8871,6 +8878,7 @@ def load_options():
             conf = str(rec.get("confidence") or v.get("confidence") or "").upper() or None
             if conf == "OK":
                 conf = "MEDIUM"  # legacy snapshots used OK for the minimum quality gate
+            record_age = _age(v.get("asof") or d.get("asof"))
             tech = v.get("tech") or {}
             level_hits = dict(
                 cw=_level_hits(cw, tech, spot, atr),
@@ -8887,7 +8895,7 @@ def load_options():
                 asof_label=_asof_jst(v.get("asof") or d.get("asof")),
                 reg=_regime(spot, gf, atr), conf=conf, exp=exp,
                 near_exp=v.get("nearest"),
-                near_dte=_dte(v.get("nearest"), v.get("asof") or d.get("asof")),
+                near_dte=_dte(v.get("nearest")),
                 dte=dte, basis=basis,
                 total_oi=_num(rec.get("total_oi")), nstr=_num(rec.get("n_strikes")),
                 call_oi=_num(rec.get("call_oi")), put_oi=_num(rec.get("put_oi")),
@@ -8900,8 +8908,14 @@ def load_options():
                 cwx=_expiry_agreement("call_wall", cw, other_swing, atr),
                 pwx=_expiry_agreement("put_wall", pw, other_swing, atr),
                 gfx=_expiry_agreement("gamma_flip", gf, other_swing, atr),
-                age=_age(v.get("asof") or d.get("asof")),
-                stale=bool(v.get("stale")), fetched=True, src="full",
+                age=record_age,
+                # legacyのstale=trueは「直近refresh失敗」の意味で使われていた。
+                # 実際の古さはasofから判定し、3日以内の前回値を即無効化しない。
+                stale=(record_age is None or record_age > OPT_STALE_DAYS),
+                refresh_failed=bool(v.get("refresh_failed") or v.get("stale")),
+                refresh_attempted_at=v.get("refresh_attempted_at") or d.get("asof"),
+                refresh_error=v.get("refresh_error"),
+                fetched=True, src="full",
                 oi_basis=v.get("oi_basis") or d.get("oi_basis") or
                          "provider_open_interest_update_time_unavailable",
                 model_basis=v.get("basis") or d.get("basis") or
@@ -16005,11 +16019,12 @@ function showDet(tk){
     return Number(e.accel_pp)>=5?'pos':(Number(e.accel_pp)<=-5?'neg':'mut');
   }
   function _optStatus(o){
-    if(!o)return '未取得（現在の取得対象外）';
+    if(!o)return '未取得（広域ローテーション待ち／オプションなし）';
     var sel=(o.exp||'—')+(o.dte!==null&&o.dte!==undefined?' DTE '+o.dte:'');
     var state='';
     if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))state='古いデータ';
     else if(o.dte!==null&&o.dte!==undefined&&Number(o.dte)<0)state='満期経過';
+    else if(o.refresh_failed)state='前回値・再取得失敗';
     else if(String(o.conf||'').toUpperCase()==='LOW')state='データ量不足';
     else state=o.basis==='swing'?'スイング満期':'短期参考';
     return '取得済み・'+state+'・'+sel;
@@ -16030,7 +16045,8 @@ function showDet(tk){
   function _optBasis(o){
     if(!o)return '未取得';
     var s=(o.spot===null||o.spot===undefined)?'—':('$'+Number(o.spot).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
-    return '取得時スポット '+s+(o.asof_label?' ／ '+o.asof_label:'')+' ／ OI更新時刻は提供元非開示';
+    return '取得時スポット '+s+(o.asof_label?' ／ '+o.asof_label:'')+' ／ OI更新時刻は提供元非開示'
+      +(o.refresh_failed?' ／ 最新取得は失敗したため3日以内の前回値':'');
   }
   function _optConfidence(o){
     if(!o)return '未取得';
@@ -16064,8 +16080,9 @@ function showDet(tk){
   function _optSwingConclusion(o){
     if(!o)return '未取得のため判定しない';
     if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '古いデータのためスイング根拠にしない';
-    if(o.basis!=='swing'||o.dte===null||o.dte===undefined||Number(o.dte)<7||Number(o.dte)>24)return '満期が2週間スイング窓外。短期参考に留める';
-    if(String(o.conf||'').toUpperCase()==='LOW')return 'データ量が不足。オプション水準をスイング根拠にしない';
+    var prior=o.refresh_failed?'前回値（最新取得失敗・3日以内）。':'';
+    if(o.basis!=='swing'||o.dte===null||o.dte===undefined||Number(o.dte)<7||Number(o.dte)>24)return prior+'満期が2週間スイング窓外。短期参考に留める';
+    if(String(o.conf||'').toUpperCase()==='LOW')return prior+'データ量が不足。オプション水準をスイング根拠にしない';
     function _px(v){return '$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:2});}
     var spot=(o.spot===null||o.spot===undefined)?null:Number(o.spot),reg=String(o.reg||''),zone='局面不明';
     if(reg==='NEAR_FLIP')zone='Gamma Flip近辺・方向確認待ち';
@@ -16081,7 +16098,7 @@ function showDet(tk){
     below.forEach(function(x,i){lines.push((i?'次の下値 ':'下値 ')+_px(x.px)+' '+x.t);});
     if(lines.length===1)lines.push('有効な価格帯なし');
     lines.push('壁単独では入らず、実際の価格反応を確認');
-    return lines.join('<br>');
+    return prior+lines.join('<br>');
   }
   function _optcell(o,k){
     if(!o)return '<span class="rsoff">未取得</span>';
@@ -16095,6 +16112,7 @@ function showDet(tk){
     var p=o[k+'p'],a=o[k+'a'],t=px;
     if(p!==null&&p!==undefined)t+=' '+(p>=0?'+':'')+(p*100).toFixed(1)+'%';
     if(a!==null&&a!==undefined)t+=' ・'+Math.abs(a).toFixed(1)+' ATR';
+    if(o.refresh_failed)t+=' <span class="rsoff">前回値</span>';
     if(String(o.conf||'').toUpperCase()==='LOW')t+=' <span class="rsoff">データ量不足</span>';
     return t;
   }

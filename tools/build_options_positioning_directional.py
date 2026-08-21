@@ -111,8 +111,8 @@ def _repair_record(rec):
     for exp in per.values():
         _repair_expiry(exp, spot)
 
-    nearest = rec.get("nearest")
-    first = per.get(nearest) if nearest else None
+    selected = rec.get("selected_expiry") or rec.get("nearest")
+    first = per.get(selected) if selected else None
     if not isinstance(first, dict):
         return rec
 

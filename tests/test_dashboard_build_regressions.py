@@ -47,6 +47,7 @@ def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
                 "tickers": {
                     "MU": {
                         "asof": "2026-08-20T13:33:45+00:00",
+                        "stale": True,
                         "spot": 940.85,
                         "atr14": 56.2407,
                         "tech": {"21EMA": 924.8, "50MA": 800, "63VWAP": 975.5},
@@ -81,10 +82,12 @@ def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
     monkeypatch.setattr(dashboard, "OPT_JSON", str(option_json))
     monkeypatch.setattr(dashboard, "OPT_SCAN_CSV", str(tmp_path / "missing.csv"))
 
-    option = dashboard.load_options()["MU"]
+    option = dashboard.load_options(now="2026-08-21T13:00:00+00:00")["MU"]
 
     assert option["basis"] == "swing"
-    assert option["dte"] == 8
+    assert option["dte"] == 7
+    assert option["stale"] is False
+    assert option["refresh_failed"] is True
     assert option["spot"] == 940.85
     assert option["asof_label"] == "08/20 22:33 JST"
     assert option["cwp"] == round(975 / 940.85 - 1, 5)
@@ -96,6 +99,23 @@ def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
     assert option["gfx"] == 1
     assert option["cfl"]["cw"] == [{"name": "63VWAP", "px": 975.5}]
     assert option["cfl"]["pw"] == [{"name": "21EMA", "px": 924.8}]
+
+
+def test_options_expiry_and_staleness_are_evaluated_at_display_time(tmp_path, monkeypatch):
+    scan = tmp_path / "scan.csv"
+    scan.write_text(
+        "date,ticker,expiry,call_wall,put_wall,gamma_flip,confidence\n"
+        "2026-08-18,OLD,2026-08-21,110,90,100,OK\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(dashboard, "OPT_JSON", str(tmp_path / "missing.json"))
+    monkeypatch.setattr(dashboard, "OPT_SCAN_CSV", str(scan))
+
+    option = dashboard.load_options(now="2026-08-24T13:00:00+00:00")["OLD"]
+
+    assert option["dte"] == -3
+    assert option["stale"] is True
+    assert option["age"] == 6
 
 
 def test_options_ui_uses_atr_units_and_exposes_model_limits():
