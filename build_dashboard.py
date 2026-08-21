@@ -5314,7 +5314,7 @@ def portfolio_corr(W, tickers):
         return None
 
 # ----------------------------------------------------------------------------- earnings dates + EPS (全ユニバースを段階蓄積するキャッシュ)
-EPS_SCHEMA_VERSION = 1
+EPS_SCHEMA_VERSION = 2
 EPS_PRIORITY_TARGET_CAP = 160
 EPS_FETCH_BUDGET = 120
 EPS_FETCH_SECONDS = 180
@@ -5322,13 +5322,18 @@ EPS_PRIORITY_FETCH_RESERVE = 20
 EPS_PRIORITY_REFRESH_DAYS = 7
 EPS_REFRESH_DAYS = 21
 EPS_ERROR_RETRY_DAYS = 7
+EPS_STREAK_STEP_PP = 5.0       # 「連続加速」と数える四半期ごとの最低改善幅
+EPS_CONFIRMED_MIN_YOY = 20.0  # 加速確認でも直近成長が弱いものは「改善」に留める
+EPS_MIN_BASE = 0.05            # 小さすぎる前年EPSによる巨大%を主リストへ上げない
+EPS_MAX_YOY_POINTS = 4         # 3Qを主判定、4Q連続なら持続性の上位ラベル
 
 
 def _eps_acceleration_from_dates(rows, source="Yahoo Finance Reported EPS"):
-    """Yahooの四半期Reported EPSからYoYの加速幅を作る。
+    """四半期Reported EPSから3Q確認・4Q持続のYoY加速を作る。
 
-    成長率の分母・比較する当期EPSがすべて正のときだけ加速幅を計算する。
-    赤字またぎや履歴不足を巨大な成長率へ変換しない。
+    2四半期の比較は単発ノイズとして残すが主判定には使わない。直近3四半期の
+    YoYが2段階連続で各5pt以上改善して初めて「確認済み」、4四半期なら
+    「持続」とする。赤字またぎや極小分母を強いシグナルへ変換しない。
     """
     base = {"status": "insufficient", "trend": "INSUFFICIENT", "source": source}
     if rows is None or not hasattr(rows, "columns") or "Reported EPS" not in rows.columns:
@@ -5340,60 +5345,102 @@ def _eps_acceleration_from_dates(rows, source="Yahoo Finance Reported EPS"):
         eps = pd.Series(eps.to_numpy()[valid], index=dates[valid]).sort_index(ascending=False)
     except Exception:
         return base
-    if len(eps) < 6:
+    # 3つのYoY（当期3Q＋前年同期3Q）に最低7四半期必要。
+    if len(eps) < 7:
         base["quarters"] = int(len(eps))
         return base
 
-    # 行位置だけで前年比を作らず、四半期間隔と前年同期間隔が成立するか確認する。
+    n_points = min(EPS_MAX_YOY_POINTS, len(eps) - 4)
+    # 行位置だけで前年比を作らず、当期・前年側の四半期間隔と各YoY間隔を確認する。
     try:
-        q_gap = int((eps.index[0] - eps.index[1]).days)
-        y_gap_latest = int((eps.index[0] - eps.index[4]).days)
-        y_gap_prior = int((eps.index[1] - eps.index[5]).days)
-        if not (45 <= q_gap <= 140 and 300 <= y_gap_latest <= 430 and 300 <= y_gap_prior <= 430):
+        current_q_gaps = [int((eps.index[i] - eps.index[i + 1]).days)
+                          for i in range(n_points - 1)]
+        prior_q_gaps = [int((eps.index[i + 4] - eps.index[i + 5]).days)
+                        for i in range(n_points - 1)]
+        yoy_gaps = [int((eps.index[i] - eps.index[i + 4]).days)
+                    for i in range(n_points)]
+        if (not all(45 <= gap <= 140 for gap in current_q_gaps + prior_q_gaps)
+                or not all(300 <= gap <= 430 for gap in yoy_gaps)):
             base.update(quarters=int(len(eps)), note="四半期系列が不連続のため前年比較をしない")
             return base
     except Exception:
         base.update(quarters=int(len(eps)), note="四半期日付を検証できない")
         return base
 
-    vals = [float(eps.iloc[i]) for i in (0, 1, 4, 5)]
-    dts = [str(pd.Timestamp(eps.index[i]).date()) for i in (0, 1, 4, 5)]
+    current = [float(eps.iloc[i]) for i in range(n_points)]
+    yago = [float(eps.iloc[i + 4]) for i in range(n_points)]
+    current_dates = [str(pd.Timestamp(eps.index[i]).date()) for i in range(n_points)]
+    yago_dates = [str(pd.Timestamp(eps.index[i + 4]).date()) for i in range(n_points)]
     out = dict(base, quarters=int(len(eps)),
-               latest_date=dts[0], prior_date=dts[1],
-               latest_yago_date=dts[2], prior_yago_date=dts[3],
-               latest_eps=round(vals[0], 4), prior_eps=round(vals[1], 4),
-               latest_yago_eps=round(vals[2], 4), prior_yago_eps=round(vals[3], 4))
+               latest_date=current_dates[0], prior_date=current_dates[1],
+               third_date=current_dates[2],
+               latest_yago_date=yago_dates[0], prior_yago_date=yago_dates[1],
+               third_yago_date=yago_dates[2],
+               latest_eps=round(current[0], 4), prior_eps=round(current[1], 4),
+               third_eps=round(current[2], 4),
+               latest_yago_eps=round(yago[0], 4), prior_yago_eps=round(yago[1], 4),
+               third_yago_eps=round(yago[2], 4))
+    if n_points >= 4:
+        out.update(fourth_date=current_dates[3], fourth_yago_date=yago_dates[3],
+                   fourth_eps=round(current[3], 4), fourth_yago_eps=round(yago[3], 4))
 
-    latest, prior, latest_yago, prior_yago = vals
-    if latest <= 0:
+    if current[0] <= 0:
         out.update(status="non_comparable", trend="LOSS",
                    note="直近EPSが赤字またはゼロのため加速度を算出しない")
         return out
-    if latest_yago <= 0:
+    if yago[0] <= 0:
         out.update(status="non_comparable", trend="TURNAROUND",
                    note="前年同期が赤字またはゼロ。黒字転換だが成長率比較はしない")
         return out
-    if prior <= 0 or prior_yago <= 0:
+    if any(v <= 0 for v in current[1:] + yago[1:]):
         out.update(status="non_comparable", trend="NON_COMPARABLE",
-                   note="前四半期の比較に赤字またはゼロを含むため加速度を算出しない")
+                   note="直近3四半期の比較に赤字またはゼロを含むため連続性を判定しない")
         return out
 
-    latest_yoy = (latest / latest_yago - 1.0) * 100.0
-    prior_yoy = (prior / prior_yago - 1.0) * 100.0
-    accel = latest_yoy - prior_yoy
-    if latest_yoy < 0:
+    yoy = [(cur / prev - 1.0) * 100.0 for cur, prev in zip(current, yago)]
+    steps = [yoy[i] - yoy[i + 1] for i in range(len(yoy) - 1)]
+    accel_streak = 0
+    for step in steps:
+        if step < EPS_STREAK_STEP_PP:
+            break
+        accel_streak += 1
+    decel_streak = 0
+    for step in steps:
+        if step > -EPS_STREAK_STEP_PP:
+            break
+        decel_streak += 1
+    low_base = min(yago) < EPS_MIN_BASE
+
+    if yoy[0] < 0:
         trend = "CONTRACTION"
-    elif accel >= 20 and latest_yoy >= 20:
-        trend = "ACCEL_STRONG"
-    elif accel >= 5:
-        trend = "ACCEL"
-    elif accel <= -5:
-        trend = "DECEL"
+    elif accel_streak >= 3 and yoy[0] >= EPS_CONFIRMED_MIN_YOY:
+        trend = "ACCEL_PERSISTENT"
+    elif accel_streak >= 2 and yoy[0] >= EPS_CONFIRMED_MIN_YOY:
+        trend = "ACCEL_CONFIRMED"
+    elif accel_streak >= 2:
+        trend = "IMPROVING_3Q"
+    elif accel_streak >= 1:
+        trend = "ACCEL_ONE_Q"
+    elif decel_streak >= 2:
+        trend = "DECEL_CONFIRMED"
+    elif decel_streak >= 1:
+        trend = "DECEL_ONE_Q"
     else:
         trend = "FLAT"
     out.update(status="ok", trend=trend,
-               latest_yoy=round(latest_yoy, 1), prior_yoy=round(prior_yoy, 1),
-               accel_pp=round(accel, 1))
+               latest_yoy=round(yoy[0], 1), prior_yoy=round(yoy[1], 1),
+               third_yoy=round(yoy[2], 1),
+               accel_pp=round(steps[0], 1),
+               accel_streak=accel_streak, decel_streak=decel_streak,
+               low_base=low_base,
+               yoy_series=[{"date": current_dates[i], "yoy": round(yoy[i], 1)}
+                           for i in range(len(yoy))],
+               accel_steps_pp=[round(x, 1) for x in steps])
+    if len(yoy) >= 4:
+        out["fourth_yoy"] = round(yoy[3], 1)
+    if low_base:
+        out["quality_note"] = (f"前年EPSが${EPS_MIN_BASE:.2f}未満を含むため、"
+                               "成長率が過大になりやすく主候補から除外")
     return out
 
 
@@ -5456,6 +5503,11 @@ def _earnings_needs_fetch(rec, today, refresh_days=EPS_REFRESH_DAYS):
     age = _earnings_checked_age(rec, today)
     if isinstance(rec.get("eps"), dict) and rec["eps"].get("status") == "fetch_error":
         return age is None or age >= EPS_ERROR_RETRY_DAYS
+    if rec.get("eps_refresh_failed") and rec.get("eps_refresh_attempted_at"):
+        attempt_age = _earnings_checked_age(
+            {"checked_at": rec.get("eps_refresh_attempted_at")}, today)
+        if attempt_age is not None and attempt_age < EPS_ERROR_RETRY_DAYS:
+            return False
     if age is None:
         return True
     return age >= max(1, int(refresh_days))
@@ -5603,11 +5655,21 @@ def load_earnings(tickers, live, strict=False, priority_tickers=None):
                         pass
                 if isinstance(eps_result, dict):
                     rec["eps"] = eps_result
-                elif not isinstance(rec.get("eps"), dict):
+                    rec["eps_schema"] = EPS_SCHEMA_VERSION
+                    rec["checked_at"] = _tday
+                    rec.pop("eps_refresh_failed", None)
+                    rec.pop("eps_refresh_attempted_at", None)
+                elif rec.get("eps_schema") != EPS_SCHEMA_VERSION:
+                    # 旧2Q結果を、新3Q計算に成功したように見せない。
                     rec["eps"] = {"status": "fetch_error", "trend": "FETCH_ERROR",
-                                  "source": "FMP/Yahoo actual EPS"}
-                rec["eps_schema"] = EPS_SCHEMA_VERSION
-                rec["checked_at"] = _tday
+                                  "source": "FMP/Yahoo actual EPS",
+                                  "note": "3四半期判定の再取得に失敗。間隔を空けて再試行"}
+                    rec["eps_schema"] = EPS_SCHEMA_VERSION
+                    rec["checked_at"] = _tday
+                else:
+                    # 現行schemaの有効値は保持するが、実データの取得日を成功扱いで進めない。
+                    rec["eps_refresh_failed"] = True
+                    rec["eps_refresh_attempted_at"] = _tday
                 cache[t] = rec
             outp = p or os.environ.get("V38_ER_JSON") or os.path.join(os.path.dirname(CACHE), "earnings.json")
             _defer_cache_write(outp, cache)   # #6 保留→selftest後にflush
@@ -13679,45 +13741,77 @@ def eligible_or_ipo(m):
 
 
 def build_eps_acceleration_card(er, tickers=None, accel_cap=6, decel_cap=4):
-    """四半期Reported EPSのYoY加速/減速を事実表示する（選定・配点には使わない）。"""
+    """3Q確認・4Q持続のEPS加速を主表示し、単発加速は参考欄へ分離する。"""
     er = er or {}
     universe = list(dict.fromkeys(tickers or er.keys()))
-    comparable, special = [], []
+    comparable, special, legacy = [], [], []
     for t in universe:
         rec = er.get(t)
         eps = rec.get("eps") if isinstance(rec, dict) else None
         if not isinstance(eps, dict):
             continue
+        if rec.get("eps_schema") != EPS_SCHEMA_VERSION:
+            legacy.append(t)
+            continue
         if eps.get("status") == "ok":
             try:
-                comparable.append((t, eps, float(eps["accel_pp"])))
+                comparable.append((t, eps))
             except Exception:
                 continue
         elif eps.get("trend") in ("TURNAROUND", "LOSS", "NON_COMPARABLE"):
             special.append((t, eps))
 
-    accel = sorted((x for x in comparable if x[2] >= 5), key=lambda x: (-x[2], x[0]))[:accel_cap]
-    decel = sorted((x for x in comparable if x[2] <= -5), key=lambda x: (x[2], x[0]))[:decel_cap]
+    confirmed = sorted(
+        (x for x in comparable
+         if x[1].get("trend") in ("ACCEL_CONFIRMED", "ACCEL_PERSISTENT")
+         and not x[1].get("low_base")),
+        key=lambda x: (-int(x[1].get("accel_streak") or 0),
+                       -float(x[1].get("latest_yoy") or 0), x[0]))[:accel_cap]
+    provisional = sorted(
+        (x for x in comparable
+         if x[1].get("trend") in ("ACCEL_ONE_Q", "IMPROVING_3Q")
+         or (x[1].get("trend") in ("ACCEL_CONFIRMED", "ACCEL_PERSISTENT")
+             and x[1].get("low_base"))),
+        key=lambda x: (-int(x[1].get("accel_streak") or 0),
+                       -float(x[1].get("accel_pp") or 0), x[0]))
+    decel = sorted(
+        (x for x in comparable
+         if x[1].get("trend") in ("DECEL_CONFIRMED", "DECEL_ONE_Q", "CONTRACTION")),
+        key=lambda x: (-int(x[1].get("decel_streak") or 0),
+                       float(x[1].get("accel_pp") or 0), x[0]))[:decel_cap]
 
     def _sgn(v, suffix="%"):
         return f'{float(v):+.1f}{suffix}'
 
-    def _row(t, e, a):
-        cls = "pos" if a >= 5 else ("neg" if a <= -5 else "mut")
-        lab = "加速" if a >= 5 else "減速"
+    def _row(t, e):
+        trend = str(e.get("trend") or "")
+        cls = "pos" if trend.startswith("ACCEL_") else (
+            "neg" if "DECEL" in trend or trend == "CONTRACTION" else "mut")
+        labels = {"ACCEL_PERSISTENT": "4Q持続", "ACCEL_CONFIRMED": "3Q確認",
+                  "IMPROVING_3Q": "3Q改善", "ACCEL_ONE_Q": "1Q単発",
+                  "DECEL_CONFIRMED": "3Q減速", "DECEL_ONE_Q": "1Q減速",
+                  "CONTRACTION": "前年割れ"}
+        lab = labels.get(trend, "横ばい")
+        series = list(reversed(e.get("yoy_series") or []))
+        seq = " → ".join(_sgn(x.get("yoy")) for x in series if x.get("yoy") is not None)
+        low = ' <span class="mut">低ベース注意</span>' if e.get("low_base") else ""
         return (f'<div class="prerow" data-tkone="{_h(t)}">'
                 f'<div class="premain"><b class="pretk">{_h(t)}</b>'
                 f'<span class="mut">{_h(str(e.get("latest_date") or "—"))} 発表</span>'
-                f'<span class="prestage {cls}">{lab} {_sgn(a, "pt")}</span></div>'
-                f'<div class="pretail">EPS前年比 '
-                f'<b>{_sgn(e.get("prior_yoy"))}</b> → <b class="{cls}">{_sgn(e.get("latest_yoy"))}</b>'
+                f'<span class="prestage {cls}">{lab}</span>{low}</div>'
+                f'<div class="pretail">EPS前年比 {seq}'
+                f' ／ 直近変化 <b class="{cls}">{_sgn(e.get("accel_pp"), "pt")}</b>'
                 f' ／ 実績EPS {float(e.get("latest_eps")):g}（前年同期 {float(e.get("latest_yago_eps")):g}）</div></div>')
 
     body = ""
-    if accel:
-        body += '<div class="prelist">' + ''.join(_row(*x) for x in accel) + '</div>'
+    if confirmed:
+        body += '<div class="prelist">' + ''.join(_row(*x) for x in confirmed) + '</div>'
     else:
-        body += '<div class="empty">比較可能な銘柄に明確なEPS加速なし</div>'
+        body += '<div class="empty">3四半期連続で確認できるEPS加速なし</div>'
+    if provisional:
+        body += ('<details class="cfdet"><summary>単発・改善途上・低ベース '
+                 + str(len(provisional)) + '銘柄（主候補にしない）</summary><div class="prelist">'
+                 + ''.join(_row(*x) for x in provisional[:12]) + '</div></details>')
     if decel:
         body += ('<details class="cfdet"><summary>EPS減速・確認 ' + str(len(decel)) + '銘柄</summary>'
                  '<div class="prelist">' + ''.join(_row(*x) for x in decel) + '</div></details>')
@@ -13725,22 +13819,32 @@ def build_eps_acceleration_card(er, tickers=None, accel_cap=6, decel_cap=4):
         body += ('<details class="cfdet"><summary>赤字またぎ等で数値比較しない '
                  + str(len(special)) + '銘柄</summary><div class="sub">'
                  + '・'.join(_h(t) for t, _e in special[:12]) + '</div></details>')
+    if legacy:
+        body += ('<details class="cfdet"><summary>旧2Q方式から3Q方式へ更新待ち '
+                 + str(len(legacy)) + '銘柄</summary><div class="sub">'
+                 + '・'.join(_h(t) for t in legacy[:12]) + '</div></details>')
     n_ok = len(comparable)
     n_have = sum(1 for t in universe
-                 if isinstance(er.get(t), dict) and isinstance(er[t].get("eps"), dict)
+                 if isinstance(er.get(t), dict) and er[t].get("eps_schema") == EPS_SCHEMA_VERSION
+                 and isinstance(er[t].get("eps"), dict)
                  and er[t]["eps"].get("status") != "fetch_error")
     n_error = sum(1 for t in universe
-                  if isinstance(er.get(t), dict) and isinstance(er[t].get("eps"), dict)
+                  if isinstance(er.get(t), dict) and er[t].get("eps_schema") == EPS_SCHEMA_VERSION
+                  and isinstance(er[t].get("eps"), dict)
                   and er[t]["eps"].get("status") == "fetch_error")
     coverage = (100.0 * n_have / len(universe)) if universe else 100.0
     error_note = f'・取得失敗 {n_error}銘柄' if n_error else ''
+    legacy_note = f'・3Q方式へ更新待ち {len(legacy)}銘柄' if legacy else ''
     return ('<div class="card"><div class="hdr"><h2>EPS加速 '
             '<span class="h2en">EPS Acceleration</span></h2>'
-            + _cp([t for t, _e, _a in accel]) + '</div>'
-            '<div class="sub">四半期の<b>Reported EPS前年比</b>を、前四半期 → 直近四半期で比較。'
-            f'取得済み <b>{n_have}/{len(universe)}</b>銘柄（{coverage:.1f}%）・比較可能 {n_ok}銘柄{error_note}。'
+            + _cp([t for t, _e in confirmed]) + '</div>'
+            '<div class="sub">四半期の<b>Reported EPS前年比</b>を企業内で比較。'
+            f'3Q方式取得済み <b>{n_have}/{len(universe)}</b>銘柄（{coverage:.1f}%）・比較可能 {n_ok}銘柄'
+            f'{error_note}{legacy_note}。'
             f'未取得は1回{EPS_FETCH_BUDGET}銘柄ずつ日次ビルドで蓄積し、全件到達後も古い順に更新。'
-            '赤字・ゼロ跨ぎと6四半期未満は加速度を出さない。'
+            '<b>主判定は3四半期</b>：YoYが2段階連続で各+5pt以上、直近YoY+20%以上。'
+            '4四半期なら「持続」、1段階だけは「単発」として主候補にしない。'
+            '赤字・ゼロ跨ぎ、7四半期未満、前年EPSが極小の銘柄は強判定から外す。'
             '<b>Core 12の順位・売買スコアには不使用</b>。YahooのReported EPSを使った企業内の推移確認用。</div>'
             + body + '</div>')
 
@@ -16000,12 +16104,15 @@ function showDet(tk){
   function _fsg(x,u){if(x===null||x===undefined)return '—';var t=_f(x,u);return(Number(x)>0&&t.charAt(0)!=='+')?('+'+t):t;}
   function _epsSummary(e){
     if(!e)return '未取得（全銘柄を順次蓄積中）';
-    if(e.status==='insufficient')return '履歴不足（'+(e.quarters||0)+'四半期／6四半期必要）';
+    if(e.status==='legacy')return e.note||'3四半期連続判定へ更新待ち';
+    if(e.status==='insufficient')return '履歴不足（'+(e.quarters||0)+'四半期／7四半期必要）';
     if(e.status==='fetch_error')return '取得失敗（間隔を空けて自動再試行）';
-    if(e.status!=='ok')return e.note||'赤字・ゼロを含むため加速度を算出しない';
-    var p=_fsg(e.prior_yoy,'%'),l=_fsg(e.latest_yoy,'%'),a=_fsg(e.accel_pp,'pt');
-    var lab=Number(e.accel_pp)>=5?'加速':(Number(e.accel_pp)<=-5?'減速':'横ばい');
-    return '前Q YoY '+p+' → 直近 '+l+'（'+a+' '+lab+'）';
+    if(e.status!=='ok')return e.note||'赤字・ゼロを含むため連続性を判定しない';
+    var ys=(e.yoy_series||[]).slice().reverse().map(function(x){return _fsg(x.yoy,'%');});
+    var labs={ACCEL_PERSISTENT:'4Q持続',ACCEL_CONFIRMED:'3Q確認',IMPROVING_3Q:'3Q改善',
+      ACCEL_ONE_Q:'1Q単発',DECEL_CONFIRMED:'3Q減速',DECEL_ONE_Q:'1Q減速',CONTRACTION:'前年割れ',FLAT:'横ばい'};
+    var lab=labs[e.trend]||'判定外',q=e.low_base?'・低ベース注意':'';
+    return 'YoY '+ys.join(' → ')+'（'+lab+q+'）';
   }
   function _epsBasis(e){
     if(!e)return '未取得';
@@ -16016,7 +16123,9 @@ function showDet(tk){
   }
   function _epsCls(e){
     if(!e||e.status!=='ok')return (e&&e.trend==='LOSS')?'neg':'mut';
-    return Number(e.accel_pp)>=5?'pos':(Number(e.accel_pp)<=-5?'neg':'mut');
+    if(e.low_base)return 'mut';
+    return (e.trend==='ACCEL_CONFIRMED'||e.trend==='ACCEL_PERSISTENT')?'pos':
+      ((e.trend||'').indexOf('DECEL')>=0||e.trend==='CONTRACTION'?'neg':'mut');
   }
   function _optStatus(o){
     if(!o)return '未取得（広域ローテーション待ち／オプションなし）';
@@ -16144,7 +16253,7 @@ function showDet(tk){
     ['RVOL',_f(d.rv),'mut','通常比の出来高。1.0が平常、2.0なら概ね2倍。価格反応の信頼確認に使う。'],
     ['ピボットまで',_fsg(d.pdist,'%'),'mut','ベース上抜け基準までの距離。プラスは上抜け後、マイナスは手前。上抜け後+5％超は追わない目安。'],
     ['VCP形状',_f(d.vcpq),'mut','値幅と出来高の収縮を0〜100で形状評価。90は成功確率90％ではなく、形が整っている度合い。'],
-    ['EPS加速',_epsSummary(d.eps),_epsCls(d.eps),'直近四半期のReported EPS前年比が、前四半期の前年比から何ポイント加速・減速したか。赤字・ゼロ跨ぎや6四半期未満は判定しない。Core 12の選定・配点には使わない。'],
+    ['EPS加速',_epsSummary(d.eps),_epsCls(d.eps),'主判定は直近3四半期のReported EPS前年比。2段階連続で各+5pt以上かつ直近+20%以上を確認済み、4四半期なら持続とする。1段階だけは単発参考。赤字・ゼロ跨ぎ、7四半期未満、極小ベースは強判定にしない。Core 12の選定・配点には使わない。'],
     ['EPS比較根拠',_epsBasis(d.eps),'mut','直近の実績EPSと前年同期EPS、発表日、取得元を表示。企業ごとの推移確認用で、会計定義が異なる企業同士のEPS水準比較には使わない。'],
     ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、データ量不足、有効な水準なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
     ['オプション基準',_optBasis(d.opt),'mut','％とATR距離は、確定終値ではなくオプション取得時スポットを基準に計算。時刻は取得時刻で、OI自体の更新時刻は提供元から取得できない。'],
@@ -17443,15 +17552,28 @@ def _det_json(m, names, tapset, extra=None, opts=None, earnings=None):
         src = rec.get("eps") if isinstance(rec, dict) else None
         if not isinstance(src, dict):
             return None
+        if rec.get("eps_schema") != EPS_SCHEMA_VERSION:
+            return {"status": "legacy", "trend": "LEGACY",
+                    "note": "3四半期連続判定へ更新待ち"}
         out = {}
         for k in ("status", "trend", "latest_date", "prior_date", "latest_yago_date",
-                  "prior_yago_date", "source"):
+                  "prior_yago_date", "third_date", "third_yago_date", "fourth_date",
+                  "fourth_yago_date", "source", "quality_note"):
             if src.get(k) is not None:
                 out[k] = _h(str(src.get(k)))
         for k in ("quarters", "latest_eps", "prior_eps", "latest_yago_eps",
-                  "prior_yago_eps", "latest_yoy", "prior_yoy", "accel_pp"):
+                  "prior_yago_eps", "third_eps", "third_yago_eps", "fourth_eps",
+                  "fourth_yago_eps", "latest_yoy", "prior_yoy", "third_yoy",
+                  "fourth_yoy", "accel_pp", "accel_streak", "decel_streak"):
             if src.get(k) is not None:
                 out[k] = _r(src.get(k), 4 if "eps" in k else 1)
+        out["low_base"] = bool(src.get("low_base"))
+        if isinstance(src.get("yoy_series"), list):
+            out["yoy_series"] = [
+                {"date": _h(str(x.get("date") or "")), "yoy": _r(x.get("yoy"), 1)}
+                for x in src["yoy_series"] if isinstance(x, dict)]
+        if isinstance(src.get("accel_steps_pp"), list):
+            out["accel_steps_pp"] = [_r(x, 1) for x in src["accel_steps_pp"]]
         if src.get("note"):
             out["note"] = _h(str(src.get("note")))
         return out
