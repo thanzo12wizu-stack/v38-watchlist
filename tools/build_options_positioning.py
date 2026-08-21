@@ -69,7 +69,7 @@ def _clean(df, kind):
     dead = (d["bid"].fillna(0) <= 0) & (d["ask"].fillna(0) <= 0) & (d["volume"].fillna(0) <= 0)
     d = d[~dead]
     d["kind"] = kind
-    return d[["strike", "openInterest", "impliedVolatility", "volume", "kind"]]
+    return d[["strike", "openInterest", "impliedVolatility", "volume", "bid", "ask", "kind"]]
 
 
 def gex_by_strike(chain, spot, T):
@@ -122,6 +122,37 @@ def top_walls(g, kind, n=3, spot=None):
     return [dict(strike=float(k), gex=float(v)) for k, v in sub.items()]
 
 
+def _wall_concentration(g, kind, spot=None):
+    """Directional side-GEX share at the displayed wall and its lead over #2."""
+    sub = g[g["kind"] == kind].groupby("strike")["gex"].sum().abs().sort_values(ascending=False)
+    if spot is not None and not sub.empty:
+        spot = float(spot)
+        sub = sub[sub.index > spot] if kind == "C" else sub[sub.index < spot]
+    if sub.empty or float(sub.sum()) <= 0:
+        return None, None
+    share = float(sub.iloc[0] / sub.sum())
+    lead = float(sub.iloc[0] / sub.iloc[1]) if len(sub) >= 2 and float(sub.iloc[1]) > 0 else None
+    return share, lead
+
+
+def _data_confidence(total_oi, n_strikes, call_oi, put_oi):
+    """Data-depth label only; it is not a claim that a wall will hold."""
+    reasons = []
+    if total_oi < MIN_OI_TOTAL:
+        reasons.append("合計OI不足")
+    if n_strikes < MIN_STRIKES:
+        reasons.append("ストライク不足")
+    if min(call_oi, put_oi) <= 0:
+        reasons.append("片側データ不足")
+    if reasons:
+        return "LOW", reasons
+
+    balance = min(call_oi, put_oi) / max(call_oi, put_oi) if max(call_oi, put_oi) > 0 else 0.0
+    if total_oi >= 5_000 and n_strikes >= 20 and min(call_oi, put_oi) >= 250 and balance >= 0.05:
+        return "HIGH", ["両側のOIとストライク数が十分"]
+    return "MEDIUM", ["最低品質を通過。複数満期・価格反応で確認"]
+
+
 def analyse_expiry(calls, puts, spot, expiry, asof):
     c, p = _clean(calls, "C"), _clean(puts, "P")
     chain = pd.concat([c, p], ignore_index=True)
@@ -140,6 +171,14 @@ def analyse_expiry(calls, puts, spot, expiry, asof):
     xs, ys, flip = aggregate_profile(chain, spot, T, lo_k, hi_k)
     cw = top_walls(g, "C", spot=spot); pw = top_walls(g, "P", spot=spot)
     total_oi = float(chain["openInterest"].sum())
+    call_oi = float(chain.loc[chain["kind"] == "C", "openInterest"].sum())
+    put_oi = float(chain.loc[chain["kind"] == "P", "openInterest"].sum())
+    n_strikes = int(chain["strike"].nunique())
+    call_share, call_lead = _wall_concentration(g, "C", spot=spot)
+    put_share, put_lead = _wall_concentration(g, "P", spot=spot)
+    data_confidence, quality_reasons = _data_confidence(
+        total_oi, n_strikes, call_oi, put_oi
+    )
     return dict(
         expiry=str(expiry), dte=int(round(T * 365)),
         call_wall=(cw[0]["strike"] if cw else None),
@@ -147,9 +186,11 @@ def analyse_expiry(calls, puts, spot, expiry, asof):
         gamma_flip=flip,
         net_gex=float(g["gex"].sum()),
         call_walls=cw, put_walls=pw,
-        total_oi=total_oi, n_strikes=int(chain["strike"].nunique()),
-        confidence=("LOW" if (total_oi < MIN_OI_TOTAL or chain["strike"].nunique() < MIN_STRIKES)
-                    else "OK"),
+        total_oi=total_oi, n_strikes=n_strikes,
+        call_oi=call_oi, put_oi=put_oi,
+        call_wall_share=call_share, put_wall_share=put_share,
+        call_wall_vs_second=call_lead, put_wall_vs_second=put_lead,
+        confidence=data_confidence, quality_reasons=quality_reasons,
         strikes=[dict(k=float(k), call=float(v[v["kind"] == "C"]["gex"].sum()),
                       put=float(v[v["kind"] == "P"]["gex"].sum()))
                  for k, v in g.groupby("strike")],
@@ -220,28 +261,28 @@ def confluence(level, tech, spot, atr):
 
 def explain(spot, cw, pw, gf, net, atr, reg):
     """初心者向けの言葉。専門用語を出したら必ず意味を添える。"""
-    def days(level):
+    def atr_units(level):
         if level is None or not atr:
             return None
         return round(abs(level - spot) / atr, 1)
     e = {}
     e["call_wall"] = (
-        "コール（買う権利）の建玉が最も積み上がっている価格。"
-        "売り手がここを守ろうとするので上値が重くなりやすい。"
-        + (f"現値から{(cw/spot-1)*100:+.1f}%、いつもの値動き{days(cw)}日分。" if cw else ""))
+        "現値より上で、コールのOI×推定Gammaが最も集中する価格。"
+        "上値抵抗になり得るが、ディーラーの実ポジションを観測したものではない。"
+        + (f"現値から{(cw/spot-1)*100:+.1f}%、{atr_units(cw)} ATR。" if cw else ""))
     e["put_wall"] = (
-        "プット（売る権利）の建玉が最も積み上がっている価格。"
-        "下値の支えになりやすい。割ると下げが速くなりやすい。"
-        + (f"現値から{(pw/spot-1)*100:+.1f}%、いつもの値動き{days(pw)}日分。" if pw else ""))
+        "現値より下で、プットのOI×推定Gammaが最も集中する価格。"
+        "下値支持になり得るが、割れだけで下落加速を断定しない。"
+        + (f"現値から{(pw/spot-1)*100:+.1f}%、{atr_units(pw)} ATR。" if pw else ""))
     e["gamma_flip"] = (
-        "値動きの性質が変わる境目。"
-        "この上では値動きが落ち着きやすく、下では荒れやすい。"
+        "Callをプラス、Putをマイナスと置いた簡易GEXモデルのゼロ交点。"
+        "上は安定側、下は増幅側という推定で、実ディーラーGammaではない。"
         + (f"現値から{(gf/spot-1)*100:+.1f}%。" if gf else ""))
-    e["net_gex"] = ("プラスなら値動きを抑える力が優勢、マイナスなら増幅する力が優勢。"
+    e["net_gex"] = ("簡易符号仮定によるProxy。プラスは抑制側、マイナスは増幅側の推定。"
                     f"現在 {net/1e6:+.0f}M。")
     e["regime"] = {
-        "POSITIVE_GAMMA": "落ち着きやすい局面。レンジ内で往復しやすく、"
-                          "Put Wall付近の押し目が拾われやすい。",
+        "POSITIVE_GAMMA": "安定側の推定。レンジ内で往復しやすい可能性があるが、"
+                          "Put GEX集中帯での実際の反応を確認する。",
         "NEGATIVE_GAMMA": "荒れやすい局面。同じ損切り幅でも刈られやすいので、"
                           "サイズを小さくするか損切りを広く取る判断が要る。",
         "NEAR_FLIP": "境目にいる。どちらにも振れやすく、方向が決まるまで待つ選択肢もある。",
@@ -380,6 +421,7 @@ def main():
                 explain=explain(spot, _cw, _pw, _gf, first["net_gex"], atr,
                                 regime(spot, _gf, atr)),
                 source="yfinance", basis="positioning_proxy_not_observed_dealer_gamma",
+                oi_basis="provider_open_interest_update_time_unavailable",
                 nearest=first["expiry"],
                 call_wall=dist_block(first["call_wall"], spot, atr),
                 put_wall=dist_block(first["put_wall"], spot, atr),
@@ -413,6 +455,7 @@ def main():
 
     json.dump(dict(asof=asof, source="yfinance",
                    basis="positioning_proxy_not_observed_dealer_gamma",
+                   oi_basis="provider_open_interest_update_time_unavailable",
                    tickers=results), open(OUT_JSON, "w"), ensure_ascii=False)
 
     if hist_rows:

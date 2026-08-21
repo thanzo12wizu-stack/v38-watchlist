@@ -2,7 +2,7 @@
 """options_positioning.json → 静的HTML（JS不要・inline SVG・スマホ縦1カラム）。
 
 思想22/23に従い、主要な数値はHTML生成時に直接書く。JSが動かなくても
-Call Wall / Put Wall / Gamma Flip / Net GEX / 現値 が消えない。
+Call/Put GEX集中帯 / Gamma Flip推定 / Net GEX / 現値 が消えない。
 """
 import json, os, sys, html as H
 
@@ -44,9 +44,9 @@ h1{font-size:18px;margin:0 0 4px}
 .foot{color:var(--mut);font-size:10.5px;line-height:1.7;margin-top:6px}
 """
 
-REG = {"POSITIVE_GAMMA": ("落ち着きやすい", "pos"),
-       "NEGATIVE_GAMMA": ("荒れやすい", "neg"),
-       "NEAR_FLIP": ("境目", "warn"), "UNKNOWN": ("判定不能", "mut")}
+REG = {"POSITIVE_GAMMA": ("安定側の推定", "pos"),
+       "NEGATIVE_GAMMA": ("増幅側の推定", "neg"),
+       "NEAR_FLIP": ("Flip近辺", "warn"), "UNKNOWN": ("判定不能", "mut")}
 
 
 def _d(b, spot):
@@ -54,8 +54,33 @@ def _d(b, spot):
         return "—", ""
     t = f"{b['pct']*100:+.1f}%"
     if b.get("atr") is not None:
-        t += f" ・ 値動き{abs(b['atr']):.1f}日分"
+        t += f" ・ {abs(b['atr']):.1f} ATR"
     return f"${b['px']:,.2f}", t
+
+
+def _scenario(r):
+    spot = r.get("spot")
+    if spot is None:
+        return "現在値を取得できず、価格順シナリオを作れない。"
+    levels = []
+    cw = (r.get("call_wall") or {}).get("px")
+    pw = (r.get("put_wall") or {}).get("px")
+    gf = (r.get("gamma_flip") or {}).get("px")
+    if cw is not None and cw > spot:
+        levels.append((cw, "上", "Call GEX集中・抵抗候補"))
+    if pw is not None and pw < spot:
+        levels.append((pw, "下", "Put GEX集中・支持候補。終値割れで候補から外す"))
+    if gf is not None:
+        if gf > spot:
+            levels.append((gf, "上", "Gamma Flip推定。上抜けで安定側推定"))
+        else:
+            levels.append((gf, "下", "Gamma Flip推定。下抜けで増幅側に注意"))
+    above = sorted((x for x in levels if x[1] == "上"), key=lambda x: x[0])
+    below = sorted((x for x in levels if x[1] == "下"), key=lambda x: x[0], reverse=True)
+    parts = [f"現在 ${spot:,.2f}"]
+    parts += [f"上 ${px:,.2f} {label}" for px, _side, label in above]
+    parts += [f"下 ${px:,.2f} {label}" for px, _side, label in below]
+    return " ／ ".join(parts) + "。水準単独では入らず価格反応を確認。"
 
 
 def card(r):
@@ -63,9 +88,9 @@ def card(r):
     ex = r.get("explain") or {}
     conf = r.get("confluence") or {}
     rows = ""
-    for key, lab, cls in (("call_wall", "上値の壁", "neg"),
-                          ("gamma_flip", "性質の境目", "warn"),
-                          ("put_wall", "下値の支え", "pos")):
+    for key, lab, cls in (("call_wall", "Call GEX", "neg"),
+                          ("gamma_flip", "Gamma Flip", "warn"),
+                          ("put_wall", "Put GEX", "pos")):
         px, dist = _d(r.get(key), r.get("spot"))
         cc = conf.get(key) or []
         ctxt = ("　重なり: " + " / ".join(f"{c['name']} ${c['px']:,.2f}" for c in cc)) if cc else ""
@@ -75,28 +100,34 @@ def card(r):
     # バーは常に出す。銘柄ごとに有無が変わると見比べられない。
     pos = r.get("range_pos")
     if pos is None:
-        bar = ('<div class="bar off"><span style="left:4px">支え</span>'
-               '<span style="right:4px">壁</span></div>'
-               '<div class="foot">支えまたは壁が算出できず、位置を表示できない。</div>')
+        bar = ('<div class="bar off"><span style="left:4px">Put GEX</span>'
+               '<span style="right:4px">Call GEX</span></div>'
+               '<div class="foot">両側の集中帯が揃わず、レンジ位置を表示できない。</div>')
     else:
         bar = (f'<div class="bar"><i style="left:{pos:.1f}%"></i>'
-               f'<span style="left:4px">支え</span>'
-               f'<span style="right:4px">壁</span></div>'
-               f'<div class="foot">支えと壁の間で今 <b>{pos:.0f}%</b> の位置。'
-               f'0%＝下値の支え、100%＝上値の壁。</div>')
+               f'<span style="left:4px">Put GEX</span>'
+               f'<span style="right:4px">Call GEX</span></div>'
+               f'<div class="foot">Put/Call GEX集中帯の間で今 <b>{pos:.0f}%</b> の位置。'
+               f'0%＝Put側、100%＝Call側。</div>')
     why = ""
-    for k, t in (("regime", ""), ("put_wall", "下値の支え"), ("call_wall", "上値の壁"),
-                 ("gamma_flip", "性質の境目"), ("net_gex", "全体の力")):
+    for k, t in (("regime", ""), ("put_wall", "Put GEX集中帯"), ("call_wall", "Call GEX集中帯"),
+                 ("gamma_flip", "Gamma Flip推定"), ("net_gex", "Net GEX Proxy")):
         v = ex.get(k) or "算出できず。"
         why += f'<div class="why">{("<b>"+t+"</b>　") if t else ""}{H.escape(v)}</div>'
     stale = '<div class="stale">⚠ 取得に失敗したため前回値を表示</div>' if r.get("stale") else ""
-    lowc = ('<div class="stale">⚠ 建玉が薄く信頼度が低い</div>'
-            if r.get("confidence") == "LOW" else "")
+    conf = {"HIGH": "高", "MEDIUM": "中", "OK": "中", "LOW": "低"}.get(
+        str(r.get("confidence") or "").upper(), "—"
+    )
+    quality = (f'<div class="foot">データ信頼度 {conf}（予測的中率ではない） ／ '
+               'OI更新時刻は提供元非開示</div>')
+    lowc = ('<div class="stale">⚠ データ量不足。オプション水準を売買根拠にしない</div>'
+            if str(r.get("confidence") or "").upper() == "LOW" else "")
     return (f'<div class="card"><div class="hd"><span class="tk">{H.escape(r["ticker"])}</span>'
             f'<span class="reg {reg_c}">{reg_t}</span>'
             f'<span class="mut" style="font-size:10.5px">満期 {H.escape(str(r.get("nearest")))}</span>'
             f'<span class="spot">${r["spot"]:,.2f}</span></div>'
-            f'{stale}{lowc}<div class="lad">{rows}</div>{bar}{why}</div>')
+            f'{stale}{lowc}<div class="lead">{H.escape(_scenario(r))}</div>'
+            f'<div class="lad">{rows}</div>{bar}{quality}{why}</div>')
 
 
 def main():
@@ -105,11 +136,10 @@ def main():
     doc = ("<!doctype html><html lang='ja'><head><meta charset='utf-8'>"
            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
            f"<title>Options Positioning</title><style>{CSS}</style></head><body>"
-           f"<div class='wrap'><h1>オプションの壁</h1>"
-           f"<div class='note'>建玉（未決済のオプション）が積み上がっている価格帯を出したもの。"
-           f"そこに実際の売買が集まりやすいため、支持・抵抗になりやすい。"
-           f"ディーラーの実ポジションを観測したものではなく建玉からの推定なので、"
-           f"当たる指標としてではなく<b>価格帯の目安</b>として使う。"
+           f"<div class='wrap'><h1>オプション需給の推定帯</h1>"
+           f"<div class='note'>OI×Black-Scholes GammaからCall/Putの集中帯を推定したもの。"
+           f"Callをプラス、Putをマイナスと置く簡易モデルで、実際のディーラーポジションではない。"
+           f"支持・抵抗を保証する壁ではなく、<b>価格反応を確認する候補帯</b>として使う。"
            f"取得 {H.escape(d.get('asof',''))} / 出所 {H.escape(d.get('source',''))}。</div>"
            f"{body}</div></body></html>")
     open(OUT, "w", encoding="utf-8").write(doc)

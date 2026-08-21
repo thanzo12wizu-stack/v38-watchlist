@@ -8,7 +8,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/options.yml'
+      - 'tools/build_options_positioning.py'
       - 'tools/build_options_positioning_directional.py'
+      - 'tools/render_options_html.py'
   workflow_dispatch: {}
 
 permissions:
@@ -28,7 +30,14 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
-      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: Preflight tests
+        run: |
+          python -m py_compile build_dashboard.py tools/build_options_positioning.py \
+            tools/build_options_positioning_directional.py tools/render_options_html.py
+          pytest -q tests/test_dashboard_build_regressions.py \
+            tests/test_options_positioning_quality.py
 
       - name: Build options positioning
         env:
@@ -47,7 +56,6 @@ jobs:
           V38_OPT_SCAN_WORKERS: '8'
           V38_OPT_TARGETS: options_targets.json
         run: |
-          python -m py_compile tools/build_options_positioning.py tools/build_options_positioning_directional.py
           python tools/build_options_positioning_directional.py
           python tools/render_options_html.py
 

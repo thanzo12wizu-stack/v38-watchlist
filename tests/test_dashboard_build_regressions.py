@@ -49,6 +49,7 @@ def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
                         "asof": "2026-08-20T13:33:45+00:00",
                         "spot": 940.85,
                         "atr14": 56.2407,
+                        "tech": {"21EMA": 924.8, "50MA": 800, "63VWAP": 975.5},
                         "nearest": "2026-08-21",
                         "expiries": {
                             "2026-08-21": {"call_wall": 955, "put_wall": 910},
@@ -59,6 +60,16 @@ def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
                                 "confidence": "OK",
                                 "total_oi": 57935,
                                 "n_strikes": 101,
+                                "call_wall_share": 0.24,
+                                "put_wall_share": 0.21,
+                            },
+                            "2026-09-11": {
+                                "call_wall": 976,
+                                "put_wall": 924,
+                                "gamma_flip": 940.5,
+                                "confidence": "HIGH",
+                                "total_oi": 42000,
+                                "n_strikes": 90,
                             },
                         },
                     }
@@ -78,13 +89,27 @@ def test_options_keep_snapshot_basis_for_swing_distance(tmp_path, monkeypatch):
     assert option["asof_label"] == "08/20 22:33 JST"
     assert option["cwp"] == round(975 / 940.85 - 1, 5)
     assert option["pwp"] == round(925 / 940.85 - 1, 5)
+    assert option["conf"] == "MEDIUM"
+    assert option["xexp_n"] == 2
+    assert option["cwx"] == 1
+    assert option["pwx"] == 1
+    assert option["gfx"] == 1
+    assert option["cfl"]["cw"] == [{"name": "63VWAP", "px": 975.5}]
+    assert option["cfl"]["pw"] == [{"name": "21EMA", "px": 924.8}]
 
 
-def test_options_ui_uses_adr_units_and_exposes_snapshot_basis():
+def test_options_ui_uses_atr_units_and_exposes_model_limits():
     source = Path(dashboard.__file__).read_text(encoding="utf-8")
     assert "['オプション基準',_optBasis(d.opt)" in source
+    assert "['データ信頼度',_optConfidence(d.opt)" in source
+    assert "['テクニカル重なり',_optConfluence(d.opt)" in source
+    assert "['実績検証',_optValidation(d.opt)" in source
     assert "['スイング結論',_optSwingConclusion(d.opt)" in source
-    assert "+Math.abs(a).toFixed(1)+' ADR'" in source
+    assert "+Math.abs(a).toFixed(1)+' ATR'" in source
+    assert "['Call GEX集中帯',_optcell(d.opt,'cw')" in source
+    assert "['Put GEX集中帯',_optcell(d.opt,'pw')" in source
+    assert "['Gamma Flip推定',_optcell(d.opt,'gf')" in source
+    assert "OI更新時刻は提供元非開示" in source
 
 
 def test_options_swing_helpers_are_valid_javascript():

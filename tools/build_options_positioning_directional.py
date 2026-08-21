@@ -2,8 +2,8 @@
 """Directional Call/Put walls for fresh chains and stale cache fallbacks.
 
 Dashboard meaning is strict:
-  * Call Wall / 上値の壁 = largest absolute call GEX strictly ABOVE spot.
-  * Put Wall / 下値の支え = largest absolute put GEX strictly BELOW spot.
+  * Call GEX concentration / resistance candidate = largest absolute call GEX strictly ABOVE spot.
+  * Put GEX concentration / support candidate = largest absolute put GEX strictly BELOW spot.
 A wrong-side strike may be a pin, but it must not be labelled resistance/support.
 If the correct side has no usable level, expose None instead of a false wall.
 """
@@ -36,6 +36,18 @@ def _directional(rows, spot, side, n=3):
     return [dict(strike=float(strike), gex=float(gex)) for gex, strike in vals[:n]]
 
 
+def _concentration(rows, spot, side):
+    """Use every directional strike so the displayed share is not a top-3 share."""
+    walls = _directional(rows, spot, side, n=10_000)
+    total = sum(float(w["gex"]) for w in walls)
+    share = float(walls[0]["gex"]) / total if walls and total > 0 else None
+    lead = (
+        float(walls[0]["gex"]) / float(walls[1]["gex"])
+        if len(walls) >= 2 and float(walls[1]["gex"]) > 0 else None
+    )
+    return share, lead
+
+
 def _repair_expiry(exp, spot):
     if not isinstance(exp, dict):
         return exp
@@ -45,6 +57,10 @@ def _repair_expiry(exp, spot):
     exp["put_walls"] = puts_below
     exp["call_wall"] = calls_above[0]["strike"] if calls_above else None
     exp["put_wall"] = puts_below[0]["strike"] if puts_below else None
+    for prefix in ("call", "put"):
+        share, lead = _concentration(exp.get("strikes"), spot, prefix)
+        exp[f"{prefix}_wall_share"] = share
+        exp[f"{prefix}_wall_vs_second"] = lead
     return exp
 
 
@@ -71,11 +87,13 @@ def _explain_wall(label, level, spot, atr):
     except (TypeError, ValueError):
         a = 0.0
     pct = (float(level) / spot - 1.0) * 100.0
-    days = abs(float(level) - spot) / a if a > 0 else None
-    tail = f"現値から{pct:+.1f}%" + (f"、いつもの値動き{days:.1f}日分。" if days is not None else "。")
+    atr_units = abs(float(level) - spot) / a if a > 0 else None
+    tail = f"現値から{pct:+.1f}%" + (f"、{atr_units:.1f} ATR。" if atr_units is not None else "。")
     if label == "call":
-        return "現値より上にあるコール建玉/GEXの最大集中。上値抵抗候補。" + tail
-    return "現値より下にあるプット建玉/GEXの最大集中。下値支持候補。" + tail
+        return ("現値より上にあるCallのOI×推定Gamma最大集中。上値抵抗候補だが、"
+                "実ディーラーポジションではない。" + tail)
+    return ("現値より下にあるPutのOI×推定Gamma最大集中。下値支持候補だが、"
+            "維持を保証しない。" + tail)
 
 
 def _repair_record(rec):
@@ -102,6 +120,12 @@ def _repair_record(rec):
     pw = first.get("put_wall")
     rec["call_wall"] = _dist(cw, spot, rec.get("atr14"))
     rec["put_wall"] = _dist(pw, spot, rec.get("atr14"))
+    rec["gamma_flip"] = _dist(first.get("gamma_flip"), spot, rec.get("atr14"))
+    rec["net_gex"] = first.get("net_gex", rec.get("net_gex"))
+    rec["regime"] = base.regime(spot, first.get("gamma_flip"), rec.get("atr14"))
+    rec["confidence"] = first.get("confidence", rec.get("confidence", "LOW"))
+    rec["quality_reasons"] = first.get("quality_reasons", rec.get("quality_reasons", []))
+    rec["oi_basis"] = "provider_open_interest_update_time_unavailable"
     # Keep confluence only when the selected wall itself is directionally valid.
     conf = rec.get("confluence")
     if not isinstance(conf, dict):
@@ -117,10 +141,12 @@ def _repair_record(rec):
         conf["put_wall"] = []
     rec["range_pos"] = base.position_in_range(spot, pw, cw)
 
-    explain = rec.get("explain")
-    if not isinstance(explain, dict):
-        explain = {}
-        rec["explain"] = explain
+    net = rec.get("net_gex")
+    explain = base.explain(
+        spot, cw, pw, first.get("gamma_flip"), float(net or 0.0),
+        rec.get("atr14"), rec.get("regime"),
+    )
+    rec["explain"] = explain
     explain["call_wall"] = _explain_wall("call", cw, spot, rec.get("atr14"))
     explain["put_wall"] = _explain_wall("put", pw, spot, rec.get("atr14"))
 

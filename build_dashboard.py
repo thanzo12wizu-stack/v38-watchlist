@@ -8557,6 +8557,31 @@ def load_options():
             return "NEAR_FLIP"
         return "POSITIVE_GAMMA" if spot > flip else "NEGATIVE_GAMMA"
 
+    def _level_hits(level, tech, spot, atr):
+        """Technical levels close enough to reinforce an option-derived level."""
+        level, spot, atr = _num(level), _num(spot), _num(atr)
+        if level is None or spot is None:
+            return []
+        tol = max(spot * 0.005, (atr or 0) * 0.35)
+        hits = []
+        for name, raw_px in (tech or {}).items():
+            px = _num(raw_px)
+            if px is not None and abs(px - level) <= tol:
+                hits.append(dict(name=str(name), px=round(px, 2)))
+        return hits
+
+    def _expiry_agreement(field, level, others, atr):
+        """Count other swing expiries whose same level is within 0.5 ATR."""
+        level, atr = _num(level), _num(atr)
+        if level is None or atr is None or atr <= 0:
+            return 0
+        count = 0
+        for _exp, other, _dte_v in others:
+            value = _num((other or {}).get(field))
+            if value is not None and abs(value - level) <= 0.5 * atr:
+                count += 1
+        return count
+
     # 副: 全銘柄スキャンは最近満期1本だけ。満期窓外は「短期参考」と明示する。
     try:
         for r in csv.DictReader(open(OPT_SCAN_CSV, encoding="utf-8-sig")):
@@ -8575,8 +8600,11 @@ def load_options():
                 reg=r.get("regime"), conf=conf, exp=exp, near_exp=exp, near_dte=dte,
                 dte=dte, basis=("swing" if dte is not None and 7 <= dte <= 24 else "nearest"),
                 total_oi=_num(r.get("total_oi")), nstr=_num(r.get("n_strikes")),
-                nexp=1, age=_age(r.get("date")), stale=False,
-                fetched=True, src="scan")
+                nexp=1, xexp_n=1, cwx=0, pwx=0, gfx=0, cfl={},
+                age=_age(r.get("date")), stale=False,
+                fetched=True, src="scan",
+                oi_basis="provider_open_interest_update_time_unavailable",
+                model_basis="positioning_proxy_not_observed_dealer_gamma")
     except Exception:
         pass
 
@@ -8608,16 +8636,15 @@ def load_options():
             pw, pwp, pwa = _dist(rec.get("put_wall"), spot, atr)
             gf, gfp, gfa = _dist(rec.get("gamma_flip"), spot, atr)
             conf = str(rec.get("confidence") or v.get("confidence") or "").upper() or None
-
-            conf_names = []
-            tol = max((spot or 0) * 0.005, (atr or 0) * 0.35)
-            for level in (cw, pw, gf):
-                if level is None:
-                    continue
-                for name, px in (v.get("tech") or {}).items():
-                    px = _num(px)
-                    if px is not None and abs(px - level) <= tol and name not in conf_names:
-                        conf_names.append(name)
+            if conf == "OK":
+                conf = "MEDIUM"  # legacy snapshots used OK for the minimum quality gate
+            tech = v.get("tech") or {}
+            level_hits = dict(
+                cw=_level_hits(cw, tech, spot, atr),
+                pw=_level_hits(pw, tech, spot, atr),
+                gf=_level_hits(gf, tech, spot, atr),
+            )
+            other_swing = [x for x in swing if x[0] != exp]
 
             out[str(tk).upper()] = dict(
                 cw=cw, pw=pw, gf=gf, cwp=cwp, pwp=pwp, gfp=gfp,
@@ -8630,9 +8657,22 @@ def load_options():
                 near_dte=_dte(v.get("nearest"), v.get("asof") or d.get("asof")),
                 dte=dte, basis=basis,
                 total_oi=_num(rec.get("total_oi")), nstr=_num(rec.get("n_strikes")),
-                nexp=len(choices), rpos=None, cfl=conf_names,
+                call_oi=_num(rec.get("call_oi")), put_oi=_num(rec.get("put_oi")),
+                cw_share=_num(rec.get("call_wall_share")),
+                pw_share=_num(rec.get("put_wall_share")),
+                cw_lead=_num(rec.get("call_wall_vs_second")),
+                pw_lead=_num(rec.get("put_wall_vs_second")),
+                qreasons=rec.get("quality_reasons") or [],
+                nexp=len(choices), xexp_n=len(swing), rpos=None, cfl=level_hits,
+                cwx=_expiry_agreement("call_wall", cw, other_swing, atr),
+                pwx=_expiry_agreement("put_wall", pw, other_swing, atr),
+                gfx=_expiry_agreement("gamma_flip", gf, other_swing, atr),
                 age=_age(v.get("asof") or d.get("asof")),
-                stale=bool(v.get("stale")), fetched=True, src="full")
+                stale=bool(v.get("stale")), fetched=True, src="full",
+                oi_basis=v.get("oi_basis") or d.get("oi_basis") or
+                         "provider_open_interest_update_time_unavailable",
+                model_basis=v.get("basis") or d.get("basis") or
+                            "positioning_proxy_not_observed_dealer_gamma")
     except Exception:
         pass
 
@@ -8676,15 +8716,15 @@ def write_option_targets(picks, pre_rows, entry_rows, path=None):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 強い銘柄が「下値の支え（Put Wall）」に接触している状態。
-# 支えは建玉が積み上がった価格で、押し目が拾われやすい一方、割れると下げが速い。
+# 強い銘柄が「Put GEX集中帯（支持候補）」に接触している状態。
+# OI×推定Gammaの集中帯であり、実際の価格反応を確認して使う。
 # 表示は接触の事実と距離まで。売買判定はしない。
 OPTWALL_TOUCH_ATR = 0.5      # 支えから±0.5ATR以内を「接触」とする
 OPTWALL_MIN_RS189 = 80       # 強い銘柄に限定（弱い銘柄の支えは支えにならない）
 
 
 def build_optwall_touch(m, opts, cap=20):
-    """RSが高く、2週間スイング向け満期のPut Wallに接触している銘柄。"""
+    """RSが高く、2週間スイング向け満期のPut GEX集中帯に接触している銘柄。"""
     if m is None or m.empty or not opts:
         return []
     rows = []
@@ -8694,7 +8734,7 @@ def build_optwall_touch(m, opts, cap=20):
         dte = o.get("dte")
         if o.get("basis") != "swing" or dte is None or not (7 <= dte <= 24):
             continue
-        if str(o.get("conf") or "").upper() != "OK" or o.get("stale"):
+        if str(o.get("conf") or "").upper() not in ("OK", "MEDIUM", "HIGH") or o.get("stale"):
             continue
         age = o.get("age")
         if isinstance(age, (int, float)) and age > OPT_STALE_DAYS:
@@ -8732,10 +8772,10 @@ def build_optwall_touch(m, opts, cap=20):
 
 def _optwall_touch_card(rows):
     head = ('<div class="card"><div class="hdr"><h2>支えへの接触 '
-            '<span class="h2en">Put Wall Touch</span></h2></div>')
+            '<span class="h2en">Put GEX Support Candidate</span></h2></div>')
     if not rows:
         return (head + '<div class="sub">2週間スイング用の共通条件'
-                '（DTE 7〜24日・建玉OK・取得3日以内）でPut Wallに±0.5ATR以内の銘柄はなし。'
+                '（DTE 7〜24日・データ量中以上・取得3日以内）でPut GEX集中帯に±0.5ATR以内の銘柄はなし。'
                 '各銘柄の未表示理由は銘柄詳細の「オプション状態」をタップ。</div>'
                 '<div class="empty">該当なし</div></div>')
     body = ""
@@ -8759,7 +8799,7 @@ def _optwall_touch_card(rows):
                  f'（DTE {d.get("dte")}） ・ OI {oi} / {ns}ストライク'
                  f' ・ 取得 {d["age"] if d.get("age") is not None else "—"}日前</div></div>')
     return (head + '<div class="sub">銘柄ごとの最短満期ではなく、<b>DTE 7〜24日で14日に最も近い満期</b>に統一。'
-            'RSが高く、そのPut Wallに±0.5ATR以内の銘柄だけ。'
+            'RSが高く、そのPut GEX集中帯に±0.5ATR以内の銘柄だけ。'
             '0〜3DTEは当日〜数日の需給なので2週間スイングの根拠には使わない。'
             '支えを割った行は警戒。建玉からの推定であり発注判定ではない。</div>'
             f'<div class="prelist">{body}</div></div>')
@@ -13449,14 +13489,15 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
             dte, age = o.get("dte"), o.get("age")
             fresh = age is None or (isinstance(age, (int, float)) and age <= OPT_STALE_DAYS)
             swing_ok = (o.get("basis") == "swing" and isinstance(dte, (int, float))
-                        and 7 <= dte <= 24 and str(o.get("conf") or "").upper() == "OK"
+                        and 7 <= dte <= 24
+                        and str(o.get("conf") or "").upper() in ("OK", "MEDIUM", "HIGH")
                         and fresh and not o.get("stale"))
             try:
                 pw_gap = (float(r.get("close")) - float(o.get("pw"))) / float(r.get("atr14"))
             except Exception:
                 pw_gap = None
             if swing_ok and pw_gap is not None and 0 <= pw_gap <= OPTWALL_TOUCH_ATR:
-                signals.append(("Put Wall上", 0))
+                signals.append(("Put GEX支持候補上", 0))
 
         if _flag(r, "true_breakout") or _flag(r, "cup_breakout"):
             signals.append(("ブレイク確認", 3))
@@ -13512,8 +13553,8 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
         first = min((x[1] for x in signals), default=9)
         if signals and signals[0][0].startswith("63VWAP"):
             entry = "63VWAP上を終値で維持"
-        elif any(x[0] == "Put Wall上" for x in signals):
-            entry = "Put Wall上を維持"
+        elif any(x[0] == "Put GEX支持候補上" for x in signals):
+            entry = "Put GEX支持候補上を維持"
         elif any(x[0] == "21EMA反発" for x in signals):
             entry = "21EMA反発を継続"
         elif any(x[0].startswith("PP") for x in signals):
@@ -13546,7 +13587,7 @@ def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait
             + _cp([d["t"] for d in ready]) + '</div>')
     intro = ('<div class="sub">発注リストではなく、<b>今日チャートを開く順</b>。'
              'RS189≥85・週足Stage 1/2・反応発生・2〜8%の実用的な撤退線・既知の決算が5日以内でない・伸び切りなしを同時に満たすもの。'
-             '合計点は作らず、63VWAP/Put Wall → 21EMA → PP → ブレイクの順で並べる。'
+             '合計点は作らず、63VWAP/Put GEX支持候補 → 21EMA → PP → ブレイクの順で並べる。'
              '<b>表示がゼロなら無理に入らない。</b></div>')
     if ready:
         now_html = '<div class="prelist">' + ''.join(_row(d) for d in ready) + '</div>'
@@ -15649,7 +15690,7 @@ function showDet(tk){
     var state='';
     if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))state='古いデータ';
     else if(o.dte!==null&&o.dte!==undefined&&Number(o.dte)<0)state='満期経過';
-    else if(String(o.conf||'').toUpperCase()==='LOW')state='建玉薄';
+    else if(String(o.conf||'').toUpperCase()==='LOW')state='データ量不足';
     else state=o.basis==='swing'?'スイング満期':'短期参考';
     return '取得済み・'+state+'・'+sel;
   }
@@ -15669,43 +15710,72 @@ function showDet(tk){
   function _optBasis(o){
     if(!o)return '未取得';
     var s=(o.spot===null||o.spot===undefined)?'—':('$'+Number(o.spot).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
-    return '取得時スポット '+s+(o.asof_label?' ／ '+o.asof_label:'');
+    return '取得時スポット '+s+(o.asof_label?' ／ '+o.asof_label:'')+' ／ OI更新時刻は提供元非開示';
+  }
+  function _optConfidence(o){
+    if(!o)return '未取得';
+    var c=String(o.conf||'').toUpperCase(),lab=c==='HIGH'?'高':c==='LOW'?'低':'中';
+    var bits=[lab+'（データ量）'];
+    if(o.total_oi!==null&&o.total_oi!==undefined)bits.push('OI '+Number(o.total_oi).toLocaleString());
+    if(o.nstr!==null&&o.nstr!==undefined)bits.push(Math.round(Number(o.nstr))+'ストライク');
+    if(o.cw_share!==null&&o.cw_share!==undefined&&o.pw_share!==null&&o.pw_share!==undefined)bits.push('集中度 Call '+(Number(o.cw_share)*100).toFixed(0)+'% / Put '+(Number(o.pw_share)*100).toFixed(0)+'%');
+    var agree=[];
+    if(Number(o.cwx||0)>0)agree.push('Call');
+    if(Number(o.pwx||0)>0)agree.push('Put');
+    if(Number(o.gfx||0)>0)agree.push('Flip');
+    if(Number(o.xexp_n||0)>1)bits.push(agree.length?'複数満期一致 '+agree.join('/'):'複数満期一致なし');
+    else bits.push('比較できるスイング満期1本');
+    return bits.join(' ／ ');
+  }
+  function _optValidation(o){
+    if(!o)return '未取得';
+    return '履歴蓄積中・支持維持率やFlip通過後の成績はまだ判定へ不使用';
+  }
+  function _optConfluence(o){
+    if(!o||!o.cfl)return '重なりなし';
+    if(Array.isArray(o.cfl))return o.cfl.length?o.cfl.join('・'):'重なりなし';
+    var names={cw:'Call GEX',pw:'Put GEX',gf:'Gamma Flip'},parts=[];
+    ['cw','pw','gf'].forEach(function(k){
+      var hits=o.cfl[k]||[];
+      if(hits.length)parts.push(names[k]+' ≒ '+hits.map(function(x){return x.name+' $'+Number(x.px).toLocaleString(undefined,{maximumFractionDigits:2});}).join(' / '));
+    });
+    return parts.length?parts.join(' ／ '):'21EMA・50MA・63VWAPとの重なりなし';
   }
   function _optSwingConclusion(o){
     if(!o)return '未取得のため判定しない';
     if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '古いデータのためスイング根拠にしない';
     if(o.basis!=='swing'||o.dte===null||o.dte===undefined||Number(o.dte)<7||Number(o.dte)>24)return '満期が2週間スイング窓外。短期参考に留める';
-    if(String(o.conf||'').toUpperCase()==='LOW')return '建玉が薄いため壁をスイング根拠にしない';
-    var parts=[];
-    var g=(o.gfa===null||o.gfa===undefined)?null:Math.abs(Number(o.gfa));
-    if(g!==null&&g<=0.25)parts.push('境目付近・方向確認待ち');
-    else if(String(o.reg||'')==='POSITIVE_GAMMA')parts.push('境目より上・値動き安定側');
-    else if(String(o.reg||'')==='NEGATIVE_GAMMA')parts.push('境目より下・値動き増幅側');
-    var pwa=(o.pwa===null||o.pwa===undefined)?null:Math.abs(Number(o.pwa));
-    if(o.pw!==null&&o.pw!==undefined){
-      if(o.pwp!==null&&o.pwp!==undefined&&Number(o.pwp)<0)parts.push((pwa!==null&&pwa<=1?'下値支持候補 ':'遠い下値壁 ' )+'$'+Number(o.pw).toLocaleString(undefined,{maximumFractionDigits:2})+(pwa!==null?'（'+pwa.toFixed(1)+' ADR）':''));
-      else parts.push('下値壁を下回っており支持扱いしない');
-    }
-    var cwa=(o.cwa===null||o.cwa===undefined)?null:Math.abs(Number(o.cwa));
-    if(o.cw!==null&&o.cw!==undefined){
-      if(o.cwp!==null&&o.cwp!==undefined&&Number(o.cwp)>0)parts.push((cwa!==null&&cwa<=1?'上値障害候補 ':'遠い上値壁 ' )+'$'+Number(o.cw).toLocaleString(undefined,{maximumFractionDigits:2})+(cwa!==null?'（'+cwa.toFixed(1)+' ADR）':''));
-      else parts.push('上値壁を上回っており抵抗扱いは弱い');
-    }
-    return (parts.join('。')||'有効な壁なし')+'。壁単独では入らず、価格反応を確認';
+    if(String(o.conf||'').toUpperCase()==='LOW')return 'データ量が不足。オプション水準をスイング根拠にしない';
+    function _px(v){return '$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:2});}
+    var spot=(o.spot===null||o.spot===undefined)?null:Number(o.spot),reg=String(o.reg||''),zone='局面不明';
+    if(reg==='NEAR_FLIP')zone='Gamma Flip近辺・方向確認待ち';
+    else if(reg==='POSITIVE_GAMMA')zone='Gamma Flip上・安定側の推定';
+    else if(reg==='NEGATIVE_GAMMA')zone='Gamma Flip下・増幅側の推定';
+    var lines=[(spot===null?'現在値不明':'現在 '+_px(spot))+'（'+zone+'）'],above=[],below=[];
+    if(spot!==null&&o.cw!==null&&o.cw!==undefined&&Number(o.cw)>spot)above.push({px:Number(o.cw),t:'Call GEX集中・抵抗候補'});
+    if(spot!==null&&o.gf!==null&&o.gf!==undefined&&Number(o.gf)>spot)above.push({px:Number(o.gf),t:'Gamma Flip回復で安定側の推定'});
+    if(spot!==null&&o.pw!==null&&o.pw!==undefined&&Number(o.pw)<spot)below.push({px:Number(o.pw),t:'Put GEX集中・支持候補。終値割れで支持候補から外す'});
+    if(spot!==null&&o.gf!==null&&o.gf!==undefined&&Number(o.gf)<spot)below.push({px:Number(o.gf),t:'Gamma Flip推定。下抜けで増幅側に注意'});
+    above.sort(function(a,b){return a.px-b.px;}); below.sort(function(a,b){return b.px-a.px;});
+    above.forEach(function(x,i){lines.push((i?'次の上値 ':'上値 ')+_px(x.px)+' '+x.t);});
+    below.forEach(function(x,i){lines.push((i?'次の下値 ':'下値 ')+_px(x.px)+' '+x.t);});
+    if(lines.length===1)lines.push('有効な価格帯なし');
+    lines.push('壁単独では入らず、実際の価格反応を確認');
+    return lines.join('<br>');
   }
   function _optcell(o,k){
     if(!o)return '<span class="rsoff">未取得</span>';
     if(o.stale||(o.age!==null&&o.age!==undefined&&o.age>3))return '<span class="rsoff">古いデータ</span>';
     if(o[k]===null||o[k]===undefined){
       return String(o.conf||'').toUpperCase()==='LOW'
-        ?'<span class="rsoff">取得済み・建玉薄</span>'
+        ?'<span class="rsoff">取得済み・データ量不足</span>'
         :'<span class="rsoff">取得済み・有効な壁なし</span>';
     }
     var px='$'+Number(o[k]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
     var p=o[k+'p'],a=o[k+'a'],t=px;
     if(p!==null&&p!==undefined)t+=' '+(p>=0?'+':'')+(p*100).toFixed(1)+'%';
-    if(a!==null&&a!==undefined)t+=' ・'+Math.abs(a).toFixed(1)+' ADR';
-    if(String(o.conf||'').toUpperCase()==='LOW')t+=' <span class="rsoff">建玉薄</span>';
+    if(a!==null&&a!==undefined)t+=' ・'+Math.abs(a).toFixed(1)+' ATR';
+    if(String(o.conf||'').toUpperCase()==='LOW')t+=' <span class="rsoff">データ量不足</span>';
     return t;
   }
   function _vwcell(st,val){
@@ -15736,13 +15806,16 @@ function showDet(tk){
     ['RVOL',_f(d.rv),'mut','通常比の出来高。1.0が平常、2.0なら概ね2倍。価格反応の信頼確認に使う。'],
     ['ピボットまで',_fsg(d.pdist,'%'),'mut','ベース上抜け基準までの距離。プラスは上抜け後、マイナスは手前。上抜け後+5％超は追わない目安。'],
     ['VCP形状',_f(d.vcpq),'mut','値幅と出来高の収縮を0〜100で形状評価。90は成功確率90％ではなく、形が整っている度合い。'],
-    ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、建玉薄、有効な壁なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
-    ['オプション基準',_optBasis(d.opt),'mut','壁までの％とADR距離は、確定終値ではなくオプション取得時スポットを基準に計算する。取得時刻も併記する。'],
+    ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、データ量不足、有効な水準なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
+    ['オプション基準',_optBasis(d.opt),'mut','％とATR距離は、確定終値ではなくオプション取得時スポットを基準に計算。時刻は取得時刻で、OI自体の更新時刻は提供元から取得できない。'],
+    ['データ信頼度',_optConfidence(d.opt),'mut','予測の的中率ではなくデータ量の信頼度。合計OI、ストライク数、Call/Put両側の厚み、複数満期の同価格帯一致を確認する。'],
+    ['実績検証',_optValidation(d.opt),'mut','履歴は保存するが、十分なサンプルが揃うまでは支持維持率やGamma Flip通過後の値動きをランキング・売買判定へ加点しない。'],
+    ['テクニカル重なり',_optConfluence(d.opt),'mut','オプション由来の推定水準と21EMA・50MA・63VWAPが0.5%または0.35ATR以内で近接するか。単独水準より価格反応を確認しやすい。'],
     ['満期の違い',_optExpiryEffect(d.opt),'mut','DTEは満期までの日数。0〜3DTEは反応が速い一方、壁が動いたり満期で消えやすい。7〜24DTEは2週間スイング用、25DTE以上は大局寄り。選択満期と最短満期を分けて表示する。'],
-    ['スイング結論',_optSwingConclusion(d.opt),'mut','DTE 7〜24日、取得鮮度、建玉、取得時スポットからのADR距離をまとめる。壁単独で売買せず、実際の価格反応を待つ。'],
-    ['上値の壁',_optcell(d.opt,'cw'),'mut','Call Wall。コール建玉が集中する上値候補。未表示は状態欄で、未取得か建玉薄か有効な壁なしを確認する。'],
-    ['下値の支え',_optcell(d.opt,'pw'),'mut','Put Wall。プット建玉が集中する下値候補。支えの上にいる時だけ押し目根拠の一つにする。'],
-    ['性質の境目',_optcell(d.opt,'gf'),'mut','Gamma Flip。上は値動きが落ち着きやすく、下は増幅しやすいと推定する境目。'],
+    ['スイング結論',_optSwingConclusion(d.opt),'mut','現在値から近い順に、Call/Put GEX集中帯とGamma Flip推定を並べる。水準単独で売買せず、終値と実際の価格反応を確認する。'],
+    ['Call GEX集中帯',_optcell(d.opt,'cw'),'mut','現値より上でCallのOI×推定Gammaが最大の価格。抵抗候補だが、実ディーラーポジションや維持を保証する壁ではない。'],
+    ['Put GEX集中帯',_optcell(d.opt,'pw'),'mut','現値より下でPutのOI×推定Gammaが最大の価格。支持候補だが、終値で割れたら支持候補から外す。'],
+    ['Gamma Flip推定',_optcell(d.opt,'gf'),'mut','Callをプラス、Putをマイナスと置いた簡易GEXモデルのゼロ交点。実ディーラーGammaではなく、上は安定側・下は増幅側という推定。'],
     ['VWAP結論',_vwConclusion(),'mut','2週間では63VWAPの反発か回復を最優先。252日と上場来は大局確認。近いだけ、または大きく上に離れた状態は入口に使わない。'],
     ['63 VWAP',_vwcell(d.vws63,d.vw63),(d.vws63==='下から回復'||d.vws63==='タッチ反発')?'pos':'mut','約3か月の出来高加重平均価格。2週間スイングの主要な需給コスト線。反発か下から回復だけを見る。'],
     ['252 VWAP',_vwcell(d.vws252,d.vw252),(d.vws252==='下から回復'||d.vws252==='タッチ反発')?'pos':'mut','約1年の出来高加重平均価格。大局の支持・転換確認用で、日々の入口優先度は63VWAPより下。'],
@@ -18885,7 +18958,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                            mkt.get("etf_hier"), mkt.get("ftd"), default=[])),
                 mkt.get("ftd"))
             + _mkt_section("② 支えへの接触（オプション）",
-                           "建玉が積み上がった下値の支えに、強い銘柄が接触しているもの",
+                           "PutのOI×推定Gamma集中帯に、強い銘柄が接触しているもの",
                            en="Put Wall Touch")
             + _optwall_touch_card(mkt.get("optwall_touch"))
             + f'{today}</section>'
