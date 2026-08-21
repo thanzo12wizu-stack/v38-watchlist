@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# Trigger dashboard rebuild after EPS schema v2 migration; no runtime behavior change.
 import argparse
 import json
 from datetime import datetime, timezone
