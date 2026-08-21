@@ -5315,6 +5315,9 @@ def portfolio_corr(W, tickers):
 
 # ----------------------------------------------------------------------------- earnings dates (保有+控えのみ・キャッシュ)
 EPS_SCHEMA_VERSION = 1
+EPS_TARGET_CAP = 160
+EPS_FETCH_BUDGET = 120
+EPS_FETCH_SECONDS = 180
 
 
 def _eps_acceleration_from_dates(rows, source="Yahoo Finance Reported EPS"):
@@ -5447,6 +5450,26 @@ def _earnings_needs_fetch(rec, today):
         return True
 
 
+def _earnings_fetch_priority(rec, today):
+    """未取得を最優先し、同日2回のbuildで対象全体を順番に埋める。"""
+    if rec is None or isinstance(rec, str):
+        return 0
+    if not isinstance(rec, dict) or rec.get("eps_schema") != EPS_SCHEMA_VERSION:
+        return 0
+    if isinstance(rec.get("eps"), dict) and rec["eps"].get("status") == "fetch_error":
+        return 1
+    if not rec.get("checked_at"):
+        return 2
+    return 3 if _earnings_needs_fetch(rec, today) else None
+
+
+def _earnings_fetch_queue(tickers, cache, today, budget):
+    queued = [(i, t, _earnings_fetch_priority((cache or {}).get(t), today))
+              for i, t in enumerate(tickers)]
+    return [t for _i, t, _p in sorted(
+        (x for x in queued if x[2] is not None), key=lambda x: (x[2], x[0]))][:budget]
+
+
 def _er_next(rec):
     """earningsキャッシュのレコード(旧: 日付文字列 / 新: dict)から次回決算日文字列を取り出す。無ければNone。"""
     if isinstance(rec, str):
@@ -5472,13 +5495,19 @@ def load_earnings(tickers, live, strict=False):
         try:
             import yfinance as yf, time as _t
             today = pd.Timestamp.today().normalize()
-            todo = [t for t in tickers if _earnings_needs_fetch(cache.get(t), today)][:40]
+            _budget = max(1, min(EPS_TARGET_CAP, int(os.environ.get(
+                "V38_EARNINGS_FETCH_BUDGET", str(EPS_FETCH_BUDGET)))))
+            _time_budget = max(30, min(300, int(os.environ.get(
+                "V38_EARNINGS_FETCH_SECONDS", str(EPS_FETCH_SECONDS)))))
+            todo = _earnings_fetch_queue(tickers, cache, today, _budget)
             t0 = _t.time()
             _tday = str(today.date())
             _fmp_key = os.environ.get("FMP_API_KEY", "").strip()
-            _fmp_enabled = bool(_fmp_key)
+            # FMP earningsは現行無料planでHTTP 402。意図しない有料依存と公開表示条件を避け、
+            # 明示opt-in時だけ使う。通常運用はYahooのReported EPSのみ。
+            _fmp_enabled = bool(_fmp_key) and os.environ.get("V38_USE_FMP_EPS") == "1"
             for t in todo:
-                if _t.time() - t0 > 120:
+                if _t.time() - t0 > _time_budget:
                     break
                 old = cache.get(t)
                 rec = dict(old) if isinstance(old, dict) else {}
@@ -13644,12 +13673,15 @@ def build_eps_acceleration_card(er, tickers=None, accel_cap=6, decel_cap=4):
                  + str(len(special)) + '銘柄</summary><div class="sub">'
                  + '・'.join(_h(t) for t, _e in special[:12]) + '</div></details>')
     n_ok = len(comparable)
+    n_have = sum(1 for t in universe
+                 if isinstance(er.get(t), dict) and isinstance(er[t].get("eps"), dict))
     return ('<div class="card"><div class="hdr"><h2>EPS加速 '
             '<span class="h2en">EPS Acceleration</span></h2>'
             + _cp([t for t, _e, _a in accel]) + '</div>'
             '<div class="sub">四半期の<b>Reported EPS前年比</b>を、前四半期 → 直近四半期で比較。'
-            f'現在の取得対象で比較可能 {n_ok}銘柄。赤字・ゼロ跨ぎと6四半期未満は加速度を出さない。'
-            '<b>Core 12の順位・売買スコアには不使用</b>。FMPを主系統、Yahooを補完にした実績値で、企業内の推移確認用。</div>'
+            f'取得済み <b>{n_have}/{len(universe)}</b>銘柄・比較可能 {n_ok}銘柄。'
+            '赤字・ゼロ跨ぎと6四半期未満は加速度を出さない。'
+            '<b>Core 12の順位・売買スコアには不使用</b>。YahooのReported EPSを使った企業内の推移確認用。</div>'
             + body + '</div>')
 
 
@@ -20726,8 +20758,17 @@ def main():
         _sw_er = list(m[_sw_mask].sort_values("rs189", ascending=False).index[:60])
     except Exception:
         _sw_er = []
+    # EPSはCoreだけでなく、価格・流動性条件を満たすRS189上位まで広げる。
+    # 全ユニバース数千銘柄を毎日直列取得すると無料データ源を詰まらせるため、実用上位160に限定。
+    try:
+        _eps_mask = setup_eligible_core(m) & pd.to_numeric(m.get("rs189"), errors="coerce").notna()
+        _eps_pool = list(m[_eps_mask].sort_values("rs189", ascending=False).index[:EPS_TARGET_CAP])
+    except Exception:
+        _eps_pool = []
     _er_tickers = list(dict.fromkeys(
-        [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15]) + _sw_er))
+        [t for t, _, _ in picks]
+        + list(cand.index[N_PORT:N_PORT + 40])
+        + _sw_er + _eps_pool))[:EPS_TARGET_CAP]
     mkt["eps_tickers"] = _er_tickers
     mkt["er"] = load_earnings(_er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest)
     # #19 カバー率: 「189日分の履歴がある率」と「選定プール内でRS順位を付与できた率」を分離する。

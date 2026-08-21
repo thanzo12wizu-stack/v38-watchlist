@@ -89,6 +89,15 @@ def test_old_earnings_cache_is_refetched_for_eps_schema():
     assert not dashboard._earnings_needs_fetch(
         {"checked_at": "2026-08-21", "eps_schema": dashboard.EPS_SCHEMA_VERSION}, today
     )
+    assert dashboard._earnings_fetch_priority(None, today) == 0
+    assert dashboard._earnings_fetch_priority(
+        {"checked_at": "2026-08-21", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+         "eps": {"status": "fetch_error"}}, today
+    ) == 1
+    assert dashboard._earnings_fetch_priority(
+        {"checked_at": "2026-08-21", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+         "eps": {"status": "ok"}}, today
+    ) is None
 
 
 def test_load_earnings_prefers_fmp_and_avoids_yahoo_when_complete(tmp_path, monkeypatch):
@@ -105,6 +114,7 @@ def test_load_earnings_prefers_fmp_and_avoids_yahoo_when_complete(tmp_path, monk
     ]
     monkeypatch.setenv("V38_ER_JSON", str(cache))
     monkeypatch.setenv("FMP_API_KEY", "test-key")
+    monkeypatch.setenv("V38_USE_FMP_EPS", "1")
     monkeypatch.setattr(dashboard, "_net_ok", lambda: True)
     monkeypatch.setattr(dashboard, "_fmp_get", lambda *a, **k: (actual, "ok"))
 
@@ -144,3 +154,24 @@ def test_eps_card_renders_acceleration_without_becoming_a_trade_score():
     assert "EPS前年比 <b>+50.0%</b>" in html
     assert "加速 +50.0pt" in html
     assert "Core 12の順位・売買スコアには不使用" in html
+    assert "取得済み <b>1/1</b>銘柄" in html
+
+
+def test_eps_coverage_caps_are_large_but_bounded():
+    assert dashboard.EPS_TARGET_CAP == 160
+    assert dashboard.EPS_FETCH_BUDGET == 120
+    assert dashboard.EPS_FETCH_SECONDS == 180
+
+
+def test_eps_queue_fills_missing_names_before_refreshing_existing_names():
+    today = pd.Timestamp("2026-08-21")
+    tickers = [f"T{i:03d}" for i in range(160)]
+    fresh = {
+        t: {"checked_at": "2026-08-21", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+            "eps": {"status": "ok"}}
+        for t in tickers[:40]
+    }
+
+    queue = dashboard._earnings_fetch_queue(tickers, fresh, today, budget=120)
+
+    assert queue == tickers[40:]
