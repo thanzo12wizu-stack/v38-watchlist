@@ -111,9 +111,10 @@ jobs:
           V38_EQUITY_CSV: equity.csv
           # 決算キャッシュ。未設定だとrunnerで書けないパスに落ちて毎回再取得になる。
           V38_ER_JSON: earnings.json
-          # EPS対象160。未取得を既存データの再確認より優先し、無料Yahoo取得を直列で行う。
+          # EPSは全ユニバースをキャッシュへ蓄積。1回120件、主要160の週次更新枠を20件確保。
           V38_EARNINGS_FETCH_BUDGET: '120'
           V38_EARNINGS_FETCH_SECONDS: '180'
+          V38_EARNINGS_PRIORITY_RESERVE: '20'
           # 上場来VWAPの累積和キャッシュ。初回だけ period="max" を全銘柄ぶん取得し、
           # 以降は差分更新なので所要はほぼゼロ。
           V38_INCEPT_VWAP_JSON: inception_vwap.json

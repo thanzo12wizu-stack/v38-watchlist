@@ -93,6 +93,10 @@ def test_old_earnings_cache_is_refetched_for_eps_schema():
     assert dashboard._earnings_fetch_priority(
         {"checked_at": "2026-08-21", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
          "eps": {"status": "fetch_error"}}, today
+    ) is None
+    assert dashboard._earnings_fetch_priority(
+        {"checked_at": "2026-08-14", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+         "eps": {"status": "fetch_error"}}, today
     ) == 1
     assert dashboard._earnings_fetch_priority(
         {"checked_at": "2026-08-21", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
@@ -158,9 +162,10 @@ def test_eps_card_renders_acceleration_without_becoming_a_trade_score():
 
 
 def test_eps_coverage_caps_are_large_but_bounded():
-    assert dashboard.EPS_TARGET_CAP == 160
+    assert dashboard.EPS_PRIORITY_TARGET_CAP == 160
     assert dashboard.EPS_FETCH_BUDGET == 120
     assert dashboard.EPS_FETCH_SECONDS == 180
+    assert dashboard.EPS_PRIORITY_FETCH_RESERVE == 20
 
 
 def test_eps_queue_fills_missing_names_before_refreshing_existing_names():
@@ -175,3 +180,30 @@ def test_eps_queue_fills_missing_names_before_refreshing_existing_names():
     queue = dashboard._earnings_fetch_queue(tickers, fresh, today, budget=120)
 
     assert queue == tickers[40:]
+
+
+def test_eps_queue_accumulates_full_universe_and_rotates_oldest_cache():
+    today = pd.Timestamp("2026-08-21")
+    tickers = [f"T{i:03d}" for i in range(400)]
+    cache = {
+        t: {"checked_at": "2026-08-20", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+            "eps": {"status": "ok"}}
+        for t in tickers[:160]
+    }
+
+    queue = dashboard._earnings_fetch_queue(
+        tickers, cache, today, budget=120, priority_tickers=tickers[:160])
+
+    assert queue == tickers[160:280]
+
+    stale = {
+        "A": {"checked_at": "2026-07-01", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+              "eps": {"status": "ok"}},
+        "B": {"checked_at": "2026-07-15", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+              "eps": {"status": "ok"}},
+        "C": {"checked_at": "2026-07-10", "eps_schema": dashboard.EPS_SCHEMA_VERSION,
+              "eps": {"status": "ok"}},
+    }
+    assert dashboard._earnings_fetch_queue(
+        ["B", "C", "A"], stale, today, budget=3, priority_reserve=0
+    ) == ["A", "C", "B"]

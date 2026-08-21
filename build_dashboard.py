@@ -5313,11 +5313,15 @@ def portfolio_corr(W, tickers):
     except Exception:
         return None
 
-# ----------------------------------------------------------------------------- earnings dates (保有+控えのみ・キャッシュ)
+# ----------------------------------------------------------------------------- earnings dates + EPS (全ユニバースを段階蓄積するキャッシュ)
 EPS_SCHEMA_VERSION = 1
-EPS_TARGET_CAP = 160
+EPS_PRIORITY_TARGET_CAP = 160
 EPS_FETCH_BUDGET = 120
 EPS_FETCH_SECONDS = 180
+EPS_PRIORITY_FETCH_RESERVE = 20
+EPS_PRIORITY_REFRESH_DAYS = 7
+EPS_REFRESH_DAYS = 21
+EPS_ERROR_RETRY_DAYS = 7
 
 
 def _eps_acceleration_from_dates(rows, source="Yahoo Finance Reported EPS"):
@@ -5433,41 +5437,71 @@ def _fmp_next_earnings(payload, today):
     return str(min(dates).date()) if dates else None
 
 
-def _earnings_needs_fetch(rec, today):
-    """日次更新に加え、旧キャッシュをEPS schemaへ一度だけ移行する。"""
-    if rec is None or isinstance(rec, str):
-        return True
-    if not isinstance(rec, dict) or rec.get("eps_schema") != EPS_SCHEMA_VERSION:
-        return True
-    if isinstance(rec.get("eps"), dict) and rec["eps"].get("status") == "fetch_error":
-        return True
-    ca = rec.get("checked_at")
-    if not ca:
-        return True
+def _earnings_checked_age(rec, today):
+    if not isinstance(rec, dict) or not rec.get("checked_at"):
+        return None
     try:
-        return (pd.Timestamp(today).normalize() - pd.Timestamp(ca).normalize()).days >= 1
+        return max(0, int((pd.Timestamp(today).normalize()
+                           - pd.Timestamp(rec["checked_at"]).normalize()).days))
     except Exception:
+        return None
+
+
+def _earnings_needs_fetch(rec, today, refresh_days=EPS_REFRESH_DAYS):
+    """未取得・旧schema・期限切れを返す。失敗は毎run連打せず週次で再試行する。"""
+    if rec is None or isinstance(rec, str):
         return True
+    if not isinstance(rec, dict) or rec.get("eps_schema") != EPS_SCHEMA_VERSION:
+        return True
+    age = _earnings_checked_age(rec, today)
+    if isinstance(rec.get("eps"), dict) and rec["eps"].get("status") == "fetch_error":
+        return age is None or age >= EPS_ERROR_RETRY_DAYS
+    if age is None:
+        return True
+    return age >= max(1, int(refresh_days))
 
 
-def _earnings_fetch_priority(rec, today):
-    """未取得を最優先し、同日2回のbuildで対象全体を順番に埋める。"""
+def _earnings_fetch_priority(rec, today, refresh_days=EPS_REFRESH_DAYS):
+    """未取得→再試行→期限切れの順。Noneは今回は取得しない。"""
     if rec is None or isinstance(rec, str):
         return 0
     if not isinstance(rec, dict) or rec.get("eps_schema") != EPS_SCHEMA_VERSION:
         return 0
     if isinstance(rec.get("eps"), dict) and rec["eps"].get("status") == "fetch_error":
-        return 1
+        return 1 if _earnings_needs_fetch(rec, today, refresh_days) else None
     if not rec.get("checked_at"):
-        return 2
-    return 3 if _earnings_needs_fetch(rec, today) else None
+        return 0
+    return 2 if _earnings_needs_fetch(rec, today, refresh_days) else None
 
 
-def _earnings_fetch_queue(tickers, cache, today, budget):
-    queued = [(i, t, _earnings_fetch_priority((cache or {}).get(t), today))
-              for i, t in enumerate(tickers)]
-    return [t for _i, t, _p in sorted(
-        (x for x in queued if x[2] is not None), key=lambda x: (x[2], x[0]))][:budget]
+def _earnings_fetch_queue(tickers, cache, today, budget, priority_tickers=None,
+                          priority_reserve=EPS_PRIORITY_FETCH_RESERVE):
+    """主要銘柄の鮮度枠を残しつつ、未取得を全ユニバースで順番に埋める。"""
+    cache = cache or {}
+    tickers = list(dict.fromkeys(tickers or []))
+    ticker_set = set(tickers)
+    budget = max(0, int(budget))
+
+    def _oldest_key(rec):
+        age = _earnings_checked_age(rec, today)
+        return -(age if age is not None else 10 ** 6)
+
+    def _rank(items, refresh_days):
+        queued = []
+        for i, t in enumerate(items):
+            rec = cache.get(t)
+            p = _earnings_fetch_priority(rec, today, refresh_days)
+            if p is not None:
+                queued.append((p, _oldest_key(rec), i, t))
+        return [t for _p, _age, _i, t in sorted(queued)]
+
+    hot = [t for t in dict.fromkeys(priority_tickers or []) if t in ticker_set]
+    hot_cap = min(budget, max(0, int(priority_reserve)))
+    selected = _rank(hot, EPS_PRIORITY_REFRESH_DAYS)[:hot_cap]
+    selected_set = set(selected)
+    remaining = [t for t in tickers if t not in selected_set]
+    selected.extend(_rank(remaining, EPS_REFRESH_DAYS)[:max(0, budget - len(selected))])
+    return selected
 
 
 def _er_next(rec):
@@ -5478,7 +5512,7 @@ def _er_next(rec):
         return rec.get("next_earnings")
     return None
 
-def load_earnings(tickers, live, strict=False):
+def load_earnings(tickers, live, strict=False, priority_tickers=None):
     env_p = os.environ.get("V38_ER_JSON")
     if strict:
         paths = [env_p] if env_p else []
@@ -5495,11 +5529,16 @@ def load_earnings(tickers, live, strict=False):
         try:
             import yfinance as yf, time as _t
             today = pd.Timestamp.today().normalize()
-            _budget = max(1, min(EPS_TARGET_CAP, int(os.environ.get(
+            _budget = max(1, min(500, int(os.environ.get(
                 "V38_EARNINGS_FETCH_BUDGET", str(EPS_FETCH_BUDGET)))))
             _time_budget = max(30, min(300, int(os.environ.get(
                 "V38_EARNINGS_FETCH_SECONDS", str(EPS_FETCH_SECONDS)))))
-            todo = _earnings_fetch_queue(tickers, cache, today, _budget)
+            _priority_reserve = max(0, min(_budget, int(os.environ.get(
+                "V38_EARNINGS_PRIORITY_RESERVE", str(EPS_PRIORITY_FETCH_RESERVE)))))
+            todo = _earnings_fetch_queue(
+                tickers, cache, today, _budget,
+                priority_tickers=priority_tickers,
+                priority_reserve=_priority_reserve)
             t0 = _t.time()
             _tday = str(today.date())
             _fmp_key = os.environ.get("FMP_API_KEY", "").strip()
@@ -13674,12 +13713,19 @@ def build_eps_acceleration_card(er, tickers=None, accel_cap=6, decel_cap=4):
                  + '・'.join(_h(t) for t, _e in special[:12]) + '</div></details>')
     n_ok = len(comparable)
     n_have = sum(1 for t in universe
-                 if isinstance(er.get(t), dict) and isinstance(er[t].get("eps"), dict))
+                 if isinstance(er.get(t), dict) and isinstance(er[t].get("eps"), dict)
+                 and er[t]["eps"].get("status") != "fetch_error")
+    n_error = sum(1 for t in universe
+                  if isinstance(er.get(t), dict) and isinstance(er[t].get("eps"), dict)
+                  and er[t]["eps"].get("status") == "fetch_error")
+    coverage = (100.0 * n_have / len(universe)) if universe else 100.0
+    error_note = f'・取得失敗 {n_error}銘柄' if n_error else ''
     return ('<div class="card"><div class="hdr"><h2>EPS加速 '
             '<span class="h2en">EPS Acceleration</span></h2>'
             + _cp([t for t, _e, _a in accel]) + '</div>'
             '<div class="sub">四半期の<b>Reported EPS前年比</b>を、前四半期 → 直近四半期で比較。'
-            f'取得済み <b>{n_have}/{len(universe)}</b>銘柄・比較可能 {n_ok}銘柄。'
+            f'取得済み <b>{n_have}/{len(universe)}</b>銘柄（{coverage:.1f}%）・比較可能 {n_ok}銘柄{error_note}。'
+            f'未取得は1回{EPS_FETCH_BUDGET}銘柄ずつ日次ビルドで蓄積し、全件到達後も古い順に更新。'
             '赤字・ゼロ跨ぎと6四半期未満は加速度を出さない。'
             '<b>Core 12の順位・売買スコアには不使用</b>。YahooのReported EPSを使った企業内の推移確認用。</div>'
             + body + '</div>')
@@ -15939,9 +15985,9 @@ function showDet(tk){
 
   function _fsg(x,u){if(x===null||x===undefined)return '—';var t=_f(x,u);return(Number(x)>0&&t.charAt(0)!=='+')?('+'+t):t;}
   function _epsSummary(e){
-    if(!e)return '未取得（現在の取得対象外）';
+    if(!e)return '未取得（全銘柄を順次蓄積中）';
     if(e.status==='insufficient')return '履歴不足（'+(e.quarters||0)+'四半期／6四半期必要）';
-    if(e.status==='fetch_error')return '取得失敗（次回ビルドで再試行）';
+    if(e.status==='fetch_error')return '取得失敗（間隔を空けて自動再試行）';
     if(e.status!=='ok')return e.note||'赤字・ゼロを含むため加速度を算出しない';
     var p=_fsg(e.prior_yoy,'%'),l=_fsg(e.latest_yoy,'%'),a=_fsg(e.accel_pp,'pt');
     var lab=Number(e.accel_pp)>=5?'加速':(Number(e.accel_pp)<=-5?'減速':'横ばい');
@@ -20758,19 +20804,28 @@ def main():
         _sw_er = list(m[_sw_mask].sort_values("rs189", ascending=False).index[:60])
     except Exception:
         _sw_er = []
-    # EPSはCoreだけでなく、価格・流動性条件を満たすRS189上位まで広げる。
-    # 全ユニバース数千銘柄を毎日直列取得すると無料データ源を詰まらせるため、実用上位160に限定。
+    # EPSの主要160は鮮度を優先しつつ、残りも毎runの未取得優先キューで蓄積する。
+    # 一度取ったレコードはearnings.jsonへ残すため、無料Yahoo取得でも数週間で全件へ到達する。
     try:
         _eps_mask = setup_eligible_core(m) & pd.to_numeric(m.get("rs189"), errors="coerce").notna()
-        _eps_pool = list(m[_eps_mask].sort_values("rs189", ascending=False).index[:EPS_TARGET_CAP])
+        _eps_pool = list(m[_eps_mask].sort_values("rs189", ascending=False).index[:EPS_PRIORITY_TARGET_CAP])
     except Exception:
         _eps_pool = []
-    _er_tickers = list(dict.fromkeys(
+    _eps_priority = list(dict.fromkeys(
         [t for t, _, _ in picks]
         + list(cand.index[N_PORT:N_PORT + 40])
-        + _sw_er + _eps_pool))[:EPS_TARGET_CAP]
+        + _sw_er + _eps_pool))[:EPS_PRIORITY_TARGET_CAP]
+    try:
+        _eps_rs = pd.to_numeric(m.get("rs189"), errors="coerce")
+        _eps_all = list(m.assign(_eps_rs_order=_eps_rs)
+                        .sort_values("_eps_rs_order", ascending=False, na_position="last").index)
+    except Exception:
+        _eps_all = list(m.index)
+    _er_tickers = list(dict.fromkeys(_eps_priority + _eps_all))
     mkt["eps_tickers"] = _er_tickers
-    mkt["er"] = load_earnings(_er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest)
+    mkt["er"] = load_earnings(
+        _er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest,
+        priority_tickers=_eps_priority)
     # #19 カバー率: 「189日分の履歴がある率」と「選定プール内でRS順位を付与できた率」を分離する。
     # rs189 は意図的に $5・$10M の選定プール外を NaN にするため、全mを分母にすると
     # 流動性除外をデータ欠損と誤認する（従来の67%警告の原因）。
