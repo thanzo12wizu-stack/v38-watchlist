@@ -5314,6 +5314,139 @@ def portfolio_corr(W, tickers):
         return None
 
 # ----------------------------------------------------------------------------- earnings dates (保有+控えのみ・キャッシュ)
+EPS_SCHEMA_VERSION = 1
+
+
+def _eps_acceleration_from_dates(rows, source="Yahoo Finance Reported EPS"):
+    """Yahooの四半期Reported EPSからYoYの加速幅を作る。
+
+    成長率の分母・比較する当期EPSがすべて正のときだけ加速幅を計算する。
+    赤字またぎや履歴不足を巨大な成長率へ変換しない。
+    """
+    base = {"status": "insufficient", "trend": "INSUFFICIENT", "source": source}
+    if rows is None or not hasattr(rows, "columns") or "Reported EPS" not in rows.columns:
+        return base
+    try:
+        eps = pd.to_numeric(rows["Reported EPS"], errors="coerce").dropna()
+        dates = pd.to_datetime(eps.index, errors="coerce", utc=True)
+        valid = ~pd.isna(dates)
+        eps = pd.Series(eps.to_numpy()[valid], index=dates[valid]).sort_index(ascending=False)
+    except Exception:
+        return base
+    if len(eps) < 6:
+        base["quarters"] = int(len(eps))
+        return base
+
+    # 行位置だけで前年比を作らず、四半期間隔と前年同期間隔が成立するか確認する。
+    try:
+        q_gap = int((eps.index[0] - eps.index[1]).days)
+        y_gap_latest = int((eps.index[0] - eps.index[4]).days)
+        y_gap_prior = int((eps.index[1] - eps.index[5]).days)
+        if not (45 <= q_gap <= 140 and 300 <= y_gap_latest <= 430 and 300 <= y_gap_prior <= 430):
+            base.update(quarters=int(len(eps)), note="四半期系列が不連続のため前年比較をしない")
+            return base
+    except Exception:
+        base.update(quarters=int(len(eps)), note="四半期日付を検証できない")
+        return base
+
+    vals = [float(eps.iloc[i]) for i in (0, 1, 4, 5)]
+    dts = [str(pd.Timestamp(eps.index[i]).date()) for i in (0, 1, 4, 5)]
+    out = dict(base, quarters=int(len(eps)),
+               latest_date=dts[0], prior_date=dts[1],
+               latest_yago_date=dts[2], prior_yago_date=dts[3],
+               latest_eps=round(vals[0], 4), prior_eps=round(vals[1], 4),
+               latest_yago_eps=round(vals[2], 4), prior_yago_eps=round(vals[3], 4))
+
+    latest, prior, latest_yago, prior_yago = vals
+    if latest <= 0:
+        out.update(status="non_comparable", trend="LOSS",
+                   note="直近EPSが赤字またはゼロのため加速度を算出しない")
+        return out
+    if latest_yago <= 0:
+        out.update(status="non_comparable", trend="TURNAROUND",
+                   note="前年同期が赤字またはゼロ。黒字転換だが成長率比較はしない")
+        return out
+    if prior <= 0 or prior_yago <= 0:
+        out.update(status="non_comparable", trend="NON_COMPARABLE",
+                   note="前四半期の比較に赤字またはゼロを含むため加速度を算出しない")
+        return out
+
+    latest_yoy = (latest / latest_yago - 1.0) * 100.0
+    prior_yoy = (prior / prior_yago - 1.0) * 100.0
+    accel = latest_yoy - prior_yoy
+    if latest_yoy < 0:
+        trend = "CONTRACTION"
+    elif accel >= 20 and latest_yoy >= 20:
+        trend = "ACCEL_STRONG"
+    elif accel >= 5:
+        trend = "ACCEL"
+    elif accel <= -5:
+        trend = "DECEL"
+    else:
+        trend = "FLAT"
+    out.update(status="ok", trend=trend,
+               latest_yoy=round(latest_yoy, 1), prior_yoy=round(prior_yoy, 1),
+               accel_pp=round(accel, 1))
+    return out
+
+
+def _eps_acceleration_from_fmp(payload):
+    """FMP Earnings Reportのactual EPSを共通計算形式へ変換する。"""
+    points = []
+    for row in _fmp_ref_rows(payload):
+        raw_eps = next((row.get(k) for k in ("epsActual", "actualEps", "actualEPS", "eps")
+                        if row.get(k) is not None), None)
+        raw_date = next((row.get(k) for k in ("date", "fiscalDateEnding", "fiscalDate")
+                         if row.get(k)), None)
+        try:
+            val = float(raw_eps)
+            dt = pd.Timestamp(raw_date)
+            if val == val and pd.notna(dt):
+                points.append((dt, val))
+        except Exception:
+            continue
+    if not points:
+        return {"status": "insufficient", "trend": "INSUFFICIENT", "quarters": 0,
+                "source": "FMP Earnings Report actual EPS"}
+    frame = pd.DataFrame({"Reported EPS": [v for _d, v in points]},
+                         index=[d for d, _v in points])
+    return _eps_acceleration_from_dates(frame, source="FMP Earnings Report actual EPS")
+
+
+def _fmp_next_earnings(payload, today):
+    dates = []
+    for row in _fmp_ref_rows(payload):
+        raw = next((row.get(k) for k in ("date", "fiscalDateEnding", "fiscalDate")
+                    if row.get(k)), None)
+        try:
+            d = pd.Timestamp(raw).normalize()
+            # 実績が未入力の将来行を次回決算候補とする。
+            actual = next((row.get(k) for k in ("epsActual", "actualEps", "actualEPS", "eps")
+                           if row.get(k) is not None), None)
+            if d >= pd.Timestamp(today).normalize() and actual is None:
+                dates.append(d)
+        except Exception:
+            continue
+    return str(min(dates).date()) if dates else None
+
+
+def _earnings_needs_fetch(rec, today):
+    """日次更新に加え、旧キャッシュをEPS schemaへ一度だけ移行する。"""
+    if rec is None or isinstance(rec, str):
+        return True
+    if not isinstance(rec, dict) or rec.get("eps_schema") != EPS_SCHEMA_VERSION:
+        return True
+    if isinstance(rec.get("eps"), dict) and rec["eps"].get("status") == "fetch_error":
+        return True
+    ca = rec.get("checked_at")
+    if not ca:
+        return True
+    try:
+        return (pd.Timestamp(today).normalize() - pd.Timestamp(ca).normalize()).days >= 1
+    except Exception:
+        return True
+
+
 def _er_next(rec):
     """earningsキャッシュのレコード(旧: 日付文字列 / 新: dict)から次回決算日文字列を取り出す。無ければNone。"""
     if isinstance(rec, str):
@@ -5339,43 +5472,75 @@ def load_earnings(tickers, live, strict=False):
         try:
             import yfinance as yf, time as _t
             today = pd.Timestamp.today().normalize()
-            def needs_fetch(t):
-                rec = cache.get(t)
-                if rec is None:
-                    return True                              # 未取得（空キャッシュ）→ 取得（#4の核心）
-                if isinstance(rec, str):
-                    try: return pd.Timestamp(rec) < today    # 旧形式: 過去日なら再取得
-                    except Exception: return True
-                if isinstance(rec, dict):
-                    ca = rec.get("checked_at")
-                    if not ca:
-                        return True
-                    try: return (today - pd.Timestamp(ca)).days >= 1   # 1日以上前の確認なら再取得
-                    except Exception: return True
-                return True
-            todo = [t for t in tickers if needs_fetch(t)][:40]
+            todo = [t for t in tickers if _earnings_needs_fetch(cache.get(t), today)][:40]
             t0 = _t.time()
             _tday = str(today.date())
+            _fmp_key = os.environ.get("FMP_API_KEY", "").strip()
+            _fmp_enabled = bool(_fmp_key)
             for t in todo:
                 if _t.time() - t0 > 120:
                     break
+                old = cache.get(t)
+                rec = dict(old) if isinstance(old, dict) else {}
+                if isinstance(old, str):
+                    rec["next_earnings"] = old or None
+                fmp_eps, fmp_payload = None, None
+                if _fmp_enabled:
+                    fmp_payload, fmp_status = _fmp_get(
+                        "earnings", {"symbol": t, "limit": 12}, _fmp_key, timeout=8)
+                    if fmp_status == "ok":
+                        fmp_eps = _eps_acceleration_from_fmp(fmp_payload)
+                        fmp_next = _fmp_next_earnings(fmp_payload, today)
+                        if fmp_next:
+                            rec.update(next_earnings=fmp_next, status="ok")
+                    elif fmp_status in ("http_401", "http_402", "http_403", "http_429"):
+                        _fmp_enabled = False  # key/plan/rate-limit障害を全銘柄で繰り返さない
+
+                yt = None
                 try:
-                    cal = yf.Ticker(t).calendar
-                    d = None
-                    if isinstance(cal, dict):
-                        ds = cal.get("Earnings Date") or []
-                        d = ds[0] if ds else None
-                    elif cal is not None and hasattr(cal, "loc"):
-                        try:
-                            d = cal.loc["Earnings Date"][0]
-                        except Exception:
-                            d = None
-                    if d is not None:
-                        cache[t] = {"next_earnings": str(pd.Timestamp(d).date()), "checked_at": _tday, "status": "ok"}
-                    else:
-                        cache[t] = {"next_earnings": None, "checked_at": _tday, "status": "no_date"}   # 予定なしを記録（未取得と区別）
+                    _next_is_current = (pd.Timestamp(rec.get("next_earnings")).normalize()
+                                        >= today)
                 except Exception:
-                    continue
+                    _next_is_current = False
+                if not _next_is_current:
+                    try:
+                        yt = yf.Ticker(t)
+                        cal = yt.calendar
+                        d = None
+                        if isinstance(cal, dict):
+                            ds = cal.get("Earnings Date") or []
+                            d = ds[0] if ds else None
+                        elif cal is not None and hasattr(cal, "loc"):
+                            try:
+                                d = cal.loc["Earnings Date"][0]
+                            except Exception:
+                                d = None
+                        if d is not None:
+                            rec.update(next_earnings=str(pd.Timestamp(d).date()), status="ok")
+                        elif "next_earnings" not in rec:
+                            rec.update(next_earnings=None, status="no_date")
+                    except Exception:
+                        pass
+
+                eps_result = fmp_eps
+                if not isinstance(eps_result, dict) or eps_result.get("status") == "insufficient":
+                    try:
+                        yt = yt or yf.Ticker(t)
+                        yahoo_eps = _eps_acceleration_from_dates(yt.get_earnings_dates(limit=12))
+                        if (yahoo_eps.get("status") != "insufficient"
+                                or not isinstance(eps_result, dict)
+                                or int(yahoo_eps.get("quarters") or 0) > int(eps_result.get("quarters") or 0)):
+                            eps_result = yahoo_eps
+                    except Exception:
+                        pass
+                if isinstance(eps_result, dict):
+                    rec["eps"] = eps_result
+                elif not isinstance(rec.get("eps"), dict):
+                    rec["eps"] = {"status": "fetch_error", "trend": "FETCH_ERROR",
+                                  "source": "FMP/Yahoo actual EPS"}
+                rec["eps_schema"] = EPS_SCHEMA_VERSION
+                rec["checked_at"] = _tday
+                cache[t] = rec
             outp = p or os.environ.get("V38_ER_JSON") or os.path.join(os.path.dirname(CACHE), "earnings.json")
             _defer_cache_write(outp, cache)   # #6 保留→selftest後にflush
         except Exception:
@@ -13431,6 +13596,63 @@ def eligible_or_ipo(m):
         return base
 
 
+def build_eps_acceleration_card(er, tickers=None, accel_cap=6, decel_cap=4):
+    """四半期Reported EPSのYoY加速/減速を事実表示する（選定・配点には使わない）。"""
+    er = er or {}
+    universe = list(dict.fromkeys(tickers or er.keys()))
+    comparable, special = [], []
+    for t in universe:
+        rec = er.get(t)
+        eps = rec.get("eps") if isinstance(rec, dict) else None
+        if not isinstance(eps, dict):
+            continue
+        if eps.get("status") == "ok":
+            try:
+                comparable.append((t, eps, float(eps["accel_pp"])))
+            except Exception:
+                continue
+        elif eps.get("trend") in ("TURNAROUND", "LOSS", "NON_COMPARABLE"):
+            special.append((t, eps))
+
+    accel = sorted((x for x in comparable if x[2] >= 5), key=lambda x: (-x[2], x[0]))[:accel_cap]
+    decel = sorted((x for x in comparable if x[2] <= -5), key=lambda x: (x[2], x[0]))[:decel_cap]
+
+    def _sgn(v, suffix="%"):
+        return f'{float(v):+.1f}{suffix}'
+
+    def _row(t, e, a):
+        cls = "pos" if a >= 5 else ("neg" if a <= -5 else "mut")
+        lab = "加速" if a >= 5 else "減速"
+        return (f'<div class="prerow" data-tkone="{_h(t)}">'
+                f'<div class="premain"><b class="pretk">{_h(t)}</b>'
+                f'<span class="mut">{_h(str(e.get("latest_date") or "—"))} 発表</span>'
+                f'<span class="prestage {cls}">{lab} {_sgn(a, "pt")}</span></div>'
+                f'<div class="pretail">EPS前年比 '
+                f'<b>{_sgn(e.get("prior_yoy"))}</b> → <b class="{cls}">{_sgn(e.get("latest_yoy"))}</b>'
+                f' ／ 実績EPS {float(e.get("latest_eps")):g}（前年同期 {float(e.get("latest_yago_eps")):g}）</div></div>')
+
+    body = ""
+    if accel:
+        body += '<div class="prelist">' + ''.join(_row(*x) for x in accel) + '</div>'
+    else:
+        body += '<div class="empty">比較可能な銘柄に明確なEPS加速なし</div>'
+    if decel:
+        body += ('<details class="cfdet"><summary>EPS減速・確認 ' + str(len(decel)) + '銘柄</summary>'
+                 '<div class="prelist">' + ''.join(_row(*x) for x in decel) + '</div></details>')
+    if special:
+        body += ('<details class="cfdet"><summary>赤字またぎ等で数値比較しない '
+                 + str(len(special)) + '銘柄</summary><div class="sub">'
+                 + '・'.join(_h(t) for t, _e in special[:12]) + '</div></details>')
+    n_ok = len(comparable)
+    return ('<div class="card"><div class="hdr"><h2>EPS加速 '
+            '<span class="h2en">EPS Acceleration</span></h2>'
+            + _cp([t for t, _e, _a in accel]) + '</div>'
+            '<div class="sub">四半期の<b>Reported EPS前年比</b>を、前四半期 → 直近四半期で比較。'
+            f'現在の取得対象で比較可能 {n_ok}銘柄。赤字・ゼロ跨ぎと6四半期未満は加速度を出さない。'
+            '<b>Core 12の順位・売買スコアには不使用</b>。FMPを主系統、Yahooを補完にした実績値で、企業内の推移確認用。</div>'
+            + body + '</div>')
+
+
 def build_swing_focus_card(m, opts=None, er=None, asof_bar=None, now_cap=5, wait_cap=6):
     """2週間の裁量スイングで、今日チャートを開く順を合否ではなく階層で返す。"""
     if m is None or m.empty:
@@ -15684,6 +15906,26 @@ function showDet(tk){
     return '<span class="dov-loc-b '+c+'">'+x+'</span>';}).join(''):'')+sinceHtml;
 
   function _fsg(x,u){if(x===null||x===undefined)return '—';var t=_f(x,u);return(Number(x)>0&&t.charAt(0)!=='+')?('+'+t):t;}
+  function _epsSummary(e){
+    if(!e)return '未取得（現在の取得対象外）';
+    if(e.status==='insufficient')return '履歴不足（'+(e.quarters||0)+'四半期／6四半期必要）';
+    if(e.status==='fetch_error')return '取得失敗（次回ビルドで再試行）';
+    if(e.status!=='ok')return e.note||'赤字・ゼロを含むため加速度を算出しない';
+    var p=_fsg(e.prior_yoy,'%'),l=_fsg(e.latest_yoy,'%'),a=_fsg(e.accel_pp,'pt');
+    var lab=Number(e.accel_pp)>=5?'加速':(Number(e.accel_pp)<=-5?'減速':'横ばい');
+    return '前Q YoY '+p+' → 直近 '+l+'（'+a+' '+lab+'）';
+  }
+  function _epsBasis(e){
+    if(!e)return '未取得';
+    if(e.latest_eps===null||e.latest_eps===undefined)return e.source||'FMP/Yahoo actual EPS';
+    var s=(e.latest_date||'—')+' EPS '+Number(e.latest_eps).toLocaleString();
+    if(e.latest_yago_eps!==null&&e.latest_yago_eps!==undefined)s+=' ／ 前年同期 '+Number(e.latest_yago_eps).toLocaleString();
+    return s+' ／ '+(e.source||'FMP/Yahoo actual EPS');
+  }
+  function _epsCls(e){
+    if(!e||e.status!=='ok')return (e&&e.trend==='LOSS')?'neg':'mut';
+    return Number(e.accel_pp)>=5?'pos':(Number(e.accel_pp)<=-5?'neg':'mut');
+  }
   function _optStatus(o){
     if(!o)return '未取得（現在の取得対象外）';
     var sel=(o.exp||'—')+(o.dte!==null&&o.dte!==undefined?' DTE '+o.dte:'');
@@ -15806,6 +16048,8 @@ function showDet(tk){
     ['RVOL',_f(d.rv),'mut','通常比の出来高。1.0が平常、2.0なら概ね2倍。価格反応の信頼確認に使う。'],
     ['ピボットまで',_fsg(d.pdist,'%'),'mut','ベース上抜け基準までの距離。プラスは上抜け後、マイナスは手前。上抜け後+5％超は追わない目安。'],
     ['VCP形状',_f(d.vcpq),'mut','値幅と出来高の収縮を0〜100で形状評価。90は成功確率90％ではなく、形が整っている度合い。'],
+    ['EPS加速',_epsSummary(d.eps),_epsCls(d.eps),'直近四半期のReported EPS前年比が、前四半期の前年比から何ポイント加速・減速したか。赤字・ゼロ跨ぎや6四半期未満は判定しない。Core 12の選定・配点には使わない。'],
+    ['EPS比較根拠',_epsBasis(d.eps),'mut','直近の実績EPSと前年同期EPS、発表日、取得元を表示。企業ごとの推移確認用で、会計定義が異なる企業同士のEPS水準比較には使わない。'],
     ['オプション状態',_optStatus(d.opt),'mut','未取得、古い、データ量不足、有効な水準なしを区別。2週間スイングはDTE 7〜24日で14日に最も近い満期を比較する。'],
     ['オプション基準',_optBasis(d.opt),'mut','％とATR距離は、確定終値ではなくオプション取得時スポットを基準に計算。時刻は取得時刻で、OI自体の更新時刻は提供元から取得できない。'],
     ['データ信頼度',_optConfidence(d.opt),'mut','予測の的中率ではなくデータ量の信頼度。合計OI、ストライク数、Call/Put両側の厚み、複数満期の同価格帯一致を確認する。'],
@@ -17084,7 +17328,7 @@ def _build_det_extra(m, s2t, s2i, e2j, picks, deck, buys, nh_list, where, hold=N
                     "hep": _hep}
     return extra
 
-def _det_json(m, names, tapset, extra=None, opts=None):
+def _det_json(m, names, tapset, extra=None, opts=None, earnings=None):
     """§4: compact per-ticker data for the tap-to-detail panel (displayed tickers only)."""
     import json as _json
     extra = extra or {}
@@ -17098,6 +17342,23 @@ def _det_json(m, names, tapset, extra=None, opts=None):
     def _p(r, k, n=1):  # percent field
         v = r.get(k)
         return _r(v * 100, n) if v is not None and pd.notna(v) else None
+    def _eps(t):
+        rec = (earnings or {}).get(t)
+        src = rec.get("eps") if isinstance(rec, dict) else None
+        if not isinstance(src, dict):
+            return None
+        out = {}
+        for k in ("status", "trend", "latest_date", "prior_date", "latest_yago_date",
+                  "prior_yago_date", "source"):
+            if src.get(k) is not None:
+                out[k] = _h(str(src.get(k)))
+        for k in ("quarters", "latest_eps", "prior_eps", "latest_yago_eps",
+                  "prior_yago_eps", "latest_yoy", "prior_yoy", "accel_pp"):
+            if src.get(k) is not None:
+                out[k] = _r(src.get(k), 4 if "eps" in k else 1)
+        if src.get("note"):
+            out["note"] = _h(str(src.get("note")))
+        return out
     out = {}
     for t in sorted(tapset):        # #13 set反復順はPYTHONHASHSEED依存→sortedで決定的に
         if t not in m.index:
@@ -17118,7 +17379,7 @@ def _det_json(m, names, tapset, extra=None, opts=None):
             return "—"
         _off = rs_off_reason(r)
         _opt = (opts or {}).get(t)
-        out[t] = {"opt": _opt,
+        out[t] = {"opt": _opt, "eps": _eps(t),
                   "rs": _r(r.get("rs"), 0), "rs189": _r(r.get("rs189"), 0),
                   "rs21": _r(r.get("rs21"), 0),
                   "off": RS_OFF_LABEL.get(_off) if _off else None,
@@ -18627,7 +18888,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
         pass
     det_json = _det_json(m, names, set(m.index),
                          _build_det_extra(m, s2t, s2i, e2j, picks, deck, buytoday, nh_list, where, mkt.get("hold")),
-                         opts=mkt.get("options"))   # 全ユニバース（検索＆タップ詳細）
+                         opts=mkt.get("options"), earnings=mkt.get("er"))   # 全ユニバース（検索＆タップ詳細）
     # タップ詳細に出す簡易チャート（スパークライン）を tapset ぶん生成
     spark_map = {}
     try:
@@ -18947,6 +19208,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
             # 流動性フィルタはタブ全体に効くので、セクション②の中ではなく最上段に置く。
             + _liq_bar()
             + build_swing_focus_card(m, mkt.get("options"), mkt.get("er"), mkt.get("asof_bar"))
+            + build_eps_acceleration_card(mkt.get("er"), mkt.get("eps_tickers"))
             # 買い点のsignatureは静けさなので、発火前を発火済みより先に置く。
             + _mkt_section("① 発火前（構造が整い、静かなもの）",
                            "出来高が枯れ21EMA/VWAPに張り付いた未発火銘柄。発火を待たずに構造で拾う",
@@ -20466,6 +20728,7 @@ def main():
         _sw_er = []
     _er_tickers = list(dict.fromkeys(
         [t for t, _, _ in picks] + list(cand.index[N_PORT:N_PORT + 15]) + _sw_er))
+    mkt["eps_tickers"] = _er_tickers
     mkt["er"] = load_earnings(_er_tickers, live=(_net_ok() and not offline_selftest), strict=offline_selftest)
     # #19 カバー率: 「189日分の履歴がある率」と「選定プール内でRS順位を付与できた率」を分離する。
     # rs189 は意図的に $5・$10M の選定プール外を NaN にするため、全mを分母にすると
