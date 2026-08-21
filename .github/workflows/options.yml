@@ -6,7 +6,13 @@ on:
     - cron: '47 21 * * 1-5'
   # コードpush時はYahooのOI更新前・メンテナンス時間にも走って全滅し得るため実データ取得しない。
   # 修復確認は明示的な手動実行、通常更新は米引け後のscheduleだけに限定する。
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force_full_refresh:
+        description: '全ユニバースを再取得対象にする（14日ローテーションを無視）'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -19,7 +25,7 @@ concurrency:
 jobs:
   options:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: ${{ inputs.force_full_refresh && 180 || 30 }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -49,7 +55,10 @@ jobs:
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_SCAN_STATE: options_scan_state.json
-          V38_OPT_SCAN_BUDGET: '60'
+          # 手動force時は一時state/historyを空から作り、全銘柄をdue扱いにする。
+          # 通常runは従来どおり60件ローテーション。
+          V38_OPT_FORCE_FULL_REFRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.force_full_refresh && '1' || '0' }}
+          V38_OPT_SCAN_BUDGET: ${{ github.event_name == 'workflow_dispatch' && inputs.force_full_refresh && '100000' || '60' }}
           V38_OPT_SCAN_WORKERS: '2'
           V38_OPT_SCAN_REFRESH_DAYS: '14'
           # 一時的な空レスポンス/429には短いバックオフ。全滅時は失敗にして前回commitを維持。
@@ -58,9 +67,76 @@ jobs:
           V38_OPT_MIN_REFRESH_RATIO: '0.35'
           V38_OPT_STALE_DAYS: '3'
           V38_OPT_TARGETS: options_targets.json
+        shell: bash
         run: |
-          python tools/build_options_positioning_directional.py
-          python tools/render_options_html.py
+          set -euo pipefail
+
+          if [[ "${V38_OPT_FORCE_FULL_REFRESH}" == "1" ]]; then
+            echo "[opt] force full refresh: all universe names are due in this run"
+            export V38_OPT_SCAN_HISTORY=/tmp/options_scan_history.full.csv
+            export V38_OPT_SCAN_STATE=/tmp/options_scan_state.full.json
+            rm -f "$V38_OPT_SCAN_HISTORY" "$V38_OPT_SCAN_STATE"
+            printf '{}\n' > "$V38_OPT_SCAN_STATE"
+
+            python tools/build_options_positioning_directional.py
+
+            # 通常の履歴/stateを消さず、今回の全件再取得結果だけをマージする。
+            python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          old_hist = Path("options_scan_history.csv")
+          new_hist = Path("/tmp/options_scan_history.full.csv")
+          merged = {}
+          fieldnames = []
+          for path in (old_hist, new_hist):
+              if not path.is_file():
+                  continue
+              with path.open(encoding="utf-8-sig", newline="") as fh:
+                  reader = csv.DictReader(fh)
+                  if reader.fieldnames:
+                      for name in reader.fieldnames:
+                          if name not in fieldnames:
+                              fieldnames.append(name)
+                  for row in reader:
+                      key = (row.get("date", ""), row.get("ticker", ""), row.get("expiry", ""))
+                      if any(key):
+                          merged[key] = row
+          if fieldnames and merged:
+              with old_hist.open("w", encoding="utf-8", newline="") as fh:
+                  writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
+                  writer.writeheader()
+                  for row in merged.values():
+                      writer.writerow(row)
+
+          old_state_path = Path("options_scan_state.json")
+          new_state_path = Path("/tmp/options_scan_state.full.json")
+          try:
+              old_state = json.loads(old_state_path.read_text(encoding="utf-8")) if old_state_path.is_file() else {}
+          except Exception:
+              old_state = {}
+          try:
+              new_state = json.loads(new_state_path.read_text(encoding="utf-8")) if new_state_path.is_file() else {}
+          except Exception:
+              new_state = {}
+          if not isinstance(old_state, dict):
+              old_state = {}
+          if isinstance(new_state, dict):
+              old_state.update(new_state)
+          old_state_path.write_text(
+              json.dumps(old_state, ensure_ascii=False, sort_keys=True),
+              encoding="utf-8",
+          )
+          PY
+
+            V38_OPT_SCAN_HISTORY=options_scan_history.csv \
+              V38_OPT_SCAN_STATE=options_scan_state.json \
+              python tools/render_options_html.py
+          else
+            python tools/build_options_positioning_directional.py
+            python tools/render_options_html.py
+          fi
 
       - name: Commit and refresh dashboard
         shell: bash
