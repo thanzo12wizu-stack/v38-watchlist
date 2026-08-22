@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import time
@@ -10,7 +11,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -33,38 +33,43 @@ def _num(value: Any) -> float | None:
     return x if math.isfinite(x) else None
 
 
-def load_universe(path: Path, *, min_price: float, min_mcap: float, min_volume: float) -> list[UniverseRow]:
+def load_universe(path: Path) -> list[UniverseRow]:
+    """Load the existing site's universe without applying Leadership-only selection.
+
+    universe.csv is the single source of truth. A symbol is kept as long as the
+    source row has a non-empty symbol. Missing market data is handled downstream
+    as NO_DATA; it never removes the symbol from the Leadership universe.
+    """
     rows: list[UniverseRow] = []
+    seen: set[str] = set()
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         for row in csv.DictReader(handle):
-            symbol = str(row.get("シンボル") or row.get("symbol") or "").strip().upper()
-            if not symbol or any(x in symbol for x in ("/P", "/", "^", "=")):
+            symbol = str(row.get("シンボル") or row.get("symbol") or row.get("Symbol") or "").strip().upper()
+            if not symbol or symbol in seen:
                 continue
-            sec_type = str(row.get("証券種別") or row.get("security_type") or "").strip().lower()
-            subtype = str(row.get("証券サブタイプ") or row.get("security_subtype") or "").strip().lower()
-            if sec_type and sec_type != "stock":
-                continue
-            if subtype and subtype not in {"common", "ordinary", "common stock"}:
-                continue
-            price = _num(row.get("価格") or row.get("price"))
-            volume = _num(row.get("出来高, 1日") or row.get("volume"))
-            mcap = _num(row.get("時価総額") or row.get("market_cap"))
-            if price is None or price < min_price:
-                continue
-            if mcap is None or mcap < min_mcap:
-                continue
-            if volume is not None and volume < min_volume:
-                continue
+            seen.add(symbol)
             rows.append(UniverseRow(
                 symbol=symbol,
-                price=price,
-                volume=volume,
-                market_cap=mcap,
+                price=_num(row.get("価格") or row.get("price")),
+                volume=_num(row.get("出来高, 1日") or row.get("volume")),
+                market_cap=_num(row.get("時価総額") or row.get("market_cap")),
                 sector=str(row.get("セクター") or row.get("sector") or ""),
                 industry=str(row.get("業種") or row.get("industry") or ""),
             ))
-    rows.sort(key=lambda x: x.market_cap or 0, reverse=True)
     return rows
+
+
+def yahoo_symbol(symbol: str) -> str:
+    """Translate display symbols to Yahoo query form while preserving source symbols."""
+    s = symbol.strip().upper()
+    # US class shares and preferreds commonly use BRK-B / BAC-PM on Yahoo,
+    # while the existing universe stores BRK.B / BAC/PM.
+    return s.replace("/", "-").replace(".", "-")
+
+
+def universe_fingerprint(symbols: list[str]) -> str:
+    payload = "\n".join(symbols).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _extract_ohlcv(downloaded: pd.DataFrame, symbol: str, batch_size: int) -> pd.DataFrame | None:
@@ -236,19 +241,20 @@ def download_history(symbols: list[str], *, batch_size: int, period: str, pause:
     frames: dict[str, pd.DataFrame] = {}
     failed: list[str] = []
     for start in range(0, len(symbols), batch_size):
-        batch = symbols[start:start + batch_size]
+        source_batch = symbols[start:start + batch_size]
+        query_batch = [yahoo_symbol(symbol) for symbol in source_batch]
         try:
-            data = _download_batch(batch, period)
+            data = _download_batch(query_batch, period)
         except Exception as exc:
             print(f"batch {start // batch_size + 1} failed: {exc}")
-            failed.extend(batch)
+            failed.extend(source_batch)
             continue
-        for symbol in batch:
-            frame = _extract_ohlcv(data, symbol, len(batch))
+        for source_symbol, query_symbol in zip(source_batch, query_batch):
+            frame = _extract_ohlcv(data, query_symbol, len(query_batch))
             if frame is None or len(frame) < 30:
-                failed.append(symbol)
+                failed.append(source_symbol)
             else:
-                frames[symbol] = frame
+                frames[source_symbol] = frame
         print(f"history {min(start + batch_size, len(symbols))}/{len(symbols)} valid={len(frames)} failed={len(failed)}")
         if pause:
             time.sleep(pause)
@@ -269,32 +275,30 @@ def to_metric_maps(metrics: dict[str, dict[str, float | None]]) -> dict[str, dic
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build independent Leadership market snapshot from Yahoo daily bars")
+    parser = argparse.ArgumentParser(description="Build independent Leadership market snapshot from the existing site's universe")
     parser.add_argument("--universe", type=Path, default=Path("universe.csv"))
     parser.add_argument("--output", type=Path, default=Path("leadership/market_snapshot.json"))
     parser.add_argument("--benchmark", default="QQQ")
     parser.add_argument("--period", default="15mo")
     parser.add_argument("--batch-size", type=int, default=80)
     parser.add_argument("--pause", type=float, default=0.15)
-    parser.add_argument("--min-price", type=float, default=5.0)
-    parser.add_argument("--min-mcap", type=float, default=750_000_000)
-    parser.add_argument("--min-volume", type=float, default=200_000)
-    parser.add_argument("--max-symbols", type=int, default=0, help="0 = no cap after liquidity filter")
+    parser.add_argument("--max-symbols", type=int, default=0, help="PR smoke-test cap only; 0 = exact full source universe")
     args = parser.parse_args()
 
-    universe = load_universe(
-        args.universe,
-        min_price=args.min_price,
-        min_mcap=args.min_mcap,
-        min_volume=args.min_volume,
-    )
-    if args.max_symbols > 0:
-        universe = universe[:args.max_symbols]
-    symbols = [row.symbol for row in universe if row.symbol != args.benchmark]
-    print(f"leadership universe={len(symbols)}")
+    source_universe = load_universe(args.universe)
+    source_symbols = [row.symbol for row in source_universe]
+    source_total = len(source_symbols)
+    fingerprint = universe_fingerprint(source_symbols)
 
-    benchmark_data = _download_batch([args.benchmark], args.period)
-    benchmark_frame = _extract_ohlcv(benchmark_data, args.benchmark, 1)
+    download_rows = source_universe
+    if args.max_symbols > 0:
+        download_rows = source_universe[:args.max_symbols]
+    symbols = [row.symbol for row in download_rows if row.symbol != args.benchmark]
+    print(f"leadership source_universe={source_total} download_request={len(symbols)}")
+
+    benchmark_query = yahoo_symbol(args.benchmark)
+    benchmark_data = _download_batch([benchmark_query], args.period)
+    benchmark_frame = _extract_ohlcv(benchmark_data, benchmark_query, 1)
     if benchmark_frame is None or len(benchmark_frame) < 190:
         raise RuntimeError(f"benchmark history unavailable: {args.benchmark}")
     benchmark_metrics = compute_raw_metrics(benchmark_frame)
@@ -303,16 +307,13 @@ def main() -> None:
     raw: dict[str, dict[str, float | None]] = {}
     for symbol, frame in frames.items():
         values = compute_raw_metrics(frame)
-        if len(frame) < 190 or values.get("ret189") is None:
-            continue
-        adv = values.get("avg_dollar_volume20")
-        avg_volume = values.get("avg_volume20")
-        if adv is not None and adv < 10_000_000:
-            continue
-        if avg_volume is not None and avg_volume < 300_000:
-            continue
-        raw[symbol] = values
+        if values:
+            raw[symbol] = values
 
+    # No Leadership-only liquidity/price/market-cap filter is applied here.
+    # RS is ranked across the same source universe among symbols with enough
+    # history for each horizon; insufficient-history symbols remain in the
+    # dashboard universe and naturally show NO_DATA for unavailable metrics.
     enriched = enrich_relative_strength(raw, benchmark_metrics)
     metric_maps = to_metric_maps(enriched)
     metric_payload = {
@@ -320,8 +321,12 @@ def main() -> None:
         for key, values in metric_maps.items()
     }
     output = {
-        "schema": 1,
+        "schema": 2,
         "source": "Yahoo Finance daily adjusted OHLCV (independent Leadership flow)",
+        "universe_source": str(args.universe),
+        "universe_policy": "exact source universe; no Leadership-only symbol filter",
+        "universe_source_total": source_total,
+        "universe_fingerprint": fingerprint,
         "asof": str(benchmark_frame.index[-1].date()),
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "benchmark": args.benchmark,
@@ -334,12 +339,14 @@ def main() -> None:
     args.output.write_text(json.dumps(output, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(json.dumps({
         "asof": output["asof"],
+        "source_total": source_total,
         "requested": output["universe_requested"],
         "valid": output["universe_valid"],
         "rs21": len(metric_maps.get("rs21", {})),
         "rs63": len(metric_maps.get("rs63", {})),
         "rs189": len(metric_maps.get("rs189", {})),
         "entry_inputs": len(metric_maps.get("ema21", {})),
+        "fingerprint": fingerprint,
     }, indent=2))
 
 
