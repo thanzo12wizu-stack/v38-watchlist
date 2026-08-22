@@ -12,8 +12,6 @@ on:
       - 'leadership/**'
       - '.github/workflows/leadership-command.yml'
   schedule:
-    # Existing dashboard runs independently at UTC 22:17 and 04:17.
-    # Leadership starts later but has no needs/dependency/writeback to that flow.
     - cron: '10 23 * * 1-5'
     - cron: '10 5 * * 2-6'
   workflow_dispatch: {}
@@ -46,29 +44,20 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s leadership/tests -p 'test_*.py' -v
 
-      - name: Build independent market snapshot
-        shell: bash
+      - name: Build full independent market snapshot
         run: |
-          set -euo pipefail
-          MAX_SYMBOLS=0
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR limits Yahoo downloads only. Source-universe identity is still
-            # validated against the complete existing universe.csv below.
-            MAX_SYMBOLS=400
-          fi
           python leadership/build_market_snapshot.py \
             --universe universe.csv \
             --output leadership/market_snapshot.json \
             --benchmark QQQ \
             --period 15mo \
             --batch-size 80 \
-            --max-symbols "$MAX_SYMBOLS"
+            --max-symbols 0
 
       - name: Build Leadership Command
         run: python leadership/build_leadership.py --root . --output leadership/dist
 
-      - name: Validate universe parity and live coverage
-        shell: bash
+      - name: Validate exact full-universe run
         run: |
           python - <<'PY'
           import csv
@@ -79,7 +68,6 @@ jobs:
           snap=json.loads(Path('leadership/market_snapshot.json').read_text())
           diag=json.loads(Path('leadership/dist/diagnostics.json').read_text())
           cov=diag.get('coverage', {})
-
           symbols=[]
           seen=set()
           with Path('universe.csv').open('r', encoding='utf-8-sig', newline='') as f:
@@ -89,33 +77,30 @@ jobs:
                       seen.add(sym)
                       symbols.append(sym)
           expected_fingerprint=hashlib.sha256('\n'.join(symbols).encode('utf-8')).hexdigest()
-
+          expected_requested=len(symbols) - (1 if 'QQQ' in seen else 0)
           report={
-            'snapshot_asof': snap.get('asof'),
-            'source_universe_rows': len(symbols),
-            'snapshot_source_total': snap.get('universe_source_total'),
-            'universe_fingerprint_match': snap.get('universe_fingerprint') == expected_fingerprint,
-            'download_requested': snap.get('universe_requested'),
+            'source_total': len(symbols),
+            'requested': snap.get('universe_requested'),
             'valid_market_data': snap.get('universe_valid'),
-            'metric_source': cov.get('metric_source'),
+            'rs21': cov.get('rs21'),
             'rs63': cov.get('rs63'),
+            'rs189': cov.get('rs189'),
             'entry_inputs': cov.get('entry_inputs'),
-            'confidence': cov.get('confidence'),
+            'fingerprint_match': snap.get('universe_fingerprint') == expected_fingerprint,
           }
           print(json.dumps(report, ensure_ascii=False, indent=2))
-
-          if snap.get('universe_policy') != 'exact source universe; no Leadership-only symbol filter':
-              raise SystemExit('Leadership universe policy is not exact-source mode')
-          if int(snap.get('universe_source_total') or -1) != len(symbols):
-              raise SystemExit('Leadership source universe count differs from universe.csv')
           if snap.get('universe_fingerprint') != expected_fingerprint:
-              raise SystemExit('Leadership source universe symbols/order differ from universe.csv')
+              raise SystemExit('Universe fingerprint mismatch')
+          if int(snap.get('universe_source_total') or -1) != len(symbols):
+              raise SystemExit('Universe count mismatch')
+          if int(snap.get('universe_requested') or -1) != expected_requested:
+              raise SystemExit('Full universe was not requested')
           if cov.get('metric_source') != 'leadership/market_snapshot.json':
-              raise SystemExit('Leadership builder did not use its independent market snapshot')
-          if int(cov.get('rs63') or 0) < 30:
-              raise SystemExit('Insufficient RS coverage')
-          if int(cov.get('entry_inputs') or 0) < 30:
-              raise SystemExit('Insufficient entry-metric coverage')
+              raise SystemExit('Independent market snapshot not used')
+          if int(cov.get('rs63') or 0) < 1000:
+              raise SystemExit('RS63 coverage too low for full-universe run')
+          if int(cov.get('entry_inputs') or 0) < 1000:
+              raise SystemExit('Entry coverage too low for full-universe run')
           PY
 
       - name: Upload preview artifact
@@ -140,11 +125,7 @@ jobs:
         shell: bash
         run: |
           if [[ -z "${LEADERSHIP_PUBLIC_REPOSITORY:-}" || -z "${LEADERSHIP_PUBLIC_TOKEN:-}" ]]; then
-            echo '::notice::Dedicated Leadership public repository is not configured; existing site is untouched.'
             echo 'enabled=false' >> "$GITHUB_OUTPUT"
-          elif [[ ! "$LEADERSHIP_PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
-            echo 'Invalid LEADERSHIP_PUBLIC_REPOSITORY'
-            exit 1
           else
             echo 'enabled=true' >> "$GITHUB_OUTPUT"
           fi
@@ -169,9 +150,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          if git diff --staged --quiet; then
-            echo 'Leadership public site already current'
-            exit 0
-          fi
+          if git diff --staged --quiet; then exit 0; fi
           git commit -m 'Publish Leadership Command'
           git push origin HEAD:main
