@@ -315,6 +315,10 @@ def main() -> None:
 
     enriched = enrich_relative_strength(raw, benchmark_metrics)
     metric_maps = to_metric_maps(enriched)
+    metric_payload = {
+        (key if key == "rs63" else f"metric_{key}"): values
+        for key, values in metric_maps.items()
+    }
     output = {
         "schema": 1,
         "source": "Yahoo Finance daily adjusted OHLCV (independent Leadership flow)",
@@ -324,7 +328,7 @@ def main() -> None:
         "universe_requested": len(symbols),
         "universe_valid": len(enriched),
         "failed_sample": sorted(set(failed))[:100],
-        **metric_maps,
+        **metric_payload,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(output, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -332,10 +336,10 @@ def main() -> None:
         "asof": output["asof"],
         "requested": output["universe_requested"],
         "valid": output["universe_valid"],
-        "rs21": len(output.get("rs21", {})),
-        "rs63": len(output.get("rs63", {})),
-        "rs189": len(output.get("rs189", {})),
-        "entry_inputs": len(output.get("ema21", {})),
+        "rs21": len(metric_maps.get("rs21", {})),
+        "rs63": len(metric_maps.get("rs63", {})),
+        "rs189": len(metric_maps.get("rs189", {})),
+        "entry_inputs": len(metric_maps.get("ema21", {})),
     }, indent=2))
 
 
