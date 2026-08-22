@@ -13,7 +13,7 @@ on:
       - '.github/workflows/leadership-command.yml'
   schedule:
     # Existing dashboard runs independently at UTC 22:17 and 04:17.
-    # Run later, but do not depend on, cancel, write to, or import that flow.
+    # Leadership starts later but has no needs/dependency/writeback to that flow.
     - cron: '10 23 * * 1-5'
     - cron: '10 5 * * 2-6'
   workflow_dispatch: {}
@@ -28,7 +28,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 40
     env:
       TZ: Asia/Tokyo
     steps:
@@ -40,24 +40,57 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install isolated Leadership dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+
       - name: Unit tests
         run: python -m unittest discover -s leadership/tests -p 'test_*.py' -v
+
+      - name: Build independent market snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAX_SYMBOLS=0
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR validates the live data path without paying for a full-universe run.
+            MAX_SYMBOLS=400
+          fi
+          python leadership/build_market_snapshot.py \
+            --universe universe.csv \
+            --output leadership/market_snapshot.json \
+            --benchmark QQQ \
+            --period 15mo \
+            --batch-size 80 \
+            --max-symbols "$MAX_SYMBOLS"
 
       - name: Build Leadership Command
         run: python leadership/build_leadership.py --root . --output leadership/dist
 
-      - name: Show source-adapter coverage
+      - name: Validate live coverage
+        shell: bash
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          d=json.loads(Path('leadership/dist/diagnostics.json').read_text())
+          snap=json.loads(Path('leadership/market_snapshot.json').read_text())
+          diag=json.loads(Path('leadership/dist/diagnostics.json').read_text())
+          cov=diag.get('coverage', {})
           print(json.dumps({
-            'top_level_keys': d.get('top_level_keys'),
-            'symbols_extracted': d.get('symbols_extracted'),
-            'sample_metric_keys': d.get('sample_metric_keys'),
-            'coverage': d.get('coverage'),
+            'snapshot_asof': snap.get('asof'),
+            'requested': snap.get('universe_requested'),
+            'valid': snap.get('universe_valid'),
+            'metric_source': cov.get('metric_source'),
+            'rs63': cov.get('rs63'),
+            'entry_inputs': cov.get('entry_inputs'),
+            'confidence': cov.get('confidence'),
+            'top_level_keys': diag.get('top_level_keys'),
           }, ensure_ascii=False, indent=2))
+          if cov.get('metric_source') != 'leadership/market_snapshot.json':
+            raise SystemExit('Leadership builder did not use its independent market snapshot')
+          if int(cov.get('rs63') or 0) < 30:
+            raise SystemExit('Insufficient RS coverage')
+          if int(cov.get('entry_inputs') or 0) < 30:
+            raise SystemExit('Insufficient entry-metric coverage')
           PY
 
       - name: Upload preview artifact
