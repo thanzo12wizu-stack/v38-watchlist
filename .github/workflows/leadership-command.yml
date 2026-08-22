@@ -52,8 +52,8 @@ jobs:
           set -euo pipefail
           MAX_SYMBOLS=0
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR limits Yahoo downloads only. Source-universe identity is still
-            # validated against the complete existing universe.csv below.
+            # PR limits Yahoo downloads only. The rendered model still keeps
+            # every symbol in the complete source universe as data or NO_DATA.
             MAX_SYMBOLS=400
           fi
           python leadership/build_market_snapshot.py \
@@ -65,7 +65,7 @@ jobs:
             --max-symbols "$MAX_SYMBOLS"
 
       - name: Build Leadership Command
-        run: python leadership/build_leadership.py --root . --output leadership/dist
+        run: python leadership/build_leadership_exact.py --root . --output leadership/dist
 
       - name: Validate universe parity and live coverage
         shell: bash
@@ -94,6 +94,9 @@ jobs:
             'snapshot_asof': snap.get('asof'),
             'source_universe_rows': len(symbols),
             'snapshot_source_total': snap.get('universe_source_total'),
+            'rendered_model_stocks': cov.get('stocks'),
+            'rendered_universe_exact': cov.get('universe_exact'),
+            'no_data_retained': cov.get('no_data'),
             'universe_fingerprint_match': snap.get('universe_fingerprint') == expected_fingerprint,
             'download_requested': snap.get('universe_requested'),
             'valid_market_data': snap.get('universe_valid'),
@@ -110,6 +113,10 @@ jobs:
               raise SystemExit('Leadership source universe count differs from universe.csv')
           if snap.get('universe_fingerprint') != expected_fingerprint:
               raise SystemExit('Leadership source universe symbols/order differ from universe.csv')
+          if int(cov.get('stocks') or -1) != len(symbols):
+              raise SystemExit('Rendered Leadership model dropped source-universe symbols')
+          if cov.get('universe_exact') is not True:
+              raise SystemExit('Rendered Leadership model is not exact-universe mode')
           if cov.get('metric_source') != 'leadership/market_snapshot.json':
               raise SystemExit('Leadership builder did not use its independent market snapshot')
           if int(cov.get('rs63') or 0) < 30:
