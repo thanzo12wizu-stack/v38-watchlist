@@ -5,6 +5,12 @@ on:
     paths:
       - 'leadership/**'
       - '.github/workflows/leadership-command.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'leadership/**'
+      - '.github/workflows/leadership-command.yml'
   schedule:
     # Existing dashboard runs independently at UTC 22:17 and 04:17.
     # Run later, but do not depend on, cancel, write to, or import that flow.
