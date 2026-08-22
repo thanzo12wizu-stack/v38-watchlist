@@ -321,7 +321,6 @@ def main() -> None:
         "asof": str(benchmark_frame.index[-1].date()),
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "benchmark": args.benchmark,
-        "benchmark_metrics": benchmark_metrics,
         "universe_requested": len(symbols),
         "universe_valid": len(enriched),
         "failed_sample": sorted(set(failed))[:100],
