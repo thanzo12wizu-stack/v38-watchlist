@@ -5,18 +5,6 @@ on:
     paths:
       - 'leadership/**'
       - '.github/workflows/leadership-command.yml'
-  push:
-    branches:
-      - main
-    paths:
-      - 'leadership/**'
-      - '.github/workflows/leadership-command.yml'
-  schedule:
-    # Existing dashboard runs independently at UTC 22:17 and 04:17.
-    # Leadership starts later but has no needs/dependency/writeback to that flow.
-    - cron: '10 23 * * 1-5'
-    - cron: '10 5 * * 2-6'
-  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -46,29 +34,20 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s leadership/tests -p 'test_*.py' -v
 
-      - name: Build independent market snapshot
-        shell: bash
+      - name: Build full independent market snapshot
         run: |
-          set -euo pipefail
-          MAX_SYMBOLS=0
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR limits Yahoo downloads only. The rendered model still keeps
-            # every symbol in the complete source universe as data or NO_DATA.
-            MAX_SYMBOLS=400
-          fi
           python leadership/build_market_snapshot.py \
             --universe universe.csv \
             --output leadership/market_snapshot.json \
             --benchmark QQQ \
             --period 15mo \
             --batch-size 80 \
-            --max-symbols "$MAX_SYMBOLS"
+            --max-symbols 0
 
-      - name: Build Leadership Command
+      - name: Build exact-universe Leadership Command
         run: python leadership/build_leadership_exact.py --root . --output leadership/dist
 
-      - name: Validate universe parity and live coverage
-        shell: bash
+      - name: Validate exact full universe end-to-end
         run: |
           python - <<'PY'
           import csv
@@ -79,7 +58,6 @@ jobs:
           snap=json.loads(Path('leadership/market_snapshot.json').read_text())
           diag=json.loads(Path('leadership/dist/diagnostics.json').read_text())
           cov=diag.get('coverage', {})
-
           symbols=[]
           seen=set()
           with Path('universe.csv').open('r', encoding='utf-8-sig', newline='') as f:
@@ -89,40 +67,39 @@ jobs:
                       seen.add(sym)
                       symbols.append(sym)
           expected_fingerprint=hashlib.sha256('\n'.join(symbols).encode('utf-8')).hexdigest()
-
+          expected_requested=len(symbols) - (1 if 'QQQ' in seen else 0)
           report={
-            'snapshot_asof': snap.get('asof'),
-            'source_universe_rows': len(symbols),
+            'source_total': len(symbols),
             'snapshot_source_total': snap.get('universe_source_total'),
-            'rendered_model_stocks': cov.get('stocks'),
-            'rendered_universe_exact': cov.get('universe_exact'),
-            'no_data_retained': cov.get('no_data'),
-            'universe_fingerprint_match': snap.get('universe_fingerprint') == expected_fingerprint,
             'download_requested': snap.get('universe_requested'),
             'valid_market_data': snap.get('universe_valid'),
-            'metric_source': cov.get('metric_source'),
+            'rendered_model_stocks': cov.get('stocks'),
+            'universe_exact': cov.get('universe_exact'),
+            'no_data_retained': cov.get('no_data'),
+            'rs21': cov.get('rs21'),
             'rs63': cov.get('rs63'),
+            'rs189': cov.get('rs189'),
             'entry_inputs': cov.get('entry_inputs'),
-            'confidence': cov.get('confidence'),
+            'fingerprint_match': snap.get('universe_fingerprint') == expected_fingerprint,
+            'metric_source': cov.get('metric_source'),
           }
           print(json.dumps(report, ensure_ascii=False, indent=2))
-
-          if snap.get('universe_policy') != 'exact source universe; no Leadership-only symbol filter':
-              raise SystemExit('Leadership universe policy is not exact-source mode')
-          if int(snap.get('universe_source_total') or -1) != len(symbols):
-              raise SystemExit('Leadership source universe count differs from universe.csv')
           if snap.get('universe_fingerprint') != expected_fingerprint:
-              raise SystemExit('Leadership source universe symbols/order differ from universe.csv')
+              raise SystemExit('Universe fingerprint mismatch')
+          if int(snap.get('universe_source_total') or -1) != len(symbols):
+              raise SystemExit('Snapshot source universe count mismatch')
+          if int(snap.get('universe_requested') or -1) != expected_requested:
+              raise SystemExit('Full source universe was not requested')
           if int(cov.get('stocks') or -1) != len(symbols):
-              raise SystemExit('Rendered Leadership model dropped source-universe symbols')
+              raise SystemExit('Rendered model dropped source symbols')
           if cov.get('universe_exact') is not True:
-              raise SystemExit('Rendered Leadership model is not exact-universe mode')
+              raise SystemExit('Rendered model is not exact-universe mode')
           if cov.get('metric_source') != 'leadership/market_snapshot.json':
-              raise SystemExit('Leadership builder did not use its independent market snapshot')
-          if int(cov.get('rs63') or 0) < 30:
-              raise SystemExit('Insufficient RS coverage')
-          if int(cov.get('entry_inputs') or 0) < 30:
-              raise SystemExit('Insufficient entry-metric coverage')
+              raise SystemExit('Independent market snapshot not used')
+          if int(cov.get('rs63') or 0) < 3000:
+              raise SystemExit('RS63 full-universe coverage unexpectedly low')
+          if int(cov.get('entry_inputs') or 0) < 3000:
+              raise SystemExit('Entry full-universe coverage unexpectedly low')
           PY
 
       - name: Upload preview artifact
@@ -132,53 +109,3 @@ jobs:
           path: leadership/dist/
           if-no-files-found: error
           retention-days: 7
-
-  publish:
-    if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 8
-    env:
-      LEADERSHIP_PUBLIC_REPOSITORY: ${{ vars.LEADERSHIP_PUBLIC_REPOSITORY }}
-      LEADERSHIP_PUBLIC_TOKEN: ${{ secrets.LEADERSHIP_PUBLIC_TOKEN }}
-    steps:
-      - name: Check isolated public target
-        id: config
-        shell: bash
-        run: |
-          if [[ -z "${LEADERSHIP_PUBLIC_REPOSITORY:-}" || -z "${LEADERSHIP_PUBLIC_TOKEN:-}" ]]; then
-            echo '::notice::Dedicated Leadership public repository is not configured; existing site is untouched.'
-            echo 'enabled=false' >> "$GITHUB_OUTPUT"
-          elif [[ ! "$LEADERSHIP_PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
-            echo 'Invalid LEADERSHIP_PUBLIC_REPOSITORY'
-            exit 1
-          else
-            echo 'enabled=true' >> "$GITHUB_OUTPUT"
-          fi
-
-      - uses: actions/download-artifact@v4
-        if: steps.config.outputs.enabled == 'true'
-        with:
-          name: leadership-command-preview
-          path: /tmp/leadership-site
-
-      - name: Publish only to dedicated repository
-        if: steps.config.outputs.enabled == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          target=/tmp/leadership-pages
-          git clone --depth 1 "https://x-access-token:${LEADERSHIP_PUBLIC_TOKEN}@github.com/${LEADERSHIP_PUBLIC_REPOSITORY}.git" "$target"
-          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
-          cp -a /tmp/leadership-site/. "$target/"
-          touch "$target/.nojekyll"
-          cd "$target"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          if git diff --staged --quiet; then
-            echo 'Leadership public site already current'
-            exit 0
-          fi
-          git commit -m 'Publish Leadership Command'
-          git push origin HEAD:main
