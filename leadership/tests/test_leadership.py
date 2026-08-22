@@ -15,7 +15,6 @@ class LeadershipCommandTests(unittest.TestCase):
 
     def test_metric_map_adapter(self):
         snap = {
-            "s2i": {"AAA": "Group A", "BBB": "Group A", "CCC": "Group A"},
             "rs63": {"AAA": 95, "BBB": 88, "CCC": 82},
             "rs21": {"AAA": 99, "BBB": 91, "CCC": 80},
             "ema21": {"AAA": 99, "BBB": 49, "CCC": 20},
@@ -29,24 +28,35 @@ class LeadershipCommandTests(unittest.TestCase):
         status = entry_status({"strength": 99, "price": 100})
         self.assertEqual(status["status"], "NO_DATA")
 
-    def test_build_model_from_isolated_artifacts(self):
+    def test_entry_avoids_below_50sma(self):
+        status = entry_status({"strength": 95, "price": 90, "sma50": 100, "ema21": 92})
+        self.assertEqual(status["status"], "AVOID")
+
+    def test_build_model_reads_live_metrics_but_existing_group_map(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
+            (root / "leadership").mkdir()
             (root / "state.json").write_text(
                 json.dumps({"date": "2026-08-21", "gate": "Green", "mri": 72.6}), encoding="utf-8"
             )
             symbols = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"]
-            snapshot = {
-                "s2i": {s: "Group A" if s < "DDD" else "Group B" for s in symbols},
+            sector_snapshot = {"s2i": {s: "Group A" if s < "DDD" else "Group B" for s in symbols}}
+            (root / "sector_snapshot.json").write_text(json.dumps(sector_snapshot), encoding="utf-8")
+            live = {
+                "asof": "2026-08-21",
                 "rs189": {"AAA": 90, "BBB": 86, "CCC": 81, "DDD": 70, "EEE": 66, "FFF": 60},
                 "rs63": {"AAA": 96, "BBB": 90, "CCC": 84, "DDD": 72, "EEE": 68, "FFF": 63},
                 "rs21": {"AAA": 99, "BBB": 95, "CCC": 88, "DDD": 75, "EEE": 70, "FFF": 62},
                 "price": {"AAA": 101, "BBB": 52, "CCC": 31, "DDD": 40, "EEE": 28, "FFF": 22},
-                "ema21": {"AAA": 100, "BBB": 50, "CCC": 30, "DDD": 38, "EEE": 27, "FFF": 21},
+                "ema21": {"AAA": 100, "BBB": 51, "CCC": 30.5, "DDD": 39, "EEE": 27.5, "FFF": 21.5},
+                "sma50": {"AAA": 95, "BBB": 48, "CCC": 28, "DDD": 36, "EEE": 25, "FFF": 20},
                 "atr14": {s: 2 for s in symbols},
-                "vwap63": {"AAA": 100, "BBB": 50, "CCC": 30, "DDD": 38, "EEE": 27, "FFF": 21},
+                "vwap63": {"AAA": 100, "BBB": 51, "CCC": 30, "DDD": 39, "EEE": 27, "FFF": 21},
+                "pivot": {"AAA": 100, "BBB": 51, "CCC": 30, "DDD": 39, "EEE": 27, "FFF": 21},
+                "pct_from_52w_high": {s: -5 for s in symbols},
+                "volume_ratio": {s: 1.1 for s in symbols},
             }
-            (root / "sector_snapshot.json").write_text(json.dumps(snapshot), encoding="utf-8")
+            (root / "leadership" / "market_snapshot.json").write_text(json.dumps(live), encoding="utf-8")
             (root / "industry_map.json").write_text(
                 json.dumps({"map": {s: ["Tech", "Test"] for s in symbols}}), encoding="utf-8"
             )
@@ -62,9 +72,8 @@ class LeadershipCommandTests(unittest.TestCase):
 
             model, diagnostics = build_model(root)
             self.assertEqual(model["market"]["status"], "GO")
-            self.assertEqual(model["coverage"]["confidence"], "LOW")
-            self.assertEqual(model["groups"][0]["group"], "Group A")
-            self.assertIn(model["groups"][0]["phase"], {"EMERGING", "LEADING"})
+            self.assertEqual(model["coverage"]["metric_source"], "leadership/market_snapshot.json")
+            self.assertEqual(model["groups"][0]["name"], "Group A")
             leaders = model["groups"][0]["stocks"]
             self.assertEqual(leaders[0]["symbol"], "AAA")
             self.assertIn(leaders[0]["role"], {"PIONEER", "LEADER"})
