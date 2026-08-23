@@ -12,12 +12,14 @@ on:
   push:
     branches:
       - main
-    # Generated leadership/dist/index.html is intentionally excluded so the
-    # persistence commit below cannot recursively trigger another full build.
+    # Generated public HTML is intentionally excluded so the persistence
+    # commit below cannot recursively trigger another full build.
     paths:
       - 'leadership/build_market_snapshot.py'
       - 'leadership/build_leadership.py'
       - 'leadership/build_leadership_exact.py'
+      - 'leadership/render_japanese.py'
+      - 'leadership/render_public.py'
       - 'leadership/tests/**'
       - '.github/workflows/leadership-command.yml'
   schedule:
@@ -76,7 +78,11 @@ jobs:
             --max-symbols "$MAX_SYMBOLS"
 
       - name: Build Leadership Command
-        run: python leadership/build_leadership_exact.py --root . --output leadership/dist
+        run: |
+          python leadership/build_leadership_exact.py --root . --output leadership/dist
+          python leadership/render_public.py \
+            --model leadership/dist/leadership.json \
+            --output leadership/dist/index.html
 
       - name: Validate universe parity and live coverage
         shell: bash
@@ -158,12 +164,13 @@ jobs:
           for attempt in 1 2 3; do
             git fetch --depth=1 origin main
             git reset --hard origin/main
-            mkdir -p leadership/dist
+            mkdir -p leadership/dist leadership
             cp "$generated" leadership/dist/index.html
-            git add -f leadership/dist/index.html
+            cp "$generated" leadership/index.html
+            git add -f leadership/dist/index.html leadership/index.html
 
             if git diff --staged --quiet; then
-              echo 'Persisted Leadership entrypoint already current'
+              echo 'Persisted Leadership entrypoints already current'
               exit 0
             fi
 
