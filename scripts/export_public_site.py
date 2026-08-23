@@ -14,6 +14,14 @@ PUBLIC_FILES = (
     "swinote/live.js",
 )
 
+# Optional source -> public-target mappings. Leadership is produced by its own
+# workflow and persisted independently, so the normal dashboard exporter must
+# preserve it when present without making the existing dashboard depend on it.
+OPTIONAL_PUBLIC_FILES = (
+    ("leadership/dist/index.html", "leadership/index.html"),
+)
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -33,26 +41,35 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
         shutil.rmtree(output)
     output.mkdir(parents=True, exist_ok=True)
 
+    export_items: list[tuple[str, str]] = [(name, name) for name in PUBLIC_FILES]
+    export_items.extend(
+        (source_name, target_name)
+        for source_name, target_name in OPTIONAL_PUBLIC_FILES
+        if (root / source_name).is_file()
+    )
+
     files = []
-    for name in PUBLIC_FILES:
-        source = root / name
-        target = output / name
+    for source_name, target_name in export_items:
+        source = root / source_name
+        target = output / target_name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
         files.append(
             {
-                "path": name,
+                "path": target_name,
+                "source_path": source_name,
                 "bytes": target.stat().st_size,
                 "sha256": _sha256(target),
             }
         )
 
     (output / ".nojekyll").write_text("", encoding="utf-8")
+    public_paths = [target_name for _, target_name in export_items]
     manifest = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source_commit": source_commit,
-        "allowlist": list(PUBLIC_FILES),
+        "allowlist": public_paths,
         "locked_dashboards": [],
         "files": files,
     }
@@ -61,7 +78,7 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
         encoding="utf-8",
     )
 
-    expected = set(PUBLIC_FILES) | {".nojekyll", "public-site-manifest.json"}
+    expected = set(public_paths) | {".nojekyll", "public-site-manifest.json"}
     actual = {
         str(path.relative_to(output))
         for path in output.rglob("*")
