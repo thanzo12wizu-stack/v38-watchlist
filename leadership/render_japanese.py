@@ -20,7 +20,7 @@ ROLE_JA = {
 }
 
 ENTRY_JA = {
-    "ENTRY": "エントリー候補",
+    "ENTRY": "ENTRY",
     "WATCH": "監視",
     "WAIT": "待機",
     "AVOID": "見送り",
@@ -52,9 +52,9 @@ def esc(value: Any) -> str:
     return html.escape(str("—" if value is None else value))
 
 
-def phase_label(row: dict[str, Any]) -> str:
-    phase = str(row.get("phase") or "")
-    return PHASE_JA.get(phase, phase or "—")
+def phase_label(value: Any) -> str:
+    key = str(value or "")
+    return PHASE_JA.get(key, key or "—")
 
 
 def role_label(value: Any) -> str:
@@ -67,30 +67,78 @@ def entry_label(value: Any) -> str:
     return ENTRY_JA.get(key, key or "—")
 
 
-def render_cards(rows: list[dict[str, Any]], *, clickable: bool = False) -> str:
-    cards: list[str] = []
-    for row in rows:
-        attr = f' data-group="{esc(row.get("name"))}"' if clickable else ""
-        cards.append(
-            f'<button class="card phase-{esc(str(row.get("phase") or "").lower())}"{attr}>'
-            f'<span class="phase">{esc(phase_label(row))}</span>'
-            f'<strong>{esc(row.get("name"))}</strong>'
-            f'<span class="score">{esc(row.get("score"))}<small>/100</small></span>'
-            f'<span class="meta">主導株密度 {esc(row.get("leader_density"))} · RS加速 {esc(row.get("acceleration"))}</span>'
-            '</button>'
-        )
-    return "".join(cards) or '<div class="empty">有効なデータがありません</div>'
+def _phase_class(value: Any) -> str:
+    key = str(value or "").lower()
+    return key if key in {"emerging", "leading", "mature", "losing"} else "losing"
 
 
-def render_chips(rows: list[dict[str, Any]]) -> str:
+def _market_action(status: str) -> str:
+    if status == "GO":
+        return "主導株を探す。追いかけず、ENTRYだけ。"
+    if status == "SELECTIVE":
+        return "上位グループだけ。ENTRY以外は待つ。"
+    return "新規は見送る。"
+
+
+def _top_groups(model: dict[str, Any]) -> list[dict[str, Any]]:
+    groups = list(model.get("groups") or [])
+    preferred = [g for g in groups if str(g.get("phase")) in {"EMERGING", "LEADING"}]
+    return (preferred or groups)[:8]
+
+
+def _summary_names(rows: list[dict[str, Any]], limit: int = 3) -> str:
+    names = [str(x.get("name") or "").strip() for x in rows if str(x.get("name") or "").strip()]
+    return " / ".join(names[:limit]) if names else "—"
+
+
+def render_action_rows(rows: list[dict[str, Any]], empty_text: str) -> str:
     if not rows:
-        return '<div class="empty">該当なし。強いだけの株を無理に追いません。</div>'
-    return "".join(
-        f'<div class="chip"><b>{esc(x.get("symbol"))}</b>'
-        f'<span>{esc(role_label(x.get("role")))} · {esc(x.get("group"))}</span>'
-        f'<em>{esc(x.get("reason"))}</em></div>'
-        for x in rows
-    )
+        return f'<div class="empty">{esc(empty_text)}</div>'
+    out: list[str] = []
+    for x in rows:
+        status = str(x.get("status") or x.get("entry_status") or "")
+        out.append(
+            f'<div class="pickrow">'
+            f'<div class="picktop"><b class="ticker">{esc(x.get("symbol"))}</b>'
+            f'<span class="role role-{esc(str(x.get("role") or ""))}">{esc(role_label(x.get("role")))}</span>'
+            f'<span class="entry entry-{esc(status)}">{esc(entry_label(status))}</span></div>'
+            f'<div class="pickmeta">{esc(x.get("group"))}</div>'
+            f'<div class="pickwhy">{esc(x.get("reason"))}</div>'
+            f'</div>'
+        )
+    return "".join(out)
+
+
+def render_group_rows(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return '<div class="empty">有効なデータがありません</div>'
+    out: list[str] = []
+    for row in rows:
+        out.append(
+            f'<button class="leadrow phase-{esc(_phase_class(row.get("phase")))}" data-group="{esc(row.get("name"))}">'
+            f'<span class="phasebadge">{esc(phase_label(row.get("phase")))}</span>'
+            f'<span class="leadname">{esc(row.get("name"))}</span>'
+            f'<span class="leadscore">{esc(row.get("score"))}</span>'
+            f'<span class="leaddetail">主導密度 {esc(row.get("leader_density"))} · RS加速 {esc(row.get("acceleration"))}</span>'
+            f'</button>'
+        )
+    return "".join(out)
+
+
+def render_sector_rows(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return '<div class="empty">有効なデータがありません</div>'
+    out: list[str] = []
+    for row in rows:
+        out.append(
+            f'<div class="leadrow static phase-{esc(_phase_class(row.get("phase")))}">'
+            f'<span class="phasebadge">{esc(phase_label(row.get("phase")))}</span>'
+            f'<span class="leadname">{esc(row.get("name"))}</span>'
+            f'<span class="leadscore">{esc(row.get("score"))}</span>'
+            f'<span class="leaddetail">主導密度 {esc(row.get("leader_density"))} · RS加速 {esc(row.get("acceleration"))}</span>'
+            f'</div>'
+        )
+    return "".join(out)
 
 
 def render_html(model: dict[str, Any]) -> str:
@@ -99,9 +147,176 @@ def render_html(model: dict[str, Any]) -> str:
     cov = model["coverage"]
     market_status = str(market.get("status") or "")
     market_label = MARKET_JA.get(market_status, market_status or "—")
-    gate = GATE_JA.get(str(market.get("gate") or ""), str(market.get("gate") or "—"))
+    gate_key = str(market.get("gate") or "")
+    gate = GATE_JA.get(gate_key, gate_key or "—")
+    gate_cls = gate_key.lower() if gate_key.lower() in {"blue", "green", "yellow", "red"} else "gray"
     ftd = FTD_JA.get(str(market.get("ftd") or ""), str(market.get("ftd") or "—"))
-    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0f17"><title>Leadership Command</title>
+    groups = _top_groups(model)
+    actionable = list(model.get("actionable") or [])
+    waiting = list(model.get("waiting") or [])
+    top_group_text = _summary_names(groups)
+    focus_tickers = " ".join(str(x.get("symbol") or "") for x in (actionable or waiting)[:6]) or "—"
+
+    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0f17"><meta name="color-scheme" content="dark"><title>Leadership</title>
 <style>
-:root{{--bg:#0b0f17;--panel:rgba(255,255,255,.03);--panel-strong:#111827;--line:rgba(255,255,255,.07);--text:#e6edf3;--muted:#8b9bb0;--blue:#9ecbff;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--soft-blue:#16243e}}*{{box-sizing:border-box}}body{{margin:0;min-height:100svh;background:radial-gradient(1200px 520px at 80% -10%,rgba(22,163,74,.10),transparent 54%),var(--bg);color:var(--text);font-family:'Hiragino Sans','Noto Sans JP',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5}}button{{font:inherit}}.wrap{{max-width:1380px;margin:auto;padding:max(22px,env(safe-area-inset-top)) 16px max(30px,env(safe-area-inset-bottom))}}header{{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;padding:12px 4px 20px}}.eyebrow{{font-size:10px;font-weight:800;letter-spacing:.13em;color:#64748b}}h1{{margin:3px 0 5px;font-size:28px;letter-spacing:-.03em;color:var(--blue)}}.sub,.muted{{color:var(--muted)}}.sub{{font-size:13px}}.asof{{text-align:right;color:#7d8da1;font-size:11px;line-height:1.65}}.panel{{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}}.permission{{display:grid;grid-template-columns:1.05fr 1.7fr;gap:12px;margin-bottom:12px}}.market{{display:flex;gap:18px;align-items:center}}.status{{font-size:34px;font-weight:900;line-height:1.05;margin:4px 0}}.status-GO{{color:#fff;background:var(--green);border-radius:12px;padding:6px 14px;display:inline-block;box-shadow:0 0 26px rgba(22,163,74,.34)}}.status-SELECTIVE{{color:#fff;background:var(--yellow);border-radius:12px;padding:6px 14px;display:inline-block}}.status-STOP{{color:#fff;background:var(--red);border-radius:12px;padding:6px 14px;display:inline-block}}.mri{{margin-left:auto;text-align:right;color:var(--muted)}}.mri b{{font-size:34px;color:#fff}}.flow{{display:flex;gap:6px;align-items:center;flex-wrap:wrap}}.flow span{{padding:6px 9px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;color:#cbd5e1}}.flow i{{color:#5f6b7e;font-style:normal}}h2{{font-size:12px;letter-spacing:.05em;color:#cbd5e1;margin:0 0 10px}}.section{{margin-bottom:12px}}.grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}}.card{{color:inherit;text-align:left;background:rgba(255,255,255,.03);border:1px solid var(--line);border-left:3px solid #334155;border-radius:10px;padding:10px 11px;min-height:108px;display:grid;grid-template-columns:1fr auto;gap:6px;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease}}.card:hover{{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.12)}}.card:active{{transform:scale(.99)}}.phase-emerging{{border-left-color:var(--green)}}.phase-leading{{border-left-color:var(--blue)}}.phase-mature{{border-left-color:var(--yellow)}}.phase-losing{{border-left-color:#475569}}.card .phase{{grid-column:1/3;color:#94a3b8;font-size:10px;font-weight:700}}.card strong{{grid-column:1/3;font-size:13px;color:#e6edf3}}.score{{font-size:24px;font-weight:800;color:#fff}}.score small{{font-size:9px;color:#64748b}}.meta{{text-align:right;color:#7d8da1;font-size:10px;align-self:end}}.actions{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}}.chips{{display:flex;gap:8px;flex-wrap:wrap}}.chip{{min-width:168px;padding:9px 10px;border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:9px}}.chip b{{display:block;color:var(--blue);font-size:17px}}.chip span,.chip em{{display:block;font-style:normal;color:var(--muted);font-size:10px;margin-top:2px}}.table-wrap{{overflow:auto;border:1px solid var(--line);border-radius:10px}}table{{width:100%;border-collapse:collapse;min-width:1120px}}th,td{{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.055);text-align:right;white-space:nowrap}}th{{font-size:10px;letter-spacing:.03em;color:#7d8da1;background:#0b0f17;position:sticky;top:0}}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){{text-align:left}}tbody tr:hover{{background:rgba(255,255,255,.025)}}.role-PIONEER{{color:#86efac;font-weight:800}}.role-LEADER{{color:var(--blue);font-weight:800}}.role-NO_DATA{{color:#64748b}}.entry-ENTRY{{color:#86efac;font-weight:800}}.entry-WAIT,.entry-WATCH{{color:#fbbf24}}.entry-AVOID{{color:#f87171}}.entry-NO_DATA{{color:#64748b}}.empty{{color:var(--muted);padding:9px 2px}}.footer{{color:#5f6b7e;font-size:10px;margin-top:8px;line-height:1.5}}@media(max-width:900px){{header{{flex-direction:column;align-items:flex-start}}.asof{{text-align:left}}.permission,.actions{{grid-template-columns:1fr}}.grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}@media(max-width:520px){{.wrap{{padding-left:10px;padding-right:10px}}.grid{{grid-template-columns:1fr}}.market{{align-items:flex-start}}.mri b{{font-size:28px}}h1{{font-size:25px}}}}
-</style></head><body><main class="wrap"><header><div><div class="eyebrow">V38 WATCHLIST</div><h1>Leadership Command</h1><div class="sub">市場が良いときに、主導セクター → 主導グループ → 先導株 → 今入れるか、の順で見る。</div></div><div class="asof">基準日 {esc(cov.get("market_asof") or market.get("asof"))}<br>RS63取得 {esc(cov.get("rs63"))}銘柄 · データ信頼度 <b>{esc(cov.get("confidence"))}</b></div></header><section class="permission"><div class="panel market"><div><div class="muted">市場判断</div><div class="status status-{esc(market_status)}">{esc(market_label)}</div><div>{esc(market.get("label"))}</div></div><div class="mri"><span>地合いスコア MRI</span><br><b>{esc(market.get("mri"))}</b><br><span>{esc(gate)} · {esc(ftd)}</span></div></div><div class="panel"><h2>判断フロー</h2><div class="flow"><span>地合い</span><i>→</i><span>セクター</span><i>→</i><span>グループ</span><i>→</i><span>先導株 / 主導株</span><i>→</i><span>エントリー</span></div><div class="footer">RSはQQQ超過の21 / 63 / 189日順位。強い株と、今買える株を分けて表示します。</div></div></section><section class="panel section"><h2>主導セクター</h2><div class="grid">{render_cards(model.get("sectors", [])[:8])}</div></section><section class="panel section"><h2>グループ・ローテーション</h2><div class="grid">{render_cards(model.get("groups", [])[:12], clickable=True)}</div></section><section class="actions"><div class="panel"><h2>🎯 今、入れる候補</h2><div class="chips">{render_chips(model.get("actionable", []))}</div></div><div class="panel"><h2>⏳ 強いが、今は待つ</h2><div class="chips">{render_chips(model.get("waiting", [])[:6])}</div></div></section><section class="panel"><h2 id="boardTitle">主導株ボード</h2><div class="table-wrap"><table><thead><tr><th>銘柄</th><th>役割</th><th>主導度</th><th>RS189</th><th>RS63</th><th>RS21</th><th>RS加速</th><th>52週高値差</th><th>RVOL</th><th>EPS</th><th>判断</th><th>理由</th></tr></thead><tbody id="board"></tbody></table></div><div class="footer" id="coverage"></div></section></main><script id="payload" type="application/json">{payload}</script><script>const data=JSON.parse(document.getElementById('payload').textContent);const board=document.getElementById('board');const roleJa={{PIONEER:'先導株',LEADER:'主導株',FOLLOWER:'追随',NO_DATA:'データ不足'}};const entryJa={{ENTRY:'エントリー候補',WATCH:'監視',WAIT:'待機',AVOID:'見送り',NO_DATA:'データ不足'}};const phaseJa={{EMERGING:'新興',LEADING:'主導',MATURE:'成熟',LOSING:'失速'}};function v(x){{return x===null||x===undefined?'—':x}}function render(name){{const g=data.groups.find(x=>x.name===name)||data.groups[0];if(!g)return;document.getElementById('boardTitle').textContent=`主導株ボード — ${{g.name}} · ${{phaseJa[g.phase]||g.phase}} · ${{g.score}}/100`;board.innerHTML=g.stocks.map(s=>`<tr><td><b>${{s.symbol}}</b><div class="muted">${{s.name||''}}</div></td><td class="role-${{s.role}}">${{roleJa[s.role]||s.role}}</td><td><b>${{v(s.strength)}}</b></td><td>${{v(s.rs189)}}</td><td>${{v(s.rs63)}}</td><td>${{v(s.rs21)}}</td><td>${{v(s.acceleration)}}</td><td>${{v(s.near_high)}}</td><td>${{v(s.volume_ratio)}}</td><td>${{s.eps_label||'—'}}</td><td class="entry-${{s.entry.status}}">${{entryJa[s.entry.status]||s.entry.status}}</td><td>${{s.entry.reason}}</td></tr>`).join('')}}document.querySelectorAll('[data-group]').forEach(el=>el.addEventListener('click',()=>render(el.dataset.group)));render(data.groups[0]?.name);const c=data.coverage;document.getElementById('coverage').textContent=`データ: ${{c.metric_source}} · 対象 ${{c.stocks}}銘柄 · セクター ${{c.sectors}} · グループ ${{c.groups}} · RS63 ${{c.rs63}} · エントリー判定 ${{c.entry_inputs}}`;</script></body></html>'''
+*{{box-sizing:border-box;margin:0;padding:0}}
+html{{background:#0b0f17;color-scheme:dark}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue','Hiragino Sans','Noto Sans JP',sans-serif;background:#0b0f17;color:#e6edf3;font-size:14px;-webkit-text-size-adjust:100%}}
+button{{font:inherit}}
+.wrap{{max-width:680px;margin:0 auto;padding:0 12px calc(42px + env(safe-area-inset-bottom))}}
+header{{padding:14px 4px 8px}}
+h1{{font-size:18px;font-weight:800;letter-spacing:.01em}}
+.asof{{color:#7d8da1;font-size:11px;margin-top:2px}}
+.mut{{color:#7d8da1}}
+.todayact{{border:1px solid #243044;border-left:4px solid #6b7280;border-radius:11px;background:#121a26;padding:9px 12px;margin:0 0 10px}}
+.todayact.ta-blue{{border-left-color:#4d9fff}}.todayact.ta-green{{border-left-color:#34d39c}}.todayact.ta-yellow{{border-left-color:#fbbf24}}.todayact.ta-red{{border-left-color:#f87171}}
+.ta-top{{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}}
+.ta-h{{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#7f8da3;font-weight:700}}
+.ta-col{{font-weight:800;font-size:14px}}
+.ta-mri{{margin-left:auto;font-size:11px;color:#9fb0c5}}.ta-mri b{{font-size:16px;color:#fff}}
+.ta-act{{font-size:13px;font-weight:700;line-height:1.5;margin-top:5px;color:#dbe4ef}}
+.ta-foot{{font-size:10px;color:#718197;margin-top:4px}}
+.card{{background:#0f1623;border:1px solid #1c2533;border-radius:13px;padding:12px 14px;margin-bottom:12px}}
+.card.hot-card{{border-color:#2f81f7}}
+.card h2{{font-size:14.5px;font-weight:800;margin-bottom:7px;color:#eef3fa}}
+.card .sub{{font-size:11px;color:#8494ab;line-height:1.55;margin:-3px 0 9px}}
+.summary{{display:grid;grid-template-columns:1fr 1fr;gap:6px}}
+.sumcell{{background:#101824;border:1px solid #243044;border-radius:9px;padding:8px 10px}}
+.sumcell span{{display:block;font-size:9.5px;color:#718197}}
+.sumcell b{{display:block;font-size:14px;color:#e6edf3;margin-top:2px;line-height:1.35}}
+.sumwide{{grid-column:1/-1}}
+.pickrow{{border-top:1px solid #182131;padding:8px 0}}
+.pickrow:first-child{{border-top:0}}
+.picktop{{display:flex;align-items:center;gap:6px}}
+.ticker{{font-size:15px;color:#9ecbff}}
+.role,.entry,.phasebadge{{display:inline-block;font-size:8.5px;font-weight:800;border-radius:5px;padding:1px 5px}}
+.role-PIONEER{{background:rgba(67,201,138,.14);color:#43c98a;border:1px solid rgba(67,201,138,.35)}}
+.role-LEADER{{background:rgba(88,166,255,.16);color:#8fb3ff;border:1px solid rgba(88,166,255,.45)}}
+.role-FOLLOWER,.role-NO_DATA{{background:#0f1622;color:#6f8198;border:1px solid #1c2533}}
+.entry{{margin-left:auto}}
+.entry-ENTRY{{background:rgba(67,201,138,.14);color:#43c98a;border:1px solid rgba(67,201,138,.35)}}
+.entry-WAIT,.entry-WATCH{{background:rgba(227,170,60,.15);color:#e3aa3c;border:1px solid rgba(227,170,60,.4)}}
+.entry-AVOID{{background:rgba(229,100,94,.16);color:#e5645e;border:1px solid rgba(229,100,94,.45)}}
+.entry-NO_DATA{{background:#0f1622;color:#6f8198;border:1px solid #1c2533}}
+.pickmeta{{font-size:10.5px;color:#7e8ea3;margin-top:2px}}
+.pickwhy{{font-size:11.5px;color:#cbd5e1;margin-top:2px}}
+.leadlist{{display:grid;gap:5px}}
+.leadrow{{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 7px;align-items:center;text-align:left;background:#101824;border:1px solid #243044;border-left:3px solid #475569;border-radius:9px;padding:8px 9px;color:inherit;cursor:pointer}}
+.leadrow.static{{cursor:default}}
+.leadrow.phase-emerging{{border-left-color:#34d39c}}.leadrow.phase-leading{{border-left-color:#4d9fff}}.leadrow.phase-mature{{border-left-color:#fbbf24}}.leadrow.phase-losing{{border-left-color:#475569}}
+.phasebadge{{color:#9fb0c5;background:#141b29;border:1px solid #243044}}
+.phase-emerging .phasebadge{{color:#43c98a}}.phase-leading .phasebadge{{color:#8fb3ff}}.phase-mature .phasebadge{{color:#e3aa3c}}
+.leadname{{font-size:12.5px;font-weight:700;color:#e6edf3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.leadscore{{font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}}
+.leaddetail{{grid-column:2/4;font-size:9.5px;color:#718197;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.board-title{{display:flex;align-items:baseline;justify-content:space-between;gap:8px}}
+.board-title small{{font-size:9.5px;color:#718197;font-weight:600}}
+.stockrow{{border-top:1px solid #182131;padding:8px 0}}
+.stockrow:first-child{{border-top:0}}
+.stocktop{{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}}
+.stockname{{min-width:0}}
+.stockname b{{font-size:14px;color:#9ecbff}}
+.stockname small{{display:block;color:#718197;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}}
+.stockscore{{text-align:right}}.stockscore b{{font-size:17px}}.stockscore small{{display:block;font-size:8.5px;color:#718197}}
+.stocktags{{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:5px}}
+.metricline{{font-size:10.5px;color:#9fb0c5;margin-top:4px;line-height:1.45}}
+.reason{{font-size:11.5px;color:#cbd5e1;margin-top:3px}}
+details.more{{margin-top:5px}}
+details.more>summary{{cursor:pointer;list-style:none;font-size:10px;color:#6f8198;font-weight:700}}
+details.more>summary::-webkit-details-marker{{display:none}}
+details.more>summary:before{{content:"▸ ";font-size:8px}}details.more[open]>summary:before{{content:"▾ "}}
+.morebody{{font-size:10px;color:#7e8ea3;line-height:1.55;margin-top:4px}}
+.empty{{font-size:11.5px;color:#7d8da1;padding:4px 0}}
+.datafold{{margin-top:2px}}
+.datafold>summary{{cursor:pointer;list-style:none;font-size:10.5px;color:#7d8da1;font-weight:700}}
+.datafold>summary::-webkit-details-marker{{display:none}}
+.datafold>summary:before{{content:"▸ ";font-size:8px}}.datafold[open]>summary:before{{content:"▾ "}}
+.datafold p{{font-size:10px;color:#64748b;line-height:1.55;margin-top:5px}}
+@media(min-width:760px){{.wrap{{max-width:920px;padding-left:20px;padding-right:20px}}body{{font-size:15px}}h1{{font-size:21px}}.card{{padding:14px 18px;border-radius:15px;margin-bottom:14px}}.card h2{{font-size:16px}}.card .sub{{font-size:12px}}.summary{{grid-template-columns:repeat(4,1fr)}}.sumwide{{grid-column:span 2}}}}
+@media(min-width:1080px){{.wrap{{max-width:1060px}}}}
+</style></head><body><main class="wrap">
+<header><h1>Leadership</h1><div class="asof">{esc(cov.get("market_asof") or market.get("asof"))} · 対象 {esc(cov.get("stocks"))}銘柄</div></header>
+
+<section class="todayact ta-{esc(gate_cls)}">
+  <div class="ta-top"><span class="ta-h">今日の主導株判断</span><span class="ta-col">{esc(market_label)}</span><span class="ta-mri">MRI <b>{esc(market.get("mri"))}</b></span></div>
+  <div class="ta-act">{esc(_market_action(market_status))}</div>
+  <div class="ta-foot">{esc(gate)} · {esc(ftd)} · RS63 {esc(cov.get("rs63"))}銘柄</div>
+</section>
+
+<section class="card">
+  <h2>本日の結論</h2>
+  <div class="summary">
+    <div class="sumcell sumwide"><span>主役</span><b>{esc(top_group_text)}</b></div>
+    <div class="sumcell"><span>今入れる</span><b>{len(actionable)}銘柄</b></div>
+    <div class="sumcell"><span>待機</span><b>{len(waiting)}銘柄</b></div>
+    <div class="sumcell sumwide"><span>監視優先</span><b>{esc(focus_tickers)}</b></div>
+  </div>
+</section>
+
+<section class="card hot-card">
+  <h2>今、入れる</h2>
+  <div class="sub">主導グループ × 先導/主導株 × ENTRY。ここだけ新規候補。</div>
+  {render_action_rows(actionable, "該当なし。強いだけの株は追わない。")}
+</section>
+
+<section class="card">
+  <h2>強いが、まだ待つ</h2>
+  <div class="sub">主導性はある。押し目・初動条件まで待つ。</div>
+  {render_action_rows(waiting[:8], "該当なし。")}
+</section>
+
+<section class="card">
+  <h2>主導グループ</h2>
+  <div class="sub">上から優先。タップで下の主導株を切り替え。</div>
+  <div class="leadlist">{render_group_rows(groups)}</div>
+</section>
+
+<section class="card">
+  <h2>主導セクター</h2>
+  <div class="sub">セクターは背景確認。銘柄選びはグループを優先。</div>
+  <div class="leadlist">{render_sector_rows(list(model.get("sectors") or [])[:8])}</div>
+</section>
+
+<section class="card">
+  <div class="board-title"><h2 id="boardTitle">主導株</h2><small id="boardMeta"></small></div>
+  <div id="board"></div>
+</section>
+
+<section class="card">
+  <details class="datafold"><summary>データ状況</summary><p id="coverage"></p></details>
+</section>
+
+<script id="payload" type="application/json">{payload}</script>
+<script>
+const data=JSON.parse(document.getElementById('payload').textContent);
+const roleJa={{PIONEER:'先導株',LEADER:'主導株',FOLLOWER:'追随',NO_DATA:'データ不足'}};
+const entryJa={{ENTRY:'ENTRY',WATCH:'監視',WAIT:'待機',AVOID:'見送り',NO_DATA:'データ不足'}};
+const phaseJa={{EMERGING:'新興',LEADING:'主導',MATURE:'成熟',LOSING:'失速'}};
+const board=document.getElementById('board');
+function v(x){{return x===null||x===undefined?'—':x}}
+function escJs(x){{return String(x===null||x===undefined?'—':x).replace(/[&<>"']/g,m=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[m]))}}
+function render(name){{
+  const g=data.groups.find(x=>x.name===name)||data.groups[0];
+  if(!g)return;
+  document.getElementById('boardTitle').textContent=g.name;
+  document.getElementById('boardMeta').textContent=`${{phaseJa[g.phase]||g.phase}} · ${{g.score}}/100`;
+  board.innerHTML=(g.stocks||[]).map(s=>`
+    <div class="stockrow">
+      <div class="stocktop">
+        <div class="stockname"><b>${{escJs(s.symbol)}}</b><small>${{escJs(s.name||'')}}</small></div>
+        <div class="stockscore"><b>${{v(s.strength)}}</b><small>主導度</small></div>
+      </div>
+      <div class="stocktags">
+        <span class="role role-${{s.role}}">${{roleJa[s.role]||s.role}}</span>
+        <span class="entry entry-${{s.entry.status}}">${{entryJa[s.entry.status]||s.entry.status}}</span>
+      </div>
+      <div class="metricline">RS 189/63/21：${{v(s.rs189)}} / ${{v(s.rs63)}} / ${{v(s.rs21)}}　·　加速 ${{v(s.acceleration)}}</div>
+      <div class="reason">${{escJs(s.entry.reason)}}</div>
+      <details class="more"><summary>詳細</summary><div class="morebody">52週高値差 ${{v(s.near_high)}} · RVOL ${{v(s.volume_ratio)}} · EPS ${{escJs(s.eps_label||'—')}}</div></details>
+    </div>`).join('');
+}}
+document.querySelectorAll('[data-group]').forEach(el=>el.addEventListener('click',()=>render(el.dataset.group)));
+render(data.groups[0]?.name);
+const c=data.coverage;
+document.getElementById('coverage').textContent=`${{c.metric_source}} · 対象 ${{c.stocks}}銘柄 · RS63 ${{c.rs63}} · Entry判定 ${{c.entry_inputs}} · 信頼度 ${{c.confidence}}`;
+</script></main></body></html>'''
