@@ -7,9 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 try:
-    from scripts.export_public_site import PUBLIC_FILES
+    from scripts.export_public_site import OPTIONAL_PUBLIC_FILES, PUBLIC_FILES
 except ModuleNotFoundError:  # direct execution: python scripts/privacy_audit.py
-    from export_public_site import PUBLIC_FILES
+    from export_public_site import OPTIONAL_PUBLIC_FILES, PUBLIC_FILES
 
 FORBIDDEN_CURRENT_PATHS = (
     "data/external",
@@ -29,7 +29,14 @@ def audit_current_tree(root: Path) -> dict:
     forbidden_paths = [name for name in FORBIDDEN_CURRENT_PATHS if (root / name).exists()]
     missing_public = [name for name in PUBLIC_FILES if not (root / name).is_file()]
     public_marker_hits: list[str] = []
-    for name in PUBLIC_FILES:
+
+    public_sources = list(PUBLIC_FILES)
+    public_sources.extend(
+        source_name
+        for source_name, _ in OPTIONAL_PUBLIC_FILES
+        if (root / source_name).is_file()
+    )
+    for name in public_sources:
         path = root / name
         if not path.is_file() or name == "command-center.html":
             continue

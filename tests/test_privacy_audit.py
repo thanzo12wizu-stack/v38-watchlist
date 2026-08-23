@@ -25,6 +25,21 @@ def test_current_tree_privacy_passes_for_locked_allowlist(tmp_path: Path):
     assert report["public_plaintext_marker_count"] == 0
 
 
+def test_current_tree_privacy_checks_optional_leadership_when_present(tmp_path: Path):
+    _safe_tree(tmp_path)
+    leadership = tmp_path / "leadership" / "dist"
+    leadership.mkdir(parents=True)
+    (leadership / "index.html").write_text('<script>{"entry_candidates":[]}</script>', encoding="utf-8")
+
+    report = audit_current_tree(tmp_path)
+
+    assert report["current_tree_status"] == "FAIL"
+    assert report["public_plaintext_marker_count"] == 1
+    assert report["details"]["public_marker_hits"] == [
+        'leadership/dist/index.html:"entry_candidates"'
+    ]
+
+
 def test_current_tree_privacy_rejects_plaintext_data_paths(tmp_path: Path):
     _safe_tree(tmp_path)
     leaked = tmp_path / "data" / "external"
