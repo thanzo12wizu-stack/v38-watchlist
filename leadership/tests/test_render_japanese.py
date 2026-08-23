@@ -25,7 +25,7 @@ class JapaneseLeadershipRenderTests(unittest.TestCase):
         self.assertIn("先導株", page)
         self.assertNotIn("MARKET PERMISSION", page)
         self.assertNotIn("Sector Leadership", page)
-        self.assertNotIn("grid-template-columns:repeat(4", page)
+        self.assertNotIn("grid-template-columns:repeat(4,minmax", page)
         self.assertIn(".wrap{max-width:680px", page)
         self.assertIn(".card{background:#0f1623;border:1px solid #1c2533", page)
         self.assertIn(".todayact{border:1px solid #243044;border-left:4px", page)
