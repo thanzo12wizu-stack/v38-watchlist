@@ -8,8 +8,13 @@ on:
   push:
     branches:
       - main
+    # Generated leadership/dist/index.html is intentionally excluded so the
+    # persistence commit below cannot recursively trigger another full build.
     paths:
-      - 'leadership/**'
+      - 'leadership/build_market_snapshot.py'
+      - 'leadership/build_leadership.py'
+      - 'leadership/build_leadership_exact.py'
+      - 'leadership/tests/**'
       - '.github/workflows/leadership-command.yml'
   schedule:
     # Existing dashboard runs independently at UTC 22:17 and 04:17.
@@ -19,7 +24,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: leadership-command-${{ github.ref }}
@@ -133,52 +138,103 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Persist public Leadership entrypoint only
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated=/tmp/leadership-index.html
+          cp leadership/dist/index.html "$generated"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            mkdir -p leadership/dist
+            cp "$generated" leadership/dist/index.html
+            git add -f leadership/dist/index.html
+
+            if git diff --staged --quiet; then
+              echo 'Persisted Leadership entrypoint already current'
+              exit 0
+            fi
+
+            git commit -m 'Update Leadership public entrypoint'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "::warning::Leadership persistence push raced with main; retry $attempt/3"
+            sleep $((attempt * 2))
+          done
+
+          echo 'Leadership entrypoint persistence failed after retries'
+          exit 1
+
   publish:
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 10
     env:
-      LEADERSHIP_PUBLIC_REPOSITORY: ${{ vars.LEADERSHIP_PUBLIC_REPOSITORY }}
-      LEADERSHIP_PUBLIC_TOKEN: ${{ secrets.LEADERSHIP_PUBLIC_TOKEN }}
+      PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
+      PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
     steps:
-      - name: Check isolated public target
+      - name: Check existing public mirror target
         id: config
         shell: bash
         run: |
-          if [[ -z "${LEADERSHIP_PUBLIC_REPOSITORY:-}" || -z "${LEADERSHIP_PUBLIC_TOKEN:-}" ]]; then
-            echo '::notice::Dedicated Leadership public repository is not configured; existing site is untouched.'
-            echo 'enabled=false' >> "$GITHUB_OUTPUT"
-          elif [[ ! "$LEADERSHIP_PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
-            echo 'Invalid LEADERSHIP_PUBLIC_REPOSITORY'
+          set -euo pipefail
+          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
+            echo 'Existing V38 public Pages mirror is not configured'
             exit 1
-          else
-            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          fi
+          if [[ ! "$PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo 'Invalid V38_PUBLIC_PAGES_REPOSITORY'
+            exit 1
           fi
 
       - uses: actions/download-artifact@v4
-        if: steps.config.outputs.enabled == 'true'
         with:
           name: leadership-command-preview
           path: /tmp/leadership-site
 
-      - name: Publish only to dedicated repository
-        if: steps.config.outputs.enabled == 'true'
+      - name: Publish only /leadership to existing Pages repository
         shell: bash
         run: |
           set -euo pipefail
-          target=/tmp/leadership-pages
-          git clone --depth 1 "https://x-access-token:${LEADERSHIP_PUBLIC_TOKEN}@github.com/${LEADERSHIP_PUBLIC_REPOSITORY}.git" "$target"
-          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
-          cp -a /tmp/leadership-site/. "$target/"
-          touch "$target/.nojekyll"
-          cd "$target"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          if git diff --staged --quiet; then
-            echo 'Leadership public site already current'
-            exit 0
-          fi
-          git commit -m 'Publish Leadership Command'
-          git push origin HEAD:main
+          generated=/tmp/leadership-site/index.html
+          test -s "$generated"
+
+          for attempt in 1 2 3; do
+            target="/tmp/v38-leadership-pages-$attempt"
+            rm -rf "$target"
+            git clone --depth 1 \
+              "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" \
+              "$target"
+
+            rm -rf "$target/leadership"
+            mkdir -p "$target/leadership"
+            cp "$generated" "$target/leadership/index.html"
+
+            cd "$target"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -A -- leadership
+
+            if git diff --staged --quiet; then
+              echo 'Public /leadership already current'
+              exit 0
+            fi
+
+            git commit -m 'Publish Leadership Command'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "::warning::Public mirror changed concurrently; retry $attempt/3"
+            sleep $((attempt * 2))
+          done
+
+          echo 'Leadership public publish failed after retries'
+          exit 1
