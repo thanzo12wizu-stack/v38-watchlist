@@ -47,6 +47,10 @@ def group_with(stock: dict) -> dict:
         "priority_score": 79.2,
         "pioneer_score": 88.0,
         "breadth_score": 66.0,
+        "top_acceleration": 7.0,
+        "positive_accel_share": 70.0,
+        "pioneers": 1,
+        "leaders": 1,
         "leader_breakouts": 0,
         "stocks": [stock],
     }
@@ -94,7 +98,7 @@ class PreBreakoutOverlayTests(unittest.TestCase):
         self.assertNotIn("BROKE", [x["symbol"] for x in out["actionable"]])
         self.assertEqual(out["confirmed_breakouts"][0]["symbol"], "BROKE")
 
-    def test_public_copy_and_detail_drilldown_are_polished(self) -> None:
+    def test_public_ui_keeps_prebreakout_inside_rotation_and_tradingview(self) -> None:
         ready = strong_stock("AAA")
         group = group_with(ready)
         model = {
@@ -107,10 +111,9 @@ class PreBreakoutOverlayTests(unittest.TestCase):
             "waiting": [],
         }
         page = render_public_html(model, {"AAA": "NASDAQ"})
-        self.assertIn("発火前・最優先", page)
-        self.assertIn("発火目前", page)
-        self.assertIn("ブレイクする前だけを表示", page)
-        self.assertIn("銘柄をタップすると詳細とTradingViewを開けます", page)
+        self.assertIn("セクターローテーション", page)
+        self.assertIn("急浮上", page)
+        self.assertIn("主導株：AAA 発火目前", page)
         self.assertIn("TradingViewで開く", page)
         self.assertIn("https://www.tradingview.com/chart/?symbol=", page)
         self.assertIn('"exchange":"NASDAQ"', page)
