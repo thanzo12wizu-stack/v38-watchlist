@@ -1,0 +1,1419 @@
+{
+  "scope": {
+    "evaluation": "2011-01-01..2026-08-24",
+    "failed_etfs": [],
+    "alphas": [
+      0.0,
+      0.75,
+      1.0,
+      1.25
+    ],
+    "penalty": "alpha * EWM3(0.5*max(0,-breadth_delta10)+0.5*(rolling20 breadth peak-current)); applied only to Medium",
+    "nqsar": "historical proxy reconstructed from NQ=F with PSAR(.02,.08), EMA21, Wilder RSI14 and current FSM; calibrated against stored 2026 history",
+    "vix": "post-score context only: NORMAL <20, ELEVATED 20-33, EXTREME >=33, REVERSAL when 10d high >=33 and VIX falls >=20% from that high; not part of MC score"
+  },
+  "nqsar_proxy_validation": {
+    "n": 41,
+    "exact_match_pct": 97.5609756097561,
+    "risk_side_match_pct": 100.0,
+    "confusion": {
+      "Blue->Blue": 12,
+      "Green->Green": 7,
+      "Red->Red": 10,
+      "Red->Yellow": 1,
+      "Yellow->Yellow": 11
+    }
+  },
+  "alpha_comparison": {
+    "alpha_0.0": {
+      "current_score": 73.17757632974876,
+      "current_band": "BULL",
+      "current_penalty": 0.0,
+      "drawdown_detection": {
+        "below65_coverage": 19,
+        "below65_mean_sessions": 8.526315789473685,
+        "below65_median_sessions": 5.0,
+        "below55_coverage": 18,
+        "below55_mean_sessions": 12.722222222222221,
+        "below55_median_sessions": 8.5,
+        "below45_coverage": 15,
+        "below45_mean_sessions": 21.2,
+        "below45_median_sessions": 16.0,
+        "recover65_coverage": 21,
+        "recover65_mean_sessions": 18.285714285714285,
+        "recover65_median_sessions": 10.0
+      },
+      "normal_bull_false_bear": {
+        "years": [
+          {
+            "year": 2013,
+            "qqq_return_pct": 32.425340088035924,
+            "qqq_maxdd_pct": -5.853889525707046,
+            "mc_min": 56.11079667514933,
+            "days_le45": 0,
+            "days_lt55": 0
+          },
+          {
+            "year": 2017,
+            "qqq_return_pct": 31.487210492192787,
+            "qqq_maxdd_pct": -4.88193108194478,
+            "mc_min": 55.660205580538786,
+            "days_le45": 0,
+            "days_lt55": 0
+          }
+        ],
+        "total_days_le45": 0,
+        "total_days_lt55": 0
+      },
+      "qqq_corr": {
+        "ret5": 0.29560894147108535,
+        "ret10": 0.4000336291477642,
+        "ret21": 0.5655683136928802,
+        "ret63": 0.6850530761702416,
+        "ret126": 0.5783336441825565,
+        "ret252": 0.5203265016541138
+      },
+      "noise": {
+        "mean_abs_daily_change": 2.857251010241544,
+        "flips_per_year": 55.24789915966386,
+        "whipsaws_per_year": 31.52455357142857,
+        "flips": 864,
+        "whipsaws": 493,
+        "occupancy_pct": {
+          "STRONG BULL": 36.359013475718285,
+          "BULL": 28.37528604118993,
+          "WEAK BULL": 11.365369946605645,
+          "NEUTRAL": 7.348080345792016,
+          "WEAK BEAR": 6.254767353165523,
+          "BEAR": 5.720823798627003,
+          "STRONG BEAR": 4.576659038901601
+        }
+      }
+    },
+    "alpha_0.75": {
+      "current_score": 68.49501719210326,
+      "current_band": "BULL",
+      "current_penalty": 9.338265617385662,
+      "drawdown_detection": {
+        "below65_coverage": 21,
+        "below65_mean_sessions": 6.714285714285714,
+        "below65_median_sessions": 4.0,
+        "below55_coverage": 19,
+        "below55_mean_sessions": 8.263157894736842,
+        "below55_median_sessions": 5.0,
+        "below45_coverage": 19,
+        "below45_mean_sessions": 11.578947368421053,
+        "below45_median_sessions": 8.0,
+        "recover65_coverage": 21,
+        "recover65_mean_sessions": 19.714285714285715,
+        "recover65_median_sessions": 15.0
+      },
+      "normal_bull_false_bear": {
+        "years": [
+          {
+            "year": 2013,
+            "qqq_return_pct": 32.425340088035924,
+            "qqq_maxdd_pct": -5.853889525707046,
+            "mc_min": 39.72015877649342,
+            "days_le45": 6,
+            "days_lt55": 23
+          },
+          {
+            "year": 2017,
+            "qqq_return_pct": 31.487210492192787,
+            "qqq_maxdd_pct": -4.88193108194478,
+            "mc_min": 39.4063835316734,
+            "days_le45": 4,
+            "days_lt55": 20
+          }
+        ],
+        "total_days_le45": 10,
+        "total_days_lt55": 43
+      },
+      "qqq_corr": {
+        "ret5": 0.34394539731015444,
+        "ret10": 0.4753503761938041,
+        "ret21": 0.6212541918868145,
+        "ret63": 0.6395526739424592,
+        "ret126": 0.54048172765728,
+        "ret252": 0.4954217869446331
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.4559728732915524,
+        "flips_per_year": 63.62460609243697,
+        "whipsaws_per_year": 27.176339285714285,
+        "flips": 995,
+        "whipsaws": 425,
+        "occupancy_pct": {
+          "STRONG BULL": 29.087210780574623,
+          "BULL": 26.11238240528858,
+          "WEAK BULL": 11.695906432748536,
+          "NEUTRAL": 8.721078057462497,
+          "BEAR": 8.67022629036359,
+          "WEAK BEAR": 8.36511568777015,
+          "STRONG BEAR": 7.348080345792016
+        }
+      }
+    },
+    "alpha_1.0": {
+      "current_score": 66.93416414622143,
+      "current_band": "BULL",
+      "current_penalty": 12.451020823180883,
+      "drawdown_detection": {
+        "below65_coverage": 21,
+        "below65_mean_sessions": 6.571428571428571,
+        "below65_median_sessions": 4.0,
+        "below55_coverage": 20,
+        "below55_mean_sessions": 8.85,
+        "below55_median_sessions": 4.5,
+        "below45_coverage": 19,
+        "below45_mean_sessions": 11.368421052631579,
+        "below45_median_sessions": 8.0,
+        "recover65_coverage": 21,
+        "recover65_mean_sessions": 19.857142857142858,
+        "recover65_median_sessions": 15.0
+      },
+      "normal_bull_false_bear": {
+        "years": [
+          {
+            "year": 2013,
+            "qqq_return_pct": 32.425340088035924,
+            "qqq_maxdd_pct": -5.853889525707046,
+            "mc_min": 39.65497441741826,
+            "days_le45": 7,
+            "days_lt55": 27
+          },
+          {
+            "year": 2017,
+            "qqq_return_pct": 31.487210492192787,
+            "qqq_maxdd_pct": -4.88193108194478,
+            "mc_min": 39.1943504917027,
+            "days_le45": 9,
+            "days_lt55": 24
+          }
+        ],
+        "total_days_le45": 16,
+        "total_days_lt55": 51
+      },
+      "qqq_corr": {
+        "ret5": 0.34767624366409944,
+        "ret10": 0.47990698347398014,
+        "ret21": 0.6239701462940087,
+        "ret63": 0.6309996202833079,
+        "ret126": 0.534669737360798,
+        "ret252": 0.4898446297125943
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.5275563410912665,
+        "flips_per_year": 66.37421218487394,
+        "whipsaws_per_year": 28.455225840336134,
+        "flips": 1038,
+        "whipsaws": 445,
+        "occupancy_pct": {
+          "STRONG BULL": 27.38367658276125,
+          "BULL": 25.80727180269514,
+          "WEAK BULL": 11.746758199847445,
+          "NEUTRAL": 9.687261632341723,
+          "BEAR": 9.28044749555047,
+          "WEAK BEAR": 8.619374523264684,
+          "STRONG BEAR": 7.475209763539283
+        }
+      }
+    },
+    "alpha_1.25": {
+      "current_score": 65.3733111003396,
+      "current_band": "BULL",
+      "current_penalty": 15.563776028976104,
+      "drawdown_detection": {
+        "below65_coverage": 21,
+        "below65_mean_sessions": 5.619047619047619,
+        "below65_median_sessions": 4.0,
+        "below55_coverage": 20,
+        "below55_mean_sessions": 8.8,
+        "below55_median_sessions": 4.5,
+        "below45_coverage": 19,
+        "below45_mean_sessions": 11.157894736842104,
+        "below45_median_sessions": 8.0,
+        "recover65_coverage": 21,
+        "recover65_mean_sessions": 20.857142857142858,
+        "recover65_median_sessions": 17.0
+      },
+      "normal_bull_false_bear": {
+        "years": [
+          {
+            "year": 2013,
+            "qqq_return_pct": 32.425340088035924,
+            "qqq_maxdd_pct": -5.853889525707046,
+            "mc_min": 39.62073318704775,
+            "days_le45": 7,
+            "days_lt55": 29
+          },
+          {
+            "year": 2017,
+            "qqq_return_pct": 31.487210492192787,
+            "qqq_maxdd_pct": -4.88193108194478,
+            "mc_min": 39.161269473340425,
+            "days_le45": 10,
+            "days_lt55": 27
+          }
+        ],
+        "total_days_le45": 17,
+        "total_days_lt55": 56
+      },
+      "qqq_corr": {
+        "ret5": 0.34870369308848087,
+        "ret10": 0.481399414962403,
+        "ret21": 0.6246068052512138,
+        "ret63": 0.6256876376958623,
+        "ret126": 0.5314264276926126,
+        "ret252": 0.48635386870131825
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.567000839403006,
+        "flips_per_year": 66.43815651260503,
+        "whipsaws_per_year": 29.030724789915965,
+        "flips": 1039,
+        "whipsaws": 454,
+        "occupancy_pct": {
+          "STRONG BULL": 26.188660055936946,
+          "BULL": 25.451309433002795,
+          "WEAK BULL": 12.001017035341977,
+          "NEUTRAL": 10.475464022374778,
+          "BEAR": 9.687261632341723,
+          "WEAK BEAR": 8.593948639715231,
+          "STRONG BEAR": 7.602339181286549
+        }
+      }
+    }
+  },
+  "context": {
+    "alpha_0.75": {
+      "three_way": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 370,
+          "fwd21_mean_pct": 1.8274473897031778,
+          "fwd21_positive_pct": 63.24324324324324,
+          "next10_mae_mean_pct": -3.2214045530821562,
+          "next10_mae_le_minus3_pct": 44.32432432432433
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 55,
+          "fwd21_mean_pct": 6.002628520006977,
+          "fwd21_positive_pct": 81.81818181818183,
+          "next10_mae_mean_pct": -4.739783356952488,
+          "next10_mae_le_minus3_pct": 43.63636363636363
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 337,
+          "fwd21_mean_pct": 1.9158875626391174,
+          "fwd21_positive_pct": 68.84272997032642,
+          "next10_mae_mean_pct": -2.193608967548336,
+          "next10_mae_le_minus3_pct": 28.486646884272997
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 44,
+          "fwd21_mean_pct": 6.060054303790638,
+          "fwd21_positive_pct": 81.81818181818183,
+          "next10_mae_mean_pct": -3.328148501720038,
+          "next10_mae_le_minus3_pct": 40.909090909090914
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 162,
+          "fwd21_mean_pct": 1.82427104880948,
+          "fwd21_positive_pct": 66.0493827160494,
+          "next10_mae_mean_pct": -2.978975411020878,
+          "next10_mae_le_minus3_pct": 36.41975308641975
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 28,
+          "fwd21_mean_pct": 5.7561518684975574,
+          "fwd21_positive_pct": 85.71428571428571,
+          "next10_mae_mean_pct": -1.2273019466543102,
+          "next10_mae_le_minus3_pct": 14.285714285714285
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 245,
+          "fwd21_mean_pct": 1.808434503709631,
+          "fwd21_positive_pct": 69.79591836734694,
+          "next10_mae_mean_pct": -2.1769090462816587,
+          "next10_mae_le_minus3_pct": 26.53061224489796
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 61,
+          "fwd21_mean_pct": 6.215368881800789,
+          "fwd21_positive_pct": 83.60655737704919,
+          "next10_mae_mean_pct": -1.2253563687031792,
+          "next10_mae_le_minus3_pct": 16.39344262295082
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 36,
+          "fwd21_mean_pct": 2.68508299974445,
+          "fwd21_positive_pct": 77.14285714285715,
+          "next10_mae_mean_pct": -1.9302235835104757,
+          "next10_mae_le_minus3_pct": 25.0
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 142,
+          "fwd21_mean_pct": 1.7936111242005,
+          "fwd21_positive_pct": 74.63768115942028,
+          "next10_mae_mean_pct": -1.813097624845288,
+          "next10_mae_le_minus3_pct": 22.535211267605636
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 3,
+          "fwd21_mean_pct": 6.1411397221838495,
+          "fwd21_positive_pct": 100.0,
+          "next10_mae_mean_pct": -3.8719611969154224,
+          "next10_mae_le_minus3_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 44,
+          "fwd21_mean_pct": -0.5819752947347995,
+          "fwd21_positive_pct": 40.909090909090914,
+          "next10_mae_mean_pct": -2.146188162161606,
+          "next10_mae_le_minus3_pct": 18.181818181818183
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 0.4914990252806617,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -5.044033164150507,
+          "next10_mae_le_minus3_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 219,
+          "fwd21_mean_pct": 0.7679085439110885,
+          "fwd21_positive_pct": 65.29680365296804,
+          "next10_mae_mean_pct": -1.6995418861937142,
+          "next10_mae_le_minus3_pct": 19.17808219178082
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 11,
+          "fwd21_mean_pct": 1.8236718867201118,
+          "fwd21_positive_pct": 72.72727272727273,
+          "next10_mae_mean_pct": -1.8108919145566509,
+          "next10_mae_le_minus3_pct": 45.45454545454545
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 66,
+          "fwd21_mean_pct": 2.7519085272867767,
+          "fwd21_positive_pct": 72.72727272727273,
+          "next10_mae_mean_pct": -2.310735491673449,
+          "next10_mae_le_minus3_pct": 36.36363636363637
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 7,
+          "fwd21_mean_pct": 5.4258342628326535,
+          "fwd21_positive_pct": 85.71428571428571,
+          "next10_mae_mean_pct": -1.193995210742311,
+          "next10_mae_le_minus3_pct": 14.285714285714285
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 318,
+          "fwd21_mean_pct": 1.1835001832101189,
+          "fwd21_positive_pct": 67.19242902208202,
+          "next10_mae_mean_pct": -1.8807255077511742,
+          "next10_mae_le_minus3_pct": 25.236593059936908
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 1,
+          "fwd21_mean_pct": 5.640714858227769,
+          "fwd21_positive_pct": 100.0,
+          "next10_mae_mean_pct": -3.8054379087372414,
+          "next10_mae_le_minus3_pct": 100.0
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 151,
+          "fwd21_mean_pct": 2.7203863146379947,
+          "fwd21_positive_pct": 75.49668874172185,
+          "next10_mae_mean_pct": -2.266205506621484,
+          "next10_mae_le_minus3_pct": 29.13907284768212
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 5.4752376905449465,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -2.873828693556442,
+          "next10_mae_le_minus3_pct": 33.33333333333333
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 1604,
+          "fwd21_mean_pct": 0.8933379542820613,
+          "fwd21_positive_pct": 66.39395846444305,
+          "next10_mae_mean_pct": -1.6069684721876396,
+          "next10_mae_le_minus3_pct": 16.83291770573566
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 21,
+          "fwd21_mean_pct": 0.20180131210264254,
+          "fwd21_positive_pct": 52.38095238095239,
+          "next10_mae_mean_pct": -2.3754778269723427,
+          "next10_mae_le_minus3_pct": 38.095238095238095
+        }
+      ],
+      "mc_x_nqsar": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "sessions": 806,
+          "fwd21_mean_pct": 2.380392804921501,
+          "fwd21_positive_pct": 67.86600496277916,
+          "next10_mae_mean_pct": -2.9011073516281085,
+          "next10_mae_le_minus3_pct": 37.468982630272954
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "sessions": 496,
+          "fwd21_mean_pct": 2.5784437851285786,
+          "fwd21_positive_pct": 71.16935483870968,
+          "next10_mae_mean_pct": -2.2682417861322643,
+          "next10_mae_le_minus3_pct": 27.82258064516129
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "sessions": 181,
+          "fwd21_mean_pct": 2.0449980641890697,
+          "fwd21_positive_pct": 75.56818181818183,
+          "next10_mae_mean_pct": -1.870518206216322,
+          "next10_mae_le_minus3_pct": 23.756906077348066
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "sessions": 277,
+          "fwd21_mean_pct": 0.5924185775377634,
+          "fwd21_positive_pct": 61.73285198555957,
+          "next10_mae_mean_pct": -1.8111330785707898,
+          "next10_mae_le_minus3_pct": 20.577617328519857
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "sessions": 392,
+          "fwd21_mean_pct": 1.5355935436741466,
+          "fwd21_positive_pct": 68.54219948849105,
+          "next10_mae_mean_pct": -1.9459384470370928,
+          "next10_mae_le_minus3_pct": 27.10997442455243
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "sessions": 1779,
+          "fwd21_mean_pct": 1.0492947185319292,
+          "fwd21_positive_pct": 67.00680272108843,
+          "next10_mae_mean_pct": -1.6741320861921902,
+          "next10_mae_le_minus3_pct": 18.156267566048342
+        }
+      ],
+      "mc_x_vix": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "ELEVATED",
+          "sessions": 532,
+          "fwd21_mean_pct": 1.826480158077653,
+          "fwd21_positive_pct": 64.09774436090225
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "EXTREME",
+          "sessions": 83,
+          "fwd21_mean_pct": 5.9194797701001844,
+          "fwd21_positive_pct": 83.13253012048193
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "NORMAL",
+          "sessions": 582,
+          "fwd21_mean_pct": 1.8706538866292821,
+          "fwd21_positive_pct": 69.24398625429554
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "REVERSAL",
+          "sessions": 105,
+          "fwd21_mean_pct": 6.150284677682249,
+          "fwd21_positive_pct": 82.85714285714286
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "ELEVATED",
+          "sessions": 80,
+          "fwd21_mean_pct": 0.8654555952243617,
+          "fwd21_positive_pct": 56.9620253164557
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 0.4914990252806617,
+          "fwd21_positive_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "NORMAL",
+          "sessions": 361,
+          "fwd21_mean_pct": 1.164398616964138,
+          "fwd21_positive_pct": 68.90756302521008
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "REVERSAL",
+          "sessions": 14,
+          "fwd21_mean_pct": 2.7488435657480554,
+          "fwd21_positive_pct": 78.57142857142857
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "ELEVATED",
+          "sessions": 217,
+          "fwd21_mean_pct": 2.7299737157201127,
+          "fwd21_positive_pct": 74.65437788018433
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "EXTREME",
+          "sessions": 10,
+          "fwd21_mean_pct": 5.440655291146341,
+          "fwd21_positive_pct": 80.0
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "NORMAL",
+          "sessions": 1922,
+          "fwd21_mean_pct": 0.9415968349589731,
+          "fwd21_positive_pct": 66.52675760755508
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "REVERSAL",
+          "sessions": 22,
+          "fwd21_mean_pct": 0.4490246551083301,
+          "fwd21_positive_pct": 54.54545454545454
+        }
+      ]
+    },
+    "alpha_1.0": {
+      "three_way": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 381,
+          "fwd21_mean_pct": 1.8200071202830213,
+          "fwd21_positive_pct": 63.51706036745407,
+          "next10_mae_mean_pct": -3.217087008089745,
+          "next10_mae_le_minus3_pct": 44.09448818897638
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 55,
+          "fwd21_mean_pct": 6.002628520006977,
+          "fwd21_positive_pct": 81.81818181818183,
+          "next10_mae_mean_pct": -4.739783356952488,
+          "next10_mae_le_minus3_pct": 43.63636363636363
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 372,
+          "fwd21_mean_pct": 1.8723850596147327,
+          "fwd21_positive_pct": 68.81720430107528,
+          "next10_mae_mean_pct": -2.1736115782385643,
+          "next10_mae_le_minus3_pct": 27.956989247311824
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 45,
+          "fwd21_mean_pct": 6.081739627835563,
+          "fwd21_positive_pct": 82.22222222222221,
+          "next10_mae_mean_pct": -3.3430275943535217,
+          "next10_mae_le_minus3_pct": 42.22222222222222
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 170,
+          "fwd21_mean_pct": 1.7053133065527002,
+          "fwd21_positive_pct": 64.11764705882354,
+          "next10_mae_mean_pct": -2.948829718291029,
+          "next10_mae_le_minus3_pct": 35.88235294117647
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 28,
+          "fwd21_mean_pct": 5.7561518684975574,
+          "fwd21_positive_pct": 85.71428571428571,
+          "next10_mae_mean_pct": -1.2273019466543102,
+          "next10_mae_le_minus3_pct": 14.285714285714285
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 266,
+          "fwd21_mean_pct": 1.709035100128145,
+          "fwd21_positive_pct": 68.796992481203,
+          "next10_mae_mean_pct": -2.1323615957683377,
+          "next10_mae_le_minus3_pct": 25.563909774436087
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 62,
+          "fwd21_mean_pct": 6.1247155948826615,
+          "fwd21_positive_pct": 83.87096774193549,
+          "next10_mae_mean_pct": -1.2635413042484593,
+          "next10_mae_le_minus3_pct": 17.741935483870968
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 36,
+          "fwd21_mean_pct": 3.406139831511633,
+          "fwd21_positive_pct": 82.85714285714286,
+          "next10_mae_mean_pct": -1.414936350529027,
+          "next10_mae_le_minus3_pct": 22.22222222222222
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 5.537865651810655,
+          "fwd21_positive_pct": 100.0,
+          "next10_mae_mean_pct": -1.5660800034558904,
+          "next10_mae_le_minus3_pct": 33.33333333333333
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 132,
+          "fwd21_mean_pct": 1.9395423718540243,
+          "fwd21_positive_pct": 78.90625,
+          "next10_mae_mean_pct": -1.6898237941082965,
+          "next10_mae_le_minus3_pct": 21.96969696969697
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 3,
+          "fwd21_mean_pct": 5.676080046322348,
+          "fwd21_positive_pct": 100.0,
+          "next10_mae_mean_pct": -3.8078712764189095,
+          "next10_mae_le_minus3_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 44,
+          "fwd21_mean_pct": 0.06011365723314722,
+          "fwd21_positive_pct": 52.27272727272727,
+          "next10_mae_mean_pct": -2.1916536598693757,
+          "next10_mae_le_minus3_pct": 18.181818181818183
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 0.4914990252806617,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -5.044033164150507,
+          "next10_mae_le_minus3_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 228,
+          "fwd21_mean_pct": 1.0284150936113572,
+          "fwd21_positive_pct": 67.10526315789474,
+          "next10_mae_mean_pct": -1.6312071874407308,
+          "next10_mae_le_minus3_pct": 18.859649122807017
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 11,
+          "fwd21_mean_pct": 2.35926080761247,
+          "fwd21_positive_pct": 72.72727272727273,
+          "next10_mae_mean_pct": -1.5948556301195214,
+          "next10_mae_le_minus3_pct": 36.36363636363637
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 55,
+          "fwd21_mean_pct": 2.5294871827531016,
+          "fwd21_positive_pct": 69.0909090909091,
+          "next10_mae_mean_pct": -2.495789407199717,
+          "next10_mae_le_minus3_pct": 38.18181818181819
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 4,
+          "fwd21_mean_pct": 5.341810721099153,
+          "fwd21_positive_pct": 75.0,
+          "next10_mae_mean_pct": -0.9149316162071264,
+          "next10_mae_le_minus3_pct": 0.0
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 293,
+          "fwd21_mean_pct": 1.1080593700433685,
+          "fwd21_positive_pct": 65.41095890410958,
+          "next10_mae_mean_pct": -1.9221089822667852,
+          "next10_mae_le_minus3_pct": 25.684931506849317
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 143,
+          "fwd21_mean_pct": 2.7143711008176523,
+          "fwd21_positive_pct": 74.82517482517483,
+          "next10_mae_mean_pct": -2.2481784201161505,
+          "next10_mae_le_minus3_pct": 29.37062937062937
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 5.4752376905449465,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -2.873828693556442,
+          "next10_mae_le_minus3_pct": 33.33333333333333
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 1574,
+          "fwd21_mean_pct": 0.8605968286735775,
+          "fwd21_positive_pct": 66.2604233483002,
+          "next10_mae_mean_pct": -1.616262004824358,
+          "next10_mae_le_minus3_pct": 16.89961880559085
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 20,
+          "fwd21_mean_pct": -0.11242578342686495,
+          "fwd21_positive_pct": 50.0,
+          "next10_mae_mean_pct": -2.433430556135854,
+          "next10_mae_le_minus3_pct": 40.0
+        }
+      ],
+      "mc_x_nqsar": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "sessions": 853,
+          "fwd21_mean_pct": 2.337365541450757,
+          "fwd21_positive_pct": 67.99531066822978,
+          "next10_mae_mean_pct": -2.8668440604516223,
+          "next10_mae_le_minus3_pct": 36.928487690504106
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "sessions": 526,
+          "fwd21_mean_pct": 2.443747562640118,
+          "fwd21_positive_pct": 69.96197718631178,
+          "next10_mae_mean_pct": -2.2456525702539505,
+          "next10_mae_le_minus3_pct": 27.376425855513308
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "sessions": 174,
+          "fwd21_mean_pct": 2.3734802058853326,
+          "fwd21_positive_pct": 80.4733727810651,
+          "next10_mae_mean_pct": -1.6673350763273822,
+          "next10_mae_le_minus3_pct": 22.988505747126435
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "sessions": 286,
+          "fwd21_mean_pct": 0.9250000287455493,
+          "fwd21_positive_pct": 65.03496503496503,
+          "next10_mae_mean_pct": -1.7518304587220468,
+          "next10_mae_le_minus3_pct": 19.93006993006993
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "sessions": 352,
+          "fwd21_mean_pct": 1.3790381025312846,
+          "fwd21_positive_pct": 66.0968660968661,
+          "next10_mae_mean_pct": -2.0005241216031746,
+          "next10_mae_le_minus3_pct": 27.350427350427353
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "sessions": 1740,
+          "fwd21_mean_pct": 1.0110160699838429,
+          "fwd21_positive_pct": 66.78260869565219,
+          "next10_mae_mean_pct": -1.6797563257893882,
+          "next10_mae_le_minus3_pct": 18.2183908045977
+        }
+      ],
+      "mc_x_vix": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "ELEVATED",
+          "sessions": 551,
+          "fwd21_mean_pct": 1.7846206441774772,
+          "fwd21_positive_pct": 63.70235934664247
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "EXTREME",
+          "sessions": 83,
+          "fwd21_mean_pct": 5.9194797701001844,
+          "fwd21_positive_pct": 83.13253012048193
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "NORMAL",
+          "sessions": 638,
+          "fwd21_mean_pct": 1.8042799040921111,
+          "fwd21_positive_pct": 68.80877742946709
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "REVERSAL",
+          "sessions": 107,
+          "fwd21_mean_pct": 6.10664159004977,
+          "fwd21_positive_pct": 83.17757009345794
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "ELEVATED",
+          "sessions": 80,
+          "fwd21_mean_pct": 1.5425303167236153,
+          "fwd21_positive_pct": 65.82278481012658
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "EXTREME",
+          "sessions": 6,
+          "fwd21_mean_pct": 3.0146823385456583,
+          "fwd21_positive_pct": 83.33333333333334
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "NORMAL",
+          "sessions": 360,
+          "fwd21_mean_pct": 1.3560114183727656,
+          "fwd21_positive_pct": 71.34831460674157
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "REVERSAL",
+          "sessions": 14,
+          "fwd21_mean_pct": 3.0700077873360154,
+          "fwd21_positive_pct": 78.57142857142857
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "ELEVATED",
+          "sessions": 198,
+          "fwd21_mean_pct": 2.6630144569108323,
+          "fwd21_positive_pct": 73.23232323232324
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "EXTREME",
+          "sessions": 7,
+          "fwd21_mean_pct": 5.398993708004492,
+          "fwd21_positive_pct": 71.42857142857143
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "NORMAL",
+          "sessions": 1867,
+          "fwd21_mean_pct": 0.8996346796081958,
+          "fwd21_positive_pct": 66.12641815235008
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "REVERSAL",
+          "sessions": 20,
+          "fwd21_mean_pct": -0.11242578342686495,
+          "fwd21_positive_pct": 50.0
+        }
+      ]
+    },
+    "alpha_1.25": {
+      "three_way": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 385,
+          "fwd21_mean_pct": 1.800304517943831,
+          "fwd21_positive_pct": 63.541666666666664,
+          "next10_mae_mean_pct": -3.208468075606459,
+          "next10_mae_le_minus3_pct": 43.896103896103895
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 55,
+          "fwd21_mean_pct": 6.002628520006977,
+          "fwd21_positive_pct": 81.81818181818183,
+          "next10_mae_mean_pct": -4.739783356952488,
+          "next10_mae_le_minus3_pct": 43.63636363636363
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 386,
+          "fwd21_mean_pct": 1.8914796345814486,
+          "fwd21_positive_pct": 69.0909090909091,
+          "next10_mae_mean_pct": -2.147243958973545,
+          "next10_mae_le_minus3_pct": 27.979274611398964
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 45,
+          "fwd21_mean_pct": 6.081739627835563,
+          "fwd21_positive_pct": 82.22222222222221,
+          "next10_mae_mean_pct": -3.3430275943535217,
+          "next10_mae_le_minus3_pct": 42.22222222222222
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 177,
+          "fwd21_mean_pct": 1.7613345931158768,
+          "fwd21_positive_pct": 64.40677966101694,
+          "next10_mae_mean_pct": -2.933025630100361,
+          "next10_mae_le_minus3_pct": 35.02824858757062
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 28,
+          "fwd21_mean_pct": 5.7561518684975574,
+          "fwd21_positive_pct": 85.71428571428571,
+          "next10_mae_mean_pct": -1.2273019466543102,
+          "next10_mae_le_minus3_pct": 14.285714285714285
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 292,
+          "fwd21_mean_pct": 1.7604238592617707,
+          "fwd21_positive_pct": 69.17808219178082,
+          "next10_mae_mean_pct": -2.0341595089576616,
+          "next10_mae_le_minus3_pct": 23.972602739726025
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 62,
+          "fwd21_mean_pct": 6.1247155948826615,
+          "fwd21_positive_pct": 83.87096774193549,
+          "next10_mae_mean_pct": -1.2635413042484593,
+          "next10_mae_le_minus3_pct": 17.741935483870968
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 36,
+          "fwd21_mean_pct": 3.765003343992279,
+          "fwd21_positive_pct": 83.33333333333334,
+          "next10_mae_mean_pct": -1.423784161186655,
+          "next10_mae_le_minus3_pct": 25.0
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 4,
+          "fwd21_mean_pct": 6.520271758499463,
+          "fwd21_positive_pct": 100.0,
+          "next10_mae_mean_pct": -1.1745600025919178,
+          "next10_mae_le_minus3_pct": 25.0
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 134,
+          "fwd21_mean_pct": 1.7948479203203218,
+          "fwd21_positive_pct": 77.09923664122137,
+          "next10_mae_mean_pct": -1.8107228447985273,
+          "next10_mae_le_minus3_pct": 23.134328358208954
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "vix_context": "REVERSAL",
+          "sessions": 3,
+          "fwd21_mean_pct": 5.676080046322348,
+          "fwd21_positive_pct": 100.0,
+          "next10_mae_mean_pct": -3.8078712764189095,
+          "next10_mae_le_minus3_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 41,
+          "fwd21_mean_pct": -0.28881444827778385,
+          "fwd21_positive_pct": 51.21951219512195,
+          "next10_mae_mean_pct": -2.3695951655619174,
+          "next10_mae_le_minus3_pct": 24.390243902439025
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 0.4914990252806617,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -5.044033164150507,
+          "next10_mae_le_minus3_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 237,
+          "fwd21_mean_pct": 0.9826653934862045,
+          "fwd21_positive_pct": 67.79661016949152,
+          "next10_mae_mean_pct": -1.6479742480602795,
+          "next10_mae_le_minus3_pct": 19.40928270042194
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 12,
+          "fwd21_mean_pct": 2.135638821069217,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -1.5386144306626002,
+          "next10_mae_le_minus3_pct": 33.33333333333333
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "ELEVATED",
+          "sessions": 51,
+          "fwd21_mean_pct": 2.449065621725599,
+          "fwd21_positive_pct": 68.62745098039215,
+          "next10_mae_mean_pct": -2.4980360232552186,
+          "next10_mae_le_minus3_pct": 37.254901960784316
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 3.9665842686102404,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -1.219908821609502,
+          "next10_mae_le_minus3_pct": 0.0
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "vix_context": "NORMAL",
+          "sessions": 277,
+          "fwd21_mean_pct": 1.105062554169708,
+          "fwd21_positive_pct": 65.57971014492753,
+          "next10_mae_mean_pct": -1.8892139180512728,
+          "next10_mae_le_minus3_pct": 25.0
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "ELEVATED",
+          "sessions": 139,
+          "fwd21_mean_pct": 2.739485610410221,
+          "fwd21_positive_pct": 74.82014388489209,
+          "next10_mae_mean_pct": -2.1793121503923345,
+          "next10_mae_le_minus3_pct": 28.05755395683453
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "EXTREME",
+          "sessions": 3,
+          "fwd21_mean_pct": 5.4752376905449465,
+          "fwd21_positive_pct": 66.66666666666666,
+          "next10_mae_mean_pct": -2.873828693556442,
+          "next10_mae_le_minus3_pct": 33.33333333333333
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "NORMAL",
+          "sessions": 1539,
+          "fwd21_mean_pct": 0.8424915633523946,
+          "fwd21_positive_pct": 66.0327868852459,
+          "next10_mae_mean_pct": -1.6235057474973877,
+          "next10_mae_le_minus3_pct": 16.95906432748538
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "vix_context": "REVERSAL",
+          "sessions": 19,
+          "fwd21_mean_pct": -0.10127961250688063,
+          "fwd21_positive_pct": 52.63157894736842,
+          "next10_mae_mean_pct": -2.5130868361095056,
+          "next10_mae_le_minus3_pct": 42.10526315789473
+        }
+      ],
+      "mc_x_nqsar": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_OFF",
+          "sessions": 871,
+          "fwd21_mean_pct": 2.328376807890993,
+          "fwd21_positive_pct": 68.12428078250863,
+          "next10_mae_mean_pct": -2.841814814753812,
+          "next10_mae_le_minus3_pct": 36.739380022962116
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "nq_side": "RISK_ON",
+          "sessions": 559,
+          "fwd21_mean_pct": 2.4449098552533166,
+          "fwd21_positive_pct": 70.12522361359571,
+          "next10_mae_mean_pct": -2.192887528646022,
+          "next10_mae_le_minus3_pct": 26.29695885509839
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_OFF",
+          "sessions": 177,
+          "fwd21_mean_pct": 2.3780145121761445,
+          "fwd21_positive_pct": 79.3103448275862,
+          "next10_mae_mean_pct": -1.751496863533032,
+          "next10_mae_le_minus3_pct": 24.293785310734464
+        },
+        {
+          "mc_zone": "WEAK",
+          "nq_side": "RISK_ON",
+          "sessions": 293,
+          "fwd21_mean_pct": 0.8464719294932458,
+          "fwd21_positive_pct": 65.41095890410958,
+          "next10_mae_mean_pct": -1.7792449530332,
+          "next10_mae_le_minus3_pct": 21.160409556313994
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_OFF",
+          "sessions": 331,
+          "fwd21_mean_pct": 1.3387859529232595,
+          "fwd21_positive_pct": 66.06060606060606,
+          "next10_mae_mean_pct": -1.977220015251503,
+          "next10_mae_le_minus3_pct": 26.666666666666668
+        },
+        {
+          "mc_zone": "BULL",
+          "nq_side": "RISK_ON",
+          "sessions": 1700,
+          "fwd21_mean_pct": 0.9964943857612256,
+          "fwd21_positive_pct": 66.6073546856465,
+          "next10_mae_mean_pct": -1.681099923688097,
+          "next10_mae_le_minus3_pct": 18.176470588235293
+        }
+      ],
+      "mc_x_vix": [
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "ELEVATED",
+          "sessions": 562,
+          "fwd21_mean_pct": 1.7880091940676313,
+          "fwd21_positive_pct": 63.81461675579323
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "EXTREME",
+          "sessions": 83,
+          "fwd21_mean_pct": 5.9194797701001844,
+          "fwd21_positive_pct": 83.13253012048193
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "NORMAL",
+          "sessions": 678,
+          "fwd21_mean_pct": 1.8349533622131382,
+          "fwd21_positive_pct": 69.1285081240768
+        },
+        {
+          "mc_zone": "DEFENSIVE",
+          "vix_context": "REVERSAL",
+          "sessions": 107,
+          "fwd21_mean_pct": 6.10664159004977,
+          "fwd21_positive_pct": 83.17757009345794
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "ELEVATED",
+          "sessions": 77,
+          "fwd21_mean_pct": 1.6064769870692583,
+          "fwd21_positive_pct": 66.23376623376623
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "EXTREME",
+          "sessions": 7,
+          "fwd21_mean_pct": 3.9365120156914055,
+          "fwd21_positive_pct": 85.71428571428571
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "NORMAL",
+          "sessions": 371,
+          "fwd21_mean_pct": 1.2725725079692276,
+          "fwd21_positive_pct": 71.11716621253406
+        },
+        {
+          "mc_zone": "WEAK",
+          "vix_context": "REVERSAL",
+          "sessions": 15,
+          "fwd21_mean_pct": 2.8437270661198433,
+          "fwd21_positive_pct": 73.33333333333333
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "ELEVATED",
+          "sessions": 190,
+          "fwd21_mean_pct": 2.6615307713422434,
+          "fwd21_positive_pct": 73.15789473684211
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "EXTREME",
+          "sessions": 6,
+          "fwd21_mean_pct": 4.720910979577594,
+          "fwd21_positive_pct": 66.66666666666666
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "NORMAL",
+          "sessions": 1816,
+          "fwd21_mean_pct": 0.8827300938718718,
+          "fwd21_positive_pct": 65.96335369239311
+        },
+        {
+          "mc_zone": "BULL",
+          "vix_context": "REVERSAL",
+          "sessions": 19,
+          "fwd21_mean_pct": -0.10127961250688063,
+          "fwd21_positive_pct": 52.63157894736842
+        }
+      ]
+    }
+  }
+}
