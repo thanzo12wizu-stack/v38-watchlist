@@ -34,12 +34,7 @@ def _num(value: Any) -> float | None:
 
 
 def load_universe(path: Path) -> list[UniverseRow]:
-    """Load the existing site's universe without applying Leadership-only selection.
-
-    universe.csv is the single source of truth. A symbol is kept as long as the
-    source row has a non-empty symbol. Missing market data is handled downstream
-    as NO_DATA; it never removes the symbol from the Leadership universe.
-    """
+    """Load the existing site's universe without Leadership-only selection."""
     rows: list[UniverseRow] = []
     seen: set[str] = set()
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -60,10 +55,7 @@ def load_universe(path: Path) -> list[UniverseRow]:
 
 
 def yahoo_symbol(symbol: str) -> str:
-    """Translate display symbols to Yahoo query form while preserving source symbols."""
     s = symbol.strip().upper()
-    # US class shares and preferreds commonly use BRK-B / BAC-PM on Yahoo,
-    # while the existing universe stores BRK.B / BAC/PM.
     return s.replace("/", "-").replace(".", "-")
 
 
@@ -145,20 +137,43 @@ def _ret(close: pd.Series, days: int) -> float | None:
     return end / start - 1.0
 
 
+def _prior_high(frame: pd.DataFrame, window: int, end_offset: int = 1) -> float | None:
+    """High of the window ending end_offset sessions before the latest bar."""
+    series = frame["High"] if "High" in frame.columns else frame["Close"]
+    if len(series) < window + end_offset:
+        return None
+    end = -end_offset if end_offset else None
+    start = -(window + end_offset)
+    values = series.iloc[start:end]
+    if values.empty or not values.notna().any():
+        return None
+    return float(values.max())
+
+
 def compute_raw_metrics(frame: pd.DataFrame) -> dict[str, float | None]:
     close = frame["Close"].dropna()
     if len(close) < 30:
         return {}
     price = float(close.iloc[-1])
+    prev_close = float(close.iloc[-2]) if len(close) >= 2 else None
     ema21 = float(close.ewm(span=21, adjust=False).mean().iloc[-1]) if len(close) >= 21 else None
     sma50 = float(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else None
     high52 = float(frame["High"].tail(252).max()) if "High" in frame.columns and len(frame) >= 50 else float(close.tail(252).max())
     from_high = 100.0 * (price / high52 - 1.0) if high52 > 0 else None
-    pivot = None
-    if "High" in frame.columns and len(frame) >= 22:
-        pivot = float(frame["High"].iloc[-21:-1].max())
-    elif len(close) >= 22:
-        pivot = float(close.iloc[-21:-1].max())
+
+    pivot20 = _prior_high(frame, 20, 1)
+    prev_pivot20 = _prior_high(frame, 20, 2)
+    pivot50 = _prior_high(frame, 50, 1)
+    prev_pivot50 = _prior_high(frame, 50, 2)
+
+    breakout20_pct = 100.0 * (price / pivot20 - 1.0) if pivot20 and pivot20 > 0 else None
+    breakout50_pct = 100.0 * (price / pivot50 - 1.0) if pivot50 and pivot50 > 0 else None
+    breakout20_cross = (
+        1.0 if price > pivot20 and prev_close is not None and prev_pivot20 is not None and prev_close <= prev_pivot20 else 0.0
+    ) if pivot20 is not None else None
+    breakout50_cross = (
+        1.0 if price > pivot50 and prev_close is not None and prev_pivot50 is not None and prev_close <= prev_pivot50 else 0.0
+    ) if pivot50 is not None else None
 
     volume_ratio = None
     avg_volume20 = None
@@ -176,6 +191,7 @@ def compute_raw_metrics(frame: pd.DataFrame) -> dict[str, float | None]:
 
     return {
         "price": price,
+        "prev_close": prev_close,
         "ret21": _ret(close, 21),
         "ret63": _ret(close, 63),
         "ret189": _ret(close, 189),
@@ -183,7 +199,12 @@ def compute_raw_metrics(frame: pd.DataFrame) -> dict[str, float | None]:
         "sma50": sma50,
         "vwap63": _rolling_vwap(frame, 63),
         "atr14": _atr14(frame),
-        "pivot": pivot,
+        "pivot": pivot20,
+        "pivot50": pivot50,
+        "breakout20_pct": breakout20_pct,
+        "breakout50_pct": breakout50_pct,
+        "breakout20_cross": breakout20_cross,
+        "breakout50_cross": breakout50_cross,
         "pct_from_52w_high": from_high,
         "volume_ratio": volume_ratio,
         "avg_volume20": avg_volume20,
@@ -310,10 +331,6 @@ def main() -> None:
         if values:
             raw[symbol] = values
 
-    # No Leadership-only liquidity/price/market-cap filter is applied here.
-    # RS is ranked across the same source universe among symbols with enough
-    # history for each horizon; insufficient-history symbols remain in the
-    # dashboard universe and naturally show NO_DATA for unavailable metrics.
     enriched = enrich_relative_strength(raw, benchmark_metrics)
     metric_maps = to_metric_maps(enriched)
     metric_payload = {
@@ -321,7 +338,7 @@ def main() -> None:
         for key, values in metric_maps.items()
     }
     output = {
-        "schema": 2,
+        "schema": 3,
         "source": "Yahoo Finance daily adjusted OHLCV (independent Leadership flow)",
         "universe_source": str(args.universe),
         "universe_policy": "exact source universe; no Leadership-only symbol filter",
@@ -346,6 +363,7 @@ def main() -> None:
         "rs63": len(metric_maps.get("rs63", {})),
         "rs189": len(metric_maps.get("rs189", {})),
         "entry_inputs": len(metric_maps.get("ema21", {})),
+        "breakout_inputs": len(metric_maps.get("breakout20_cross", {})),
         "fingerprint": fingerprint,
     }, indent=2))
 
