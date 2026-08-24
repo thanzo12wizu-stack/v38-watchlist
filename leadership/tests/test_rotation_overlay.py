@@ -43,6 +43,21 @@ class RotationOverlayTests(unittest.TestCase):
         self.assertIn("AAA", out["rotation_leader_symbols"])
         self.assertIn("上値抵抗を吸収中", out["rotation_reason"])
 
+    def test_fast_rotation_can_surface_before_legacy_phase_promotes(self) -> None:
+        group = {
+            "name": "Oil&Gas-Explorers/Producers",
+            "phase": "LOSING",
+            "pioneer_score": 71.4,
+            "breadth_score": 60.8,
+            "top_acceleration": 12.7,
+            "positive_accel_share": 100.0,
+            "structure_score": 70.0,
+            "stocks": [stock("COP", "WATCH")],
+        }
+        out = enrich_rotation_group(group)
+        self.assertEqual(out["rotation_state"], "RISING")
+        self.assertEqual(out["rotation_label"], "急浮上")
+
     def test_mature_decelerating_group_is_topping(self) -> None:
         group = {
             "name": "Gold Miners",
