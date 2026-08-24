@@ -14,7 +14,7 @@ Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
      期中退出の空き枠は再投下せず現金で持ち隔週(月曜)トゥルーアップで吸収。銘柄入替は定例月曜＋赤明けは青/緑復帰の翌寄りに即再構築。
   B. レバスリーブ(30%): TQQQ:SOXL=50:50, SOXX MA50<100でSOXL→TQQQ, NQ4色ゲート。配分=個別70/レバ30/現金0。
   C. NQ 4色ゲート(即応・確認日数ゼロ): 個別 青100/緑100/黄=新規停止・保有はワイドトレール0.70継続(締めなし)/赤0(撤退), レバ 青100/緑50/黄0/赤0。執行は翌寄り。
-  D. 地合いスコア=4本柱（トレンド30・広がり30・ボラ20・信用20）の合成(raw 0-100)。先導株の強さ温度計/センチメント/レバ環境も
+  D. Market Conditions=中長期の市場構造（短期15・中期55・長期20・Damage10）。NQSAR=短期、VIX FEAR CYCLE=パニック/底形成として独立表示。
      ※先導株温度計は非対称: 左端(枯渇)のみNQ底に中央値18日先行(的中6割)/右端(過熱)は先取りせず。露出は動かさない。
   E. 8 tabs (マーケット/ピックアップ/ポートフォリオ/配分/RS比較/セクターローテ/業種RS/ルール) + 今日の運用ヘッダ + 隔週リバランス点検（月曜）。RS比較は63/126/189日Top10、1日・1週・1か月のIN/OUT、RS189 Top24の継続性を表示。
   F. 非常口ルール: equity.csvの口座NAV DDとQQQ円建て12ヶ月相対を自動判定。DD≤−28%かつ相対≤−12%でレバ半減、DD>−20%かつ相対>−8%で解除。状態はstate.jsonへ永続化。
@@ -1563,6 +1563,28 @@ MACRO_TICKERS = ["^VIX", "^VIX3M", "^VVIX", "^VXN", "QQQ", "QQQE", "SPY", "HYG",
                  "^SKEW", "TQQQ", "SQQQ", "SOXL", "SOXS",
                  # leverage-sleeve env: semis index (trend/vol) + semis ETF (RRG)
                  "SOXX", "SMH"]
+
+
+# Market Conditions v3: fixed, non-levered cross-sectional ETF universe.
+# Broad / GICS sectors / industries are family-balanced; industry ETFs are first
+# averaged inside parent groups so Technology/Materials cannot gain votes merely
+# because more sub-industry ETFs are present.
+MC_BROAD_ETFS = ["SPY","QQQ","DIA","IWM","MDY","RSP"]
+MC_SECTOR_ETFS = ["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
+MC_INDUSTRY_PARENT = {
+    "Technology": ["SOXX","IGV","CIBR","SKYY","FDN"],
+    "Health Care": ["XBI","IBB","PPH"],
+    "Financials": ["KRE","KBE"],
+    "Consumer Discretionary": ["XRT","ITB","XHB"],
+    "Industrials": ["IYT","ITA","ROBO","JETS"],
+    "Materials": ["XME","COPX","GDX","SIL","LIT"],
+    "Energy": ["XOP","OIH","URA"],
+    "Clean Energy": ["TAN"],
+}
+MC_INDUSTRY_ETFS = [t for _xs in MC_INDUSTRY_PARENT.values() for t in _xs]
+MC_MARKET_TICKERS = list(dict.fromkeys(MC_BROAD_ETFS + MC_SECTOR_ETFS + MC_INDUSTRY_ETFS))
+assert len(MC_MARKET_TICKERS) == 43
+MACRO_TICKERS = list(dict.fromkeys(MACRO_TICKERS + MC_MARKET_TICKERS))
 
 def _extract(df, tickers, minbars=30):
     out = {}
@@ -3549,10 +3571,10 @@ def load_market_caps(valid, live, strict=False):
 # The score measures trend health, participation, volatility stress and credit conditions.
 STATUS_DEF = [
     # key, pillar weight, lo, hi, group
-    ("trend",   30, 0.0, 1.0, "market"),
-    ("breadth", 30, 0.0, 1.0, "market"),
-    ("risk",     20, 0.0, 1.0, "market"),
-    ("credit",   20, 0.0, 1.0, "market"),
+    ("short",   15, 0.0, 100.0, "market"),
+    ("medium",  55, 0.0, 100.0, "market"),
+    ("long",    20, 0.0, 100.0, "market"),
+    ("damage",  10, 0.0, 100.0, "market"),
 ]
 # Pillar weights: trend 30 / breadth 30 / risk 20 / credit 20 = 100
 
@@ -3633,158 +3655,204 @@ def _universe_breadth(W, index):
     return out
 
 
+def _mc_frame_from_macro(macro):
+    cols = {}
+    for t in MC_MARKET_TICKERS:
+        d = macro.get(t)
+        if d is None or not hasattr(d, "columns") or "Close" not in d.columns:
+            continue
+        x = pd.to_numeric(d["Close"], errors="coerce").dropna()
+        if len(x) >= 30:
+            cols[t] = x
+    if not cols:
+        return pd.DataFrame()
+    c = pd.concat(cols, axis=1).sort_index()
+    try:
+        c.index = pd.to_datetime(c.index).tz_localize(None)
+    except Exception:
+        pass
+    return c
+
+
+def _mc_mean_cols(frame, cols):
+    have = [c for c in cols if c in frame.columns]
+    if not have:
+        return pd.Series(np.nan, index=frame.index)
+    return frame[have].mean(axis=1, skipna=True)
+
+
+def _mc_parent_mean(frame):
+    parents = []
+    for tickers in MC_INDUSTRY_PARENT.values():
+        have = [c for c in tickers if c in frame.columns]
+        if have:
+            parents.append(frame[have].mean(axis=1, skipna=True))
+    return pd.concat(parents, axis=1).mean(axis=1, skipna=True) if parents else pd.Series(np.nan, index=frame.index)
+
+
+def _mc_participation(mask):
+    # Each family gets one third.  Industry first gets parent-group balancing.
+    pieces = []
+    b = _mc_mean_cols(mask, MC_BROAD_ETFS)
+    sec = _mc_mean_cols(mask, MC_SECTOR_ETFS)
+    ind = _mc_parent_mean(mask)
+    for x in (b, sec, ind):
+        if x.notna().any():
+            pieces.append(x)
+    if not pieces:
+        return pd.Series(np.nan, index=mask.index)
+    return pd.concat(pieces, axis=1).mean(axis=1, skipna=True) * 100.0
+
+
+def _mc_stratified_median(frame):
+    pieces = []
+    for cols in (MC_BROAD_ETFS, MC_SECTOR_ETFS):
+        have = [c for c in cols if c in frame.columns]
+        if have:
+            pieces.append(frame[have].median(axis=1, skipna=True))
+    parents = []
+    for tickers in MC_INDUSTRY_PARENT.values():
+        have = [c for c in tickers if c in frame.columns]
+        if have:
+            parents.append(frame[have].median(axis=1, skipna=True))
+    if parents:
+        pieces.append(pd.concat(parents, axis=1).mean(axis=1, skipna=True))
+    return pd.concat(pieces, axis=1).mean(axis=1, skipna=True) if pieces else pd.Series(np.nan, index=frame.index)
+
+
+def _mc_linear(series, lo, hi):
+    return ((pd.to_numeric(series, errors="coerce") - lo) / (hi - lo)).clip(0.0, 1.0) * 100.0
+
+
 def mri_frame(macro, W=None):
-    cl = lambda k: macro[k]["Close"] if k in macro else None
-    base = pd.DataFrame({k: cl(k) for k in ["QQQ", "QQQE", "SPY", "HYG", "LQD", "RSP", "IWM"] if cl(k) is not None})
-    if cl("^VIX") is not None:   base["VIX"] = cl("^VIX")
-    if cl("^VIX3M") is not None: base["VIX3M"] = cl("^VIX3M")
-    if cl("^VVIX") is not None:  base["VVIX"] = cl("^VVIX")
-    base = base.sort_index().ffill().dropna(subset=[x for x in ("QQQ", "SPY", "HYG", "LQD", "RSP", "IWM", "VIX") if x in base.columns])
-    if base.empty or "QQQ" not in base or "SPY" not in base:
-        raise ValueError("market score needs QQQ/SPY history")
+    """Market Conditions v3 (display/state only; allocation remains NQSAR-driven).
 
-    qqq, spy = base["QQQ"], base["SPY"]
-    hyglqd = base["HYG"] / base["LQD"] if "HYG" in base and "LQD" in base else pd.Series(np.nan, index=base.index)
-    rspspy = base["RSP"] / base["SPY"] if "RSP" in base else pd.Series(np.nan, index=base.index)
-    iwmspy = base["IWM"] / base["SPY"] if "IWM" in base else pd.Series(np.nan, index=base.index)
+    43 non-levered ETFs, family balanced.  Score is descriptive market health,
+    not a forward-return predictor and does not contain NQSAR/VIX/VVIX/credit.
+    """
+    c = _mc_frame_from_macro(macro)
+    if c.empty:
+        # Fail visibly but keep downstream rendering alive in degraded/offline fixtures.
+        idx = next((d.index for d in macro.values() if hasattr(d, "index") and len(d.index)), pd.DatetimeIndex([pd.Timestamp.today().normalize()]))
+        z = pd.Series(50.0, index=idx, dtype=float)
+        vals = pd.DataFrame(index=idx)
+        for k in ("pillar_short","pillar_medium","pillar_long","pillar_damage"):
+            vals[k] = 50.0
+        vals["repair_breadth"] = np.nan; vals["repair_thrust10"] = np.nan
+        vals["qqq_dd"] = np.nan; vals["bottom_context"] = 0.0; vals["mc_coverage"] = 0.0
+        breakdown = [dict(key=k, w=w, group="market", raw=50.0, pts=w*.5, ptsmax=w, frac=.5)
+                     for k,w,*_ in STATUS_DEF]
+        return z, breakdown, list(MC_MARKET_TICKERS), list(STATUS_DEF), vals
 
-    vals = pd.DataFrame(index=base.index)
-    vals["qqq_50"] = qqq / qqq.rolling(50).mean() - 1
-    vals["qqq_200"] = qqq / qqq.rolling(200).mean() - 1
-    vals["spy_50"] = spy / spy.rolling(50).mean() - 1
-    vals["spy_200"] = spy / spy.rolling(200).mean() - 1
-    vals["vix"] = base["VIX"] if "VIX" in base else np.nan
-    vals["vix_ratio"] = (base["VIX"] / base["VIX3M"]) if "VIX3M" in base else np.nan
-    vals["vvix"] = base["VVIX"] if "VVIX" in base else np.nan
-    vals["hyglqd_20"] = hyglqd / hyglqd.rolling(20).mean()
-    vals["hyglqd_5d"] = hyglqd / hyglqd.shift(5) - 1
-    vals["rsp_spy_20"] = rspspy / rspspy.rolling(20).mean()
-    vals["iwm_spy_20"] = iwmspy / iwmspy.rolling(20).mean()
+    ma10=c.rolling(10).mean(); ma20=c.rolling(20).mean(); ma50=c.rolling(50).mean(); ma200=c.rolling(200).mean()
+    p = {}
+    p["ret5"] = _mc_participation((c/c.shift(5)-1 > 0).where(c.shift(5).notna() & c.notna()))
+    p["above10"] = _mc_participation((c > ma10).where(ma10.notna() & c.notna()))
+    p["above20"] = _mc_participation((c > ma20).where(ma20.notna() & c.notna()))
+    short = pd.concat([p["ret5"],p["above10"],p["above20"]],axis=1).mean(axis=1,skipna=True)
 
-    if "QQQE" in base:
-        qqqe = base["QQQE"]
-        vals["qqqe_50"] = qqqe / qqqe.rolling(50).mean() - 1
-        qqqeqqq = qqqe / base["QQQ"]
-        vals["qqqe_qqq_20"] = qqqeqqq / qqqeqqq.rolling(20).mean()
-    else:
-        vals["qqqe_50"] = np.nan
-        vals["qqqe_qqq_20"] = np.nan
-    if "RSP" in base:
-        rsp = base["RSP"]
-        vals["rsp_50"] = rsp / rsp.rolling(50).mean() - 1
-        vals["rsp_200"] = rsp / rsp.rolling(200).mean() - 1
-    else:
-        vals["rsp_50"] = np.nan
-        vals["rsp_200"] = np.nan
+    p["ret21"] = _mc_participation((c/c.shift(21)-1 > 0).where(c.shift(21).notna() & c.notna()))
+    p["ret63"] = _mc_participation((c/c.shift(63)-1 > 0).where(c.shift(63).notna() & c.notna()))
+    p["above50"] = _mc_participation((c > ma50).where(ma50.notna() & c.notna()))
+    p["ma20_gt_50"] = _mc_participation((ma20 > ma50).where(ma20.notna() & ma50.notna()))
+    p["ma50_rising"] = _mc_participation((ma50 > ma50.shift(20)).where(ma50.notna() & ma50.shift(20).notna()))
+    medium = pd.concat([p[k] for k in ("ret21","ret63","above50","ma20_gt_50","ma50_rising")],axis=1).mean(axis=1,skipna=True)
 
-    ub = _universe_breadth(W, vals.index)
-    for col in ("uni_pa50", "uni_pa200", "uni_ad20"):
-        vals[col] = ub[col] if col in ub else np.nan
+    p["above200"] = _mc_participation((c > ma200).where(ma200.notna() & c.notna()))
+    p["ma50_gt_200"] = _mc_participation((ma50 > ma200).where(ma50.notna() & ma200.notna()))
+    long = pd.concat([p["above200"],p["ma50_gt_200"]],axis=1).mean(axis=1,skipna=True)
 
-    # 1) Trend: compress cap-weighted and equal-weighted trends before applying the pillar weight.
-    cap_trend = _series_blend([
-        (_linear_score(vals["qqq_50"], -0.03, 0.10), 0.40),
-        (_linear_score(vals["qqq_200"], -0.05, 0.10), 0.35),
-        (_linear_score(vals["spy_200"], -0.05, 0.10), 0.25),
-    ], min_cov=0.5)
-    broad_trend = _series_blend([
-        (_linear_score(vals["rsp_50"], -0.03, 0.07), 0.40),
-        (_linear_score(vals["rsp_200"], -0.05, 0.10), 0.35),
-        (_linear_score(vals["qqqe_50"], -0.03, 0.09), 0.25),
-    ], min_cov=0.5)
-    vals["pillar_trend"] = _series_blend([(cap_trend, 0.50), (broad_trend, 0.50)])
+    hi252 = c.rolling(252,min_periods=200).max()
+    dd = c/hi252 - 1.0
+    med_dd = _mc_stratified_median(dd)
+    dd_score = _mc_linear(med_dd, -0.30, -0.05)
+    within10 = _mc_participation((dd >= -0.10).where(dd.notna()))
+    damage = pd.concat([dd_score,within10],axis=1).mean(axis=1,skipna=True)
 
-    # 2) Breadth: use the actual stock universe first, ETF relative breadth second.
-    uni_breadth = _series_blend([
-        (_linear_score(vals["uni_pa50"], 30.0, 75.0), 0.40),
-        (_linear_score(vals["uni_pa200"], 30.0, 75.0), 0.40),
-        (_linear_score(vals["uni_ad20"], 45.0, 55.0), 0.20),
-    ], min_cov=0.5)
-    relative_breadth = _series_blend([
-        (_linear_score(vals["rsp_spy_20"], 0.98, 1.02), 1.0),
-        (_linear_score(vals["qqqe_qqq_20"], 0.98, 1.02), 1.0),
-        (_linear_score(vals["iwm_spy_20"], 0.98, 1.02), 1.0),
-    ])
-    vals["pillar_breadth"] = _series_blend([(uni_breadth, 0.70), (relative_breadth, 0.30)])
+    raw = short*.15 + medium*.55 + long*.20 + damage*.10
+    score = raw.ewm(span=2,adjust=False).mean()
 
-    # 3) Risk: volatility level, curve and vol-of-vol stay inside one capped pillar.
-    vals["pillar_risk"] = _series_blend([
-        (_vol_percentile_score(vals["vix"]), 0.45),
-        (_linear_score(vals["vix_ratio"], 1.05, 0.95), 0.35),
-        (_vol_percentile_score(vals["vvix"]), 0.20),
-    ], min_cov=0.5)
+    # Recovery telemetry intentionally excludes 5D return/10SMA: this is broader
+    # repair after a damaged market, not a second copy of NQSAR.
+    repair_breadth = pd.concat([p["above20"],p["ret21"],p["above50"],p["ma20_gt_50"]],axis=1).mean(axis=1,skipna=True)
+    repair_thrust10 = repair_breadth - repair_breadth.shift(10)
+    qqq = pd.to_numeric(macro.get("QQQ", pd.DataFrame()).get("Close"), errors="coerce") if macro.get("QQQ") is not None else pd.Series(dtype=float)
+    qqq = qqq.reindex(score.index).ffill() if len(qqq) else pd.Series(np.nan,index=score.index)
+    qqq_dd = qqq/qqq.rolling(252,min_periods=126).max()-1.0
+    recent_shock = qqq_dd.rolling(60,min_periods=1).min() <= -0.08
+    bottom_context = (recent_shock & (qqq_dd < -0.02)).astype(float)
+    coverage = c.notna().sum(axis=1) / float(len(MC_MARKET_TICKERS)) * 100.0
 
-    # 4) Credit: structural level plus short-term direction.
-    vals["pillar_credit"] = _series_blend([
-        (_linear_score(vals["hyglqd_20"], 0.98, 1.02), 0.65),
-        (_linear_score(vals["hyglqd_5d"], -0.02, 0.02), 0.35),
-    ])
+    vals = pd.DataFrame(index=score.index)
+    vals["pillar_short"] = short; vals["pillar_medium"] = medium
+    vals["pillar_long"] = long; vals["pillar_damage"] = damage
+    vals["repair_breadth"] = repair_breadth; vals["repair_thrust10"] = repair_thrust10
+    vals["qqq_dd"] = qqq_dd; vals["bottom_context"] = bottom_context; vals["mc_coverage"] = coverage
+    for k,v in p.items(): vals[k] = v
+    vals["median_dd"] = med_dd*100.0
 
-    pillar_map = {
-        "trend": vals["pillar_trend"],
-        "breadth": vals["pillar_breadth"],
-        "risk": vals["pillar_risk"],
-        "credit": vals["pillar_credit"],
-    }
-    weights = {k: w for k, w, *_ in STATUS_DEF}
-    active, dropped = [], []
-    parts = []
-    for key, w, lo, hi, grp in STATUS_DEF:
-        ser = pillar_map[key]
-        if ser.dropna().empty:
-            dropped.append(key)
-        else:
-            active.append((key, w, lo, hi, grp))
-            parts.append((ser, w))
-    mri = (_series_blend(parts) * 100.0).dropna()
-    if mri.empty:
-        raise ValueError("market score has no valid observations")
-
-    breakdown = []
-    for key, w, lo, hi, grp in active:
-        sc = pillar_map[key].reindex(mri.index).iloc[-1]
-        sc01 = float(sc) if pd.notna(sc) else 0.5
-        breakdown.append(dict(key=key, w=w, group=grp, raw=sc01 * 100.0,
-                              pts=w * sc01, ptsmax=w, frac=sc01))
-    return mri, breakdown, dropped, active, vals
+    last = vals.iloc[-1]
+    pmap = {"short":short,"medium":medium,"long":long,"damage":damage}
+    breakdown=[]; dropped=[]; active=[]
+    for key,w,lo,hi,grp in STATUS_DEF:
+        ser=pmap[key]; cur=float(ser.dropna().iloc[-1]) if ser.notna().any() else np.nan
+        if not np.isfinite(cur):
+            dropped.append(key); continue
+        active.append((key,w,lo,hi,grp))
+        breakdown.append(dict(key=key,w=w,group=grp,raw=cur,pts=w*cur/100.0,ptsmax=w,frac=cur/100.0))
+    return score, breakdown, dropped, active, vals
 
 
 def mri_auxiliary(mri, vals, metrics):
-    cur = float(mri.iloc[-1])
-    ma10 = mri.rolling(10).mean()
+    clean = pd.to_numeric(mri, errors="coerce").dropna()
+    cur = float(clean.iloc[-1]) if len(clean) else 50.0
+    ma10 = clean.rolling(10).mean()
     slope_dir = "→"
     if len(ma10.dropna()) >= 3:
         d = ma10.iloc[-1] - ma10.iloc[-3]
         slope_dir = "↑" if d > 0.4 else ("↓" if d < -0.4 else "→")
-    last = vals.iloc[-1]
-
-    # One warning per pillar. This avoids one market event inflating the warning count through correlated inputs.
+    last = vals.reindex(clean.index).iloc[-1] if len(clean) else vals.iloc[-1]
     bvals = [
-        ("トレンド", last.get("pillar_trend", np.nan) < 0.40),
-        ("広がり", last.get("pillar_breadth", np.nan) < 0.40),
-        ("ボラ", last.get("pillar_risk", np.nan) < 0.40),
-        ("信用", last.get("pillar_credit", np.nan) < 0.40),
+        ("短期", last.get("pillar_short", np.nan) < 40.0),
+        ("中期", last.get("pillar_medium", np.nan) < 40.0),
+        ("長期", last.get("pillar_long", np.nan) < 40.0),
+        ("Damage", last.get("pillar_damage", np.nan) < 40.0),
     ]
-    bear_flags = [(lab, bool(v == True)) for lab, v in bvals]
-    bear_n = int(sum(1 for _, v in bear_flags if v))
-
-    hl = float(mri.tail(3).mean()) if len(mri) >= 1 else cur
-    hi20 = mri.iloc[-20:].max() if len(mri) >= 5 else cur
-    drop = hi20 - cur
-    if drop < 3:    peak = "通常"
-    elif drop < 7:  peak = "注意"
-    elif drop < 12: peak = "減速"
-    else:           peak = "深押し"
-    return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
-                peak=peak, drop=drop, hi20=hi20)
+    bear_flags = [(lab, bool(v == True)) for lab,v in bvals]
+    bear_n = int(sum(1 for _,v in bear_flags if v))
+    hl = float(clean.tail(3).mean()) if len(clean) else cur
+    hi20 = float(clean.tail(20).max()) if len(clean) else cur
+    drop = hi20-cur
+    if drop < 4: peak="高値圏"
+    elif drop < 10: peak="押し目"
+    else: peak="深押し"
+    delta5 = float(cur-clean.iloc[-6]) if len(clean) >= 6 else 0.0
+    rb = float(last.get("repair_breadth")) if pd.notna(last.get("repair_breadth")) else np.nan
+    rt = float(last.get("repair_thrust10")) if pd.notna(last.get("repair_thrust10")) else np.nan
+    med = float(last.get("pillar_medium")) if pd.notna(last.get("pillar_medium")) else np.nan
+    ctx = bool(last.get("bottom_context",0.0) >= 0.5)
+    recovery = None
+    if ctx and np.isfinite(rb) and np.isfinite(rt):
+        if cur >= 55.0 and np.isfinite(med) and med >= 50.0 and rb >= 55.0:
+            recovery = "CONFIRMED"
+        elif cur >= 45.0 and rb >= 45.0 and rt > 0.0:
+            recovery = "REPAIRING"
+        elif rb >= 35.0 and rt >= 10.0:
+            recovery = "EARLY REPAIR"
+    cov = float(last.get("mc_coverage")) if pd.notna(last.get("mc_coverage")) else 0.0
+    return dict(cur=cur,hl=hl,slope=slope_dir,bear_n=bear_n,bear_flags=bear_flags,
+                peak=peak,drop=drop,hi20=hi20,delta5=delta5,recovery=recovery,
+                repair_breadth=rb,repair_thrust10=rt,coverage=cov)
 
 
 def mri_band(v):
-    if v >= 70: return ("強気", "bull")
-    if v >= 55: return ("やや強気", "bull")
-    if v >= 40: return ("中立", "neu")
-    if v >= 25: return ("弱含み", "weak")
-    return ("弱気", "bear")
+    if v >= 80: return ("STRONG BULL", "bull")
+    if v >= 65: return ("BULL", "bull")
+    if v >= 55: return ("WEAK BULL", "bull")
+    if v >= 45: return ("NEUTRAL", "neu")
+    if v >= 35: return ("WEAK BEAR", "weak")
+    if v >= 20: return ("BEAR", "bear")
+    return ("STRONG BEAR", "bear")
 
 # ----------------------------------------------------------------------------- NQ-SAR signal (leverage sleeve; logic hidden, only color+判定 shown)
 # Authoritative source = sar_state.txt (committed by the TradingView->Pipedream
@@ -4346,7 +4414,7 @@ def build_sentiment(macro, W, live=True, asof_date=None):
     return dict(cur=cur, band=band, rows=rows, flags=flags, ts=ts, avail=avail)
 
 def _svg_senti(ts):
-    """センチメント推移: マーケットステータス推移と同じ幾何・ゾーン塗り（0-100固定・極値のみ着色）。"""
+    """センチメント推移: Market Conditions 推移と同じ幾何・ゾーン塗り（0-100固定・極値のみ着色）。"""
     if not ts or len(ts) < 5:
         return ""
     ys = [v for _, v in ts]; n = len(ys)
@@ -5133,7 +5201,7 @@ def build_changelog(prev, color, aux, senti, picks, asof_date,
     try:
         dm = float(aux["cur"]) - float(base.get("mri", aux["cur"]))
         if abs(dm) >= 3:
-            ch.append(f'地合いスコア <b>{base.get("mri"):.0f}→{aux["cur"]:.0f}</b>（{dm:+.0f}）')
+            ch.append(f'Market Conditions <b>{base.get("mri"):.0f}→{aux["cur"]:.0f}</b>（{dm:+.0f}）')
     except Exception:
         pass
     pt, ct = set(base.get("picks") or []), {t for t, _, _ in picks}
@@ -8215,7 +8283,7 @@ background:radial-gradient(1200px 500px at 80% -10%,{glow}33,transparent),#0b0f1
 .pk{{font-size:21px;font-weight:800;color:#9ecbff;background:#16243e;border-radius:9px;padding:5px 14px}}
 .ft{{margin-top:auto;font-size:17px;color:#5b6b80}}</style></head><body><div class="fr">
 <div class="top"><span class="gate">{cj}</span><span class="ttl">V38 Command Center</span><span class="asof">{asof_disp}</span></div>
-<div class="mid"><div><div class="mri">{aux['cur']:.0f}</div><div class="mrs">地合いスコア ・ {band_lab}</div></div>
+<div class="mid"><div><div class="mri">{aux['cur']:.0f}</div><div class="mrs">MARKET CONDITIONS ・ {band_lab}</div></div>
 <div class="kv">傾き <b>{aux['slope']}</b> ／ 警戒 <b>{aux['bear_n']}/4</b><br>売り抜け日 <b>{ddtxt}</b><br>群衆温度計 <b>{sn}</b><br>非常口 <b>{'発動・レバ半減' if (mkt.get('emergency') or {}).get('active') else '待機'}</b><br>主導 <b>{top3}</b></div></div>
 <div class="rib">{rib}</div>
 <div class="pks">{chips}</div>
@@ -17169,7 +17237,7 @@ else { document.addEventListener('DOMContentLoaded',_entApply); }
 
 // --- 個別ティッカーのコピー（リスト用copyTkとは別・イベント伝播を止める） ---
 var _EN_MAP={
- "今日のマーケット":"Market Summary","マーケットステータス推移":"Regime History",
+ "今日のマーケット":"Market Summary","Market Conditions 推移":"Regime History",
  "マーケット・パフォーマンス":"Performance","先導株モメンタム・ラン":"Leader Momentum",
  "リーダーの強さ":"Leader Temperature","セクター温度マップ":"Sector Heatmap",
  "セクターETF強弱":"Sector ETF Strength","レジーム警戒灯":"Regime Early-Warning",
@@ -17961,7 +18029,7 @@ def _vix_cycle_card(ctx):
                 "DATA CHECK": "DATA CHECK"}.get(state, state)
     state_cls = ("pos" if state == "BOTTOM" else "warnc" if state == "ROLLOVER"
                  else "neg" if state in ("EXTREME", "RE-EXTREME", "DATA CHECK") else "mut")
-    hdr = (f'<div class="card vixcy"><div class="chd"><h2>VIX反転シーケンス '
+    hdr = (f'<div class="card vixcy"><div class="chd"><h2>パニック・底形成 '
            f'<span class="h2en">VIX FEAR CYCLE</span></h2>'
            f'<div class="chd-now {state_cls}"><b>{state_ui}</b>'
            f'<span>{_h(ctx.get("asof") or "—")}</span></div></div>')
@@ -18102,8 +18170,8 @@ def _svg_mri(ts):
            f'{zr}{gl}'
            f'<polyline points="{pts}" fill="none" stroke="#34d399" stroke-width="2"/>'
            f'<circle cx="{X(n-1):.1f}" cy="{Y(ys[-1]):.1f}" r="3.5" fill="#34d399"/></svg>')
-    return (f'<div class="card"><div class="chd"><h2>マーケットステータス推移</h2><div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
-            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">地合いスコアの推移・{_span_label(ts)}（70強気/55やや強気/40中立/25弱含み）</div></details>'
+    return (f'<div class="card"><div class="chd"><h2>Market Conditions 推移</h2><div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">Market Conditionsの推移・{_span_label(ts)}（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
             f'<div class="chart">{svg}'
             f'{_date_axis(ts)}</div></div>')
 
@@ -18536,7 +18604,7 @@ def build_weekly_unique(W, m, s2t, picks, eq_s, macro, mkt, rates_ctx, press_ctx
         ts = mkt.get("mri_ts") or []
         if len(ts) >= 6:
             v0, v5 = float(ts[-1][1]), float(ts[-6][1])
-            items.append(f"地合いスコア <b>{v0:.0f}</b>（週 {v0-v5:+.0f}）")
+            items.append(f"Market Conditions <b>{v0:.0f}</b>（週 {v0-v5:+.0f}）")
         # NQ色
         th = mkt.get("trend_hist") or []
         if len(th) >= 6 and th[-1] and th[-6]:
@@ -18678,7 +18746,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
       <div class="lhs">
         <span class="dot"></span>
         <div>
-          <div class="lab">トレンド判定 <span id="sarBadge">{badge}</span></div>
+          <div class="lab">NQSAR（短期） <span id="sarBadge">{badge}</span></div>
           <div class="col" id="sarCol">{s_lab}</div>
         </div>
       </div>
@@ -18692,10 +18760,10 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     if dropped:
         drop_note = f'<div class="note">注記：データ未取得のため除外し残り指標で100点満点に再正規化 → {", ".join(dropped)}</div>'
     _kj = {"trend":"トレンド","breadth":"広がり","risk":"ボラティリティ","credit":"信用"}
-    _gj = {"market":"4本柱"}
+    _gj = {"market":"MARKET CONDITIONS"}
     def _mraw(k, v):
         if v is None or (isinstance(v, float) and np.isnan(v)): return "—"
-        if k in ("trend", "breadth", "risk", "credit"): return f"{v:.0f}"
+        if k in ("short", "medium", "long", "damage"): return f"{v:.0f}"
         return f"{v:.2f}"
     _bd_rows = []; _seen_grp = None
     for b in breakdown:
@@ -18716,14 +18784,17 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     bear_sec = (f'<div class="mgrp">警戒 {aux["bear_n"]}/4</div>'
                 f'<div class="bflags">{_bchips or "<span class=bfl off>—</span>"}</div>')
     mri_bd = (f'<div id="mri-bd" class="mri-bd" onclick="event.stopPropagation()">'
-              f'<div class="mbd-h">地合いスコアの内訳（4本柱）</div>'
+              f'<div class="mbd-h">MARKET CONDITIONS 内訳（短期15 / 中期55 / 長期20 / Damage10）</div>'
               + "".join(_bd_rows) + bear_sec
               + '<div class="mnote">赤=点灯中のベア要因。もう一度タップで閉じる ▴</div></div>')
+    _rec = aux.get("recovery")
+    _rcol = {"EARLY REPAIR":"#fbbf24","REPAIRING":"#58a6ff","CONFIRMED":"#34d399"}.get(_rec,"#9aa4b2")
+    _recovery_html = (f'<div class="st" style="font-size:12px;color:{_rcol};margin-top:2px">RECOVERY · <b>{_rec}</b></div>' if _rec else "")
     banner = sar_pill + _ribbon(mkt.get("trend_hist")) + f"""
     <div class="banner b-{band_cls}" onclick="toggleMri()">
-      <div class="lab">マーケットステータス（地合いスコア）<span class="lab-en">MARKET STATUS</span><span class="tap">タップで内訳 ▾</span></div>
+      <div class="lab">MARKET CONDITIONS<span class="lab-en">MID / LONG TERM</span><span class="tap">タップで内訳 ▾</span></div>
       <div class="val">{aux['cur']:.0f}<span style="font-size:15px;font-weight:600">/100</span></div>
-      <div class="st">{band_lab}</div>
+      <div class="st">{band_lab} <span style="font-size:12px;font-weight:700">5D {aux.get('delta5',0.0):+.1f}</span></div>{_recovery_html}
       <div class="gauge"><div class="mk" style="left:{mk}%"></div></div>
       <div class="aux">
         <div class="a">傾き <b>{aux['slope']}</b></div>
@@ -19722,7 +19793,7 @@ def _lightpass(html):
     return html
 
 _EN_TITLE_MAP = {
-    "今日のマーケット": "Market Summary", "マーケットステータス推移": "Regime History",
+    "今日のマーケット": "Market Summary", "Market Conditions 推移": "Regime History",
     "マーケット・パフォーマンス": "Performance", "先導株モメンタム・ラン": "Leader Momentum",
     "リーダーの強さ": "Leader Temperature", "セクター温度マップ": "Sector Heatmap",
     "セクターETF強弱": "Sector ETF Strength", "レジーム警戒灯": "Regime Early-Warning",
@@ -20122,7 +20193,7 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     if "非常口" not in html: errs.append("emergency brake card/rule missing")
     for _win in ("前営業日", "約5営業日前", "約21営業日前"):
         if _win not in html: errs.append(f"RS history window missing: {_win}")
-    if "マーケットステータス（地合いスコア）" not in html: errs.append("status banner missing")
+    if "MARKET CONDITIONS" not in html: errs.append("Market Conditions banner missing")
     if 'id="mktPostText"' not in html or "定点観測" not in html: errs.append("market digest missing")
     if 'class="mkt-fold"' not in html: errs.append("market explanation fold missing")
     if "トレンド判定" not in html: errs.append("trend pill missing")
@@ -20166,10 +20237,10 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     # 1) Market Health v2の4本柱と重みを固定
     try:
         _fp = tuple((k, w, lo, hi, g) for k, w, lo, hi, g in STATUS_DEF)
-        _EXPECT = (("trend",30,0.0,1.0,"market"),("breadth",30,0.0,1.0,"market"),
-                   ("risk",20,0.0,1.0,"market"),("credit",20,0.0,1.0,"market"))
+        _EXPECT = (("short",15,0.0,100.0,"market"),("medium",55,0.0,100.0,"market"),
+                   ("long",20,0.0,100.0,"market"),("damage",10,0.0,100.0,"market"))
         if _fp != _EXPECT:
-            errs.append("地合いスコア4本柱の定義または重みが変更されている")
+            errs.append("Market Conditions 4ブロックの定義または重みが変更されている")
         _mri_keys = {k for k, *_ in STATUS_DEF}
         if _mri_keys & set(FRED_SERIES.keys()):
             errs.append("FRED系列が地合いスコアへ混入している")
@@ -21036,7 +21107,7 @@ def main():
         print(f"metrics tickers: {len(m)} | asof bar: {asof_bar.date()}")
         _sj = SAR_JUDGMENT.get(sar[0], ("", "判定不可"))[1] if sar[0] else "判定不可(無判定)"
         print(f"Trend(SAR): {sar[0]}  判定={_sj}  source={sar[1]}")
-        print(f"地合いスコア now: {aux['cur']:.1f}  band: {mri_band(aux['cur'])[0]}")
+        print(f"Market Conditions now: {aux['cur']:.1f}  band: {mri_band(aux['cur'])[0]}")
         print(f"  slope {aux['slope']} | warning {aux['bear_n']}/4 | peak {aux['peak']} (drop {aux['drop']:.1f} from {aux['hi20']:.1f})")
         print(f"  dropped indicators: {dropped or 'none'} | active weights sum: {sum(w for _,w,_,_,_ in active)}")
         print("  breakdown (key: pts/max  raw):")
