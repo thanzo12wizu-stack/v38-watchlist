@@ -4,6 +4,8 @@ import unittest
 
 from leadership.rotation_overlay import apply_rotation_overlay, enrich_rotation_group
 
+# Public Leadership is intentionally organized around granular sector rotation first.
+
 
 def stock(symbol: str, pre_status: str = "READY") -> dict:
     return {
