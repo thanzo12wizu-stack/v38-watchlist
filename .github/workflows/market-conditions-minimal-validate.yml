@@ -5,6 +5,9 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: write
+
 jobs:
   validate:
     runs-on: ubuntu-24.04
@@ -13,16 +16,56 @@ jobs:
       TZ: Asia/Tokyo
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+      - name: Apply scoped repair
+        id: repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/fix_market_conditions_minimal.py
+          if git diff --quiet -- build_dashboard.py; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          git diff --check
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Run production preflight
         run: |
           python -m py_compile build_dashboard.py
           pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
+      - name: Validate Market Conditions contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import numpy as np
+          import pandas as pd
+          import build_dashboard as d
+
+          assert [x[1] for x in d.STATUS_DEF] == [15, 55, 20, 10], d.STATUS_DEF
+          idx = pd.bdate_range('2024-01-02', periods=320)
+          macro = {}
+          for j, t in enumerate(d.MC_MARKET_TICKERS + ['QQQE']):
+              close = pd.Series(np.linspace(100 + j, 160 + j, len(idx)), index=idx)
+              macro[t] = pd.DataFrame({'Close': close})
+          score, breakdown, dropped, active, vals = d.mri_frame(macro)
+          assert len(d.MC_MARKET_TICKERS) == 43
+          assert np.isfinite(float(score.dropna().iloc[-1]))
+          assert [x['key'] for x in breakdown] == ['short','medium','long','damage']
+          for k in ('qqq_50','qqq_200','spy_50','spy_200','rsp_50','rsp_200','qqqe_50'):
+              assert k in vals.columns, k
+          assert 'repair_thrust10' not in vals.columns
+          assert 'NQSAR' not in open(d.__file__, encoding='utf-8').read()
+          print('Market Conditions contract OK:', float(score.dropna().iloc[-1]))
+          PY
       - name: Run production dashboard build without persistence
+        if: steps.repair.outputs.changed == 'true'
         env:
           V38_UNIVERSE_CSV: universe.csv
           V38_UNIVERSE_AUTO: '1'
@@ -55,5 +98,21 @@ jobs:
         run: |
           set -euo pipefail
           python build_dashboard.py 2>&1 | tee build-dashboard.log
+          grep -q 'SELFTEST OK' build-dashboard.log
           test -s command-center.html
+          test "$(wc -c < command-center.html)" -gt 200000
           grep -q 'Command Center' command-center.html
+          grep -q 'トレンド判定' command-center.html
+          ! grep -q 'NQSAR' command-center.html
+          ! grep -q 'RECOVERY ·' command-center.html
+      - name: Persist validated builder repair
+        if: steps.repair.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build_dashboard.py
+          test "$(git diff --cached --name-only)" = "build_dashboard.py"
+          git commit -m 'Repair Market Conditions without changing NQ UI'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
