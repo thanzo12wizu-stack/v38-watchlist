@@ -1,0 +1,42 @@
+name: Market Conditions alpha and context 15y
+
+on:
+  push:
+    branches:
+      - analysis-market-conditions-deterioration-20260825
+    paths:
+      - tools/market_conditions_alpha_context_15y.py
+      - .github/workflows/market-conditions-alpha-context-15y.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: analysis-market-conditions-deterioration-20260825
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Run validation
+        run: python tools/market_conditions_alpha_context_15y.py
+      - name: Persist results
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market_conditions_alpha_context_15y.json market_conditions_alpha_context_15y_daily.csv
+          if git diff --staged --quiet; then
+            echo "No result changes"
+            exit 0
+          fi
+          git commit -m "Persist 15-year alpha context validation"
+          git push origin HEAD:analysis-market-conditions-deterioration-20260825
