@@ -33,6 +33,9 @@ replace_once(
     "mri_frame docstring",
 )
 
+# Restore the pre-existing VIX card title. Market Conditions work must not rename other cards.
+s = s.replace("<h2>パニック・底形成 ", "<h2>VIX反転シーケンス ")
+
 # 3) Recovery was validation telemetry, not requested production UI/logic. Remove it.
 replace_once(
     '        vals["repair_breadth"] = np.nan; vals["repair_thrust10"] = np.nan\n        vals["qqq_dd"] = np.nan; vals["bottom_context"] = 0.0; vals["mc_coverage"] = 0.0',
@@ -135,7 +138,7 @@ s = s.replace(
     '<div class="st">{band_lab}</div>',
 )
 
-# Required invariants: no unrequested NQSAR/Recovery additions remain, old NQ label is restored.
+# Required invariants: no unrequested NQSAR/Recovery additions remain, old NQ/VIX labels are restored.
 if "NQSAR" in s or "NQSAR（短期）" in s:
     raise SystemExit("unrequested NQSAR wording remains")
 if "_recovery_html" in s or 'aux.get("recovery")' in s or 'repair_thrust10' in s:
@@ -144,6 +147,8 @@ if "トレンド判定" not in s:
     raise SystemExit("pre-existing trend label was not restored")
 if 'if "トレンド判定" not in html: errs.append("trend pill missing")' not in s:
     raise SystemExit("trend-pill selftest was not restored")
+if '<h2>VIX反転シーケンス ' not in s:
+    raise SystemExit("pre-existing VIX fear-cycle title was not restored")
 
 if s != orig:
     p.write_text(s, encoding="utf-8")
