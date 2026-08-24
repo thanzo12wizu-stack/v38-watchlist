@@ -110,11 +110,19 @@ def enrich_rotation_group(group: dict[str, Any]) -> dict[str, Any]:
 
     phase = str(out.get("phase") or "")
     med_accel = _num(out.get("acceleration")) or 0.0
-    if phase == "EMERGING" and pioneer >= 68 and (top_accel or 0.0) >= 2:
-        state = "RISING"
-    elif phase == "LEADING" and breadth >= 58 and (top_accel or 0.0) >= -4:
+    top_accel_value = top_accel or 0.0
+    positive_value = positive_share if positive_share is not None else 50.0
+    early_rotation = (
+        pioneer >= 68
+        and top_accel_value >= 5
+        and positive_value >= 50
+        and (len(leaders) >= 1 or breadth >= 58)
+    )
+    if phase == "LEADING" and breadth >= 58 and top_accel_value >= -4:
         state = "LEADING"
-    elif phase == "MATURE" or (breadth >= 55 and ((top_accel or 0.0) < -4 or med_accel < -3)):
+    elif (phase == "EMERGING" and pioneer >= 68 and top_accel_value >= 0) or early_rotation:
+        state = "RISING"
+    elif phase == "MATURE" or (breadth >= 55 and (top_accel_value < -4 or med_accel < -3)):
         state = "TOPPING"
     else:
         state = "FADING"
