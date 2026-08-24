@@ -9,6 +9,8 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      TZ: Asia/Tokyo
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -20,5 +22,38 @@ jobs:
         run: |
           python -m py_compile build_dashboard.py
           pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
-      - name: Run offline dashboard selftest
-        run: python build_dashboard.py --selftest
+      - name: Run production dashboard build without persistence
+        env:
+          V38_UNIVERSE_CSV: universe.csv
+          V38_UNIVERSE_AUTO: '1'
+          V38_UNIVERSE_MIN_MCAP: '200000000'
+          V38_UNIVERSE_MIN_PRICE: '1'
+          V38_SECTOR_JSON: sector_snapshot.json
+          V38_OUT_HTML: command-center.html
+          V38_MKTCAP_JSON: mktcap.json
+          V38_TREND_JSON: trend_history.json
+          V38_LOG_CSV: daily_log.csv
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          V38_FRED_CACHE: fred_cache.json
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          V38_FMP_REFERENCE_CACHE: fmp_reference_cache.json
+          V38_FMP_REFERENCE_BUDGET: '40'
+          V38_STATE_JSON: state.json
+          V38_EQUITY_CSV: equity.csv
+          V38_ER_JSON: earnings.json
+          V38_EARNINGS_FETCH_BUDGET: '120'
+          V38_EARNINGS_FETCH_SECONDS: '180'
+          V38_EARNINGS_PRIORITY_RESERVE: '20'
+          V38_INCEPT_VWAP_JSON: inception_vwap.json
+          V38_INCEPT_VWAP_BUDGET: '1400'
+          V38_INDUSTRY_JSON: industry_map.json
+          V38_INDUSTRY_MAX_AGE_DAYS: '7'
+          V38_OPT_JSON: options_positioning.json
+          V38_OPT_SCAN_HISTORY: options_scan_history.csv
+          V38_OPT_TARGETS: options_targets.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          python build_dashboard.py 2>&1 | tee build-dashboard.log
+          test -s command-center.html
+          grep -q 'Command Center' command-center.html
