@@ -16,8 +16,11 @@ class PublicGroupVisibilityTests(unittest.TestCase):
                 "score": 90 - i,
                 "pioneer_score": 92 - i,
                 "breadth_score": 65 + i,
+                "top_acceleration": 7.0 if i % 2 else 1.0,
+                "positive_accel_share": 70.0,
                 "leader_breakouts": i % 3,
                 "leaders": 2 + i,
+                "pioneers": 1,
                 "leader_density": 25.0,
                 "acceleration": 5.0,
                 "stocks": [],
@@ -29,8 +32,11 @@ class PublicGroupVisibilityTests(unittest.TestCase):
             "score": 55.0,
             "pioneer_score": 60.0,
             "breadth_score": 50.0,
+            "top_acceleration": -6.0,
+            "positive_accel_share": 30.0,
             "leader_breakouts": 0,
             "leaders": 1,
+            "pioneers": 0,
             "leader_density": 5.0,
             "acceleration": -2.0,
             "stocks": [],
@@ -44,19 +50,20 @@ class PublicGroupVisibilityTests(unittest.TestCase):
             "waiting": [],
         }
 
-    def test_active_groups_beyond_top_eight_are_visible(self):
+    def test_rotation_sections_show_active_groups_beyond_first_screen(self):
         page = render_public_html(self._model())
-        self.assertIn("新興・主導をすべて見る（10）", page)
+        self.assertIn("今の資金移動", page)
+        self.assertIn("急浮上", page)
+        self.assertIn("主導中", page)
         self.assertIn('data-group="Active Group 9"', page)
         self.assertIn('data-group="Active Group 10"', page)
-        self.assertIn("主導 81.0", page)
-        self.assertIn("構造", page)
+        self.assertNotIn("Pioneer 81.0", page)
 
-    def test_every_industry_group_is_inspectable_even_when_inactive(self):
+    def test_inactive_industry_group_remains_inspectable(self):
         page = render_public_html(self._model())
-        self.assertIn("全Industry Groupを見る（11）", page)
+        self.assertIn("失速グループを見る（1）", page)
         self.assertIn('data-group="Medical - Development Biotech"', page)
-        self.assertIn("細分類Industry Groupを優先", page)
+        self.assertIn("細分類Industry Group", page)
 
 
 if __name__ == "__main__":
