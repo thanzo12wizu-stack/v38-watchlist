@@ -1,0 +1,4092 @@
+{
+  "scope": {
+    "evaluation": "2016-01-01..2026-08-21",
+    "failed_tickers": [],
+    "episode_rule": "QQQ drawdown >=8% from running peak; episode ends when drawdown recovers to within 2% of peak",
+    "recovery_thrust": "10-session change in mean(above20, ret21>0 participation, above50, 20SMA>50SMA); excludes 5D and 10SMA"
+  },
+  "episodes": [
+    {
+      "peak": "2016-01-04",
+      "trough": "2016-02-09",
+      "end": "2016-03-16",
+      "dd_pct": -12.03655118785203
+    },
+    {
+      "peak": "2018-01-26",
+      "trough": "2018-02-08",
+      "end": "2018-02-23",
+      "dd_pct": -10.22643604715464
+    },
+    {
+      "peak": "2018-03-12",
+      "trough": "2018-04-02",
+      "end": "2018-06-01",
+      "dd_pct": -10.522580439096629
+    },
+    {
+      "peak": "2018-08-29",
+      "trough": "2018-12-24",
+      "end": "2019-03-21",
+      "dd_pct": -22.796671491837618
+    },
+    {
+      "peak": "2019-05-03",
+      "trough": "2019-06-03",
+      "end": "2019-06-20",
+      "dd_pct": -10.98320137894767
+    },
+    {
+      "peak": "2020-02-19",
+      "trough": "2020-03-16",
+      "end": "2020-05-29",
+      "dd_pct": -28.559380502413745
+    },
+    {
+      "peak": "2020-09-02",
+      "trough": "2020-09-23",
+      "end": "2020-11-27",
+      "dd_pct": -12.749387060483308
+    },
+    {
+      "peak": "2021-02-12",
+      "trough": "2021-03-08",
+      "end": "2021-04-05",
+      "dd_pct": -10.851544675594893
+    },
+    {
+      "peak": "2021-12-27",
+      "trough": "2022-11-03",
+      "end": "2023-12-08",
+      "dd_pct": -35.11873782139807
+    },
+    {
+      "peak": "2024-07-10",
+      "trough": "2024-08-07",
+      "end": "2024-10-09",
+      "dd_pct": -13.55773425354898
+    },
+    {
+      "peak": "2025-02-19",
+      "trough": "2025-04-08",
+      "end": "2025-06-04",
+      "dd_pct": -22.76830844704014
+    },
+    {
+      "peak": "2025-10-29",
+      "trough": "2026-03-30",
+      "end": "2026-04-14",
+      "dd_pct": -11.964372276774393
+    },
+    {
+      "peak": "2026-06-02",
+      "trough": "2026-07-29",
+      "end": "2026-08-13",
+      "dd_pct": -11.217806908394557
+    }
+  ],
+  "candidates": {
+    "v2_25452010": {
+      "weights": [
+        0.25,
+        0.45,
+        0.2,
+        0.1
+      ],
+      "horizon_corr": {
+        "qqq_ret5_corr": 0.3580108644879855,
+        "qqq_ret10_corr": 0.45613731986003003,
+        "qqq_ret21_corr": 0.5704891902778025,
+        "qqq_ret63_corr": 0.6107952526365308,
+        "qqq_ret126_corr": 0.5621007629979078
+      },
+      "gate_overlap": {},
+      "recovery": {
+        "thrust_avg_sessions": 6.769230769230769,
+        "thrust_median_sessions": 7.0,
+        "thrust_coverage": 13,
+        "repair45_avg_sessions": 10.461538461538462,
+        "repair45_median_sessions": 8.0,
+        "repair45_coverage": 13,
+        "repair55_avg_sessions": 13.538461538461538,
+        "repair55_median_sessions": 7.0,
+        "repair55_coverage": 13,
+        "bull65_avg_sessions": 15.833333333333334,
+        "bull65_median_sessions": 9.0,
+        "bull65_coverage": 12,
+        "d0_score_mean": 31.765905517879677,
+        "d0_medium_mean": 27.240481740481737,
+        "d0_repair_breadth_mean": 19.8836926961927,
+        "d0_thrust10_mean": -19.725135975135974,
+        "d5_score_mean": 50.0630937012662,
+        "d5_medium_mean": 38.148795648795655,
+        "d5_repair_breadth_mean": 40.205055361305355,
+        "d5_thrust10_mean": 4.012844794094793,
+        "d10_score_mean": 56.4834612779677,
+        "d10_medium_mean": 44.23513986013987,
+        "d10_repair_breadth_mean": 53.978486790986786,
+        "d10_thrust10_mean": 34.094794094794096,
+        "d20_score_mean": 64.90551140288481,
+        "d20_medium_mean": 62.62173821548822,
+        "d20_repair_breadth_mean": 74.16416771885523,
+        "d20_thrust10_mean": 22.46369949494949,
+        "d40_score_mean": 64.2808964172879,
+        "d40_medium_mean": 68.12742003367002,
+        "d40_repair_breadth_mean": 68.27388468013467,
+        "d40_thrust10_mean": -5.871606691919197
+      },
+      "thrust_quality": {
+        "episodes": [
+          {
+            "trough": "2016-02-09",
+            "trigger": "2016-02-17",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -1.1415176228325663,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-02-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2018-04-02",
+            "trigger": "2018-04-12",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -2.3118534753189146,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-12-24",
+            "trigger": "2018-11-07",
+            "sessions_vs_trough": -31,
+            "worst20_from_trigger_pct": -9.351872457504973,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2019-06-03",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2020-03-16",
+            "trigger": "2020-04-09",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2020-09-23",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2021-03-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2022-11-03",
+            "trigger": "2022-02-09",
+            "sessions_vs_trough": -185,
+            "worst20_from_trigger_pct": -11.828869616750614,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2024-08-07",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2025-04-08",
+            "trigger": "2025-04-29",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -0.012627433137224475,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2026-03-30",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2026-07-29",
+            "trigger": "2026-08-04",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -3.285206750538261,
+            "false_lower_low": false
+          }
+        ],
+        "triggered": 7,
+        "false_count": 2,
+        "false_rate_pct": 28.57142857142857
+      },
+      "episode_detail": [
+        {
+          "peak": "2016-01-04",
+          "trough": "2016-02-09",
+          "end": "2016-03-16",
+          "dd_pct": -12.03655118785203,
+          "snapshots": {
+            "d0": {
+              "date": "2016-02-09",
+              "score": 11.7774940382783,
+              "medium": 8.375,
+              "repair_breadth": 10.9375,
+              "thrust10": 5.217803030303031,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2016-02-17",
+              "score": 34.119663155953326,
+              "medium": 23.954545454545453,
+              "repair_breadth": 47.41161616161616,
+              "thrust10": 38.446969696969695,
+              "qqq_from_trough_pct": 6.416170977473867
+            },
+            "d10": {
+              "date": "2016-02-24",
+              "score": 39.85602731028089,
+              "medium": 27.522727272727273,
+              "repair_breadth": 49.586489898989896,
+              "thrust10": 38.648989898989896,
+              "qqq_from_trough_pct": 6.468054659006062
+            },
+            "d20": {
+              "date": "2016-03-09",
+              "score": 55.495646110485595,
+              "medium": 55.49873737373738,
+              "repair_breadth": 86.15372474747474,
+              "thrust10": 36.567234848484844,
+              "qqq_from_trough_pct": 8.824792785385437
+            },
+            "d40": {
+              "date": "2016-04-07",
+              "score": 63.687220767695706,
+              "medium": 88.34848484848484,
+              "repair_breadth": 82.65940656565655,
+              "thrust10": -10.124684343434353,
+              "qqq_from_trough_pct": 13.583477326626303
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2016-02-17",
+              "sessions": 5
+            },
+            "repair45": {
+              "date": "2016-02-26",
+              "sessions": 12
+            },
+            "repair55": {
+              "date": "2016-03-07",
+              "sessions": 18
+            },
+            "bull65": {
+              "date": "2016-03-16",
+              "sessions": 25
+            }
+          }
+        },
+        {
+          "peak": "2018-01-26",
+          "trough": "2018-02-08",
+          "end": "2018-02-23",
+          "dd_pct": -10.22643604715464,
+          "snapshots": {
+            "d0": {
+              "date": "2018-02-08",
+              "score": 47.543079771135865,
+              "medium": 47.45328282828283,
+              "repair_breadth": 23.137626262626267,
+              "thrust10": -67.93087121212122,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-02-15",
+              "score": 70.34628802127,
+              "medium": 63.154040404040416,
+              "repair_breadth": 41.04008838383838,
+              "thrust10": -36.99810606060606,
+              "qqq_from_trough_pct": 7.983083617455833
+            },
+            "d10": {
+              "date": "2018-02-23",
+              "score": 70.27484881336368,
+              "medium": 56.339646464646464,
+              "repair_breadth": 45.84122474747475,
+              "thrust10": 22.70359848484848,
+              "qqq_from_trough_pct": 9.592738310804648
+            },
+            "d20": {
+              "date": "2018-03-09",
+              "score": 78.63237933543179,
+              "medium": 68.7689393939394,
+              "repair_breadth": 69.6606691919192,
+              "thrust10": 23.81944444444445,
+              "qqq_from_trough_pct": 12.844626868195409
+            },
+            "d40": {
+              "date": "2018-04-09",
+              "score": 39.56186853723247,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 2.955976844212649
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair55": {
+              "date": "2018-02-14",
+              "sessions": 4
+            },
+            "bull65": {
+              "date": "2018-02-15",
+              "sessions": 5
+            }
+          }
+        },
+        {
+          "peak": "2018-03-12",
+          "trough": "2018-04-02",
+          "end": "2018-06-01",
+          "dd_pct": -10.522580439096629,
+          "snapshots": {
+            "d0": {
+              "date": "2018-04-02",
+              "score": 35.49356309069762,
+              "medium": 17.991161616161612,
+              "repair_breadth": 14.272411616161616,
+              "thrust10": -47.14488636363636,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-04-09",
+              "score": 39.56186853723247,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 1.4275679445796552
+            },
+            "d10": {
+              "date": "2018-04-16",
+              "score": 54.45721971683648,
+              "medium": 20.80429292929293,
+              "repair_breadth": 42.193813131313135,
+              "thrust10": 27.92140151515152,
+              "qqq_from_trough_pct": 4.559188875124298
+            },
+            "d20": {
+              "date": "2018-04-30",
+              "score": 45.27331212677392,
+              "medium": 28.59974747474747,
+              "repair_breadth": 36.23421717171718,
+              "thrust10": -5.9595959595959584,
+              "qqq_from_trough_pct": 3.4917695466864185
+            },
+            "d40": {
+              "date": "2018-05-29",
+              "score": 63.86440293832746,
+              "medium": 65.68181818181819,
+              "repair_breadth": 70.72127525252525,
+              "thrust10": -8.776830808080817,
+              "qqq_from_trough_pct": 8.655403434634955
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-04-11",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2018-04-17",
+              "sessions": 11
+            },
+            "repair55": {
+              "date": "2018-05-07",
+              "sessions": 25
+            },
+            "bull65": {
+              "date": "2018-04-18",
+              "sessions": 12
+            }
+          }
+        },
+        {
+          "peak": "2018-08-29",
+          "trough": "2018-12-24",
+          "end": "2019-03-21",
+          "dd_pct": -22.796671491837618,
+          "snapshots": {
+            "d0": {
+              "date": "2018-12-24",
+              "score": 6.1950665989643365,
+              "medium": 5.363636363636364,
+              "repair_breadth": 4.223484848484849,
+              "thrust10": -7.501578282828283,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-01-02",
+              "score": 20.478519954102538,
+              "medium": 3.4848484848484844,
+              "repair_breadth": 2.632575757575758,
+              "thrust10": -5.020517676767677,
+              "qqq_from_trough_pct": 7.930344886649454
+            },
+            "d10": {
+              "date": "2019-01-09",
+              "score": 33.88625488641832,
+              "medium": 12.63131313131313,
+              "repair_breadth": 35.12626262626262,
+              "thrust10": 30.902777777777775,
+              "qqq_from_trough_pct": 12.069701887759464
+            },
+            "d20": {
+              "date": "2019-01-24",
+              "score": 49.02381519865747,
+              "medium": 46.814393939393945,
+              "repair_breadth": 74.5959595959596,
+              "thrust10": 39.469696969696976,
+              "qqq_from_trough_pct": 13.728244470680195
+            },
+            "d40": {
+              "date": "2019-02-22",
+              "score": 84.03205778392962,
+              "medium": 92.78535353535354,
+              "repair_breadth": 99.65277777777777,
+              "thrust10": 4.217171717171709,
+              "qqq_from_trough_pct": 20.480865424568528
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-01-07",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2019-01-17",
+              "sessions": 16
+            },
+            "repair55": {
+              "date": "2019-01-30",
+              "sessions": 24
+            },
+            "bull65": {
+              "date": "2019-01-31",
+              "sessions": 25
+            }
+          }
+        },
+        {
+          "peak": "2019-05-03",
+          "trough": "2019-06-03",
+          "end": "2019-06-20",
+          "dd_pct": -10.98320137894767,
+          "snapshots": {
+            "d0": {
+              "date": "2019-06-03",
+              "score": 30.581312423485187,
+              "medium": 21.71464646464646,
+              "repair_breadth": 14.496527777777775,
+              "thrust10": -20.19728535353536,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-06-10",
+              "score": 66.73951664894531,
+              "medium": 48.276515151515156,
+              "repair_breadth": 50.714962121212125,
+              "thrust10": 25.741792929292934,
+              "qqq_from_trough_pct": 7.659297625939754
+            },
+            "d10": {
+              "date": "2019-06-17",
+              "score": 66.42549041752804,
+              "medium": 48.656565656565654,
+              "repair_breadth": 55.3030303030303,
+              "thrust10": 40.806502525252526,
+              "qqq_from_trough_pct": 8.00608869967272
+            },
+            "d20": {
+              "date": "2019-07-01",
+              "score": 81.8494163691496,
+              "medium": 81.62247474747475,
+              "repair_breadth": 90.00789141414141,
+              "thrust10": 34.704861111111114,
+              "qqq_from_trough_pct": 11.496832529627232
+            },
+            "d40": {
+              "date": "2019-07-30",
+              "score": 82.7828908988186,
+              "medium": 87.04797979797979,
+              "repair_breadth": 87.45107323232322,
+              "thrust10": -6.398358585858588,
+              "qqq_from_trough_pct": 14.159668112793788
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-06-07",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2019-06-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2019-06-12",
+              "sessions": 7
+            },
+            "bull65": {
+              "date": "2019-06-10",
+              "sessions": 5
+            }
+          }
+        },
+        {
+          "peak": "2020-02-19",
+          "trough": "2020-03-16",
+          "end": "2020-05-29",
+          "dd_pct": -28.559380502413745,
+          "snapshots": {
+            "d0": {
+              "date": "2020-03-16",
+              "score": 11.105026403500636,
+              "medium": 4.929292929292929,
+              "repair_breadth": 1.0416666666666665,
+              "thrust10": -13.555871212121213,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-03-23",
+              "score": 7.000360502720479,
+              "medium": 0.8333333333333333,
+              "repair_breadth": 0.0,
+              "thrust10": -5.265151515151515,
+              "qqq_from_trough_pct": 0.8997691406448238
+            },
+            "d10": {
+              "date": "2020-03-30",
+              "score": 22.116318849471583,
+              "medium": 0.0,
+              "repair_breadth": 7.110164141414142,
+              "thrust10": 6.068497474747476,
+              "qqq_from_trough_pct": 13.673515550378323
+            },
+            "d20": {
+              "date": "2020-04-14",
+              "score": 39.75456198796992,
+              "medium": 22.35606060606061,
+              "repair_breadth": 52.73674242424242,
+              "thrust10": 45.62657828282828,
+              "qqq_from_trough_pct": 25.405483139065566
+            },
+            "d40": {
+              "date": "2020-05-12",
+              "score": 44.86282948075541,
+              "medium": 52.60101010101009,
+              "repair_breadth": 79.5849116161616,
+              "thrust10": 5.631313131313121,
+              "qqq_from_trough_pct": 31.47867205219905
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-04-06",
+              "sessions": 15
+            },
+            "repair45": {
+              "date": "2020-04-28",
+              "sessions": 30
+            },
+            "repair55": {
+              "date": "2020-05-20",
+              "sessions": 46
+            },
+            "bull65": {
+              "date": "2020-05-27",
+              "sessions": 50
+            }
+          }
+        },
+        {
+          "peak": "2020-09-02",
+          "trough": "2020-09-23",
+          "end": "2020-11-27",
+          "dd_pct": -12.749387060483308,
+          "snapshots": {
+            "d0": {
+              "date": "2020-09-23",
+              "score": 47.57238302164878,
+              "medium": 52.70580808080808,
+              "repair_breadth": 22.866161616161612,
+              "thrust10": -39.36868686868688,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-09-30",
+              "score": 66.0577765201046,
+              "medium": 57.875,
+              "repair_breadth": 40.939078282828284,
+              "thrust10": -28.042929292929294,
+              "qqq_from_trough_pct": 5.17867123773792
+            },
+            "d10": {
+              "date": "2020-10-07",
+              "score": 79.15119805744835,
+              "medium": 74.18181818181819,
+              "repair_breadth": 71.45359848484848,
+              "thrust10": 48.58743686868687,
+              "qqq_from_trough_pct": 5.9660883910063855
+            },
+            "d20": {
+              "date": "2020-10-21",
+              "score": 73.26209302695148,
+              "medium": 83.52272727272728,
+              "repair_breadth": 81.81660353535354,
+              "thrust10": 10.363005050505052,
+              "qqq_from_trough_pct": 7.582524259658063
+            },
+            "d40": {
+              "date": "2020-11-18",
+              "score": 91.52555908629432,
+              "medium": 92.36237373737374,
+              "repair_breadth": 95.2840909090909,
+              "thrust10": 21.589330808080803,
+              "qqq_from_trough_pct": 9.823581283624572
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair55": {
+              "date": "2020-09-28",
+              "sessions": 3
+            },
+            "bull65": {
+              "date": "2020-09-30",
+              "sessions": 5
+            }
+          }
+        },
+        {
+          "peak": "2021-02-12",
+          "trough": "2021-03-08",
+          "end": "2021-04-05",
+          "dd_pct": -10.851544675594893,
+          "snapshots": {
+            "d0": {
+              "date": "2021-03-08",
+              "score": 73.63230618806676,
+              "medium": 75.29040404040404,
+              "repair_breadth": 62.053345959595966,
+              "thrust10": -14.315025252525253,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2021-03-15",
+              "score": 88.84571029136157,
+              "medium": 81.42550505050505,
+              "repair_breadth": 76.98863636363636,
+              "thrust10": 1.2452651515151416,
+              "qqq_from_trough_pct": 6.297916801755821
+            },
+            "d10": {
+              "date": "2021-03-22",
+              "score": 76.4538344827775,
+              "medium": 77.3800505050505,
+              "repair_breadth": 72.8409090909091,
+              "thrust10": 10.787563131313128,
+              "qqq_from_trough_pct": 6.358723998906601
+            },
+            "d20": {
+              "date": "2021-04-06",
+              "score": 89.82594355406033,
+              "medium": 86.63510101010101,
+              "repair_breadth": 83.97727272727272,
+              "thrust10": 11.136363636363626,
+              "qqq_from_trough_pct": 10.434666365958645
+            },
+            "d40": {
+              "date": "2021-05-04",
+              "score": 82.1826616578262,
+              "medium": 83.55176767676767,
+              "repair_breadth": 77.58364898989899,
+              "thrust10": 4.144570707070699,
+              "qqq_from_trough_pct": 10.207727096122143
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2021-03-17",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2021-03-11",
+              "sessions": 3
+            },
+            "repair55": {
+              "date": "2021-03-08",
+              "sessions": 0
+            },
+            "bull65": {
+              "date": "2021-03-08",
+              "sessions": 0
+            }
+          }
+        },
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.11873782139807,
+          "snapshots": {
+            "d0": {
+              "date": "2022-11-03",
+              "score": 27.394052867112762,
+              "medium": 25.51641414141414,
+              "repair_breadth": 45.71180555555556,
+              "thrust10": 31.515151515151516,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2022-11-10",
+              "score": 53.29419780724285,
+              "medium": 55.80176767676768,
+              "repair_breadth": 86.95391414141413,
+              "thrust10": 28.800505050505038,
+              "qqq_from_trough_pct": 8.545468620578589
+            },
+            "d10": {
+              "date": "2022-11-17",
+              "score": 56.30084057552878,
+              "medium": 62.45328282828283,
+              "repair_breadth": 86.43939393939394,
+              "thrust10": 40.72758838383838,
+              "qqq_from_trough_pct": 9.336269441973188
+            },
+            "d20": {
+              "date": "2022-12-02",
+              "score": 75.93277462273014,
+              "medium": 87.73106060606062,
+              "repair_breadth": 97.37373737373737,
+              "thrust10": 10.934343434343432,
+              "qqq_from_trough_pct": 12.307581506733744
+            },
+            "d40": {
+              "date": "2023-01-03",
+              "score": 41.865736891474214,
+              "medium": 45.74747474747475,
+              "repair_breadth": 21.365214646464644,
+              "thrust10": -17.612058080808076,
+              "qqq_from_trough_pct": 1.7748230281927846
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2022-11-03",
+              "sessions": 0
+            },
+            "repair45": {
+              "date": "2022-11-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2022-11-11",
+              "sessions": 6
+            },
+            "bull65": {
+              "date": "2022-11-25",
+              "sessions": 15
+            }
+          }
+        },
+        {
+          "peak": "2024-07-10",
+          "trough": "2024-08-07",
+          "end": "2024-10-09",
+          "dd_pct": -13.55773425354898,
+          "snapshots": {
+            "d0": {
+              "date": "2024-08-07",
+              "score": 49.36732362161403,
+              "medium": 48.477272727272734,
+              "repair_breadth": 33.131313131313135,
+              "thrust10": -31.253156565656553,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2024-08-14",
+              "score": 69.26594071385,
+              "medium": 53.364898989899,
+              "repair_breadth": 44.48863636363637,
+              "thrust10": -36.53882575757576,
+              "qqq_from_trough_pct": 6.430982291541221
+            },
+            "d10": {
+              "date": "2024-08-21",
+              "score": 82.60840205057454,
+              "medium": 71.6439393939394,
+              "repair_breadth": 74.42550505050505,
+              "thrust10": 41.29419191919192,
+              "qqq_from_trough_pct": 10.978214565527589
+            },
+            "d20": {
+              "date": "2024-09-05",
+              "score": 67.2480234069618,
+              "medium": 75.19823232323233,
+              "repair_breadth": 65.22569444444444,
+              "thrust10": -9.199810606060609,
+              "qqq_from_trough_pct": 6.042279401073269
+            },
+            "d40": {
+              "date": "2024-10-03",
+              "score": 76.52607256061847,
+              "medium": 84.40151515151516,
+              "repair_breadth": 83.28598484848484,
+              "thrust10": -6.346275252525274,
+              "qqq_from_trough_pct": 10.924564175696938
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair55": {
+              "date": "2024-08-09",
+              "sessions": 2
+            },
+            "bull65": {
+              "date": "2024-08-13",
+              "sessions": 4
+            }
+          }
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "snapshots": {
+            "d0": {
+              "date": "2025-04-08",
+              "score": 10.631874158247488,
+              "medium": 5.45580808080808,
+              "repair_breadth": 1.3825757575757576,
+              "thrust10": -26.324179292929294,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2025-04-15",
+              "score": 26.293589116251773,
+              "medium": 6.395202020202021,
+              "repair_breadth": 4.905303030303031,
+              "thrust10": -11.753472222222218,
+              "qqq_from_trough_pct": 10.07787566426812
+            },
+            "d10": {
+              "date": "2025-04-23",
+              "score": 22.749007381588974,
+              "medium": 5.909090909090909,
+              "repair_breadth": 16.013257575757574,
+              "thrust10": 14.630681818181817,
+              "qqq_from_trough_pct": 9.25347560659775
+            },
+            "d20": {
+              "date": "2025-05-07",
+              "score": 46.61062137822064,
+              "medium": 37.69823232323232,
+              "repair_breadth": 66.19949494949495,
+              "thrust10": 50.18623737373737,
+              "qqq_from_trough_pct": 16.161133503225813
+            },
+            "d40": {
+              "date": "2025-06-05",
+              "score": 71.15281931538718,
+              "medium": 83.7550505050505,
+              "repair_breadth": 88.96938131313132,
+              "thrust10": 3.3854166666666714,
+              "qqq_from_trough_pct": 26.133238337576216
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2025-04-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2025-05-05",
+              "sessions": 18
+            },
+            "repair55": {
+              "date": "2025-05-15",
+              "sessions": 26
+            },
+            "bull65": {
+              "date": "2025-06-03",
+              "sessions": 38
+            }
+          }
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "snapshots": {
+            "d0": {
+              "date": "2026-03-30",
+              "score": 32.56324100718524,
+              "medium": 18.132575757575758,
+              "repair_breadth": 7.73989898989899,
+              "thrust10": -14.94318181818182,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-04-07",
+              "score": 55.929194712496134,
+              "medium": 25.987373737373737,
+              "repair_breadth": 33.69002525252525,
+              "thrust10": 21.33364898989899,
+              "qqq_from_trough_pct": 5.4291761717070175
+            },
+            "d10": {
+              "date": "2026-04-14",
+              "score": 72.47185510950973,
+              "medium": 53.820707070707066,
+              "repair_breadth": 64.07196969696969,
+              "thrust10": 56.3320707070707,
+              "qqq_from_trough_pct": 12.595816990574082
+            },
+            "d20": {
+              "date": "2026-04-28",
+              "score": 75.95754971722495,
+              "medium": 77.01515151515153,
+              "repair_breadth": 85.98800505050505,
+              "thrust10": 21.916035353535364,
+              "qqq_from_trough_pct": 17.781396348116353
+            },
+            "d40": {
+              "date": "2026-05-27",
+              "score": 29.326637089095385,
+              "medium": 27.689393939393938,
+              "repair_breadth": 18.428030303030297,
+              "thrust10": -63.27335858585859,
+              "qqq_from_trough_pct": 30.660244008335937
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-04-06",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2026-04-08",
+              "sessions": 6
+            },
+            "repair55": {
+              "date": "2026-04-13",
+              "sessions": 9
+            },
+            "bull65": {
+              "date": "2026-04-08",
+              "sessions": 6
+            }
+          }
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "snapshots": {
+            "d0": {
+              "date": "2026-07-29",
+              "score": 29.100048542498755,
+              "medium": 22.720959595959595,
+              "repair_breadth": 17.49368686868687,
+              "thrust10": -10.624999999999996,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-08-05",
+              "score": 52.88759213492945,
+              "medium": 61.824494949494955,
+              "repair_breadth": 78.60006313131314,
+              "thrust10": 57.11332070707071,
+              "qqq_from_trough_pct": 8.397686211051614
+            },
+            "d10": {
+              "date": "2026-08-12",
+              "score": 57.533698962253176,
+              "medium": 63.713383838383834,
+              "repair_breadth": 81.31470959595958,
+              "thrust10": 63.82102272727272,
+              "qqq_from_trough_pct": 9.36485176240367
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-08-03",
+              "sessions": 3
+            },
+            "repair45": {
+              "date": "2026-08-05",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2026-08-06",
+              "sessions": 6
+            },
+            "bull65": {
+              "date": null,
+              "sessions": null
+            }
+          }
+        }
+      ],
+      "noise": {
+        "mean_abs_daily_change": 3.324611422753684,
+        "hysteresis_changes_per_year": 33.21309891808346
+      },
+      "latest": {
+        "date": "2026-08-21",
+        "score": 46.44386477954643,
+        "delta10": -12.031495416777616,
+        "repair_thrust10": -7.400568181818173,
+        "repair_breadth": 74.27083333333334
+      }
+    },
+    "mid_15552010": {
+      "weights": [
+        0.15,
+        0.55,
+        0.2,
+        0.1
+      ],
+      "horizon_corr": {
+        "qqq_ret5_corr": 0.280010643955528,
+        "qqq_ret10_corr": 0.3891528052802495,
+        "qqq_ret21_corr": 0.5489679767406583,
+        "qqq_ret63_corr": 0.6321005674005353,
+        "qqq_ret126_corr": 0.5734524712850269
+      },
+      "gate_overlap": {},
+      "recovery": {
+        "thrust_avg_sessions": 6.769230769230769,
+        "thrust_median_sessions": 7.0,
+        "thrust_coverage": 13,
+        "repair45_avg_sessions": 11.615384615384615,
+        "repair45_median_sessions": 8.0,
+        "repair45_coverage": 13,
+        "repair55_avg_sessions": 13.692307692307692,
+        "repair55_median_sessions": 7.0,
+        "repair55_coverage": 13,
+        "bull65_avg_sessions": 18.0,
+        "bull65_median_sessions": 12.0,
+        "bull65_coverage": 12,
+        "d0_score_mean": 33.00854651576231,
+        "d0_medium_mean": 27.240481740481737,
+        "d0_repair_breadth_mean": 19.8836926961927,
+        "d0_thrust10_mean": -19.725135975135974,
+        "d5_score_mean": 46.92367046381926,
+        "d5_medium_mean": 38.148795648795655,
+        "d5_repair_breadth_mean": 40.205055361305355,
+        "d5_thrust10_mean": 4.012844794094793,
+        "d10_score_mean": 52.88194893695732,
+        "d10_medium_mean": 44.23513986013987,
+        "d10_repair_breadth_mean": 53.978486790986786,
+        "d10_thrust10_mean": 34.094794094794096,
+        "d20_score_mean": 63.74941782808035,
+        "d20_medium_mean": 62.62173821548822,
+        "d20_repair_breadth_mean": 74.16416771885523,
+        "d20_thrust10_mean": 22.46369949494949,
+        "d40_score_mean": 65.44889503789656,
+        "d40_medium_mean": 68.12742003367002,
+        "d40_repair_breadth_mean": 68.27388468013467,
+        "d40_thrust10_mean": -5.871606691919197
+      },
+      "thrust_quality": {
+        "episodes": [
+          {
+            "trough": "2016-02-09",
+            "trigger": "2016-02-17",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -1.1415176228325663,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-02-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2018-04-02",
+            "trigger": "2018-04-12",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -2.3118534753189146,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-12-24",
+            "trigger": "2018-11-07",
+            "sessions_vs_trough": -31,
+            "worst20_from_trigger_pct": -9.351872457504973,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2019-06-03",
+            "trigger": "2019-06-07",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2020-03-16",
+            "trigger": "2020-04-09",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2020-09-23",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2021-03-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2022-11-03",
+            "trigger": "2022-02-09",
+            "sessions_vs_trough": -185,
+            "worst20_from_trigger_pct": -11.828869616750614,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2024-08-07",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2025-04-08",
+            "trigger": "2025-04-29",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -0.012627433137224475,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2026-03-30",
+            "trigger": "2026-04-08",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2026-07-29",
+            "trigger": "2026-08-04",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -3.285206750538261,
+            "false_lower_low": false
+          }
+        ],
+        "triggered": 9,
+        "false_count": 2,
+        "false_rate_pct": 22.22222222222222
+      },
+      "episode_detail": [
+        {
+          "peak": "2016-01-04",
+          "trough": "2016-02-09",
+          "end": "2016-03-16",
+          "dd_pct": -12.03655118785203,
+          "snapshots": {
+            "d0": {
+              "date": "2016-02-09",
+              "score": 10.839220187592517,
+              "medium": 8.375,
+              "repair_breadth": 10.9375,
+              "thrust10": 5.217803030303031,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2016-02-17",
+              "score": 28.119895349858727,
+              "medium": 23.954545454545453,
+              "repair_breadth": 47.41161616161616,
+              "thrust10": 38.446969696969695,
+              "qqq_from_trough_pct": 6.416170977473867
+            },
+            "d10": {
+              "date": "2016-02-24",
+              "score": 33.84354298779111,
+              "medium": 27.522727272727273,
+              "repair_breadth": 49.586489898989896,
+              "thrust10": 38.648989898989896,
+              "qqq_from_trough_pct": 6.468054659006062
+            },
+            "d20": {
+              "date": "2016-03-09",
+              "score": 52.15838349421047,
+              "medium": 55.49873737373738,
+              "repair_breadth": 86.15372474747474,
+              "thrust10": 36.567234848484844,
+              "qqq_from_trough_pct": 8.824792785385437
+            },
+            "d40": {
+              "date": "2016-04-07",
+              "score": 68.54204470203821,
+              "medium": 88.34848484848484,
+              "repair_breadth": 82.65940656565655,
+              "thrust10": -10.124684343434353,
+              "qqq_from_trough_pct": 13.583477326626303
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2016-02-17",
+              "sessions": 5
+            },
+            "repair45": {
+              "date": "2016-03-02",
+              "sessions": 15
+            },
+            "repair55": {
+              "date": "2016-03-11",
+              "sessions": 22
+            },
+            "bull65": {
+              "date": "2016-03-17",
+              "sessions": 26
+            }
+          }
+        },
+        {
+          "peak": "2018-01-26",
+          "trough": "2018-02-08",
+          "end": "2018-02-23",
+          "dd_pct": -10.22643604715464,
+          "snapshots": {
+            "d0": {
+              "date": "2018-02-08",
+              "score": 52.71799074534532,
+              "medium": 47.45328282828283,
+              "repair_breadth": 23.137626262626267,
+              "thrust10": -67.93087121212122,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-02-15",
+              "score": 70.12021416278586,
+              "medium": 63.154040404040416,
+              "repair_breadth": 41.04008838383838,
+              "thrust10": -36.99810606060606,
+              "qqq_from_trough_pct": 7.983083617455833
+            },
+            "d10": {
+              "date": "2018-02-23",
+              "score": 68.17822421434235,
+              "medium": 56.339646464646464,
+              "repair_breadth": 45.84122474747475,
+              "thrust10": 22.70359848484848,
+              "qqq_from_trough_pct": 9.592738310804648
+            },
+            "d20": {
+              "date": "2018-03-09",
+              "score": 75.8523436102365,
+              "medium": 68.7689393939394,
+              "repair_breadth": 69.6606691919192,
+              "thrust10": 23.81944444444445,
+              "qqq_from_trough_pct": 12.844626868195409
+            },
+            "d40": {
+              "date": "2018-04-09",
+              "score": 37.23639362552345,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 2.955976844212649
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair55": {
+              "date": "2018-02-12",
+              "sessions": 2
+            },
+            "bull65": {
+              "date": "2018-02-15",
+              "sessions": 5
+            }
+          }
+        },
+        {
+          "peak": "2018-03-12",
+          "trough": "2018-04-02",
+          "end": "2018-06-01",
+          "dd_pct": -10.522580439096629,
+          "snapshots": {
+            "d0": {
+              "date": "2018-04-02",
+              "score": 35.801812744058196,
+              "medium": 17.991161616161612,
+              "repair_breadth": 14.272411616161616,
+              "thrust10": -47.14488636363636,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-04-09",
+              "score": 37.23639362552345,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 1.4275679445796552
+            },
+            "d10": {
+              "date": "2018-04-16",
+              "score": 48.149615678527766,
+              "medium": 20.80429292929293,
+              "repair_breadth": 42.193813131313135,
+              "thrust10": 27.92140151515152,
+              "qqq_from_trough_pct": 4.559188875124298
+            },
+            "d20": {
+              "date": "2018-04-30",
+              "score": 45.10253612208277,
+              "medium": 28.59974747474747,
+              "repair_breadth": 36.23421717171718,
+              "thrust10": -5.9595959595959584,
+              "qqq_from_trough_pct": 3.4917695466864185
+            },
+            "d40": {
+              "date": "2018-05-29",
+              "score": 66.1162104808404,
+              "medium": 65.68181818181819,
+              "repair_breadth": 70.72127525252525,
+              "thrust10": -8.776830808080817,
+              "qqq_from_trough_pct": 8.655403434634955
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-04-11",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2018-04-17",
+              "sessions": 11
+            },
+            "repair55": {
+              "date": "2018-05-07",
+              "sessions": 25
+            },
+            "bull65": {
+              "date": "2018-05-09",
+              "sessions": 27
+            }
+          }
+        },
+        {
+          "peak": "2018-08-29",
+          "trough": "2018-12-24",
+          "end": "2019-03-21",
+          "dd_pct": -22.796671491837618,
+          "snapshots": {
+            "d0": {
+              "date": "2018-12-24",
+              "score": 6.598158357457871,
+              "medium": 5.363636363636364,
+              "repair_breadth": 4.223484848484849,
+              "thrust10": -7.501578282828283,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-01-02",
+              "score": 14.93234861453779,
+              "medium": 3.4848484848484844,
+              "repair_breadth": 2.632575757575758,
+              "thrust10": -5.020517676767677,
+              "qqq_from_trough_pct": 7.930344886649454
+            },
+            "d10": {
+              "date": "2019-01-09",
+              "score": 25.454129962448157,
+              "medium": 12.63131313131313,
+              "repair_breadth": 35.12626262626262,
+              "thrust10": 30.902777777777775,
+              "qqq_from_trough_pct": 12.069701887759464
+            },
+            "d20": {
+              "date": "2019-01-24",
+              "score": 44.75620809057904,
+              "medium": 46.814393939393945,
+              "repair_breadth": 74.5959595959596,
+              "thrust10": 39.469696969696976,
+              "qqq_from_trough_pct": 13.728244470680195
+            },
+            "d40": {
+              "date": "2019-02-22",
+              "score": 83.46085056471838,
+              "medium": 92.78535353535354,
+              "repair_breadth": 99.65277777777777,
+              "thrust10": 4.217171717171709,
+              "qqq_from_trough_pct": 20.480865424568528
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-01-07",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2019-01-25",
+              "sessions": 21
+            },
+            "repair55": {
+              "date": "2019-01-30",
+              "sessions": 24
+            },
+            "bull65": {
+              "date": "2019-02-01",
+              "sessions": 26
+            }
+          }
+        },
+        {
+          "peak": "2019-05-03",
+          "trough": "2019-06-03",
+          "end": "2019-06-20",
+          "dd_pct": -10.98320137894767,
+          "snapshots": {
+            "d0": {
+              "date": "2019-06-03",
+              "score": 31.719254180894982,
+              "medium": 21.71464646464646,
+              "repair_breadth": 14.496527777777775,
+              "thrust10": -20.19728535353536,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-06-10",
+              "score": 62.149450607210426,
+              "medium": 48.276515151515156,
+              "repair_breadth": 50.714962121212125,
+              "thrust10": 25.741792929292934,
+              "qqq_from_trough_pct": 7.659297625939754
+            },
+            "d10": {
+              "date": "2019-06-17",
+              "score": 63.3226755803442,
+              "medium": 48.656565656565654,
+              "repair_breadth": 55.3030303030303,
+              "thrust10": 40.806502525252526,
+              "qqq_from_trough_pct": 8.00608869967272
+            },
+            "d20": {
+              "date": "2019-07-01",
+              "score": 81.69429849803004,
+              "medium": 81.62247474747475,
+              "repair_breadth": 90.00789141414141,
+              "thrust10": 34.704861111111114,
+              "qqq_from_trough_pct": 11.496832529627232
+            },
+            "d40": {
+              "date": "2019-07-30",
+              "score": 84.4889055557677,
+              "medium": 87.04797979797979,
+              "repair_breadth": 87.45107323232322,
+              "thrust10": -6.398358585858588,
+              "qqq_from_trough_pct": 14.159668112793788
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-06-07",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2019-06-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2019-06-12",
+              "sessions": 7
+            },
+            "bull65": {
+              "date": "2019-06-13",
+              "sessions": 8
+            }
+          }
+        },
+        {
+          "peak": "2020-02-19",
+          "trough": "2020-03-16",
+          "end": "2020-05-29",
+          "dd_pct": -28.559380502413745,
+          "snapshots": {
+            "d0": {
+              "date": "2020-03-16",
+              "score": 11.602740443422846,
+              "medium": 4.929292929292929,
+              "repair_breadth": 1.0416666666666665,
+              "thrust10": -13.555871212121213,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-03-23",
+              "score": 6.7442593134596525,
+              "medium": 0.8333333333333333,
+              "repair_breadth": 0.0,
+              "thrust10": -5.265151515151515,
+              "qqq_from_trough_pct": 0.8997691406448238
+            },
+            "d10": {
+              "date": "2020-03-30",
+              "score": 14.926693694586508,
+              "medium": 0.0,
+              "repair_breadth": 7.110164141414142,
+              "thrust10": 6.068497474747476,
+              "qqq_from_trough_pct": 13.673515550378323
+            },
+            "d20": {
+              "date": "2020-04-14",
+              "score": 31.861795490347877,
+              "medium": 22.35606060606061,
+              "repair_breadth": 52.73674242424242,
+              "thrust10": 45.62657828282828,
+              "qqq_from_trough_pct": 25.405483139065566
+            },
+            "d40": {
+              "date": "2020-05-12",
+              "score": 44.27187372141414,
+              "medium": 52.60101010101009,
+              "repair_breadth": 79.5849116161616,
+              "thrust10": 5.631313131313121,
+              "qqq_from_trough_pct": 31.47867205219905
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-04-06",
+              "sessions": 15
+            },
+            "repair45": {
+              "date": "2020-04-30",
+              "sessions": 32
+            },
+            "repair55": {
+              "date": "2020-05-20",
+              "sessions": 46
+            },
+            "bull65": {
+              "date": "2020-05-29",
+              "sessions": 52
+            }
+          }
+        },
+        {
+          "peak": "2020-09-02",
+          "trough": "2020-09-23",
+          "end": "2020-11-27",
+          "dd_pct": -12.749387060483308,
+          "snapshots": {
+            "d0": {
+              "date": "2020-09-23",
+              "score": 52.42022543723581,
+              "medium": 52.70580808080808,
+              "repair_breadth": 22.866161616161612,
+              "thrust10": -39.36868686868688,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-09-30",
+              "score": 64.9956318802552,
+              "medium": 57.875,
+              "repair_breadth": 40.939078282828284,
+              "thrust10": -28.042929292929294,
+              "qqq_from_trough_pct": 5.17867123773792
+            },
+            "d10": {
+              "date": "2020-10-07",
+              "score": 76.96144376613974,
+              "medium": 74.18181818181819,
+              "repair_breadth": 71.45359848484848,
+              "thrust10": 48.58743686868687,
+              "qqq_from_trough_pct": 5.9660883910063855
+            },
+            "d20": {
+              "date": "2020-10-21",
+              "score": 77.61946597504608,
+              "medium": 83.52272727272728,
+              "repair_breadth": 81.81660353535354,
+              "thrust10": 10.363005050505052,
+              "qqq_from_trough_pct": 7.582524259658063
+            },
+            "d40": {
+              "date": "2020-11-18",
+              "score": 92.10255671704978,
+              "medium": 92.36237373737374,
+              "repair_breadth": 95.2840909090909,
+              "thrust10": 21.589330808080803,
+              "qqq_from_trough_pct": 9.823581283624572
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair55": {
+              "date": "2020-09-28",
+              "sessions": 3
+            },
+            "bull65": {
+              "date": "2020-10-01",
+              "sessions": 6
+            }
+          }
+        },
+        {
+          "peak": "2021-02-12",
+          "trough": "2021-03-08",
+          "end": "2021-04-05",
+          "dd_pct": -10.851544675594893,
+          "snapshots": {
+            "d0": {
+              "date": "2021-03-08",
+              "score": 76.76905263456041,
+              "medium": 75.29040404040404,
+              "repair_breadth": 62.053345959595966,
+              "thrust10": -14.315025252525253,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2021-03-15",
+              "score": 87.56478982046065,
+              "medium": 81.42550505050505,
+              "repair_breadth": 76.98863636363636,
+              "thrust10": 1.2452651515151416,
+              "qqq_from_trough_pct": 6.297916801755821
+            },
+            "d10": {
+              "date": "2021-03-22",
+              "score": 79.0494534518945,
+              "medium": 77.3800505050505,
+              "repair_breadth": 72.8409090909091,
+              "thrust10": 10.787563131313128,
+              "qqq_from_trough_pct": 6.358723998906601
+            },
+            "d20": {
+              "date": "2021-04-06",
+              "score": 89.59713242652354,
+              "medium": 86.63510101010101,
+              "repair_breadth": 83.97727272727272,
+              "thrust10": 11.136363636363626,
+              "qqq_from_trough_pct": 10.434666365958645
+            },
+            "d40": {
+              "date": "2021-05-04",
+              "score": 84.57220614044721,
+              "medium": 83.55176767676767,
+              "repair_breadth": 77.58364898989899,
+              "thrust10": 4.144570707070699,
+              "qqq_from_trough_pct": 10.207727096122143
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2021-03-17",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2021-03-11",
+              "sessions": 3
+            },
+            "repair55": {
+              "date": "2021-03-08",
+              "sessions": 0
+            },
+            "bull65": {
+              "date": "2021-03-08",
+              "sessions": 0
+            }
+          }
+        },
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.11873782139807,
+          "snapshots": {
+            "d0": {
+              "date": "2022-11-03",
+              "score": 25.658394467960242,
+              "medium": 25.51641414141414,
+              "repair_breadth": 45.71180555555556,
+              "thrust10": 31.515151515151516,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2022-11-10",
+              "score": 50.07222304529486,
+              "medium": 55.80176767676768,
+              "repair_breadth": 86.95391414141413,
+              "thrust10": 28.800505050505038,
+              "qqq_from_trough_pct": 8.545468620578589
+            },
+            "d10": {
+              "date": "2022-11-17",
+              "score": 54.69116665519654,
+              "medium": 62.45328282828283,
+              "repair_breadth": 86.43939393939394,
+              "thrust10": 40.72758838383838,
+              "qqq_from_trough_pct": 9.336269441973188
+            },
+            "d20": {
+              "date": "2022-12-02",
+              "score": 75.38355933037126,
+              "medium": 87.73106060606062,
+              "repair_breadth": 97.37373737373737,
+              "thrust10": 10.934343434343432,
+              "qqq_from_trough_pct": 12.307581506733744
+            },
+            "d40": {
+              "date": "2023-01-03",
+              "score": 43.35129085801086,
+              "medium": 45.74747474747475,
+              "repair_breadth": 21.365214646464644,
+              "thrust10": -17.612058080808076,
+              "qqq_from_trough_pct": 1.7748230281927846
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2022-11-03",
+              "sessions": 0
+            },
+            "repair45": {
+              "date": "2022-11-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2022-11-11",
+              "sessions": 6
+            },
+            "bull65": {
+              "date": "2022-11-25",
+              "sessions": 15
+            }
+          }
+        },
+        {
+          "peak": "2024-07-10",
+          "trough": "2024-08-07",
+          "end": "2024-10-09",
+          "dd_pct": -13.55773425354898,
+          "snapshots": {
+            "d0": {
+              "date": "2024-08-07",
+              "score": 53.58903810749124,
+              "medium": 48.477272727272734,
+              "repair_breadth": 33.131313131313135,
+              "thrust10": -31.253156565656553,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2024-08-14",
+              "score": 67.1827597852541,
+              "medium": 53.364898989899,
+              "repair_breadth": 44.48863636363637,
+              "thrust10": -36.53882575757576,
+              "qqq_from_trough_pct": 6.430982291541221
+            },
+            "d10": {
+              "date": "2024-08-21",
+              "score": 80.36494443275308,
+              "medium": 71.6439393939394,
+              "repair_breadth": 74.42550505050505,
+              "thrust10": 41.29419191919192,
+              "qqq_from_trough_pct": 10.978214565527589
+            },
+            "d20": {
+              "date": "2024-09-05",
+              "score": 72.02416719926211,
+              "medium": 75.19823232323233,
+              "repair_breadth": 65.22569444444444,
+              "thrust10": -9.199810606060609,
+              "qqq_from_trough_pct": 6.042279401073269
+            },
+            "d40": {
+              "date": "2024-10-03",
+              "score": 80.50399845747445,
+              "medium": 84.40151515151516,
+              "repair_breadth": 83.28598484848484,
+              "thrust10": -6.346275252525274,
+              "qqq_from_trough_pct": 10.924564175696938
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair55": {
+              "date": "2024-08-08",
+              "sessions": 1
+            },
+            "bull65": {
+              "date": "2024-08-13",
+              "sessions": 4
+            }
+          }
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "snapshots": {
+            "d0": {
+              "date": "2025-04-08",
+              "score": 11.178089353132721,
+              "medium": 5.45580808080808,
+              "repair_breadth": 1.3825757575757576,
+              "thrust10": -26.324179292929294,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2025-04-15",
+              "score": 21.038947375287684,
+              "medium": 6.395202020202021,
+              "repair_breadth": 4.905303030303031,
+              "thrust10": -11.753472222222218,
+              "qqq_from_trough_pct": 10.07787566426812
+            },
+            "d10": {
+              "date": "2025-04-23",
+              "score": 17.649246001019684,
+              "medium": 5.909090909090909,
+              "repair_breadth": 16.013257575757574,
+              "thrust10": 14.630681818181817,
+              "qqq_from_trough_pct": 9.25347560659775
+            },
+            "d20": {
+              "date": "2025-05-07",
+              "score": 41.65599473908062,
+              "medium": 37.69823232323232,
+              "repair_breadth": 66.19949494949495,
+              "thrust10": 50.18623737373737,
+              "qqq_from_trough_pct": 16.161133503225813
+            },
+            "d40": {
+              "date": "2025-06-05",
+              "score": 71.44708537457473,
+              "medium": 83.7550505050505,
+              "repair_breadth": 88.96938131313132,
+              "thrust10": 3.3854166666666714,
+              "qqq_from_trough_pct": 26.133238337576216
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2025-04-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2025-05-12",
+              "sessions": 23
+            },
+            "repair55": {
+              "date": "2025-05-15",
+              "sessions": 26
+            },
+            "bull65": {
+              "date": "2025-06-03",
+              "sessions": 38
+            }
+          }
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "snapshots": {
+            "d0": {
+              "date": "2026-03-30",
+              "score": 32.75497794065439,
+              "medium": 18.132575757575758,
+              "repair_breadth": 7.73989898989899,
+              "thrust10": -14.94318181818182,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-04-07",
+              "score": 50.147257658405714,
+              "medium": 25.987373737373737,
+              "repair_breadth": 33.69002525252525,
+              "thrust10": 21.33364898989899,
+              "qqq_from_trough_pct": 5.4291761717070175
+            },
+            "d10": {
+              "date": "2026-04-14",
+              "score": 68.80858509378228,
+              "medium": 53.820707070707066,
+              "repair_breadth": 64.07196969696969,
+              "thrust10": 56.3320707070707,
+              "qqq_from_trough_pct": 12.595816990574082
+            },
+            "d20": {
+              "date": "2026-04-28",
+              "score": 77.28712896119389,
+              "medium": 77.01515151515153,
+              "repair_breadth": 85.98800505050505,
+              "thrust10": 21.916035353535364,
+              "qqq_from_trough_pct": 17.781396348116353
+            },
+            "d40": {
+              "date": "2026-05-27",
+              "score": 29.293324256899425,
+              "medium": 27.689393939393938,
+              "repair_breadth": 18.428030303030297,
+              "thrust10": -63.27335858585859,
+              "qqq_from_trough_pct": 30.660244008335937
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-04-06",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2026-04-08",
+              "sessions": 6
+            },
+            "repair55": {
+              "date": "2026-04-13",
+              "sessions": 9
+            },
+            "bull65": {
+              "date": "2026-04-13",
+              "sessions": 9
+            }
+          }
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "snapshots": {
+            "d0": {
+              "date": "2026-07-29",
+              "score": 27.46215010510346,
+              "medium": 22.720959595959595,
+              "repair_breadth": 17.49368686868687,
+              "thrust10": -10.624999999999996,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-08-05",
+              "score": 49.703544791316276,
+              "medium": 61.824494949494955,
+              "repair_breadth": 78.60006313131314,
+              "thrust10": 57.11332070707071,
+              "qqq_from_trough_pct": 8.397686211051614
+            },
+            "d10": {
+              "date": "2026-08-12",
+              "score": 56.06561466161922,
+              "medium": 63.713383838383834,
+              "repair_breadth": 81.31470959595958,
+              "thrust10": 63.82102272727272,
+              "qqq_from_trough_pct": 9.36485176240367
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-08-03",
+              "sessions": 3
+            },
+            "repair45": {
+              "date": "2026-08-05",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2026-08-07",
+              "sessions": 7
+            },
+            "bull65": {
+              "date": null,
+              "sessions": null
+            }
+          }
+        }
+      ],
+      "noise": {
+        "mean_abs_daily_change": 2.721056798449327,
+        "hysteresis_changes_per_year": 24.556993817619784
+      },
+      "latest": {
+        "date": "2026-08-21",
+        "score": 48.56777420448121,
+        "delta10": -7.672003477419665,
+        "repair_thrust10": -7.400568181818173,
+        "repair_breadth": 74.27083333333334
+      }
+    },
+    "mid_15502510": {
+      "weights": [
+        0.15,
+        0.5,
+        0.25,
+        0.1
+      ],
+      "horizon_corr": {
+        "qqq_ret5_corr": 0.2750762744149637,
+        "qqq_ret10_corr": 0.3795824206221871,
+        "qqq_ret21_corr": 0.5316287590657542,
+        "qqq_ret63_corr": 0.6244179114947027,
+        "qqq_ret126_corr": 0.5859598233196027
+      },
+      "gate_overlap": {},
+      "recovery": {
+        "thrust_avg_sessions": 6.769230769230769,
+        "thrust_median_sessions": 7.0,
+        "thrust_coverage": 13,
+        "repair45_avg_sessions": 12.153846153846153,
+        "repair45_median_sessions": 8.0,
+        "repair45_coverage": 13,
+        "repair55_avg_sessions": 14.307692307692308,
+        "repair55_median_sessions": 9.0,
+        "repair55_coverage": 13,
+        "bull65_avg_sessions": 18.166666666666668,
+        "bull65_median_sessions": 12.5,
+        "bull65_coverage": 12,
+        "d0_score_mean": 34.046874108628835,
+        "d0_medium_mean": 27.240481740481737,
+        "d0_repair_breadth_mean": 19.8836926961927,
+        "d0_thrust10_mean": -19.725135975135974,
+        "d5_score_mean": 47.76310959671844,
+        "d5_medium_mean": 38.148795648795655,
+        "d5_repair_breadth_mean": 40.205055361305355,
+        "d5_thrust10_mean": 4.012844794094793,
+        "d10_score_mean": 53.37259467708746,
+        "d10_medium_mean": 44.23513986013987,
+        "d10_repair_breadth_mean": 53.978486790986786,
+        "d10_thrust10_mean": 34.094794094794096,
+        "d20_score_mean": 63.64883092702979,
+        "d20_medium_mean": 62.62173821548822,
+        "d20_repair_breadth_mean": 74.16416771885523,
+        "d20_thrust10_mean": 22.46369949494949,
+        "d40_score_mean": 64.93529340172473,
+        "d40_medium_mean": 68.12742003367002,
+        "d40_repair_breadth_mean": 68.27388468013467,
+        "d40_thrust10_mean": -5.871606691919197
+      },
+      "thrust_quality": {
+        "episodes": [
+          {
+            "trough": "2016-02-09",
+            "trigger": "2016-02-17",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -1.1415176228325663,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-02-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2018-04-02",
+            "trigger": "2018-04-12",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -2.3118534753189146,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-12-24",
+            "trigger": "2018-11-07",
+            "sessions_vs_trough": -31,
+            "worst20_from_trigger_pct": -9.351872457504973,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2019-06-03",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2020-03-16",
+            "trigger": "2020-04-09",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2020-09-23",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2021-03-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2022-11-03",
+            "trigger": "2022-02-09",
+            "sessions_vs_trough": -185,
+            "worst20_from_trigger_pct": -11.828869616750614,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2024-08-07",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2025-04-08",
+            "trigger": "2025-04-29",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -0.012627433137224475,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2026-03-30",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2026-07-29",
+            "trigger": "2026-08-04",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -3.285206750538261,
+            "false_lower_low": false
+          }
+        ],
+        "triggered": 7,
+        "false_count": 2,
+        "false_rate_pct": 28.57142857142857
+      },
+      "episode_detail": [
+        {
+          "peak": "2016-01-04",
+          "trough": "2016-02-09",
+          "end": "2016-03-16",
+          "dd_pct": -12.03655118785203,
+          "snapshots": {
+            "d0": {
+              "date": "2016-02-09",
+              "score": 10.83585858403869,
+              "medium": 8.375,
+              "repair_breadth": 10.9375,
+              "thrust10": 5.217803030303031,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2016-02-17",
+              "score": 27.542926783588953,
+              "medium": 23.954545454545453,
+              "repair_breadth": 47.41161616161616,
+              "thrust10": 38.446969696969695,
+              "qqq_from_trough_pct": 6.416170977473867
+            },
+            "d10": {
+              "date": "2016-02-24",
+              "score": 32.99757762893253,
+              "medium": 27.522727272727273,
+              "repair_breadth": 49.586489898989896,
+              "thrust10": 38.648989898989896,
+              "qqq_from_trough_pct": 6.468054659006062
+            },
+            "d20": {
+              "date": "2016-03-09",
+              "score": 50.30730145960669,
+              "medium": 55.49873737373738,
+              "repair_breadth": 86.15372474747474,
+              "thrust10": 36.567234848484844,
+              "qqq_from_trough_pct": 8.824792785385437
+            },
+            "d40": {
+              "date": "2016-04-07",
+              "score": 66.08526315358057,
+              "medium": 88.34848484848484,
+              "repair_breadth": 82.65940656565655,
+              "thrust10": -10.124684343434353,
+              "qqq_from_trough_pct": 13.583477326626303
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2016-02-17",
+              "sessions": 5
+            },
+            "repair45": {
+              "date": "2016-03-03",
+              "sessions": 16
+            },
+            "repair55": {
+              "date": "2016-03-11",
+              "sessions": 22
+            },
+            "bull65": {
+              "date": "2016-03-21",
+              "sessions": 28
+            }
+          }
+        },
+        {
+          "peak": "2018-01-26",
+          "trough": "2018-02-08",
+          "end": "2018-02-23",
+          "dd_pct": -10.22643604715464,
+          "snapshots": {
+            "d0": {
+              "date": "2018-02-08",
+              "score": 54.504105958147456,
+              "medium": 47.45328282828283,
+              "repair_breadth": 23.137626262626267,
+              "thrust10": -67.93087121212122,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-02-15",
+              "score": 71.60217369248895,
+              "medium": 63.154040404040416,
+              "repair_breadth": 41.04008838383838,
+              "thrust10": -36.99810606060606,
+              "qqq_from_trough_pct": 7.983083617455833
+            },
+            "d10": {
+              "date": "2018-02-23",
+              "score": 69.86660239921329,
+              "medium": 56.339646464646464,
+              "repair_breadth": 45.84122474747475,
+              "thrust10": 22.70359848484848,
+              "qqq_from_trough_pct": 9.592738310804648
+            },
+            "d20": {
+              "date": "2018-03-09",
+              "score": 76.9584739686634,
+              "medium": 68.7689393939394,
+              "repair_breadth": 69.6606691919192,
+              "thrust10": 23.81944444444445,
+              "qqq_from_trough_pct": 12.844626868195409
+            },
+            "d40": {
+              "date": "2018-04-09",
+              "score": 40.3910856538734,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 2.955976844212649
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair55": {
+              "date": "2018-02-12",
+              "sessions": 2
+            },
+            "bull65": {
+              "date": "2018-02-14",
+              "sessions": 4
+            }
+          }
+        },
+        {
+          "peak": "2018-03-12",
+          "trough": "2018-04-02",
+          "end": "2018-06-01",
+          "dd_pct": -10.522580439096629,
+          "snapshots": {
+            "d0": {
+              "date": "2018-04-02",
+              "score": 38.63793522905635,
+              "medium": 17.991161616161612,
+              "repair_breadth": 14.272411616161616,
+              "thrust10": -47.14488636363636,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-04-09",
+              "score": 40.3910856538734,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 1.4275679445796552
+            },
+            "d10": {
+              "date": "2018-04-16",
+              "score": 51.29980671485011,
+              "medium": 20.80429292929293,
+              "repair_breadth": 42.193813131313135,
+              "thrust10": 27.92140151515152,
+              "qqq_from_trough_pct": 4.559188875124298
+            },
+            "d20": {
+              "date": "2018-04-30",
+              "score": 47.45656134123608,
+              "medium": 28.59974747474747,
+              "repair_breadth": 36.23421717171718,
+              "thrust10": -5.9595959595959584,
+              "qqq_from_trough_pct": 3.4917695466864185
+            },
+            "d40": {
+              "date": "2018-05-29",
+              "score": 66.415652816136,
+              "medium": 65.68181818181819,
+              "repair_breadth": 70.72127525252525,
+              "thrust10": -8.776830808080817,
+              "qqq_from_trough_pct": 8.655403434634955
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-04-11",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2018-04-17",
+              "sessions": 11
+            },
+            "repair55": {
+              "date": "2018-05-07",
+              "sessions": 25
+            },
+            "bull65": {
+              "date": "2018-05-09",
+              "sessions": 27
+            }
+          }
+        },
+        {
+          "peak": "2018-08-29",
+          "trough": "2018-12-24",
+          "end": "2019-03-21",
+          "dd_pct": -22.796671491837618,
+          "snapshots": {
+            "d0": {
+              "date": "2018-12-24",
+              "score": 6.792565732581345,
+              "medium": 5.363636363636364,
+              "repair_breadth": 4.223484848484849,
+              "thrust10": -7.501578282828283,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-01-02",
+              "score": 15.14354790497871,
+              "medium": 3.4848484848484844,
+              "repair_breadth": 2.632575757575758,
+              "thrust10": -5.020517676767677,
+              "qqq_from_trough_pct": 7.930344886649454
+            },
+            "d10": {
+              "date": "2019-01-09",
+              "score": 25.35501468330918,
+              "medium": 12.63131313131313,
+              "repair_breadth": 35.12626262626262,
+              "thrust10": 30.902777777777775,
+              "qqq_from_trough_pct": 12.069701887759464
+            },
+            "d20": {
+              "date": "2019-01-24",
+              "score": 43.09055946432896,
+              "medium": 46.814393939393945,
+              "repair_breadth": 74.5959595959596,
+              "thrust10": 39.469696969696976,
+              "qqq_from_trough_pct": 13.728244470680195
+            },
+            "d40": {
+              "date": "2019-02-22",
+              "score": 81.18922310842811,
+              "medium": 92.78535353535354,
+              "repair_breadth": 99.65277777777777,
+              "thrust10": 4.217171717171709,
+              "qqq_from_trough_pct": 20.480865424568528
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-01-07",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2019-01-25",
+              "sessions": 21
+            },
+            "repair55": {
+              "date": "2019-01-30",
+              "sessions": 24
+            },
+            "bull65": {
+              "date": "2019-02-04",
+              "sessions": 27
+            }
+          }
+        },
+        {
+          "peak": "2019-05-03",
+          "trough": "2019-06-03",
+          "end": "2019-06-20",
+          "dd_pct": -10.98320137894767,
+          "snapshots": {
+            "d0": {
+              "date": "2019-06-03",
+              "score": 33.22555759484288,
+              "medium": 21.71464646464646,
+              "repair_breadth": 14.496527777777775,
+              "thrust10": -20.19728535353536,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-06-10",
+              "score": 63.63600723471929,
+              "medium": 48.276515151515156,
+              "repair_breadth": 50.714962121212125,
+              "thrust10": 25.741792929292934,
+              "qqq_from_trough_pct": 7.659297625939754
+            },
+            "d10": {
+              "date": "2019-06-17",
+              "score": 64.7286468301311,
+              "medium": 48.656565656565654,
+              "repair_breadth": 55.3030303030303,
+              "thrust10": 40.806502525252526,
+              "qqq_from_trough_pct": 8.00608869967272
+            },
+            "d20": {
+              "date": "2019-07-01",
+              "score": 81.82651902138133,
+              "medium": 81.62247474747475,
+              "repair_breadth": 90.00789141414141,
+              "thrust10": 34.704861111111114,
+              "qqq_from_trough_pct": 11.496832529627232
+            },
+            "d40": {
+              "date": "2019-07-30",
+              "score": 84.46967321925455,
+              "medium": 87.04797979797979,
+              "repair_breadth": 87.45107323232322,
+              "thrust10": -6.398358585858588,
+              "qqq_from_trough_pct": 14.159668112793788
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-06-07",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2019-06-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2019-06-12",
+              "sessions": 7
+            },
+            "bull65": {
+              "date": "2019-06-12",
+              "sessions": 7
+            }
+          }
+        },
+        {
+          "peak": "2020-02-19",
+          "trough": "2020-03-16",
+          "end": "2020-05-29",
+          "dd_pct": -28.559380502413745,
+          "snapshots": {
+            "d0": {
+              "date": "2020-03-16",
+              "score": 13.432141519157927,
+              "medium": 4.929292929292929,
+              "repair_breadth": 1.0416666666666665,
+              "thrust10": -13.555871212121213,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-03-23",
+              "score": 8.138481035058263,
+              "medium": 0.8333333333333333,
+              "repair_breadth": 0.0,
+              "thrust10": -5.265151515151515,
+              "qqq_from_trough_pct": 0.8997691406448238
+            },
+            "d10": {
+              "date": "2020-03-30",
+              "score": 15.920242732306846,
+              "medium": 0.0,
+              "repair_breadth": 7.110164141414142,
+              "thrust10": 6.068497474747476,
+              "qqq_from_trough_pct": 13.673515550378323
+            },
+            "d20": {
+              "date": "2020-04-14",
+              "score": 31.737323834955824,
+              "medium": 22.35606060606061,
+              "repair_breadth": 52.73674242424242,
+              "thrust10": 45.62657828282828,
+              "qqq_from_trough_pct": 25.405483139065566
+            },
+            "d40": {
+              "date": "2020-05-12",
+              "score": 42.399031495800784,
+              "medium": 52.60101010101009,
+              "repair_breadth": 79.5849116161616,
+              "thrust10": 5.631313131313121,
+              "qqq_from_trough_pct": 31.47867205219905
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-04-06",
+              "sessions": 15
+            },
+            "repair45": {
+              "date": "2020-05-08",
+              "sessions": 38
+            },
+            "repair55": {
+              "date": "2020-05-22",
+              "sessions": 48
+            },
+            "bull65": {
+              "date": "2020-06-01",
+              "sessions": 53
+            }
+          }
+        },
+        {
+          "peak": "2020-09-02",
+          "trough": "2020-09-23",
+          "end": "2020-11-27",
+          "dd_pct": -12.749387060483308,
+          "snapshots": {
+            "d0": {
+              "date": "2020-09-23",
+              "score": 53.46038109283292,
+              "medium": 52.70580808080808,
+              "repair_breadth": 22.866161616161612,
+              "thrust10": -39.36868686868688,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-09-30",
+              "score": 66.18626560058209,
+              "medium": 57.875,
+              "repair_breadth": 40.939078282828284,
+              "thrust10": -28.042929292929294,
+              "qqq_from_trough_pct": 5.17867123773792
+            },
+            "d10": {
+              "date": "2020-10-07",
+              "score": 77.68258720623253,
+              "medium": 74.18181818181819,
+              "repair_breadth": 71.45359848484848,
+              "thrust10": 48.58743686868687,
+              "qqq_from_trough_pct": 5.9660883910063855
+            },
+            "d20": {
+              "date": "2020-10-21",
+              "score": 77.90440320329574,
+              "medium": 83.52272727272728,
+              "repair_breadth": 81.81660353535354,
+              "thrust10": 10.363005050505052,
+              "qqq_from_trough_pct": 7.582524259658063
+            },
+            "d40": {
+              "date": "2020-11-18",
+              "score": 92.31843347425581,
+              "medium": 92.36237373737374,
+              "repair_breadth": 95.2840909090909,
+              "thrust10": 21.589330808080803,
+              "qqq_from_trough_pct": 9.823581283624572
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair55": {
+              "date": "2020-09-28",
+              "sessions": 3
+            },
+            "bull65": {
+              "date": "2020-09-30",
+              "sessions": 5
+            }
+          }
+        },
+        {
+          "peak": "2021-02-12",
+          "trough": "2021-03-08",
+          "end": "2021-04-05",
+          "dd_pct": -10.851544675594893,
+          "snapshots": {
+            "d0": {
+              "date": "2021-03-08",
+              "score": 77.88764555997764,
+              "medium": 75.29040404040404,
+              "repair_breadth": 62.053345959595966,
+              "thrust10": -14.315025252525253,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2021-03-15",
+              "score": 88.49321671074688,
+              "medium": 81.42550505050505,
+              "repair_breadth": 76.98863636363636,
+              "thrust10": 1.2452651515151416,
+              "qqq_from_trough_pct": 6.297916801755821
+            },
+            "d10": {
+              "date": "2021-03-22",
+              "score": 80.14261767694907,
+              "medium": 77.3800505050505,
+              "repair_breadth": 72.8409090909091,
+              "thrust10": 10.787563131313128,
+              "qqq_from_trough_pct": 6.358723998906601
+            },
+            "d20": {
+              "date": "2021-04-06",
+              "score": 90.21387195653523,
+              "medium": 86.63510101010101,
+              "repair_breadth": 83.97727272727272,
+              "thrust10": 11.136363636363626,
+              "qqq_from_trough_pct": 10.434666365958645
+            },
+            "d40": {
+              "date": "2021-05-04",
+              "score": 85.14453356090705,
+              "medium": 83.55176767676767,
+              "repair_breadth": 77.58364898989899,
+              "thrust10": 4.144570707070699,
+              "qqq_from_trough_pct": 10.207727096122143
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2021-03-17",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2021-03-11",
+              "sessions": 3
+            },
+            "repair55": {
+              "date": "2021-03-08",
+              "sessions": 0
+            },
+            "bull65": {
+              "date": "2021-03-08",
+              "sessions": 0
+            }
+          }
+        },
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.11873782139807,
+          "snapshots": {
+            "d0": {
+              "date": "2022-11-03",
+              "score": 24.841839070363143,
+              "medium": 25.51641414141414,
+              "repair_breadth": 45.71180555555556,
+              "thrust10": 31.515151515151516,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2022-11-10",
+              "score": 48.90762562107896,
+              "medium": 55.80176767676768,
+              "repair_breadth": 86.95391414141413,
+              "thrust10": 28.800505050505038,
+              "qqq_from_trough_pct": 8.545468620578589
+            },
+            "d10": {
+              "date": "2022-11-17",
+              "score": 52.96190484387354,
+              "medium": 62.45328282828283,
+              "repair_breadth": 86.43939393939394,
+              "thrust10": 40.72758838383838,
+              "qqq_from_trough_pct": 9.336269441973188
+            },
+            "d20": {
+              "date": "2022-12-02",
+              "score": 73.24810690596473,
+              "medium": 87.73106060606062,
+              "repair_breadth": 97.37373737373737,
+              "thrust10": 10.934343434343432,
+              "qqq_from_trough_pct": 12.307581506733744
+            },
+            "d40": {
+              "date": "2023-01-03",
+              "score": 42.89345558227874,
+              "medium": 45.74747474747475,
+              "repair_breadth": 21.365214646464644,
+              "thrust10": -17.612058080808076,
+              "qqq_from_trough_pct": 1.7748230281927846
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2022-11-03",
+              "sessions": 0
+            },
+            "repair45": {
+              "date": "2022-11-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2022-11-15",
+              "sessions": 8
+            },
+            "bull65": {
+              "date": "2022-11-30",
+              "sessions": 18
+            }
+          }
+        },
+        {
+          "peak": "2024-07-10",
+          "trough": "2024-08-07",
+          "end": "2024-10-09",
+          "dd_pct": -13.55773425354898,
+          "snapshots": {
+            "d0": {
+              "date": "2024-08-07",
+              "score": 55.18423139698268,
+              "medium": 48.477272727272734,
+              "repair_breadth": 33.131313131313135,
+              "thrust10": -31.253156565656553,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2024-08-14",
+              "score": 68.94279944671062,
+              "medium": 53.364898989899,
+              "repair_breadth": 44.48863636363637,
+              "thrust10": -36.53882575757576,
+              "qqq_from_trough_pct": 6.430982291541221
+            },
+            "d10": {
+              "date": "2024-08-21",
+              "score": 81.31884013572866,
+              "medium": 71.6439393939394,
+              "repair_breadth": 74.42550505050505,
+              "thrust10": 41.29419191919192,
+              "qqq_from_trough_pct": 10.978214565527589
+            },
+            "d20": {
+              "date": "2024-09-05",
+              "score": 72.51454178042653,
+              "medium": 75.19823232323233,
+              "repair_breadth": 65.22569444444444,
+              "thrust10": -9.199810606060609,
+              "qqq_from_trough_pct": 6.042279401073269
+            },
+            "d40": {
+              "date": "2024-10-03",
+              "score": 80.78375415592137,
+              "medium": 84.40151515151516,
+              "repair_breadth": 83.28598484848484,
+              "thrust10": -6.346275252525274,
+              "qqq_from_trough_pct": 10.924564175696938
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair55": {
+              "date": "2024-08-08",
+              "sessions": 1
+            },
+            "bull65": {
+              "date": "2024-08-13",
+              "sessions": 4
+            }
+          }
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "snapshots": {
+            "d0": {
+              "date": "2025-04-08",
+              "score": 12.386206787952428,
+              "medium": 5.45580808080808,
+              "repair_breadth": 1.3825757575757576,
+              "thrust10": -26.324179292929294,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2025-04-15",
+              "score": 21.974402123429478,
+              "medium": 6.395202020202021,
+              "repair_breadth": 4.905303030303031,
+              "thrust10": -11.753472222222218,
+              "qqq_from_trough_pct": 10.07787566426812
+            },
+            "d10": {
+              "date": "2025-04-23",
+              "score": 18.110795031242322,
+              "medium": 5.909090909090909,
+              "repair_breadth": 16.013257575757574,
+              "thrust10": 14.630681818181817,
+              "qqq_from_trough_pct": 9.25347560659775
+            },
+            "d20": {
+              "date": "2025-05-07",
+              "score": 40.6477070609229,
+              "medium": 37.69823232323232,
+              "repair_breadth": 66.19949494949495,
+              "thrust10": 50.18623737373737,
+              "qqq_from_trough_pct": 16.161133503225813
+            },
+            "d40": {
+              "date": "2025-06-05",
+              "score": 69.08935322441972,
+              "medium": 83.7550505050505,
+              "repair_breadth": 88.96938131313132,
+              "thrust10": 3.3854166666666714,
+              "qqq_from_trough_pct": 26.133238337576216
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2025-04-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2025-05-12",
+              "sessions": 23
+            },
+            "repair55": {
+              "date": "2025-05-15",
+              "sessions": 26
+            },
+            "bull65": {
+              "date": "2025-06-03",
+              "sessions": 38
+            }
+          }
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "snapshots": {
+            "d0": {
+              "date": "2026-03-30",
+              "score": 35.15486903093892,
+              "medium": 18.132575757575758,
+              "repair_breadth": 7.73989898989899,
+              "thrust10": -14.94318181818182,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-04-07",
+              "score": 52.80960886462171,
+              "medium": 25.987373737373737,
+              "repair_breadth": 33.69002525252525,
+              "thrust10": 21.33364898989899,
+              "qqq_from_trough_pct": 5.4291761717070175
+            },
+            "d10": {
+              "date": "2026-04-14",
+              "score": 70.5733369443628,
+              "medium": 53.820707070707066,
+              "repair_breadth": 64.07196969696969,
+              "thrust10": 56.3320707070707,
+              "qqq_from_trough_pct": 12.595816990574082
+            },
+            "d20": {
+              "date": "2026-04-28",
+              "score": 77.88060112703994,
+              "medium": 77.01515151515153,
+              "repair_breadth": 85.98800505050505,
+              "thrust10": 21.916035353535364,
+              "qqq_from_trough_pct": 17.781396348116353
+            },
+            "d40": {
+              "date": "2026-05-27",
+              "score": 28.04406137584073,
+              "medium": 27.689393939393938,
+              "repair_breadth": 18.428030303030297,
+              "thrust10": -63.27335858585859,
+              "qqq_from_trough_pct": 30.660244008335937
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-04-06",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2026-04-08",
+              "sessions": 6
+            },
+            "repair55": {
+              "date": "2026-04-13",
+              "sessions": 9
+            },
+            "bull65": {
+              "date": "2026-04-09",
+              "sessions": 7
+            }
+          }
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "snapshots": {
+            "d0": {
+              "date": "2026-07-29",
+              "score": 26.26602585530243,
+              "medium": 22.720959595959595,
+              "repair_breadth": 17.49368686868687,
+              "thrust10": -10.624999999999996,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-08-05",
+              "score": 47.15228408546224,
+              "medium": 61.824494949494955,
+              "repair_breadth": 78.60006313131314,
+              "thrust10": 57.11332070707071,
+              "qqq_from_trough_pct": 8.397686211051614
+            },
+            "d10": {
+              "date": "2026-08-12",
+              "score": 52.88575797500495,
+              "medium": 63.713383838383834,
+              "repair_breadth": 81.31470959595958,
+              "thrust10": 63.82102272727272,
+              "qqq_from_trough_pct": 9.36485176240367
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-08-03",
+              "sessions": 3
+            },
+            "repair45": {
+              "date": "2026-08-05",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2026-08-13",
+              "sessions": 11
+            },
+            "bull65": {
+              "date": null,
+              "sessions": null
+            }
+          }
+        }
+      ],
+      "noise": {
+        "mean_abs_daily_change": 2.6576862681734608,
+        "hysteresis_changes_per_year": 23.427936630602783
+      },
+      "latest": {
+        "date": "2026-08-21",
+        "score": 45.525520306045664,
+        "delta10": -7.5970157261587445,
+        "repair_thrust10": -7.400568181818173,
+        "repair_breadth": 74.27083333333334
+      }
+    },
+    "mid_10552510": {
+      "weights": [
+        0.1,
+        0.55,
+        0.25,
+        0.1
+      ],
+      "horizon_corr": {
+        "qqq_ret5_corr": 0.23674843353130715,
+        "qqq_ret10_corr": 0.3459415877046861,
+        "qqq_ret21_corr": 0.5186129372489844,
+        "qqq_ret63_corr": 0.6309357539996839,
+        "qqq_ret126_corr": 0.5876856304638276
+      },
+      "gate_overlap": {},
+      "recovery": {
+        "thrust_avg_sessions": 6.769230769230769,
+        "thrust_median_sessions": 7.0,
+        "thrust_coverage": 13,
+        "repair45_avg_sessions": 12.307692307692308,
+        "repair45_median_sessions": 8.0,
+        "repair45_coverage": 13,
+        "repair55_avg_sessions": 14.916666666666666,
+        "repair55_median_sessions": 11.0,
+        "repair55_coverage": 12,
+        "bull65_avg_sessions": 18.5,
+        "bull65_median_sessions": 13.5,
+        "bull65_coverage": 12,
+        "d0_score_mean": 34.66819460757015,
+        "d0_medium_mean": 27.240481740481737,
+        "d0_repair_breadth_mean": 19.8836926961927,
+        "d0_thrust10_mean": -19.725135975135974,
+        "d5_score_mean": 46.19339797799496,
+        "d5_medium_mean": 38.148795648795655,
+        "d5_repair_breadth_mean": 40.205055361305355,
+        "d5_thrust10_mean": 4.012844794094793,
+        "d10_score_mean": 51.57183850658226,
+        "d10_medium_mean": 44.23513986013987,
+        "d10_repair_breadth_mean": 53.978486790986786,
+        "d10_thrust10_mean": 34.094794094794096,
+        "d20_score_mean": 63.070784139627555,
+        "d20_medium_mean": 62.62173821548822,
+        "d20_repair_breadth_mean": 74.16416771885523,
+        "d20_thrust10_mean": 22.46369949494949,
+        "d40_score_mean": 65.51929271202906,
+        "d40_medium_mean": 68.12742003367002,
+        "d40_repair_breadth_mean": 68.27388468013467,
+        "d40_thrust10_mean": -5.871606691919197
+      },
+      "thrust_quality": {
+        "episodes": [
+          {
+            "trough": "2016-02-09",
+            "trigger": "2016-02-17",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -1.1415176228325663,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-02-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2018-04-02",
+            "trigger": "2018-04-12",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -2.3118534753189146,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2018-12-24",
+            "trigger": "2018-11-07",
+            "sessions_vs_trough": -31,
+            "worst20_from_trigger_pct": -9.351872457504973,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2019-06-03",
+            "trigger": "2019-06-07",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2020-03-16",
+            "trigger": "2020-04-09",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2020-09-23",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2021-03-08",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2022-11-03",
+            "trigger": "2022-02-09",
+            "sessions_vs_trough": -185,
+            "worst20_from_trigger_pct": -11.828869616750614,
+            "false_lower_low": true
+          },
+          {
+            "trough": "2024-08-07",
+            "trigger": null,
+            "false_lower_low": null
+          },
+          {
+            "trough": "2025-04-08",
+            "trigger": "2025-04-29",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -0.012627433137224475,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2026-03-30",
+            "trigger": "2026-04-08",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": 0.0,
+            "false_lower_low": false
+          },
+          {
+            "trough": "2026-07-29",
+            "trigger": "2026-08-04",
+            "sessions_vs_trough": 0,
+            "worst20_from_trigger_pct": -3.285206750538261,
+            "false_lower_low": false
+          }
+        ],
+        "triggered": 9,
+        "false_count": 2,
+        "false_rate_pct": 22.22222222222222
+      },
+      "episode_detail": [
+        {
+          "peak": "2016-01-04",
+          "trough": "2016-02-09",
+          "end": "2016-03-16",
+          "dd_pct": -12.03655118785203,
+          "snapshots": {
+            "d0": {
+              "date": "2016-02-09",
+              "score": 10.366721658695798,
+              "medium": 8.375,
+              "repair_breadth": 10.9375,
+              "thrust10": 5.217803030303031,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2016-02-17",
+              "score": 24.543042880541655,
+              "medium": 23.954545454545453,
+              "repair_breadth": 47.41161616161616,
+              "thrust10": 38.446969696969695,
+              "qqq_from_trough_pct": 6.416170977473867
+            },
+            "d10": {
+              "date": "2016-02-24",
+              "score": 29.991335467687648,
+              "medium": 27.522727272727273,
+              "repair_breadth": 49.586489898989896,
+              "thrust10": 38.648989898989896,
+              "qqq_from_trough_pct": 6.468054659006062
+            },
+            "d20": {
+              "date": "2016-03-09",
+              "score": 48.63867015146913,
+              "medium": 55.49873737373738,
+              "repair_breadth": 86.15372474747474,
+              "thrust10": 36.567234848484844,
+              "qqq_from_trough_pct": 8.824792785385437
+            },
+            "d40": {
+              "date": "2016-04-07",
+              "score": 68.51267512075185,
+              "medium": 88.34848484848484,
+              "repair_breadth": 82.65940656565655,
+              "thrust10": -10.124684343434353,
+              "qqq_from_trough_pct": 13.583477326626303
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2016-02-17",
+              "sessions": 5
+            },
+            "repair45": {
+              "date": "2016-03-04",
+              "sessions": 17
+            },
+            "repair55": {
+              "date": "2016-03-11",
+              "sessions": 22
+            },
+            "bull65": {
+              "date": "2016-03-21",
+              "sessions": 28
+            }
+          }
+        },
+        {
+          "peak": "2018-01-26",
+          "trough": "2018-02-08",
+          "end": "2018-02-23",
+          "dd_pct": -10.22643604715464,
+          "snapshots": {
+            "d0": {
+              "date": "2018-02-08",
+              "score": 57.09156144525218,
+              "medium": 47.45328282828283,
+              "repair_breadth": 23.137626262626267,
+              "thrust10": -67.93087121212122,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-02-15",
+              "score": 71.48913676324688,
+              "medium": 63.154040404040416,
+              "repair_breadth": 41.04008838383838,
+              "thrust10": -36.99810606060606,
+              "qqq_from_trough_pct": 7.983083617455833
+            },
+            "d10": {
+              "date": "2018-02-23",
+              "score": 68.81829009970261,
+              "medium": 56.339646464646464,
+              "repair_breadth": 45.84122474747475,
+              "thrust10": 22.70359848484848,
+              "qqq_from_trough_pct": 9.592738310804648
+            },
+            "d20": {
+              "date": "2018-03-09",
+              "score": 75.56845610606577,
+              "medium": 68.7689393939394,
+              "repair_breadth": 69.6606691919192,
+              "thrust10": 23.81944444444445,
+              "qqq_from_trough_pct": 12.844626868195409
+            },
+            "d40": {
+              "date": "2018-04-09",
+              "score": 39.22834819801889,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 2.955976844212649
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2018-02-23",
+              "sessions": 10
+            },
+            "repair55": {
+              "date": "2018-02-09",
+              "sessions": 1
+            },
+            "bull65": {
+              "date": "2018-02-14",
+              "sessions": 4
+            }
+          }
+        },
+        {
+          "peak": "2018-03-12",
+          "trough": "2018-04-02",
+          "end": "2018-06-01",
+          "dd_pct": -10.522580439096629,
+          "snapshots": {
+            "d0": {
+              "date": "2018-04-02",
+              "score": 38.79206005573665,
+              "medium": 17.991161616161612,
+              "repair_breadth": 14.272411616161616,
+              "thrust10": -47.14488636363636,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2018-04-09",
+              "score": 39.22834819801889,
+              "medium": 13.556818181818182,
+              "repair_breadth": 14.300820707070706,
+              "thrust10": 3.1044823232323218,
+              "qqq_from_trough_pct": 1.4275679445796552
+            },
+            "d10": {
+              "date": "2018-04-16",
+              "score": 48.14600469569575,
+              "medium": 20.80429292929293,
+              "repair_breadth": 42.193813131313135,
+              "thrust10": 27.92140151515152,
+              "qqq_from_trough_pct": 4.559188875124298
+            },
+            "d20": {
+              "date": "2018-04-30",
+              "score": 47.3711733388905,
+              "medium": 28.59974747474747,
+              "repair_breadth": 36.23421717171718,
+              "thrust10": -5.9595959595959584,
+              "qqq_from_trough_pct": 3.4917695466864185
+            },
+            "d40": {
+              "date": "2018-05-29",
+              "score": 67.54155658739246,
+              "medium": 65.68181818181819,
+              "repair_breadth": 70.72127525252525,
+              "thrust10": -8.776830808080817,
+              "qqq_from_trough_pct": 8.655403434634955
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2018-04-11",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2018-04-17",
+              "sessions": 11
+            },
+            "repair55": {
+              "date": "2018-05-07",
+              "sessions": 25
+            },
+            "bull65": {
+              "date": "2018-05-09",
+              "sessions": 27
+            }
+          }
+        },
+        {
+          "peak": "2018-08-29",
+          "trough": "2018-12-24",
+          "end": "2019-03-21",
+          "dd_pct": -22.796671491837618,
+          "snapshots": {
+            "d0": {
+              "date": "2018-12-24",
+              "score": 6.994111611828112,
+              "medium": 5.363636363636364,
+              "repair_breadth": 4.223484848484849,
+              "thrust10": -7.501578282828283,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-01-02",
+              "score": 12.370462235196339,
+              "medium": 3.4848484848484844,
+              "repair_breadth": 2.632575757575758,
+              "thrust10": -5.020517676767677,
+              "qqq_from_trough_pct": 7.930344886649454
+            },
+            "d10": {
+              "date": "2019-01-09",
+              "score": 21.1389522213241,
+              "medium": 12.63131313131313,
+              "repair_breadth": 35.12626262626262,
+              "thrust10": 30.902777777777775,
+              "qqq_from_trough_pct": 12.069701887759464
+            },
+            "d20": {
+              "date": "2019-01-24",
+              "score": 40.95675591028974,
+              "medium": 46.814393939393945,
+              "repair_breadth": 74.5959595959596,
+              "thrust10": 39.469696969696976,
+              "qqq_from_trough_pct": 13.728244470680195
+            },
+            "d40": {
+              "date": "2019-02-22",
+              "score": 80.90361949882251,
+              "medium": 92.78535353535354,
+              "repair_breadth": 99.65277777777777,
+              "thrust10": 4.217171717171709,
+              "qqq_from_trough_pct": 20.480865424568528
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-01-07",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2019-01-28",
+              "sessions": 22
+            },
+            "repair55": {
+              "date": "2019-01-31",
+              "sessions": 25
+            },
+            "bull65": {
+              "date": "2019-02-04",
+              "sessions": 27
+            }
+          }
+        },
+        {
+          "peak": "2019-05-03",
+          "trough": "2019-06-03",
+          "end": "2019-06-20",
+          "dd_pct": -10.98320137894767,
+          "snapshots": {
+            "d0": {
+              "date": "2019-06-03",
+              "score": 33.79452847354778,
+              "medium": 21.71464646464646,
+              "repair_breadth": 14.496527777777775,
+              "thrust10": -20.19728535353536,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2019-06-10",
+              "score": 61.34097421385184,
+              "medium": 48.276515151515156,
+              "repair_breadth": 50.714962121212125,
+              "thrust10": 25.741792929292934,
+              "qqq_from_trough_pct": 7.659297625939754
+            },
+            "d10": {
+              "date": "2019-06-17",
+              "score": 63.177239411539176,
+              "medium": 48.656565656565654,
+              "repair_breadth": 55.3030303030303,
+              "thrust10": 40.806502525252526,
+              "qqq_from_trough_pct": 8.00608869967272
+            },
+            "d20": {
+              "date": "2019-07-01",
+              "score": 81.74896008582155,
+              "medium": 81.62247474747475,
+              "repair_breadth": 90.00789141414141,
+              "thrust10": 34.704861111111114,
+              "qqq_from_trough_pct": 11.496832529627232
+            },
+            "d40": {
+              "date": "2019-07-30",
+              "score": 85.3226805477291,
+              "medium": 87.04797979797979,
+              "repair_breadth": 87.45107323232322,
+              "thrust10": -6.398358585858588,
+              "qqq_from_trough_pct": 14.159668112793788
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2019-06-07",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2019-06-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2019-06-12",
+              "sessions": 7
+            },
+            "bull65": {
+              "date": "2019-06-13",
+              "sessions": 8
+            }
+          }
+        },
+        {
+          "peak": "2020-02-19",
+          "trough": "2020-03-16",
+          "end": "2020-05-29",
+          "dd_pct": -28.559380502413745,
+          "snapshots": {
+            "d0": {
+              "date": "2020-03-16",
+              "score": 13.680998539119031,
+              "medium": 4.929292929292929,
+              "repair_breadth": 1.0416666666666665,
+              "thrust10": -13.555871212121213,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-03-23",
+              "score": 8.01043044042785,
+              "medium": 0.8333333333333333,
+              "repair_breadth": 0.0,
+              "thrust10": -5.265151515151515,
+              "qqq_from_trough_pct": 0.8997691406448238
+            },
+            "d10": {
+              "date": "2020-03-30",
+              "score": 12.325430154864314,
+              "medium": 0.0,
+              "repair_breadth": 7.110164141414142,
+              "thrust10": 6.068497474747476,
+              "qqq_from_trough_pct": 13.673515550378323
+            },
+            "d20": {
+              "date": "2020-04-14",
+              "score": 27.7909405861448,
+              "medium": 22.35606060606061,
+              "repair_breadth": 52.73674242424242,
+              "thrust10": 45.62657828282828,
+              "qqq_from_trough_pct": 25.405483139065566
+            },
+            "d40": {
+              "date": "2020-05-12",
+              "score": 42.10355361613014,
+              "medium": 52.60101010101009,
+              "repair_breadth": 79.5849116161616,
+              "thrust10": 5.631313131313121,
+              "qqq_from_trough_pct": 31.47867205219905
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-04-06",
+              "sessions": 15
+            },
+            "repair45": {
+              "date": "2020-05-08",
+              "sessions": 38
+            },
+            "repair55": {
+              "date": "2020-05-26",
+              "sessions": 49
+            },
+            "bull65": {
+              "date": "2020-06-02",
+              "sessions": 54
+            }
+          }
+        },
+        {
+          "peak": "2020-09-02",
+          "trough": "2020-09-23",
+          "end": "2020-11-27",
+          "dd_pct": -12.749387060483308,
+          "snapshots": {
+            "d0": {
+              "date": "2020-09-23",
+              "score": 55.88430230062644,
+              "medium": 52.70580808080808,
+              "repair_breadth": 22.866161616161612,
+              "thrust10": -39.36868686868688,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2020-09-30",
+              "score": 65.65519328065741,
+              "medium": 57.875,
+              "repair_breadth": 40.939078282828284,
+              "thrust10": -28.042929292929294,
+              "qqq_from_trough_pct": 5.17867123773792
+            },
+            "d10": {
+              "date": "2020-10-07",
+              "score": 76.58771006057822,
+              "medium": 74.18181818181819,
+              "repair_breadth": 71.45359848484848,
+              "thrust10": 48.58743686868687,
+              "qqq_from_trough_pct": 5.9660883910063855
+            },
+            "d20": {
+              "date": "2020-10-21",
+              "score": 80.08308967734305,
+              "medium": 83.52272727272728,
+              "repair_breadth": 81.81660353535354,
+              "thrust10": 10.363005050505052,
+              "qqq_from_trough_pct": 7.582524259658063
+            },
+            "d40": {
+              "date": "2020-11-18",
+              "score": 92.60693228963355,
+              "medium": 92.36237373737374,
+              "repair_breadth": 95.2840909090909,
+              "thrust10": 21.589330808080803,
+              "qqq_from_trough_pct": 9.823581283624572
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair45": {
+              "date": "2020-10-05",
+              "sessions": 8
+            },
+            "repair55": {
+              "date": "2020-09-23",
+              "sessions": 0
+            },
+            "bull65": {
+              "date": "2020-09-30",
+              "sessions": 5
+            }
+          }
+        },
+        {
+          "peak": "2021-02-12",
+          "trough": "2021-03-08",
+          "end": "2021-04-05",
+          "dd_pct": -10.851544675594893,
+          "snapshots": {
+            "d0": {
+              "date": "2021-03-08",
+              "score": 79.4560187832245,
+              "medium": 75.29040404040404,
+              "repair_breadth": 62.053345959595966,
+              "thrust10": -14.315025252525253,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2021-03-15",
+              "score": 87.85275647529642,
+              "medium": 81.42550505050505,
+              "repair_breadth": 76.98863636363636,
+              "thrust10": 1.2452651515151416,
+              "qqq_from_trough_pct": 6.297916801755821
+            },
+            "d10": {
+              "date": "2021-03-22",
+              "score": 81.44042716150757,
+              "medium": 77.3800505050505,
+              "repair_breadth": 72.8409090909091,
+              "thrust10": 10.787563131313128,
+              "qqq_from_trough_pct": 6.358723998906601
+            },
+            "d20": {
+              "date": "2021-04-06",
+              "score": 90.09946639276683,
+              "medium": 86.63510101010101,
+              "repair_breadth": 83.97727272727272,
+              "thrust10": 11.136363636363626,
+              "qqq_from_trough_pct": 10.434666365958645
+            },
+            "d40": {
+              "date": "2021-05-04",
+              "score": 86.33930580221755,
+              "medium": 83.55176767676767,
+              "repair_breadth": 77.58364898989899,
+              "thrust10": 4.144570707070699,
+              "qqq_from_trough_pct": 10.207727096122143
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2021-03-17",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2021-03-11",
+              "sessions": 3
+            },
+            "repair55": {
+              "date": "2021-03-08",
+              "sessions": 0
+            },
+            "bull65": {
+              "date": "2021-03-08",
+              "sessions": 0
+            }
+          }
+        },
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.11873782139807,
+          "snapshots": {
+            "d0": {
+              "date": "2022-11-03",
+              "score": 23.974009870786887,
+              "medium": 25.51641414141414,
+              "repair_breadth": 45.71180555555556,
+              "thrust10": 31.515151515151516,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2022-11-10",
+              "score": 47.296638240104954,
+              "medium": 55.80176767676768,
+              "repair_breadth": 86.95391414141413,
+              "thrust10": 28.800505050505038,
+              "qqq_from_trough_pct": 8.545468620578589
+            },
+            "d10": {
+              "date": "2022-11-17",
+              "score": 52.15706788370741,
+              "medium": 62.45328282828283,
+              "repair_breadth": 86.43939393939394,
+              "thrust10": 40.72758838383838,
+              "qqq_from_trough_pct": 9.336269441973188
+            },
+            "d20": {
+              "date": "2022-12-02",
+              "score": 72.9734992597853,
+              "medium": 87.73106060606062,
+              "repair_breadth": 97.37373737373737,
+              "thrust10": 10.934343434343432,
+              "qqq_from_trough_pct": 12.307581506733744
+            },
+            "d40": {
+              "date": "2023-01-03",
+              "score": 43.63623256554706,
+              "medium": 45.74747474747475,
+              "repair_breadth": 21.365214646464644,
+              "thrust10": -17.612058080808076,
+              "qqq_from_trough_pct": 1.7748230281927846
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2022-11-03",
+              "sessions": 0
+            },
+            "repair45": {
+              "date": "2022-11-10",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": "2022-11-22",
+              "sessions": 13
+            },
+            "bull65": {
+              "date": "2022-11-30",
+              "sessions": 18
+            }
+          }
+        },
+        {
+          "peak": "2024-07-10",
+          "trough": "2024-08-07",
+          "end": "2024-10-09",
+          "dd_pct": -13.55773425354898,
+          "snapshots": {
+            "d0": {
+              "date": "2024-08-07",
+              "score": 57.29508863992129,
+              "medium": 48.477272727272734,
+              "repair_breadth": 33.131313131313135,
+              "thrust10": -31.253156565656553,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2024-08-14",
+              "score": 67.90120898241268,
+              "medium": 53.364898989899,
+              "repair_breadth": 44.48863636363637,
+              "thrust10": -36.53882575757576,
+              "qqq_from_trough_pct": 6.430982291541221
+            },
+            "d10": {
+              "date": "2024-08-21",
+              "score": 80.19711132681793,
+              "medium": 71.6439393939394,
+              "repair_breadth": 74.42550505050505,
+              "thrust10": 41.29419191919192,
+              "qqq_from_trough_pct": 10.978214565527589
+            },
+            "d20": {
+              "date": "2024-09-05",
+              "score": 74.90261367657668,
+              "medium": 75.19823232323233,
+              "repair_breadth": 65.22569444444444,
+              "thrust10": -9.199810606060609,
+              "qqq_from_trough_pct": 6.042279401073269
+            },
+            "d40": {
+              "date": "2024-10-03",
+              "score": 82.77271710434938,
+              "medium": 84.40151515151516,
+              "repair_breadth": 83.28598484848484,
+              "thrust10": -6.346275252525274,
+              "qqq_from_trough_pct": 10.924564175696938
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair45": {
+              "date": "2024-08-16",
+              "sessions": 7
+            },
+            "repair55": {
+              "date": "2024-08-08",
+              "sessions": 1
+            },
+            "bull65": {
+              "date": "2024-08-13",
+              "sessions": 4
+            }
+          }
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "snapshots": {
+            "d0": {
+              "date": "2025-04-08",
+              "score": 12.659314385395042,
+              "medium": 5.45580808080808,
+              "repair_breadth": 1.3825757575757576,
+              "thrust10": -26.324179292929294,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2025-04-15",
+              "score": 19.347081252947437,
+              "medium": 6.395202020202021,
+              "repair_breadth": 4.905303030303031,
+              "thrust10": -11.753472222222218,
+              "qqq_from_trough_pct": 10.07787566426812
+            },
+            "d10": {
+              "date": "2025-04-23",
+              "score": 15.56091434095768,
+              "medium": 5.909090909090909,
+              "repair_breadth": 16.013257575757574,
+              "thrust10": 14.630681818181817,
+              "qqq_from_trough_pct": 9.25347560659775
+            },
+            "d20": {
+              "date": "2025-05-07",
+              "score": 38.17039374135289,
+              "medium": 37.69823232323232,
+              "repair_breadth": 66.19949494949495,
+              "thrust10": 50.18623737373737,
+              "qqq_from_trough_pct": 16.161133503225813
+            },
+            "d40": {
+              "date": "2025-06-05",
+              "score": 69.2364862540135,
+              "medium": 83.7550505050505,
+              "repair_breadth": 88.96938131313132,
+              "thrust10": 3.3854166666666714,
+              "qqq_from_trough_pct": 26.133238337576216
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2025-04-23",
+              "sessions": 10
+            },
+            "repair45": {
+              "date": "2025-05-12",
+              "sessions": 23
+            },
+            "repair55": {
+              "date": "2025-05-16",
+              "sessions": 27
+            },
+            "bull65": {
+              "date": "2025-06-03",
+              "sessions": 38
+            }
+          }
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "snapshots": {
+            "d0": {
+              "date": "2026-03-30",
+              "score": 35.2507374976735,
+              "medium": 18.132575757575758,
+              "repair_breadth": 7.73989898989899,
+              "thrust10": -14.94318181818182,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-04-07",
+              "score": 49.9186403375765,
+              "medium": 25.987373737373737,
+              "repair_breadth": 33.69002525252525,
+              "thrust10": 21.33364898989899,
+              "qqq_from_trough_pct": 5.4291761717070175
+            },
+            "d10": {
+              "date": "2026-04-14",
+              "score": 68.74170193649908,
+              "medium": 53.820707070707066,
+              "repair_breadth": 64.07196969696969,
+              "thrust10": 56.3320707070707,
+              "qqq_from_trough_pct": 12.595816990574082
+            },
+            "d20": {
+              "date": "2026-04-28",
+              "score": 78.5453907490244,
+              "medium": 77.01515151515153,
+              "repair_breadth": 85.98800505050505,
+              "thrust10": 21.916035353535364,
+              "qqq_from_trough_pct": 17.781396348116353
+            },
+            "d40": {
+              "date": "2026-05-27",
+              "score": 28.027404959742753,
+              "medium": 27.689393939393938,
+              "repair_breadth": 18.428030303030297,
+              "thrust10": -63.27335858585859,
+              "qqq_from_trough_pct": 30.660244008335937
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-04-06",
+              "sessions": 4
+            },
+            "repair45": {
+              "date": "2026-04-08",
+              "sessions": 6
+            },
+            "repair55": {
+              "date": "2026-04-13",
+              "sessions": 9
+            },
+            "bull65": {
+              "date": "2026-04-13",
+              "sessions": 9
+            }
+          }
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "snapshots": {
+            "d0": {
+              "date": "2026-07-29",
+              "score": 25.447076636604788,
+              "medium": 22.720959595959595,
+              "repair_breadth": 17.49368686868687,
+              "thrust10": -10.624999999999996,
+              "qqq_from_trough_pct": 0.0
+            },
+            "d5": {
+              "date": "2026-08-05",
+              "score": 45.56026041365566,
+              "medium": 61.824494949494955,
+              "repair_breadth": 78.60006313131314,
+              "thrust10": 57.11332070707071,
+              "qqq_from_trough_pct": 8.397686211051614
+            },
+            "d10": {
+              "date": "2026-08-12",
+              "score": 52.151715824687976,
+              "medium": 63.713383838383834,
+              "repair_breadth": 81.31470959595958,
+              "thrust10": 63.82102272727272,
+              "qqq_from_trough_pct": 9.36485176240367
+            }
+          },
+          "signals": {
+            "thrust": {
+              "date": "2026-08-03",
+              "sessions": 3
+            },
+            "repair45": {
+              "date": "2026-08-05",
+              "sessions": 5
+            },
+            "repair55": {
+              "date": null,
+              "sessions": null
+            },
+            "bull65": {
+              "date": null,
+              "sessions": null
+            }
+          }
+        }
+      ],
+      "noise": {
+        "mean_abs_daily_change": 2.3748256016619504,
+        "hysteresis_changes_per_year": 21.16982225656878
+      },
+      "latest": {
+        "date": "2026-08-21",
+        "score": 46.58747501851306,
+        "delta10": -5.417269756479776,
+        "repair_thrust10": -7.400568181818173,
+        "repair_breadth": 74.27083333333334
+      }
+    }
+  },
+  "references": {
+    "current_mri_standardized": {
+      "horizon_corr": {
+        "qqq_ret5_corr": 0.38548063281621897,
+        "qqq_ret10_corr": 0.4967386998028453,
+        "qqq_ret21_corr": 0.6218086336160739,
+        "qqq_ret63_corr": 0.6209148398651312,
+        "qqq_ret126_corr": 0.5339997308077291
+      },
+      "gate_overlap": {},
+      "noise": {
+        "mean_abs_daily_change": 4.818299791225862,
+        "hysteresis_changes_per_year": 44.97411128284389
+      }
+    },
+    "oratnek_like": {
+      "horizon_corr": {
+        "qqq_ret5_corr": 0.37467492540863584,
+        "qqq_ret10_corr": 0.4727981471240311,
+        "qqq_ret21_corr": 0.5610584142094382,
+        "qqq_ret63_corr": 0.5698072976924102,
+        "qqq_ret126_corr": 0.5739332614978144
+      },
+      "gate_overlap": {},
+      "noise": {
+        "mean_abs_daily_change": 4.96320363266925,
+        "hysteresis_changes_per_year": 46.76178516228748
+      }
+    }
+  }
+}
