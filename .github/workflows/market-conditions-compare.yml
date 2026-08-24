@@ -6,6 +6,7 @@ on:
       - analysis-market-conditions-compare
     paths:
       - 'tools/market_conditions_compare.py'
+      - 'tools/market_conditions_compare_v2.py'
       - '.github/workflows/market-conditions-compare.yml'
   workflow_dispatch: {}
 
@@ -23,17 +24,17 @@ jobs:
           python-version: '3.11'
       - name: Install analysis dependencies
         run: pip install --disable-pip-version-check yfinance pandas numpy
-      - name: Run 2016-2026 comparison
-        run: python tools/market_conditions_compare.py
+      - name: Run second-pass 2016-2026 comparison
+        run: python tools/market_conditions_compare_v2.py
       - name: Persist comparison results on analysis branch only
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add market_conditions_compare_results.json market_conditions_compare_daily.csv
+          git add market_conditions_compare_v2_results.json market_conditions_compare_v2_compact.json
           if git diff --cached --quiet; then
             echo "No result changes"
             exit 0
           fi
-          git commit -m "Persist Market Conditions comparison results"
+          git commit -m "Persist second-pass Market Conditions comparison"
           git push origin HEAD:analysis-market-conditions-compare
