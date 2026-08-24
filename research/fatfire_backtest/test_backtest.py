@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +8,7 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("fatfire_backtest", HERE / "backtest.py")
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod
 assert spec.loader is not None
 spec.loader.exec_module(mod)
 
