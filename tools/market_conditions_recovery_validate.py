@@ -11,6 +11,7 @@ import market_conditions_compare as base
 import market_conditions_compare_v2 as v2
 
 EVAL_END = pd.Timestamp("2026-08-21")
+ROOT = Path(__file__).resolve().parents[1]
 
 CANDIDATES = {
     "v2_25452010": (.25,.45,.20,.10),
@@ -63,21 +64,18 @@ def drawdown_episodes(qqq: pd.Series, trigger=-0.08, exit_dd=-0.02):
             "peak_price":ep_peak_price,"trough_price":trough_price,
             "dd":trough_price/ep_peak_price-1,
         })
-    # keep meaningful episodes and de-duplicate tiny late fragments
     return [e for e in episodes if e["dd"] <= trigger]
 
 
 def sess_between(index, a, b):
-    z=index[(index>=a)&(index<=b)]
+    lo=min(a,b); hi=max(a,b)
+    z=index[(index>=lo)&(index<=hi)]
     return max(len(z)-1,0)
 
 
-def first_after(series: pd.Series, dt, cond, limit=60):
-    s=series.loc[series.index>=dt].iloc[:limit+1]
-    mask=cond(s)
-    if mask.any():
-        return s.index[int(np.argmax(mask.to_numpy()))]
-    return None
+def signed_sessions(index, trigger, trough):
+    n=sess_between(index,trigger,trough)
+    return -n if trigger<trough else n
 
 
 def recovery_episode_stats(frame: pd.DataFrame, qqq: pd.Series, episodes):
@@ -101,9 +99,9 @@ def recovery_episode_stats(frame: pd.DataFrame, qqq: pd.Series, episodes):
                 }
         sigs={}
         tests={
-            "thrust": lambda x: x["repair_thrust10"]>=10,
+            "early_thrust": lambda x: (x["repair_thrust10"]>=10)&(x["repair_breadth"]>=35),
             "repair45": lambda x: (x["score"]>=45)&(x["repair_breadth"]>=45)&(x["repair_thrust10"]>0),
-            "repair55": lambda x: (x["score"]>=55)&(x["medium"]>=50),
+            "confirm55": lambda x: (x["score"]>=55)&(x["medium"]>=50),
             "bull65": lambda x: x["score"]>=65,
         }
         after=frame.loc[frame.index>=t].iloc[:61]
@@ -119,13 +117,13 @@ def recovery_episode_stats(frame: pd.DataFrame, qqq: pd.Series, episodes):
     return out
 
 
-def trigger_quality(frame: pd.DataFrame, qqq: pd.Series, episodes):
-    # Evaluate the first recovery-thrust trigger after an episode has entered >=8% drawdown.
-    # False = trigger occurs before the final trough and a materially lower low (>3%) follows within 20 sessions.
+def signal_quality(frame: pd.DataFrame, qqq: pd.Series, episodes, signal_name, cond):
+    # First trigger after the episode has already reached an 8% drawdown.
+    # False = signal occurs before the final trough and QQQ then loses >=3% from signal close within 20 sessions.
     rows=[]; idx=qqq.dropna().index
     for e in episodes:
         z=frame.loc[(frame.index>=e["start"])&(frame.index<=e["end"])].copy()
-        eligible=(z["repair_thrust10"]>=10)&(z["repair_breadth"]>=35)&(z["score"]<60)
+        eligible=cond(z).fillna(False)
         if not eligible.any():
             rows.append({"trough":str(e["trough"].date()),"trigger":None,"false_lower_low":None}); continue
         d=z.index[int(np.argmax(eligible.to_numpy()))]
@@ -134,14 +132,25 @@ def trigger_quality(frame: pd.DataFrame, qqq: pd.Series, episodes):
         lower=float(future.min()/qqq.loc[d]-1) if len(future) else np.nan
         false=bool(d<e["trough"] and lower<=-.03)
         rows.append({"trough":str(e["trough"].date()),"trigger":str(d.date()),
-                     "sessions_vs_trough":int(sess_between(idx,d,e["trough"]))*(-1 if d<e["trough"] else 1),
+                     "sessions_vs_trough":signed_sessions(idx,d,e["trough"]),
                      "worst20_from_trigger_pct":float(lower*100),"false_lower_low":false})
     vals=[r for r in rows if r.get("false_lower_low") is not None]
     return {
-        "episodes":rows,
-        "triggered":len(vals),
+        "signal":signal_name,"episodes":rows,"triggered":len(vals),
         "false_count":sum(1 for r in vals if r["false_lower_low"]),
         "false_rate_pct":float(np.mean([r["false_lower_low"] for r in vals])*100) if vals else None,
+    }
+
+
+def signal_quality_set(frame, qqq, episodes):
+    return {
+        "early_thrust":signal_quality(frame,qqq,episodes,"early_thrust",
+            lambda z:(z["repair_thrust10"]>=10)&(z["repair_breadth"]>=35)&(z["score"]<60)),
+        "repair45":signal_quality(frame,qqq,episodes,"repair45",
+            lambda z:(z["score"]>=45)&(z["repair_breadth"]>=45)&(z["repair_thrust10"]>0)),
+        "confirm55":signal_quality(frame,qqq,episodes,"confirm55",
+            lambda z:(z["score"]>=55)&(z["medium"]>=50)),
+        "bull65":signal_quality(frame,qqq,episodes,"bull65",lambda z:z["score"]>=65),
     }
 
 
@@ -151,30 +160,35 @@ def horizon_correlations(score: pd.Series, qqq: pd.Series):
     for h in (5,10,21,63,126):
         r=d["q"]/d["q"].shift(h)-1
         out[f"qqq_ret{h}_corr"]=float(d["s"].corr(r))
+    out["medium_vs_short_corr_ratio"] = out["qqq_ret63_corr"] / max(abs(out["qqq_ret5_corr"]),1e-9)
     return out
 
 
 def gate_overlap(score: pd.Series):
-    p=Path("trend_history.json")
+    p=ROOT/"trend_history.json"
     if not p.exists(): return {}
     raw=json.loads(p.read_text(encoding="utf-8"))
     g=pd.DataFrame(raw,columns=["date","gate"]); g["date"]=pd.to_datetime(g["date"])
     order={"Red":0,"Yellow":1,"Green":2,"Blue":3}; g["ord"]=g["gate"].map(order)
     s=pd.DataFrame({"date":score.index,"score":score.values})
-    m=g.merge(s,on="date",how="inner").dropna()
+    m=g.merge(s,on="date",how="inner").dropna().sort_values("date")
     if m.empty:return {}
-    by={k:{"n":int(len(x)),"mean":float(x["score"].mean())} for k,x in m.groupby("gate")}
+    by={k:{"n":int(len(x)),"mean":float(x["score"].mean()),"min":float(x["score"].min()),"max":float(x["score"].max())} for k,x in m.groupby("gate")}
     changes=int((m["gate"]!=m["gate"].shift()).sum()-1)
-    # Score band with 5-point hysteresis, sampled on same NQSAR dates.
     hs=v2.hysteresis_changes(pd.Series(m["score"].to_numpy(),index=m["date"]),5.0)
+    lagcorr={}
+    ss=pd.Series(m["score"].to_numpy(),index=m["date"])
+    oo=pd.Series(m["ord"].to_numpy(),index=m["date"])
+    for lag in (-5,-3,0,3,5):
+        lagcorr[str(lag)] = float(ss.corr(oo.shift(lag),method="spearman"))
     return {"n":int(len(m)),"by_gate":by,"gate_changes":changes,
             "score_gate_spearman":float(m["score"].corr(m["ord"],method="spearman")),
-            "mc_hysteresis_changes":int(hs["changes"])}
+            "lag_spearman":lagcorr,"mc_hysteresis_changes":int(hs["changes"])}
 
 
 def aggregate_recovery(epstats):
     out={}
-    for sig in ("thrust","repair45","repair55","bull65"):
+    for sig in ("early_thrust","repair45","confirm55","bull65"):
         a=[e["signals"][sig]["sessions"] for e in epstats if e["signals"][sig]["sessions"] is not None]
         out[f"{sig}_avg_sessions"] = float(np.mean(a)) if a else None
         out[f"{sig}_median_sessions"] = float(np.median(a)) if a else None
@@ -197,7 +211,8 @@ def main():
     result={
         "scope":{"evaluation":"2016-01-01..2026-08-21","failed_tickers":failed,
                  "episode_rule":"QQQ drawdown >=8% from running peak; episode ends when drawdown recovers to within 2% of peak",
-                 "recovery_thrust":"10-session change in mean(above20, ret21>0 participation, above50, 20SMA>50SMA); excludes 5D and 10SMA"},
+                 "recovery_thrust":"10-session change in mean(above20, ret21>0 participation, above50, 20SMA>50SMA); excludes 5D and 10SMA",
+                 "false_recovery":"signal before final trough followed by >=3% additional loss from signal close within 20 sessions"},
         "episodes":[{"peak":str(e["peak"].date()),"trough":str(e["trough"].date()),"end":str(e["end"].date()),"dd_pct":float(e["dd"]*100)} for e in episodes],
         "candidates":{},"references":{}
     }
@@ -205,12 +220,9 @@ def main():
         s=f["score"].where((f.index>=eval_start)&(f.index<=EVAL_END))
         eps=recovery_episode_stats(f.loc[:EVAL_END],qqq,episodes)
         result["candidates"][name]={
-            "weights":CANDIDATES[name],
-            "horizon_corr":horizon_correlations(s,qqq),
-            "gate_overlap":gate_overlap(s),
-            "recovery":aggregate_recovery(eps),
-            "thrust_quality":trigger_quality(f.loc[:EVAL_END],qqq,episodes),
-            "episode_detail":eps,
+            "weights":CANDIDATES[name],"horizon_corr":horizon_correlations(s,qqq),
+            "gate_overlap":gate_overlap(s),"recovery":aggregate_recovery(eps),
+            "signal_quality":signal_quality_set(f.loc[:EVAL_END],qqq,episodes),"episode_detail":eps,
             "noise":{"mean_abs_daily_change":float(s.diff().abs().mean()),
                      "hysteresis_changes_per_year":v2.hysteresis_changes(s.dropna(),5.0)["changes_per_year"]},
             "latest":{"date":str(s.dropna().index[-1].date()),"score":float(s.dropna().iloc[-1]),
@@ -226,7 +238,7 @@ def main():
     Path("market_conditions_recovery_validation.json").write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
     compact={"scope":result["scope"],"episodes":result["episodes"],"candidates":{},"references":result["references"]}
     for name,x in result["candidates"].items():
-        compact["candidates"][name]={k:x[k] for k in ["weights","horizon_corr","gate_overlap","recovery","thrust_quality","noise","latest"]}
+        compact["candidates"][name]={k:x[k] for k in ["weights","horizon_corr","gate_overlap","recovery","signal_quality","noise","latest"]}
     Path("market_conditions_recovery_validation_compact.json").write_text(json.dumps(compact,ensure_ascii=False,indent=2),encoding="utf-8")
     print(json.dumps(compact,ensure_ascii=False,indent=2))
 
