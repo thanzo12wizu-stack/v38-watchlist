@@ -30,8 +30,6 @@ def event_rows(d:pd.DataFrame,th:int)->pd.DataFrame:
     cross=(mc<th)&(mc.shift(1)>=th)
     rows=d.loc[cross].copy()
     rows['threshold']=th
-    # objective ex-post label for validation only: true deterioration if QQQ falls >=5% within next 21d
-    # or signal is already >=5% below 63d high. This catches ongoing damage and imminent damage.
     rows['future21_dd']=maxdd_forward(d['QQQ'],21).reindex(rows.index)
     rows['true_deterioration']=(rows['future21_dd']<=-.05)|(rows['qqq_dd63']<=-.05)
     return rows
@@ -69,7 +67,6 @@ def eval_rule(df,r):
 
 def episode_capture(d:pd.DataFrame,r):
     q=d['QQQ']; hi=q.cummax(); dd=q/hi-1
-    # objective >=8% drawdown episodes, reset after recovery to within 2% of high
     eps=[]; active=False; peak=None; trough=None; min_dd=0
     for dt,val in dd.items():
         if not active and val<=-.08:
@@ -79,7 +76,6 @@ def episode_capture(d:pd.DataFrame,r):
             if val>=-.02:
                 eps.append((peak,trough,dt,min_dd)); active=False
     if active: eps.append((peak,trough,q.index[-1],min_dd))
-    # confirmed status every day when MC<65; capture if confirmed before trough
     votes=(d['qqq_dd63']<=r['ddq']).astype(int)+(d['spy_dd63']<=r['dds']).astype(int)
     if r['vix_on']: votes += d['vix_elevated'].astype(int)
     if r['nq_on']: votes += d['nq_riskoff'].astype(int)
@@ -111,13 +107,11 @@ def benign_year_days(d:pd.DataFrame,r):
 
 def main():
     d=pd.read_csv(DAILY,parse_dates=['date']).set_index('date').sort_index()
-    d=d.rename(columns={'alpha_0.75':'mc075'})
-    # tolerate previous column naming
+    d=d.rename(columns={'mc_alpha_0.75':'mc075','alpha_0.75':'mc075'})
     if 'mc075' not in d.columns:
-        if 'alpha_0.75' in d.columns: d['mc075']=d['alpha_0.75']
-        elif 'candidate_mc' in d.columns: d['mc075']=d['candidate_mc']
+        if 'candidate_mc' in d.columns: d['mc075']=d['candidate_mc']
+        else: raise RuntimeError(f'mc075 missing; columns={list(d.columns)}')
     d['qqq_dd63']=dd_from_high(d['QQQ'],63)
-    # SPY is not persisted in alpha-context daily; recover from older 15y daily if available
     old=ROOT/'market_conditions_15y_index_compare_daily.csv'
     if old.exists():
         o=pd.read_csv(old,parse_dates=['date']).set_index('date'); d['SPY']=o['SPY'].reindex(d.index)
@@ -134,10 +128,8 @@ def main():
        for dds in (-.02,-.03,-.04):
         for v in (True,False):
          for n in (True,False):
-          # require at least 2 available signal families if k>=2; avoid degenerate no-context rules
           if (2+int(v)+int(n))<k: continue
           r=score_rule(train,k,ddq,dds,v,n)
-          # prioritize recall, then specificity; require >=85% train recall
           if r['recall']>=.85: rules.append(r)
     rules=sorted(rules,key=lambda x:(x['balanced_accuracy'],x['specificity'],x['precision']),reverse=True)
     best=rules[0]
