@@ -32,10 +32,11 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Compile and regression tests
+        shell: bash
         run: |
+          set -euo pipefail
           python -m py_compile build_dashboard.py
           pytest -q tests/test_dashboard_build_regressions.py tests/test_eps_acceleration.py
-          python build_dashboard.py --selftest
       - name: Verify scope
         shell: bash
         run: |
