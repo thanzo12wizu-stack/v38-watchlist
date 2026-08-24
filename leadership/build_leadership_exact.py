@@ -149,6 +149,15 @@ def entry_status_v2(stock: dict[str, Any]) -> dict[str, Any]:
     bo_score = base.num(bo.get("score")) or 0.0
     bo_dist = base.num(bo.get("distance"))
 
+    live_inputs = sum(
+        base.num(stock.get(key)) is not None
+        for key in (
+            "ema21", "sma50", "vwap63", "atr14", "pivot", "pivot50",
+            "breakout20_pct", "breakout50_pct",
+        )
+    )
+    if int(stock.get("metric_count") or 0) == 0 or live_inputs == 0:
+        return {"status": "NO_DATA", "quality": None, "reason": "Entry判定用のライブ市場データ不足"}
     if price is None:
         return {"status": "NO_DATA", "quality": None, "reason": "Entry判定用の価格データ不足"}
     if sma50 is not None and price < sma50 * 0.99:
