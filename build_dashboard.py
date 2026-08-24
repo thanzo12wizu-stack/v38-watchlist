@@ -14,7 +14,7 @@ Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
      期中退出の空き枠は再投下せず現金で持ち隔週(月曜)トゥルーアップで吸収。銘柄入替は定例月曜＋赤明けは青/緑復帰の翌寄りに即再構築。
   B. レバスリーブ(30%): TQQQ:SOXL=50:50, SOXX MA50<100でSOXL→TQQQ, NQ4色ゲート。配分=個別70/レバ30/現金0。
   C. NQ 4色ゲート(即応・確認日数ゼロ): 個別 青100/緑100/黄=新規停止・保有はワイドトレール0.70継続(締めなし)/赤0(撤退), レバ 青100/緑50/黄0/赤0。執行は翌寄り。
-  D. Market Conditions=中長期の市場構造（短期15・中期55・長期20・Damage10）。NQSAR=短期、VIX FEAR CYCLE=パニック/底形成として独立表示。
+  D. Market Conditions=中長期の市場構造（短期15・中期55・長期20・Damage10）。
      ※先導株温度計は非対称: 左端(枯渇)のみNQ底に中央値18日先行(的中6割)/右端(過熱)は先取りせず。露出は動かさない。
   E. 8 tabs (マーケット/ピックアップ/ポートフォリオ/配分/RS比較/セクターローテ/業種RS/ルール) + 今日の運用ヘッダ + 隔週リバランス点検（月曜）。RS比較は63/126/189日Top10、1日・1週・1か月のIN/OUT、RS189 Top24の継続性を表示。
   F. 非常口ルール: equity.csvの口座NAV DDとQQQ円建て12ヶ月相対を自動判定。DD≤−28%かつ相対≤−12%でレバ半減、DD>−20%かつ相対>−8%で解除。状態はstate.jsonへ永続化。
@@ -3725,10 +3725,9 @@ def _mc_linear(series, lo, hi):
 
 
 def mri_frame(macro, W=None):
-    """Market Conditions v3 (display/state only; allocation remains NQSAR-driven).
+    """Market Conditions v3.
 
-    43 non-levered ETFs, family balanced.  Score is descriptive market health,
-    not a forward-return predictor and does not contain NQSAR/VIX/VVIX/credit.
+    43 non-levered ETFs, family balanced. The score is descriptive market health.
     """
     c = _mc_frame_from_macro(macro)
     if c.empty:
@@ -3738,8 +3737,7 @@ def mri_frame(macro, W=None):
         vals = pd.DataFrame(index=idx)
         for k in ("pillar_short","pillar_medium","pillar_long","pillar_damage"):
             vals[k] = 50.0
-        vals["repair_breadth"] = np.nan; vals["repair_thrust10"] = np.nan
-        vals["qqq_dd"] = np.nan; vals["bottom_context"] = 0.0; vals["mc_coverage"] = 0.0
+        vals["mc_coverage"] = 0.0
         breakdown = [dict(key=k, w=w, group="market", raw=50.0, pts=w*.5, ptsmax=w, frac=.5)
                      for k,w,*_ in STATUS_DEF]
         return z, breakdown, list(MC_MARKET_TICKERS), list(STATUS_DEF), vals
@@ -3772,24 +3770,37 @@ def mri_frame(macro, W=None):
     raw = short*.15 + medium*.55 + long*.20 + damage*.10
     score = raw.ewm(span=2,adjust=False).mean()
 
-    # Recovery telemetry intentionally excludes 5D return/10SMA: this is broader
-    # repair after a damaged market, not a second copy of NQSAR.
-    repair_breadth = pd.concat([p["above20"],p["ret21"],p["above50"],p["ma20_gt_50"]],axis=1).mean(axis=1,skipna=True)
-    repair_thrust10 = repair_breadth - repair_breadth.shift(10)
-    qqq = pd.to_numeric(macro.get("QQQ", pd.DataFrame()).get("Close"), errors="coerce") if macro.get("QQQ") is not None else pd.Series(dtype=float)
-    qqq = qqq.reindex(score.index).ffill() if len(qqq) else pd.Series(np.nan,index=score.index)
-    qqq_dd = qqq/qqq.rolling(252,min_periods=126).max()-1.0
-    recent_shock = qqq_dd.rolling(60,min_periods=1).min() <= -0.08
-    bottom_context = (recent_shock & (qqq_dd < -0.02)).astype(float)
     coverage = c.notna().sum(axis=1) / float(len(MC_MARKET_TICKERS)) * 100.0
 
     vals = pd.DataFrame(index=score.index)
     vals["pillar_short"] = short; vals["pillar_medium"] = medium
     vals["pillar_long"] = long; vals["pillar_damage"] = damage
-    vals["repair_breadth"] = repair_breadth; vals["repair_thrust10"] = repair_thrust10
-    vals["qqq_dd"] = qqq_dd; vals["bottom_context"] = bottom_context; vals["mc_coverage"] = coverage
+    vals["mc_coverage"] = coverage
     for k,v in p.items(): vals[k] = v
     vals["median_dd"] = med_dd*100.0
+
+    def _compat_close(ticker):
+        d = macro.get(ticker)
+        if d is None or not hasattr(d, "columns") or "Close" not in d.columns:
+            return pd.Series(np.nan, index=vals.index, dtype=float)
+        x = pd.to_numeric(d["Close"], errors="coerce")
+        try:
+            x.index = pd.to_datetime(x.index).tz_localize(None)
+        except Exception:
+            pass
+        return x.reindex(vals.index).ffill()
+
+    _qqq = _compat_close("QQQ")
+    _spy = _compat_close("SPY")
+    _rsp = _compat_close("RSP")
+    _qqqe = _compat_close("QQQE")
+    vals["qqq_50"] = _qqq / _qqq.rolling(50).mean() - 1.0
+    vals["qqq_200"] = _qqq / _qqq.rolling(200).mean() - 1.0
+    vals["spy_50"] = _spy / _spy.rolling(50).mean() - 1.0
+    vals["spy_200"] = _spy / _spy.rolling(200).mean() - 1.0
+    vals["rsp_50"] = _rsp / _rsp.rolling(50).mean() - 1.0
+    vals["rsp_200"] = _rsp / _rsp.rolling(200).mean() - 1.0
+    vals["qqqe_50"] = _qqqe / _qqqe.rolling(50).mean() - 1.0
 
     last = vals.iloc[-1]
     pmap = {"short":short,"medium":medium,"long":long,"damage":damage}
@@ -3823,26 +3834,12 @@ def mri_auxiliary(mri, vals, metrics):
     hl = float(clean.tail(3).mean()) if len(clean) else cur
     hi20 = float(clean.tail(20).max()) if len(clean) else cur
     drop = hi20-cur
-    if drop < 4: peak="高値圏"
-    elif drop < 10: peak="押し目"
-    else: peak="深押し"
-    delta5 = float(cur-clean.iloc[-6]) if len(clean) >= 6 else 0.0
-    rb = float(last.get("repair_breadth")) if pd.notna(last.get("repair_breadth")) else np.nan
-    rt = float(last.get("repair_thrust10")) if pd.notna(last.get("repair_thrust10")) else np.nan
-    med = float(last.get("pillar_medium")) if pd.notna(last.get("pillar_medium")) else np.nan
-    ctx = bool(last.get("bottom_context",0.0) >= 0.5)
-    recovery = None
-    if ctx and np.isfinite(rb) and np.isfinite(rt):
-        if cur >= 55.0 and np.isfinite(med) and med >= 50.0 and rb >= 55.0:
-            recovery = "CONFIRMED"
-        elif cur >= 45.0 and rb >= 45.0 and rt > 0.0:
-            recovery = "REPAIRING"
-        elif rb >= 35.0 and rt >= 10.0:
-            recovery = "EARLY REPAIR"
-    cov = float(last.get("mc_coverage")) if pd.notna(last.get("mc_coverage")) else 0.0
-    return dict(cur=cur,hl=hl,slope=slope_dir,bear_n=bear_n,bear_flags=bear_flags,
-                peak=peak,drop=drop,hi20=hi20,delta5=delta5,recovery=recovery,
-                repair_breadth=rb,repair_thrust10=rt,coverage=cov)
+    if drop < 3:    peak = "通常"
+    elif drop < 7:  peak = "注意"
+    elif drop < 12: peak = "減速"
+    else:           peak = "深押し"
+    return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
+                peak=peak, drop=drop, hi20=hi20)
 
 
 def mri_band(v):
@@ -18029,7 +18026,7 @@ def _vix_cycle_card(ctx):
                 "DATA CHECK": "DATA CHECK"}.get(state, state)
     state_cls = ("pos" if state == "BOTTOM" else "warnc" if state == "ROLLOVER"
                  else "neg" if state in ("EXTREME", "RE-EXTREME", "DATA CHECK") else "mut")
-    hdr = (f'<div class="card vixcy"><div class="chd"><h2>パニック・底形成 '
+    hdr = (f'<div class="card vixcy"><div class="chd"><h2>VIX反転シーケンス '
            f'<span class="h2en">VIX FEAR CYCLE</span></h2>'
            f'<div class="chd-now {state_cls}"><b>{state_ui}</b>'
            f'<span>{_h(ctx.get("asof") or "—")}</span></div></div>')
@@ -18746,7 +18743,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
       <div class="lhs">
         <span class="dot"></span>
         <div>
-          <div class="lab">NQSAR（短期） <span id="sarBadge">{badge}</span></div>
+          <div class="lab">トレンド判定 <span id="sarBadge">{badge}</span></div>
           <div class="col" id="sarCol">{s_lab}</div>
         </div>
       </div>
@@ -18787,14 +18784,11 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
               f'<div class="mbd-h">MARKET CONDITIONS 内訳（短期15 / 中期55 / 長期20 / Damage10）</div>'
               + "".join(_bd_rows) + bear_sec
               + '<div class="mnote">赤=点灯中のベア要因。もう一度タップで閉じる ▴</div></div>')
-    _rec = aux.get("recovery")
-    _rcol = {"EARLY REPAIR":"#fbbf24","REPAIRING":"#58a6ff","CONFIRMED":"#34d399"}.get(_rec,"#9aa4b2")
-    _recovery_html = (f'<div class="st" style="font-size:12px;color:{_rcol};margin-top:2px">RECOVERY · <b>{_rec}</b></div>' if _rec else "")
     banner = sar_pill + _ribbon(mkt.get("trend_hist")) + f"""
     <div class="banner b-{band_cls}" onclick="toggleMri()">
       <div class="lab">MARKET CONDITIONS<span class="lab-en">MID / LONG TERM</span><span class="tap">タップで内訳 ▾</span></div>
       <div class="val">{aux['cur']:.0f}<span style="font-size:15px;font-weight:600">/100</span></div>
-      <div class="st">{band_lab} <span style="font-size:12px;font-weight:700">5D {aux.get('delta5',0.0):+.1f}</span></div>{_recovery_html}
+      <div class="st">{band_lab}</div>
       <div class="gauge"><div class="mk" style="left:{mk}%"></div></div>
       <div class="aux">
         <div class="a">傾き <b>{aux['slope']}</b></div>
@@ -20196,7 +20190,7 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     if "MARKET CONDITIONS" not in html: errs.append("Market Conditions banner missing")
     if 'id="mktPostText"' not in html or "定点観測" not in html: errs.append("market digest missing")
     if 'class="mkt-fold"' not in html: errs.append("market explanation fold missing")
-    if "NQSAR（短期）" not in html: errs.append("trend pill missing")
+    if "トレンド判定" not in html: errs.append("trend pill missing")
     if not any(c in html for c in ["sar-blue","sar-green","sar-yellow","sar-red"]):
         errs.append("NQ-SAR color class missing")
     if len(picks) > N_PORT: errs.append(f"portfolio exceeds N={N_PORT} (got {len(picks)})")
