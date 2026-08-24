@@ -144,8 +144,10 @@ def stock_prebreakout(stock: dict[str, Any], group: dict[str, Any]) -> dict[str,
     gap_coiled = gap is not None and gap <= 6.0
     absorption_ok = (absorption is None or absorption >= 58.0) or (structure_score is not None and structure_score >= 66.0)
     quiet_ok = rvol is None or rvol <= 1.20
+    momentum_ok = accel is None or accel >= -2.0
+    group_ok = group_priority is None or group_priority >= 68.0
 
-    if active_group and leader and gap_ready and strength >= 78 and rs63 >= 78 and score >= 80 and absorption_ok and quiet_ok:
+    if active_group and leader and gap_ready and strength >= 78 and rs63 >= 78 and score >= 80 and absorption_ok and quiet_ok and momentum_ok and group_ok:
         status = "READY"
     elif active_group and leader and gap_coiled and strength >= 75 and rs63 >= 72 and score >= 70:
         status = "COILED"
