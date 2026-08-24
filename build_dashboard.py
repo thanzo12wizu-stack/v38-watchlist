@@ -20196,7 +20196,7 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     if "MARKET CONDITIONS" not in html: errs.append("Market Conditions banner missing")
     if 'id="mktPostText"' not in html or "定点観測" not in html: errs.append("market digest missing")
     if 'class="mkt-fold"' not in html: errs.append("market explanation fold missing")
-    if "トレンド判定" not in html: errs.append("trend pill missing")
+    if "NQSAR（短期）" not in html: errs.append("trend pill missing")
     if not any(c in html for c in ["sar-blue","sar-green","sar-yellow","sar-red"]):
         errs.append("NQ-SAR color class missing")
     if len(picks) > N_PORT: errs.append(f"portfolio exceeds N={N_PORT} (got {len(picks)})")
