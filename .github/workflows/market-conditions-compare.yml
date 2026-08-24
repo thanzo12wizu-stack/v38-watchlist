@@ -1,0 +1,39 @@
+name: One-off Market Conditions comparison
+
+on:
+  push:
+    branches:
+      - analysis-market-conditions-compare
+    paths:
+      - 'tools/market_conditions_compare.py'
+      - '.github/workflows/market-conditions-compare.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install analysis dependencies
+        run: pip install --disable-pip-version-check yfinance pandas numpy
+      - name: Run 2016-2026 comparison
+        run: python tools/market_conditions_compare.py
+      - name: Persist comparison results on analysis branch only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market_conditions_compare_results.json market_conditions_compare_daily.csv
+          if git diff --cached --quiet; then
+            echo "No result changes"
+            exit 0
+          fi
+          git commit -m "Persist Market Conditions comparison results"
+          git push origin HEAD:analysis-market-conditions-compare
