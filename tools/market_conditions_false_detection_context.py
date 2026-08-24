@@ -121,6 +121,7 @@ def main():
     d['vix_elevated']=d['vix_context'].isin(['ELEVATED','EXTREME'])
 
     ev=pd.concat([event_rows(d,55),event_rows(d,45)]).sort_index()
+    ev=ev[~ev.index.duplicated(keep='last')]
     train=ev[ev.index<=TRAIN_END]; hold=ev[ev.index>=HOLD_START]
     rules=[]
     for k in (1,2,3):
