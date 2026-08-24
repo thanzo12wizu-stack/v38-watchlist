@@ -40,3 +40,5 @@ jobs:
           fi
           git commit -m "Persist recovery-focused Market Conditions validation"
           git push origin HEAD:analysis-market-conditions-compare
+
+# validation revision: NQSAR root-path + staged false-recovery checks
