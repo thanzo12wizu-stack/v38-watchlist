@@ -60,6 +60,14 @@ class PreBreakoutOverlayTests(unittest.TestCase):
         self.assertGreaterEqual(pre["score"], 80)
         self.assertAlmostEqual(pre["pivot_gap_pct"], 1.2)
 
+    def test_sharp_rs_deceleration_cannot_be_ready(self) -> None:
+        stock = strong_stock("DECEL")
+        stock["acceleration"] = -12.0
+        stock["rs21"] = 82.0
+        pre = stock_prebreakout(stock, group_with(stock))
+        self.assertNotEqual(pre["status"], "READY")
+        self.assertIn(pre["status"], {"COILED", "WATCH", "NOT_READY"})
+
     def test_today_breakout_is_excluded_from_prebreakout_candidates(self) -> None:
         stock = strong_stock("AAA", breakout_status="BREAKOUT_NOW", gap=-0.5, rvol=1.7)
         pre = stock_prebreakout(stock, group_with(stock))
