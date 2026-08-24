@@ -94,7 +94,7 @@ class PreBreakoutOverlayTests(unittest.TestCase):
         self.assertNotIn("BROKE", [x["symbol"] for x in out["actionable"]])
         self.assertEqual(out["confirmed_breakouts"][0]["symbol"], "BROKE")
 
-    def test_public_copy_says_prebreakout_first(self) -> None:
+    def test_public_copy_and_detail_drilldown_are_polished(self) -> None:
         ready = strong_stock("AAA")
         group = group_with(ready)
         model = {
@@ -106,10 +106,14 @@ class PreBreakoutOverlayTests(unittest.TestCase):
             "actionable": [],
             "waiting": [],
         }
-        page = render_public_html(model)
+        page = render_public_html(model, {"AAA": "NASDAQ"})
         self.assertIn("発火前・最優先", page)
-        self.assertIn("発火前READY", page)
+        self.assertIn("発火目前", page)
         self.assertIn("ブレイクする前だけを表示", page)
+        self.assertIn("銘柄をタップすると詳細とTradingViewを開けます", page)
+        self.assertIn("TradingViewで開く", page)
+        self.assertIn("https://www.tradingview.com/chart/?symbol=", page)
+        self.assertIn('"exchange":"NASDAQ"', page)
 
 
 if __name__ == "__main__":
