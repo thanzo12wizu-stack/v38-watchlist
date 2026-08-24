@@ -1,0 +1,48 @@
+name: Fix NQSAR selftest on PR
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Apply exact selftest fix
+        run: python tools/fix_nqsar_selftest.py
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile build_dashboard.py
+          pytest -q tests/test_dashboard_build_regressions.py tests/test_eps_acceleration.py
+          grep -q 'if "NQSAR（短期）" not in html: errs.append("trend pill missing")' build_dashboard.py
+          git diff --check
+      - name: Persist exact builder fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- build_dashboard.py; then
+            echo 'No builder change needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build_dashboard.py
+          test "$(git diff --cached --name-only)" = "build_dashboard.py"
+          git commit -m 'Fix NQSAR selftest label assertion'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
