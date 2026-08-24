@@ -1,0 +1,48 @@
+name: Market Conditions deterioration validation
+
+on:
+  push:
+    branches:
+      - analysis-market-conditions-deterioration-20260825
+    paths:
+      - tools/market_conditions_deterioration_validate.py
+      - .github/workflows/market-conditions-deterioration-validate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: analysis-market-conditions-deterioration-20260825
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check pandas numpy yfinance
+
+      - name: Run validation
+        run: python tools/market_conditions_deterioration_validate.py
+
+      - name: Persist validation results
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market_conditions_deterioration_validation.json \
+                  market_conditions_deterioration_validation_compact.json \
+                  market_conditions_deterioration_daily_2026.csv
+          if git diff --staged --quiet; then
+            echo "No result changes"
+            exit 0
+          fi
+          git commit -m "Persist Market Conditions deterioration validation"
+          git push origin HEAD:analysis-market-conditions-deterioration-20260825
