@@ -27,7 +27,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install --disable-pip-version-check pandas numpy yfinance
+        run: pip install --disable-pip-version-check pandas numpy scipy yfinance
 
       - name: Run validation
         run: python tools/market_conditions_deterioration_validate.py
