@@ -33,11 +33,9 @@ def transient_downgrades(score: pd.Series, qqq: pd.Series) -> dict:
     s=d["s"]; q=d["q"]
     events=[]
     # Cross below 65 after at least 5 consecutive prior sessions >=65.
+    # This condition itself de-duplicates a continuing below-65 episode.
     for i in range(5,len(d)):
         if s.iloc[i] >= 65 or not (s.iloc[i-5:i] >=65).all():
-            continue
-        # avoid repeated event until a reclaim has happened
-        if events and i <= events[-1].get("reclaim_i",events[-1]["i"]):
             continue
         future=s.iloc[i:min(i+11,len(s))]
         hit=np.flatnonzero((future>=65).to_numpy())
@@ -49,9 +47,10 @@ def transient_downgrades(score: pd.Series, qqq: pd.Series) -> dict:
                        "reclaim_sessions":(reclaim_i-i) if reclaim_i is not None else None,
                        "qqq_worst10_pct":mae*100,"transient":transient})
     years=max((s.index[-1]-s.index[0]).days/365.25,1)
+    trans=sum(int(e["transient"]) for e in events)
     return {"events":len(events),"events_per_year":len(events)/years,
-            "transient":sum(int(e["transient"]) for e in events),
-            "transient_per_year":sum(int(e["transient"]) for e in events)/years}
+            "transient":trans,"transient_per_year":trans/years,
+            "transient_share_pct":(100.0*trans/len(events)) if events else 0.0}
 
 
 def main():
@@ -73,7 +72,8 @@ def main():
     episodes=base.drawdown_episodes(qqq.loc[qqq.index>=base.EVAL_START])
     mask=(m.index>=base.EVAL_START)&(m.index<=base.EVAL_END); latest=m.loc[mask].dropna(subset=["breadth_core"]).index[-1]
     res={"scope":{"evaluation":"2016-01-01..2026-08-24","failed_tickers":failed,
-                  "definition":"penalty-only combo = 50% max(0,-breadth delta10) + 50% drawdown of breadth_core from rolling20 peak; test raw vs EWM3/EWM5 before alpha"},"candidates":{}}
+                  "definition":"penalty-only combo = 50% max(0,-breadth delta10) + 50% drawdown of breadth_core from rolling20 peak; test raw vs EWM3/EWM5 before alpha",
+                  "transient_definition":"cross below 65 after >=65 for 5 sessions; false/transient when score reclaims 65 within 10 sessions and QQQ worst move from trigger is milder than -3%"},"candidates":{}}
     daily=pd.DataFrame(index=m.index); daily["qqq"]=qqq; daily["breadth_core"]=m["breadth_core"]
     for name,f in frames.items():
         s=f["score"].where(mask).dropna(); eps=base.episode_stats(f,qqq,episodes)
@@ -89,7 +89,6 @@ def main():
         }
         daily[name]=f["score"]
     OUT.write_text(json.dumps(res,ensure_ascii=False,indent=2),encoding="utf-8")
-    OUT_DAILY.parent.mkdir(parents=True,exist_ok=True)
     daily.loc[daily.index>=pd.Timestamp("2026-01-01")].to_csv(OUT_DAILY,index_label="date")
     print(json.dumps(res,ensure_ascii=False,indent=2))
 
