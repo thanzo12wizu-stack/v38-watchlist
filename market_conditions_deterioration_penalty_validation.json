@@ -1,0 +1,1105 @@
+{
+  "scope": {
+    "evaluation": "2016-01-01..2026-08-24",
+    "failed_tickers": [],
+    "base": "Short15 / Medium55 / Long20 / Damage10; EMA2; fixed 43 ETF family-balanced universe",
+    "penalty_only": "positive breadth change never boosts score; only deterioration subtracts from Medium",
+    "d10": "max(0, -10-session change in breadth_core)",
+    "peak20": "max(0, rolling20 max(breadth_core) - breadth_core)",
+    "combo": "50% d10 + 50% peak20; alpha multiplies penalty in Medium points"
+  },
+  "candidates": {
+    "baseline_15552010": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 73.17757632974876,
+        "band": "BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 72.24747474747475,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 0.0
+      },
+      "timescale_corr": {
+        "ret5": 0.2818459539678642,
+        "ret10": 0.389862293800432,
+        "ret21": 0.5569959464968764,
+        "ret63": 0.6994899555458902,
+        "ret126": 0.610717577993658
+      },
+      "noise": {
+        "mean_abs_daily_change": 2.705316987966925,
+        "flips_per_year": 53.87084942084942,
+        "whipsaws_per_year": 30.837065637065635,
+        "flips": 573,
+        "whipsaws": 328,
+        "occupancy_pct": {
+          "STRONG BULL": 33.90654205607477,
+          "BULL": 30.205607476635514,
+          "WEAK BULL": 10.766355140186915,
+          "NEUTRAL": 7.626168224299065,
+          "BEAR": 6.355140186915888,
+          "WEAK BEAR": 6.16822429906542,
+          "STRONG BEAR": 4.97196261682243
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.815549068814469,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 81.31457313072073
+          },
+          "Green": {
+            "n": 7,
+            "mean": 77.35025194221524
+          },
+          "Red": {
+            "n": 11,
+            "mean": 68.85898508449809
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 76.79430023545586
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 8.272727272727273,
+        "below65_median_sessions_from_peak": 6.0,
+        "below65_sessions_from_peak_coverage": 11,
+        "below55_avg_sessions_from_peak": 11.636363636363637,
+        "below55_median_sessions_from_peak": 9.0,
+        "below55_sessions_from_peak_coverage": 11,
+        "below45_avg_sessions_from_peak": 23.0,
+        "below45_median_sessions_from_peak": 12.5,
+        "below45_sessions_from_peak_coverage": 8,
+        "recover45_avg_sessions_from_trough": 8.0,
+        "recover45_median_sessions_from_trough": 3.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 11.692307692307692,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 16.615384615384617,
+        "recover65_median_sessions_from_trough": 9.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-07",
+          "below65_sessions_from_peak": 9,
+          "below55_date": "2022-01-19",
+          "below55_sessions_from_peak": 16,
+          "below45_date": "2022-01-21",
+          "below45_sessions_from_peak": 18,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-25",
+          "below55_sessions_from_peak": 4,
+          "below45_date": "2025-03-03",
+          "below45_sessions_from_peak": 8,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-17",
+          "below65_sessions_from_peak": 13,
+          "below55_date": "2025-11-20",
+          "below55_sessions_from_peak": 16,
+          "below45_date": "2026-03-20",
+          "below45_sessions_from_peak": 97,
+          "recover45_date": "2026-04-02",
+          "recover45_sessions_from_trough": 3,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": null,
+          "below65_sessions_from_peak": null,
+          "below55_date": null,
+          "below55_sessions_from_peak": null,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-29",
+          "recover55_sessions_from_trough": 0,
+          "recover65_date": "2026-07-29",
+          "recover65_sessions_from_trough": 0
+        }
+      ]
+    },
+    "d10_penalty_0p5": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 70.2494534314173,
+        "band": "BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 66.26657196969697,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 5.980902777777779
+      },
+      "timescale_corr": {
+        "ret5": 0.3280640605121975,
+        "ret10": 0.45630370066886017,
+        "ret21": 0.5890828862643972,
+        "ret63": 0.6735697015069889,
+        "ret126": 0.585202121366995
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.268612102079946,
+        "flips_per_year": 63.55444015444015,
+        "whipsaws_per_year": 31.87123552123552,
+        "flips": 676,
+        "whipsaws": 339,
+        "occupancy_pct": {
+          "STRONG BULL": 30.50467289719626,
+          "BULL": 29.308411214953274,
+          "WEAK BULL": 10.542056074766355,
+          "WEAK BEAR": 8.074766355140186,
+          "NEUTRAL": 8.037383177570094,
+          "BEAR": 7.102803738317758,
+          "STRONG BEAR": 6.429906542056074
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.7782817789914577,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 80.99102950253274
+          },
+          "Green": {
+            "n": 7,
+            "mean": 76.02978006214198
+          },
+          "Red": {
+            "n": 11,
+            "mean": 65.0413344004934
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 76.07971149644473
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 7.153846153846154,
+        "below65_median_sessions_from_peak": 5.0,
+        "below65_sessions_from_peak_coverage": 13,
+        "below55_avg_sessions_from_peak": 9.545454545454545,
+        "below55_median_sessions_from_peak": 6.0,
+        "below55_sessions_from_peak_coverage": 11,
+        "below45_avg_sessions_from_peak": 18.09090909090909,
+        "below45_median_sessions_from_peak": 8.0,
+        "below45_sessions_from_peak_coverage": 11,
+        "recover45_avg_sessions_from_trough": 9.076923076923077,
+        "recover45_median_sessions_from_trough": 4.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 12.307692307692308,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 17.153846153846153,
+        "recover65_median_sessions_from_trough": 9.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-07",
+          "below65_sessions_from_peak": 9,
+          "below55_date": "2022-01-14",
+          "below55_sessions_from_peak": 14,
+          "below45_date": "2022-01-18",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-24",
+          "below55_sessions_from_peak": 3,
+          "below45_date": "2025-02-25",
+          "below45_sessions_from_peak": 4,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-04",
+          "below65_sessions_from_peak": 4,
+          "below55_date": "2025-11-18",
+          "below55_sessions_from_peak": 14,
+          "below45_date": "2026-03-12",
+          "below45_sessions_from_peak": 91,
+          "recover45_date": "2026-04-02",
+          "recover45_sessions_from_trough": 3,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": "2026-06-10",
+          "below65_sessions_from_peak": 6,
+          "below55_date": null,
+          "below55_sessions_from_peak": null,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-29",
+          "recover55_sessions_from_trough": 0,
+          "recover65_date": "2026-07-31",
+          "recover65_sessions_from_trough": 2
+        }
+      ]
+    },
+    "d10_penalty_1p0": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 67.32133053308584,
+        "band": "BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 60.2856691919192,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 11.961805555555557
+      },
+      "timescale_corr": {
+        "ret5": 0.34722442196127207,
+        "ret10": 0.4820068386113557,
+        "ret21": 0.6005010759491352,
+        "ret63": 0.6519163750228586,
+        "ret126": 0.5675201349805981
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.6300455816473796,
+        "flips_per_year": 68.63127413127413,
+        "whipsaws_per_year": 30.837065637065635,
+        "flips": 730,
+        "whipsaws": 328,
+        "occupancy_pct": {
+          "STRONG BULL": 28.93457943925234,
+          "BULL": 27.364485981308412,
+          "WEAK BULL": 10.990654205607477,
+          "WEAK BEAR": 8.785046728971963,
+          "NEUTRAL": 8.485981308411215,
+          "BEAR": 8.261682242990656,
+          "STRONG BEAR": 7.177570093457944
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.7434508495200719,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 80.66748587434473
+          },
+          "Green": {
+            "n": 7,
+            "mean": 74.70930818206872
+          },
+          "Red": {
+            "n": 11,
+            "mean": 61.223683716488694
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 75.36512275743361
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 6.384615384615385,
+        "below65_median_sessions_from_peak": 5.0,
+        "below65_sessions_from_peak_coverage": 13,
+        "below55_avg_sessions_from_peak": 9.833333333333334,
+        "below55_median_sessions_from_peak": 5.0,
+        "below55_sessions_from_peak_coverage": 12,
+        "below45_avg_sessions_from_peak": 10.545454545454545,
+        "below45_median_sessions_from_peak": 8.0,
+        "below45_sessions_from_peak_coverage": 11,
+        "recover45_avg_sessions_from_trough": 9.461538461538462,
+        "recover45_median_sessions_from_trough": 4.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 12.615384615384615,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 17.615384615384617,
+        "recover65_median_sessions_from_trough": 10.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-07",
+          "below65_sessions_from_peak": 9,
+          "below55_date": "2022-01-13",
+          "below55_sessions_from_peak": 13,
+          "below45_date": "2022-01-18",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-21",
+          "below55_sessions_from_peak": 2,
+          "below45_date": "2025-02-24",
+          "below45_sessions_from_peak": 3,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-03",
+          "below65_sessions_from_peak": 3,
+          "below55_date": "2025-11-04",
+          "below55_sessions_from_peak": 4,
+          "below45_date": "2025-11-19",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2026-04-02",
+          "recover45_sessions_from_trough": 3,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": "2026-06-09",
+          "below65_sessions_from_peak": 5,
+          "below55_date": "2026-07-23",
+          "below55_sessions_from_peak": 35,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-29",
+          "recover55_sessions_from_trough": 0,
+          "recover65_date": "2026-08-03",
+          "recover65_sessions_from_trough": 3
+        }
+      ]
+    },
+    "peak20_penalty_0p75": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 66.39069459428842,
+        "band": "BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 58.454861111111114,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 13.792613636363637
+      },
+      "timescale_corr": {
+        "ret5": 0.34172435917663024,
+        "ret10": 0.46429015376044247,
+        "ret21": 0.6102168654501194,
+        "ret63": 0.6447567533014263,
+        "ret126": 0.5589589082804037
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.666265172490607,
+        "flips_per_year": 67.59710424710424,
+        "whipsaws_per_year": 30.366988416988416,
+        "flips": 719,
+        "whipsaws": 323,
+        "occupancy_pct": {
+          "BULL": 28.149532710280372,
+          "STRONG BULL": 25.794392523364486,
+          "WEAK BULL": 11.102803738317757,
+          "BEAR": 9.383177570093459,
+          "WEAK BEAR": 8.74766355140187,
+          "NEUTRAL": 8.485981308411215,
+          "STRONG BEAR": 8.336448598130842
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.8014723201161887,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 79.91215657140118
+          },
+          "Green": {
+            "n": 7,
+            "mean": 71.9697007813326
+          },
+          "Red": {
+            "n": 11,
+            "mean": 60.35102401794858
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 72.33287928271375
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 5.461538461538462,
+        "below65_median_sessions_from_peak": 5.0,
+        "below65_sessions_from_peak_coverage": 13,
+        "below55_avg_sessions_from_peak": 9.416666666666666,
+        "below55_median_sessions_from_peak": 4.5,
+        "below55_sessions_from_peak_coverage": 12,
+        "below45_avg_sessions_from_peak": 10.272727272727273,
+        "below45_median_sessions_from_peak": 8.0,
+        "below45_sessions_from_peak_coverage": 11,
+        "recover45_avg_sessions_from_trough": 9.76923076923077,
+        "recover45_median_sessions_from_trough": 5.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 12.923076923076923,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 18.53846153846154,
+        "recover65_median_sessions_from_trough": 15.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-05",
+          "below65_sessions_from_peak": 7,
+          "below55_date": "2022-01-07",
+          "below55_sessions_from_peak": 9,
+          "below45_date": "2022-01-18",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-21",
+          "below55_sessions_from_peak": 2,
+          "below45_date": "2025-02-24",
+          "below45_sessions_from_peak": 3,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-03",
+          "below65_sessions_from_peak": 3,
+          "below55_date": "2025-11-04",
+          "below55_sessions_from_peak": 4,
+          "below45_date": "2025-11-18",
+          "below45_sessions_from_peak": 14,
+          "recover45_date": "2026-04-07",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": "2026-06-10",
+          "below65_sessions_from_peak": 6,
+          "below55_date": "2026-07-23",
+          "below55_sessions_from_peak": 35,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-29",
+          "recover55_sessions_from_trough": 0,
+          "recover65_date": "2026-08-03",
+          "recover65_sessions_from_trough": 3
+        }
+      ]
+    },
+    "combo_penalty_0p75": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 67.58804328827,
+        "band": "BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 60.8654908459596,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 11.381983901515152
+      },
+      "timescale_corr": {
+        "ret5": 0.34195364166758585,
+        "ret10": 0.4692857077739517,
+        "ret21": 0.608505961653125,
+        "ret63": 0.6518005591805274,
+        "ret126": 0.5656119280409693
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.5791614115675516,
+        "flips_per_year": 66.28088803088802,
+        "whipsaws_per_year": 30.46100386100386,
+        "flips": 705,
+        "whipsaws": 324,
+        "occupancy_pct": {
+          "BULL": 27.962616822429908,
+          "STRONG BULL": 27.401869158878505,
+          "WEAK BULL": 11.588785046728972,
+          "BEAR": 8.785046728971963,
+          "WEAK BEAR": 8.560747663551401,
+          "STRONG BEAR": 7.850467289719626,
+          "NEUTRAL": 7.850467289719626
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.7945241813356272,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 80.37070712991994
+          },
+          "Green": {
+            "n": 7,
+            "mean": 73.66962245171898
+          },
+          "Red": {
+            "n": 11,
+            "mean": 61.7417665382198
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 74.02764820482645
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 6.6923076923076925,
+        "below65_median_sessions_from_peak": 5.0,
+        "below65_sessions_from_peak_coverage": 13,
+        "below55_avg_sessions_from_peak": 7.818181818181818,
+        "below55_median_sessions_from_peak": 6.0,
+        "below55_sessions_from_peak_coverage": 11,
+        "below45_avg_sessions_from_peak": 10.454545454545455,
+        "below45_median_sessions_from_peak": 8.0,
+        "below45_sessions_from_peak_coverage": 11,
+        "recover45_avg_sessions_from_trough": 9.538461538461538,
+        "recover45_median_sessions_from_trough": 4.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 12.76923076923077,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 18.384615384615383,
+        "recover65_median_sessions_from_trough": 15.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-06",
+          "below65_sessions_from_peak": 8,
+          "below55_date": "2022-01-14",
+          "below55_sessions_from_peak": 14,
+          "below45_date": "2022-01-18",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-21",
+          "below55_sessions_from_peak": 2,
+          "below45_date": "2025-02-24",
+          "below45_sessions_from_peak": 3,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-03",
+          "below65_sessions_from_peak": 3,
+          "below55_date": "2025-11-06",
+          "below55_sessions_from_peak": 6,
+          "below45_date": "2025-11-18",
+          "below45_sessions_from_peak": 14,
+          "recover45_date": "2026-04-06",
+          "recover45_sessions_from_trough": 4,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": "2026-06-10",
+          "below65_sessions_from_peak": 6,
+          "below55_date": null,
+          "below55_sessions_from_peak": null,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-29",
+          "recover55_sessions_from_trough": 0,
+          "recover65_date": "2026-08-03",
+          "recover65_sessions_from_trough": 3
+        }
+      ]
+    },
+    "combo_penalty_1p0": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 65.72486560777708,
+        "band": "BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 57.07149621212122,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 15.175978535353536
+      },
+      "timescale_corr": {
+        "ret5": 0.34609769708939925,
+        "ret10": 0.47337092590535285,
+        "ret21": 0.609865484910089,
+        "ret63": 0.6433680282101103,
+        "ret126": 0.5591368023762577
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.697624538974797,
+        "flips_per_year": 67.12702702702703,
+        "whipsaws_per_year": 30.08494208494208,
+        "flips": 714,
+        "whipsaws": 320,
+        "occupancy_pct": {
+          "BULL": 27.476635514018692,
+          "STRONG BULL": 26.093457943925237,
+          "WEAK BULL": 11.214953271028037,
+          "BEAR": 9.457943925233645,
+          "NEUTRAL": 9.08411214953271,
+          "WEAK BEAR": 8.598130841121495,
+          "STRONG BEAR": 8.074766355140186
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.7863127445949639,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 80.05608513211321
+          },
+          "Green": {
+            "n": 7,
+            "mean": 72.44274646098152
+          },
+          "Red": {
+            "n": 11,
+            "mean": 59.36936035622646
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 73.10543086252584
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 5.230769230769231,
+        "below65_median_sessions_from_peak": 4.0,
+        "below65_sessions_from_peak_coverage": 13,
+        "below55_avg_sessions_from_peak": 9.416666666666666,
+        "below55_median_sessions_from_peak": 4.5,
+        "below55_sessions_from_peak_coverage": 12,
+        "below45_avg_sessions_from_peak": 10.454545454545455,
+        "below45_median_sessions_from_peak": 8.0,
+        "below45_sessions_from_peak_coverage": 11,
+        "recover45_avg_sessions_from_trough": 9.538461538461538,
+        "recover45_median_sessions_from_trough": 4.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 12.846153846153847,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 18.46153846153846,
+        "recover65_median_sessions_from_trough": 15.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-06",
+          "below65_sessions_from_peak": 8,
+          "below55_date": "2022-01-07",
+          "below55_sessions_from_peak": 9,
+          "below45_date": "2022-01-18",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-21",
+          "below55_sessions_from_peak": 2,
+          "below45_date": "2025-02-24",
+          "below45_sessions_from_peak": 3,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-03",
+          "below65_sessions_from_peak": 3,
+          "below55_date": "2025-11-04",
+          "below55_sessions_from_peak": 4,
+          "below45_date": "2025-11-18",
+          "below45_sessions_from_peak": 14,
+          "recover45_date": "2026-04-06",
+          "recover45_sessions_from_trough": 4,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": "2026-06-08",
+          "below65_sessions_from_peak": 4,
+          "below55_date": "2026-07-23",
+          "below55_sessions_from_peak": 35,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-29",
+          "recover55_sessions_from_trough": 0,
+          "recover65_date": "2026-08-03",
+          "recover65_sessions_from_trough": 3
+        }
+      ]
+    },
+    "combo_penalty_1p25": {
+      "current": {
+        "date": "2026-08-24",
+        "score": 63.861687927319025,
+        "band": "WEAK BULL",
+        "short": 45.330387205387204,
+        "medium_level": 72.24747474747475,
+        "medium_used": 53.27750157828284,
+        "long": 85.7449494949495,
+        "damage": 92.12143661224715,
+        "breadth_core": 67.23958333333334,
+        "breadth_delta10": -11.961805555555557,
+        "breadth_delta20": 9.517045454545453,
+        "peak_drop20": -18.390151515151516,
+        "deterioration_penalty": 18.96997316919192
+      },
+      "timescale_corr": {
+        "ret5": 0.3484935257676849,
+        "ret10": 0.4753489718531602,
+        "ret21": 0.6098902671879752,
+        "ret63": 0.6378567639056499,
+        "ret126": 0.5544764783879467
+      },
+      "noise": {
+        "mean_abs_daily_change": 3.779054994034809,
+        "flips_per_year": 66.56293436293436,
+        "whipsaws_per_year": 30.08494208494208,
+        "flips": 708,
+        "whipsaws": 320,
+        "occupancy_pct": {
+          "BULL": 27.102803738317753,
+          "STRONG BULL": 24.934579439252335,
+          "WEAK BULL": 11.626168224299066,
+          "BEAR": 9.644859813084112,
+          "NEUTRAL": 9.532710280373832,
+          "WEAK BEAR": 8.897196261682243,
+          "STRONG BEAR": 8.261682242990656
+        }
+      },
+      "nqsar_overlap": {
+        "n": 41,
+        "spearman": 0.778191543422879,
+        "by_gate": {
+          "Blue": {
+            "n": 12,
+            "mean": 79.7414701268267
+          },
+          "Green": {
+            "n": 7,
+            "mean": 71.21590376367583
+          },
+          "Red": {
+            "n": 11,
+            "mean": 57.14604356571841
+          },
+          "Yellow": {
+            "n": 11,
+            "mean": 72.18321354349486
+          }
+        }
+      },
+      "all_drawdowns": {
+        "below65_avg_sessions_from_peak": 5.076923076923077,
+        "below65_median_sessions_from_peak": 3.0,
+        "below65_sessions_from_peak_coverage": 13,
+        "below55_avg_sessions_from_peak": 9.083333333333334,
+        "below55_median_sessions_from_peak": 4.5,
+        "below55_sessions_from_peak_coverage": 12,
+        "below45_avg_sessions_from_peak": 10.272727272727273,
+        "below45_median_sessions_from_peak": 8.0,
+        "below45_sessions_from_peak_coverage": 11,
+        "recover45_avg_sessions_from_trough": 9.76923076923077,
+        "recover45_median_sessions_from_trough": 5.0,
+        "recover45_sessions_from_trough_coverage": 13,
+        "recover55_avg_sessions_from_trough": 13.076923076923077,
+        "recover55_median_sessions_from_trough": 6.0,
+        "recover55_sessions_from_trough_coverage": 13,
+        "recover65_avg_sessions_from_trough": 18.46153846153846,
+        "recover65_median_sessions_from_trough": 15.0,
+        "recover65_sessions_from_trough_coverage": 13
+      },
+      "case_2022_2025_2026": [
+        {
+          "peak": "2021-12-27",
+          "trough": "2022-11-03",
+          "end": "2023-12-08",
+          "dd_pct": -35.1187300463749,
+          "below65_date": "2022-01-06",
+          "below65_sessions_from_peak": 8,
+          "below55_date": "2022-01-07",
+          "below55_sessions_from_peak": 9,
+          "below45_date": "2022-01-18",
+          "below45_sessions_from_peak": 15,
+          "recover45_date": "2022-11-10",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2022-11-11",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2022-11-25",
+          "recover65_sessions_from_trough": 15
+        },
+        {
+          "peak": "2025-02-19",
+          "trough": "2025-04-08",
+          "end": "2025-06-04",
+          "dd_pct": -22.76830844704014,
+          "below65_date": "2025-02-21",
+          "below65_sessions_from_peak": 2,
+          "below55_date": "2025-02-21",
+          "below55_sessions_from_peak": 2,
+          "below45_date": "2025-02-24",
+          "below45_sessions_from_peak": 3,
+          "recover45_date": "2025-05-12",
+          "recover45_sessions_from_trough": 23,
+          "recover55_date": "2025-05-15",
+          "recover55_sessions_from_trough": 26,
+          "recover65_date": "2025-06-03",
+          "recover65_sessions_from_trough": 38
+        },
+        {
+          "peak": "2025-10-29",
+          "trough": "2026-03-30",
+          "end": "2026-04-14",
+          "dd_pct": -11.964372276774393,
+          "below65_date": "2025-11-03",
+          "below65_sessions_from_peak": 3,
+          "below55_date": "2025-11-04",
+          "below55_sessions_from_peak": 4,
+          "below45_date": "2025-11-18",
+          "below45_sessions_from_peak": 14,
+          "recover45_date": "2026-04-07",
+          "recover45_sessions_from_trough": 5,
+          "recover55_date": "2026-04-08",
+          "recover55_sessions_from_trough": 6,
+          "recover65_date": "2026-04-13",
+          "recover65_sessions_from_trough": 9
+        },
+        {
+          "peak": "2026-06-02",
+          "trough": "2026-07-29",
+          "end": "2026-08-13",
+          "dd_pct": -11.217806908394557,
+          "below65_date": "2026-06-05",
+          "below65_sessions_from_peak": 3,
+          "below55_date": "2026-07-23",
+          "below55_sessions_from_peak": 35,
+          "below45_date": null,
+          "below45_sessions_from_peak": null,
+          "recover45_date": "2026-07-29",
+          "recover45_sessions_from_trough": 0,
+          "recover55_date": "2026-07-31",
+          "recover55_sessions_from_trough": 2,
+          "recover65_date": "2026-08-03",
+          "recover65_sessions_from_trough": 3
+        }
+      ]
+    }
+  }
+}
