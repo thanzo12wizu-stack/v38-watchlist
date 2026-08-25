@@ -1,0 +1,25 @@
+name: One-off dispatch Dashboard after MC15
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/dispatch-dashboard-mc15-once.yml'
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch existing Dashboard workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            repos/${GITHUB_REPOSITORY}/actions/workflows/dashboard.yml/dispatches \
+            -f ref=main
+          echo "Dashboard workflow dispatched"
