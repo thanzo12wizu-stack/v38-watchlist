@@ -2,8 +2,10 @@ name: Apply Market Conditions equal12 to main
 
 on:
   push:
-    branches: [analysis-market-conditions-deterioration-20260825]
-    paths: ['.github/workflows/apply-market-conditions-equal12-main.yml']
+    branches:
+      - analysis-market-conditions-deterioration-20260825
+    paths:
+      - '.github/workflows/apply-market-conditions-equal12-main.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -18,279 +20,22 @@ jobs:
         with:
           ref: main
           fetch-depth: 1
+
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
-      - name: Patch Market Conditions only
+
+      - name: Load reviewed patch helper
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
+          git fetch --depth=1 origin analysis-market-conditions-deterioration-20260825
+          git show origin/analysis-market-conditions-deterioration-20260825:tools/apply_market_conditions_equal12_main.py > /tmp/apply_mc.py
+          python /tmp/apply_mc.py
 
-          p = Path('build_dashboard.py')
-          s = p.read_text(encoding='utf-8')
-
-          def sub_once(pattern, repl, name, flags=re.S):
-              global s
-              s2, n = re.subn(pattern, lambda m: repl, s, count=1, flags=flags)
-              if n != 1:
-                  raise SystemExit(f'patch {name}: expected 1 match, got {n}')
-              s = s2
-
-          # Documentation only: no UI redesign.
-          old_doc = '  D. Market Conditions=中長期の市場構造（短期15・中期55・長期20・Damage10）。'
-          new_doc = '  D. Market Conditions=57ETF × 12指標の完全等加重（方向対称・EMA2）。Breadth 10日変化は別軸表示。'
-          if old_doc not in s:
-              raise SystemExit('top doc marker not found')
-          s = s.replace(old_doc, new_doc, 1)
-
-          universe = '''# Market Conditions v4: fixed, non-levered cross-sectional ETF universe.
-# All available ETFs have exactly the same weight. No Broad/Sector/Industry
-# family rebalance is applied, so the score itself has no directional or family tilt.
-MC_BROAD_ETFS = ["SPY","QQQ","DIA","IWM","MDY","RSP","VTI","QQQE"]
-MC_SECTOR_ETFS = ["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
-MC_INDUSTRY_PARENT = {
-    "Semiconductors": ["SOXX","SMH","XSD"],
-    "SoftwareCloudInternet": ["IGV","SKYY","CIBR","HACK","FDN"],
-    "Biotech": ["XBI","IBB"],
-    "PharmaMedical": ["PPH","IHI","IHF"],
-    "Banks": ["KRE","KBE"],
-    "RetailHousing": ["XRT","ITB","XHB"],
-    "Transport": ["IYT","JETS"],
-    "Defense": ["ITA","XAR"],
-    "Automation": ["ROBO"],
-    "Metals": ["XME","COPX","PICK"],
-    "PreciousMetals": ["GDX","SIL"],
-    "Lithium": ["LIT"],
-    "Energy": ["XOP","OIH","URA"],
-    "CleanEnergy": ["TAN","ICLN"],
-    "RealEstate": ["VNQ"],
-    "Agriculture": ["MOO"],
-    "Water": ["PHO"],
-    "Infrastructure": ["PAVE"],
-}
-MC_INDUSTRY_ETFS = [t for _xs in MC_INDUSTRY_PARENT.values() for t in _xs]
-MC_MARKET_TICKERS = list(dict.fromkeys(MC_BROAD_ETFS + MC_SECTOR_ETFS + MC_INDUSTRY_ETFS))
-assert len(MC_MARKET_TICKERS) == 57'''
-          sub_once(
-              r'# Market Conditions v3: fixed, non-levered cross-sectional ETF universe\.\n.*?assert len\(MC_MARKET_TICKERS\) == 43',
-              universe, 'universe')
-
-          status = '''STATUS_DEF = [
-    # Four display groups only. Score itself is the equal mean of all 12 metrics.
-    # Weights below exactly reflect metric counts: 4/12, 4/12, 2/12, 2/12.
-    ("short",   33.333333333333336, 0.0, 100.0, "market"),  # momentum
-    ("medium",  33.333333333333336, 0.0, 100.0, "market"),  # breadth
-    ("long",    16.666666666666668, 0.0, 100.0, "market"),  # trend structure
-    ("damage",  16.666666666666668, 0.0, 100.0, "market"),
-]
-# Directional symmetry: no percentile recentering, no one-sided penalty/floor/guard.'''
-          sub_once(r'STATUS_DEF = \[\n.*?\n\]\n# Pillar weights:[^\n]*', status, 'status-def')
-
-          participation = '''def _mc_participation(mask):
-    """Equal-weight breadth across every available Market Conditions ETF.
-
-    50 means exactly half the available ETFs satisfy the condition. The mapping is
-    directionally symmetric: complementing every boolean produces 100-score.
-    """
-    have = [c for c in MC_MARKET_TICKERS if c in mask.columns]
-    if not have:
-        return pd.Series(np.nan, index=mask.index)
-    return mask[have].mean(axis=1, skipna=True) * 100.0
-
-
-def _mc_stratified_median'''
-          sub_once(r'def _mc_participation\(mask\):\n.*?\n\n\ndef _mc_stratified_median', participation, 'participation')
-
-          mri = '''def mri_frame(macro, W=None):
-    """Market Conditions v4: 57 ETFs × 12 metrics, fully equal weighted.
-
-    No historical percentile recentering and no one-sided deterioration penalty,
-    floor or guard. Each 0-100 component has a literal neutral midpoint and the
-    final arithmetic mean preserves directional symmetry. EMA2 is smoothing only.
-    """
-    c = _mc_frame_from_macro(macro)
-    if c.empty:
-        idx = next((d.index for d in macro.values() if hasattr(d, "index") and len(d.index)), pd.DatetimeIndex([pd.Timestamp.today().normalize()]))
-        z = pd.Series(50.0, index=idx, dtype=float)
-        vals = pd.DataFrame(index=idx)
-        for k in ("pillar_short","pillar_medium","pillar_long","pillar_damage"):
-            vals[k] = 50.0
-        vals["breadth_level"] = 50.0
-        vals["breadth_delta10"] = 0.0
-        vals["mc_coverage"] = 0.0
-        breakdown = [dict(key=k, w=w, group="market", raw=50.0, pts=w*.5, ptsmax=w, frac=.5)
-                     for k,w,*_ in STATUS_DEF]
-        return z, breakdown, list(MC_MARKET_TICKERS), list(STATUS_DEF), vals
-
-    ma10=c.rolling(10).mean(); ma20=c.rolling(20).mean(); ma50=c.rolling(50).mean(); ma200=c.rolling(200).mean()
-    p = {}
-
-    # Momentum: fixed horizons only. YTD intentionally excluded because its horizon changes through the year.
-    p["ret5"] = _mc_participation((c/c.shift(5)-1 > 0).where(c.shift(5).notna() & c.notna()))
-    p["ret21"] = _mc_participation((c/c.shift(21)-1 > 0).where(c.shift(21).notna() & c.notna()))
-    p["ret63"] = _mc_participation((c/c.shift(63)-1 > 0).where(c.shift(63).notna() & c.notna()))
-    p["ret252"] = _mc_participation((c/c.shift(252)-1 > 0).where(c.shift(252).notna() & c.notna()))
-
-    # Breadth.
-    p["above10"] = _mc_participation((c > ma10).where(ma10.notna() & c.notna()))
-    p["above20"] = _mc_participation((c > ma20).where(ma20.notna() & c.notna()))
-    p["above50"] = _mc_participation((c > ma50).where(ma50.notna() & c.notna()))
-    p["above200"] = _mc_participation((c > ma200).where(ma200.notna() & c.notna()))
-
-    # Trend structure.
-    p["ma20_gt_50"] = _mc_participation((ma20 > ma50).where(ma20.notna() & ma50.notna()))
-    p["ma50_gt_200"] = _mc_participation((ma50 > ma200).where(ma50.notna() & ma200.notna()))
-
-    # Compatibility telemetry retained for existing downstream commentary; not part of the 12-metric score.
-    p["ma50_rising"] = _mc_participation((ma50 > ma50.shift(20)).where(ma50.notna() & ma50.shift(20).notna()))
-
-    # Damage: score every ETF first, then equal-weight. This avoids a median/stratification tilt.
-    hi252 = c.rolling(252,min_periods=200).max()
-    dd = c/hi252 - 1.0
-    dd_by_etf = ((dd + 0.30) / 0.25 * 100.0).clip(0.0, 100.0)
-    p["dd_score"] = dd_by_etf.mean(axis=1, skipna=True)
-    p["within10"] = _mc_participation((dd >= -0.10).where(dd.notna()))
-    med_dd = dd.median(axis=1, skipna=True)
-
-    score_keys = ("ret5","ret21","ret63","ret252",
-                  "above10","above20","above50","above200",
-                  "ma20_gt_50","ma50_gt_200","dd_score","within10")
-    raw = pd.concat([p[k] for k in score_keys], axis=1).mean(axis=1, skipna=True)
-    score = raw.ewm(span=2,adjust=False).mean()
-
-    # Four display-only summaries; their weights match the number of equal metrics.
-    momentum = pd.concat([p[k] for k in ("ret5","ret21","ret63","ret252")],axis=1).mean(axis=1,skipna=True)
-    breadth4 = pd.concat([p[k] for k in ("above10","above20","above50","above200")],axis=1).mean(axis=1,skipna=True)
-    trend2 = pd.concat([p[k] for k in ("ma20_gt_50","ma50_gt_200")],axis=1).mean(axis=1,skipna=True)
-    damage = pd.concat([p[k] for k in ("dd_score","within10")],axis=1).mean(axis=1,skipna=True)
-
-    # Breadth momentum is context only, centered on zero and excluded from MC score.
-    breadth_level = pd.concat([p["above20"],p["above50"]],axis=1).mean(axis=1,skipna=True)
-    breadth_delta10 = breadth_level - breadth_level.shift(10)
-    coverage = c.notna().sum(axis=1) / float(len(MC_MARKET_TICKERS)) * 100.0
-
-    vals = pd.DataFrame(index=score.index)
-    vals["pillar_short"] = momentum; vals["pillar_medium"] = breadth4
-    vals["pillar_long"] = trend2; vals["pillar_damage"] = damage
-    vals["breadth_level"] = breadth_level; vals["breadth_delta10"] = breadth_delta10
-    vals["mc_coverage"] = coverage
-    for k,v in p.items(): vals[k] = v
-    vals["median_dd"] = med_dd*100.0
-
-    def _compat_close(ticker):
-        d = macro.get(ticker)
-        if d is None or not hasattr(d, "columns") or "Close" not in d.columns:
-            return pd.Series(np.nan, index=vals.index, dtype=float)
-        x = pd.to_numeric(d["Close"], errors="coerce")
-        try:
-            x.index = pd.to_datetime(x.index).tz_localize(None)
-        except Exception:
-            pass
-        return x.reindex(vals.index).ffill()
-
-    _qqq = _compat_close("QQQ")
-    _spy = _compat_close("SPY")
-    _rsp = _compat_close("RSP")
-    _qqqe = _compat_close("QQQE")
-    vals["qqq_50"] = _qqq / _qqq.rolling(50).mean() - 1.0
-    vals["qqq_200"] = _qqq / _qqq.rolling(200).mean() - 1.0
-    vals["spy_50"] = _spy / _spy.rolling(50).mean() - 1.0
-    vals["spy_200"] = _spy / _spy.rolling(200).mean() - 1.0
-    vals["rsp_50"] = _rsp / _rsp.rolling(50).mean() - 1.0
-    vals["rsp_200"] = _rsp / _rsp.rolling(200).mean() - 1.0
-    vals["qqqe_50"] = _qqqe / _qqqe.rolling(50).mean() - 1.0
-
-    pmap = {"short":momentum,"medium":breadth4,"long":trend2,"damage":damage}
-    breakdown=[]; dropped=[]; active=[]
-    for key,w,lo,hi,grp in STATUS_DEF:
-        ser=pmap[key]; cur=float(ser.dropna().iloc[-1]) if ser.notna().any() else np.nan
-        if not np.isfinite(cur):
-            dropped.append(key); continue
-        active.append((key,w,lo,hi,grp))
-        breakdown.append(dict(key=key,w=w,group=grp,raw=cur,pts=w*cur/100.0,ptsmax=w,frac=cur/100.0))
-    return score, breakdown, dropped, active, vals'''
-          sub_once(r'def mri_frame\(macro, W=None\):\n.*?\n\n\ndef mri_auxiliary', mri + '\n\n\ndef mri_auxiliary', 'mri-frame')
-
-          aux = '''def mri_auxiliary(mri, vals, metrics):
-    clean = pd.to_numeric(mri, errors="coerce").dropna()
-    cur = float(clean.iloc[-1]) if len(clean) else 50.0
-    ma10 = clean.rolling(10).mean()
-    slope_dir = "→"
-    if len(ma10.dropna()) >= 3:
-        d = ma10.iloc[-1] - ma10.iloc[-3]
-        slope_dir = "↑" if d > 0.4 else ("↓" if d < -0.4 else "→")
-    last = vals.reindex(clean.index).iloc[-1] if len(clean) else vals.iloc[-1]
-    bvals = [
-        ("モメンタム", last.get("pillar_short", np.nan) < 40.0),
-        ("広がり", last.get("pillar_medium", np.nan) < 40.0),
-        ("トレンド", last.get("pillar_long", np.nan) < 40.0),
-        ("Damage", last.get("pillar_damage", np.nan) < 40.0),
-    ]
-    bear_flags = [(lab, bool(v == True)) for lab,v in bvals]
-    bear_n = int(sum(1 for _,v in bear_flags if v))
-    hl = float(clean.tail(3).mean()) if len(clean) else cur
-    hi20 = float(clean.tail(20).max()) if len(clean) else cur
-    drop = hi20-cur
-    if drop < 3:    peak = "通常"
-    elif drop < 7:  peak = "注意"
-    elif drop < 12: peak = "減速"
-    else:           peak = "深押し"
-    _bd10 = last.get("breadth_delta10", np.nan)
-    breadth_delta10 = float(_bd10) if _bd10 is not None and np.isfinite(float(_bd10)) else 0.0
-    breadth_arrow = "↑" if breadth_delta10 > 2.0 else ("↓" if breadth_delta10 < -2.0 else "→")
-    return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
-                peak=peak, drop=drop, hi20=hi20,
-                breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow)'''
-          sub_once(r'def mri_auxiliary\(mri, vals, metrics\):\n.*?\n\n\ndef mri_band', aux + '\n\n\ndef mri_band', 'mri-aux')
-
-          # Keep the existing UI/layout, change only labels needed to describe the new formula.
-          old_kj = '_kj = {"trend":"トレンド","breadth":"広がり","risk":"ボラティリティ","credit":"信用"}'
-          new_kj = '_kj = {"short":"モメンタム","medium":"広がり","long":"トレンド","damage":"Damage","trend":"トレンド","breadth":"広がり","risk":"ボラティリティ","credit":"信用"}'
-          if old_kj not in s:
-              raise SystemExit('render label map not found')
-          s = s.replace(old_kj, new_kj, 1)
-
-          old_head = 'MARKET CONDITIONS 内訳（短期15 / 中期55 / 長期20 / Damage10）'
-          new_head = 'MARKET CONDITIONS 内訳（57ETF × 12指標・完全等加重）'
-          if old_head not in s:
-              raise SystemExit('breakdown header not found')
-          s = s.replace(old_head, new_head, 1)
-
-          old_aux = '''      <div class="aux">
-        <div class="a">傾き <b>{aux['slope']}</b></div>
-        <div class="a">警戒 <b>{aux['bear_n']}</b>/4 {_led(aux['bear_n'], 4)}</div>
-      </div>'''
-          new_aux = '''      <div class="aux">
-        <div class="a">傾き <b>{aux['slope']}</b></div>
-        <div class="a">内部10D <b>{aux['breadth_arrow']} {aux['breadth_delta10']:+.1f}pt</b></div>
-        <div class="a">警戒 <b>{aux['bear_n']}</b>/4 {_led(aux['bear_n'], 4)}</div>
-      </div>'''
-          if old_aux not in s:
-              raise SystemExit('banner aux block not found')
-          s = s.replace(old_aux, new_aux, 1)
-
-          # Static invariants: no one-sided score modifier slipped into the production formula.
-          required = [
-              'assert len(MC_MARKET_TICKERS) == 57',
-              'raw = pd.concat([p[k] for k in score_keys], axis=1).mean(axis=1, skipna=True)',
-              'breadth_delta10 = breadth_level - breadth_level.shift(10)',
-              'p["ret252"]',
-          ]
-          for marker in required:
-              if marker not in s:
-                  raise SystemExit('missing invariant: ' + marker)
-          forbidden = ['raw = short*.15 + medium*.55 + long*.20 + damage*.10']
-          for marker in forbidden:
-              if marker in s:
-                  raise SystemExit('old asymmetric weighting remains: ' + marker)
-
-          p.write_text(s, encoding='utf-8')
-          PY
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
+
       - name: Validate
         shell: bash
         run: |
@@ -298,6 +43,7 @@ def _mc_stratified_median'''
           python -m py_compile build_dashboard.py
           pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
           python build_dashboard.py --selftest
+
       - name: Commit to main
         shell: bash
         run: |
@@ -306,6 +52,9 @@ def _mc_stratified_median'''
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add build_dashboard.py
           git diff --staged --check
-          git diff --staged --quiet && exit 0
+          if git diff --staged --quiet; then
+            echo 'No change'
+            exit 0
+          fi
           git commit -m 'Use symmetric 57-ETF equal-weight Market Conditions'
           git push origin HEAD:main
