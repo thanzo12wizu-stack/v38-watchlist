@@ -1,0 +1,54 @@
+name: Market Conditions variant summary
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - analysis-market-conditions-deterioration-20260825
+    paths:
+      - .github/workflows/market-conditions-variant-summary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: analysis-market-conditions-deterioration-20260825
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Build compact summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for fn,group in [('market_conditions_simple_variants_15y.json','simple'),('market_conditions_percentile_variants_15y.json','percentile')]:
+              d=json.loads(Path(fn).read_text())
+              for n,r in d['variants'].items():
+                  rows.append({
+                    'group':group,'name':n,'aug21':round(r['target_2026_08_21'],2),'latest':round(r['latest'],2),
+                    'qqq21':round(r['corr_qqq21'],3),'qqq63':round(r['corr_qqq63'],3),'qqq126':round(r['corr_qqq126'],3),'daily':round(r['daily_abs_change'],2),
+                    'dd65':r['below65_coverage'],'delay65':None if r['below65_mean'] is None else round(r['below65_mean'],1),
+                    'dd55':r['below55_coverage'],'delay55':None if r['below55_mean'] is None else round(r['below55_mean'],1),
+                    'dd45':r['below45_coverage'],'delay45':None if r['below45_mean'] is None else round(r['below45_mean'],1),
+                    'false55':r['false55_days'],'false55pct':round(r['false55_pct_signal'],1),'false45':r['false45_days'],
+                    '2013lt55':r['benign_2013']['lt55'],'2013le45':r['benign_2013']['le45'],'2017lt55':r['benign_2017']['lt55'],'2017le45':r['benign_2017']['le45'],
+                    '2022mean':round(r['year_2022']['mean'],1),'2022median':round(r['year_2022']['median'],1),'2022min':round(r['year_2022']['min'],1)
+                  })
+          out={'rows':rows}
+          Path('market_conditions_variant_summary.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Persist summary
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market_conditions_variant_summary.json
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Persist Market Conditions variant summary"
+          git push origin HEAD:analysis-market-conditions-deterioration-20260825
