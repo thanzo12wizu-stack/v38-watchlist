@@ -1,0 +1,95 @@
+name: One-off fix MRI selftest and rebuild
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-mri-selftest-once.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  fix-test-dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Fix only stale MRI selftest expectation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('build_dashboard.py')
+          text = path.read_text(encoding='utf-8')
+          needle = 'Market Conditions 4ブロックの定義または重みが変更されている'
+          pos = text.find(needle)
+          if pos < 0:
+              raise SystemExit('target selftest error text not found')
+
+          lo = max(0, pos - 2200)
+          hi = min(len(text), pos + len(needle) + 400)
+          block = text[lo:hi]
+          print('--- target selftest context before ---')
+          print(block)
+          print('--- end context ---')
+
+          old_a = '33.333333333333336'
+          old_b = '16.666666666666668'
+          count_a = block.count(old_a)
+          count_b = block.count(old_b)
+          if count_a == 0 or count_b == 0:
+              raise SystemExit(f'old MRI weights not found near target: 33.33={count_a}, 16.67={count_b}')
+
+          patched = block.replace(old_a, '25.0').replace(old_b, '25.0')
+          if patched == block:
+              raise SystemExit('no selftest change made')
+          text = text[:lo] + patched + text[hi:]
+          path.write_text(text, encoding='utf-8')
+
+          # Scope guard: only the target neighborhood is changed by this script.
+          after = path.read_text(encoding='utf-8')
+          p2 = after.find(needle)
+          check = after[max(0, p2-2200):p2+len(needle)+400]
+          if old_a in check or old_b in check:
+              raise SystemExit('stale MRI weights remain near target selftest')
+          print(f'updated stale selftest weights near target only: {count_a + count_b} literal(s)')
+          PY
+
+      - name: Verify focused regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install --disable-pip-version-check -r requirements.txt pytest
+          python -m py_compile build_dashboard.py
+          pytest -q tests/test_market_conditions.py tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
+
+      - name: Commit fix and remove one-off workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --ff-only origin main
+          git rm .github/workflows/fix-mri-selftest-once.yml
+          git add build_dashboard.py
+          git diff --cached --check
+          git commit -m "Align MRI selftest with balanced pillar weights"
+          git push origin HEAD:main
+
+      - name: Dispatch dashboard rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run dashboard.yml --ref main
