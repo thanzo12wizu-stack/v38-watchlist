@@ -17,14 +17,23 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
-      - name: Print MC state migration targets
+      - name: Print MC long-history fetch targets
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
           lines=Path('build_dashboard.py').read_text(encoding='utf-8',errors='replace').splitlines()
-          for a,b in [(5000,5385),(8260,8310),(21290,21345)]:
+          pats=['def fetch_live(', 'MC_MARKET_TICKERS', '_mc_frame_from_macro', 'mri_frame(macro', 'mri, breakdown', 'period=', 'start=']
+          hits=[]
+          for i,line in enumerate(lines,1):
+              if any(p in line for p in pats): hits.append(i)
+          spans=[]
+          for i in hits:
+              a=max(1,i-25); b=min(len(lines),i+80)
+              if spans and a<=spans[-1][1]+1: spans[-1]=(spans[-1][0],max(spans[-1][1],b))
+              else: spans.append((a,b))
+          for a,b in spans:
               print(f'\n=== {a}-{b} ===')
-              for n in range(a,min(b,len(lines))+1): print(f'{n}: {lines[n-1]}')
+              for n in range(a,b+1): print(f'{n}: {lines[n-1]}')
           PY
