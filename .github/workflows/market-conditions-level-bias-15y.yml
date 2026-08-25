@@ -1,0 +1,37 @@
+name: Market Conditions level bias 15y
+
+on:
+  push:
+    branches:
+      - analysis-market-conditions-deterioration-20260825
+    paths:
+      - tools/market_conditions_level_bias_15y.py
+      - .github/workflows/market-conditions-level-bias-15y.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: analysis-market-conditions-deterioration-20260825
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy yfinance
+      - run: python tools/market_conditions_level_bias_15y.py
+      - name: Persist results
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market_conditions_level_bias_15y.json
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Persist Market Conditions level-bias study"
+          git push origin HEAD:analysis-market-conditions-deterioration-20260825
