@@ -1,0 +1,49 @@
+name: One-off audit MC references
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-mc-references-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: Audit Market Conditions references
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('build_dashboard.py')
+          lines=p.read_text(encoding='utf-8',errors='replace').splitlines()
+          needles=('mri','market conditions','bull','bear','neutral','slope','trend','temperature','temp')
+          hits=[]
+          for i,line in enumerate(lines,1):
+              low=line.lower()
+              if any(n in low for n in needles):
+                  if ('mri' in low or 'market conditions' in low or 'bull' in low or 'bear' in low):
+                      hits.append(i)
+          blocks=[]
+          for i in hits:
+              a=max(1,i-5); b=min(len(lines),i+8)
+              if blocks and a<=blocks[-1][1]+2:
+                  blocks[-1]=(blocks[-1][0],max(blocks[-1][1],b))
+              else:
+                  blocks.append((a,b))
+          print('=== MC REFERENCE BLOCKS ===')
+          for a,b in blocks:
+              seg='\n'.join(lines[a-1:b]).lower()
+              if any(x in seg for x in ('mri','market conditions')):
+                  print(f'\n--- {a}-{b} ---')
+                  for n in range(a,b+1):
+                      print(f'{n}: {lines[n-1]}')
+          PY
