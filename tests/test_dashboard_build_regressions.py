@@ -151,28 +151,17 @@ def test_options_swing_helpers_are_valid_javascript():
 
 
 
-def test_market_condition_balances_three_market_layers():
+
+def test_market_condition_full_equal_weight_contract():
+    assert len(dashboard.MC_MARKET_TICKERS) == 57
+    assert [row[1] for row in dashboard.STATUS_DEF] == [
+        33.333333333333336,
+        33.333333333333336,
+        16.666666666666668,
+        16.666666666666668,
+    ]
     idx = pd.DatetimeIndex([pd.Timestamp("2026-08-25")])
-    cols = {}
-    cols.update({ticker: [100.0] for ticker in dashboard.MC_BROAD_ETFS})
-    cols.update({ticker: [0.0] for ticker in dashboard.MC_SECTOR_ETFS})
-    for tickers in dashboard.MC_INDUSTRY_PARENT.values():
-        cols.update({ticker: [0.0] for ticker in tickers})
-    out = dashboard._mc_stratified_mean(pd.DataFrame(cols, index=idx))
-    assert np.isclose(out.iloc[-1], 100.0 / 3.0)
-
-
-def test_market_condition_balances_industry_parent_groups():
-    idx = pd.DatetimeIndex([pd.Timestamp("2026-08-25")])
-    groups = list(dashboard.MC_INDUSTRY_PARENT.values())
-    assert len(groups) >= 2
-    cols = {ticker: [100.0] for ticker in groups[0]}
-    cols.update({ticker: [0.0] for ticker in groups[1]})
-    out = dashboard._mc_stratified_mean(pd.DataFrame(cols, index=idx))
-    assert np.isclose(out.iloc[-1], 50.0)
-
-
-def test_market_condition_four_pillars_are_equal_weight():
-    weights = [row[1] for row in dashboard.STATUS_DEF]
-    assert weights == [25.0, 25.0, 25.0, 25.0]
-    assert np.isclose(sum(weights), 100.0)
+    cols = {ticker: [0.0] for ticker in dashboard.MC_MARKET_TICKERS}
+    cols[dashboard.MC_MARKET_TICKERS[0]] = [1.0]
+    out = dashboard._mc_participation(pd.DataFrame(cols, index=idx).astype(bool))
+    assert np.isclose(out.iloc[-1], 100.0 / 57.0)
