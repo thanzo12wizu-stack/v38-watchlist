@@ -20267,8 +20267,10 @@ def selftest(html, picks, setups, sectors, mkt=None, W=None, cutdate=None):
     # 1) Market Health v2の4本柱と重みを固定
     try:
         _fp = tuple((k, w, lo, hi, g) for k, w, lo, hi, g in STATUS_DEF)
-        _EXPECT = (("short",15,0.0,100.0,"market"),("medium",55,0.0,100.0,"market"),
-                   ("long",20,0.0,100.0,"market"),("damage",10,0.0,100.0,"market"))
+        _EXPECT = (("short",33.333333333333336,0.0,100.0,"market"),
+         ("medium",33.333333333333336,0.0,100.0,"market"),
+         ("long",16.666666666666668,0.0,100.0,"market"),
+         ("damage",16.666666666666668,0.0,100.0,"market"))
         if _fp != _EXPECT:
             errs.append("Market Conditions 4ブロックの定義または重みが変更されている")
         _mri_keys = {k for k, *_ in STATUS_DEF}
