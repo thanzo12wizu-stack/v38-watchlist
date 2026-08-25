@@ -14,7 +14,7 @@ Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
      期中退出の空き枠は再投下せず現金で持ち隔週(月曜)トゥルーアップで吸収。銘柄入替は定例月曜＋赤明けは青/緑復帰の翌寄りに即再構築。
   B. レバスリーブ(30%): TQQQ:SOXL=50:50, SOXX MA50<100でSOXL→TQQQ, NQ4色ゲート。配分=個別70/レバ30/現金0。
   C. NQ 4色ゲート(即応・確認日数ゼロ): 個別 青100/緑100/黄=新規停止・保有はワイドトレール0.70継続(締めなし)/赤0(撤退), レバ 青100/緑50/黄0/赤0。執行は翌寄り。
-  D. Market Conditions=中長期の市場構造（短期15・中期55・長期20・Damage10）。
+  D. Market Conditions=57ETF × 12指標の完全等加重（方向対称・EMA2）。Breadth 10日変化は別軸表示。
      ※先導株温度計は非対称: 左端(枯渇)のみNQ底に中央値18日先行(的中6割)/右端(過熱)は先取りせず。露出は動かさない。
   E. 8 tabs (マーケット/ピックアップ/ポートフォリオ/配分/RS比較/セクターローテ/業種RS/ルール) + 今日の運用ヘッダ + 隔週リバランス点検（月曜）。RS比較は63/126/189日Top10、1日・1週・1か月のIN/OUT、RS189 Top24の継続性を表示。
   F. 非常口ルール: equity.csvの口座NAV DDとQQQ円建て12ヶ月相対を自動判定。DD≤−28%かつ相対≤−12%でレバ半減、DD>−20%かつ相対>−8%で解除。状態はstate.jsonへ永続化。
@@ -1565,25 +1565,34 @@ MACRO_TICKERS = ["^VIX", "^VIX3M", "^VVIX", "^VXN", "QQQ", "QQQE", "SPY", "HYG",
                  "SOXX", "SMH"]
 
 
-# Market Conditions v3: fixed, non-levered cross-sectional ETF universe.
-# Broad / GICS sectors / industries are family-balanced; industry ETFs are first
-# averaged inside parent groups so Technology/Materials cannot gain votes merely
-# because more sub-industry ETFs are present.
-MC_BROAD_ETFS = ["SPY","QQQ","DIA","IWM","MDY","RSP"]
+# Market Conditions v4: fixed, non-levered cross-sectional ETF universe.
+# All available ETFs have exactly the same weight. No Broad/Sector/Industry
+# family rebalance is applied, so the score itself has no directional or family tilt.
+MC_BROAD_ETFS = ["SPY","QQQ","DIA","IWM","MDY","RSP","VTI","QQQE"]
 MC_SECTOR_ETFS = ["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
 MC_INDUSTRY_PARENT = {
-    "Technology": ["SOXX","IGV","CIBR","SKYY","FDN"],
-    "Health Care": ["XBI","IBB","PPH"],
-    "Financials": ["KRE","KBE"],
-    "Consumer Discretionary": ["XRT","ITB","XHB"],
-    "Industrials": ["IYT","ITA","ROBO","JETS"],
-    "Materials": ["XME","COPX","GDX","SIL","LIT"],
+    "Semiconductors": ["SOXX","SMH","XSD"],
+    "SoftwareCloudInternet": ["IGV","SKYY","CIBR","HACK","FDN"],
+    "Biotech": ["XBI","IBB"],
+    "PharmaMedical": ["PPH","IHI","IHF"],
+    "Banks": ["KRE","KBE"],
+    "RetailHousing": ["XRT","ITB","XHB"],
+    "Transport": ["IYT","JETS"],
+    "Defense": ["ITA","XAR"],
+    "Automation": ["ROBO"],
+    "Metals": ["XME","COPX","PICK"],
+    "PreciousMetals": ["GDX","SIL"],
+    "Lithium": ["LIT"],
     "Energy": ["XOP","OIH","URA"],
-    "Clean Energy": ["TAN"],
+    "CleanEnergy": ["TAN","ICLN"],
+    "RealEstate": ["VNQ"],
+    "Agriculture": ["MOO"],
+    "Water": ["PHO"],
+    "Infrastructure": ["PAVE"],
 }
 MC_INDUSTRY_ETFS = [t for _xs in MC_INDUSTRY_PARENT.values() for t in _xs]
 MC_MARKET_TICKERS = list(dict.fromkeys(MC_BROAD_ETFS + MC_SECTOR_ETFS + MC_INDUSTRY_ETFS))
-assert len(MC_MARKET_TICKERS) == 43
+assert len(MC_MARKET_TICKERS) == 57
 MACRO_TICKERS = list(dict.fromkeys(MACRO_TICKERS + MC_MARKET_TICKERS))
 
 def _extract(df, tickers, minbars=30):
@@ -3570,13 +3579,14 @@ def load_market_caps(valid, live, strict=False):
 # Market Health v2: highly correlated raw indicators are compressed inside four pillars.
 # The score measures trend health, participation, volatility stress and credit conditions.
 STATUS_DEF = [
-    # key, pillar weight, lo, hi, group
-    ("short",   15, 0.0, 100.0, "market"),
-    ("medium",  55, 0.0, 100.0, "market"),
-    ("long",    20, 0.0, 100.0, "market"),
-    ("damage",  10, 0.0, 100.0, "market"),
+    # Four display groups only. Score itself is the equal mean of all 12 metrics.
+    # Weights below exactly reflect metric counts: 4/12, 4/12, 2/12, 2/12.
+    ("short",   33.333333333333336, 0.0, 100.0, "market"),  # momentum
+    ("medium",  33.333333333333336, 0.0, 100.0, "market"),  # breadth
+    ("long",    16.666666666666668, 0.0, 100.0, "market"),  # trend structure
+    ("damage",  16.666666666666668, 0.0, 100.0, "market"),
 ]
-# Pillar weights: trend 30 / breadth 30 / risk 20 / credit 20 = 100
+# Directional symmetry: no percentile recentering, no one-sided penalty/floor/guard.
 
 
 def clamp01(x):
@@ -3691,17 +3701,15 @@ def _mc_parent_mean(frame):
 
 
 def _mc_participation(mask):
-    # Each family gets one third.  Industry first gets parent-group balancing.
-    pieces = []
-    b = _mc_mean_cols(mask, MC_BROAD_ETFS)
-    sec = _mc_mean_cols(mask, MC_SECTOR_ETFS)
-    ind = _mc_parent_mean(mask)
-    for x in (b, sec, ind):
-        if x.notna().any():
-            pieces.append(x)
-    if not pieces:
+    """Equal-weight breadth across every available Market Conditions ETF.
+
+    50 means exactly half the available ETFs satisfy the condition. The mapping is
+    directionally symmetric: complementing every boolean produces 100-score.
+    """
+    have = [c for c in MC_MARKET_TICKERS if c in mask.columns]
+    if not have:
         return pd.Series(np.nan, index=mask.index)
-    return pd.concat(pieces, axis=1).mean(axis=1, skipna=True) * 100.0
+    return mask[have].mean(axis=1, skipna=True) * 100.0
 
 
 def _mc_stratified_median(frame):
@@ -3725,18 +3733,21 @@ def _mc_linear(series, lo, hi):
 
 
 def mri_frame(macro, W=None):
-    """Market Conditions v3.
+    """Market Conditions v4: 57 ETFs × 12 metrics, fully equal weighted.
 
-    43 non-levered ETFs, family balanced. The score is descriptive market health.
+    No historical percentile recentering and no one-sided deterioration penalty,
+    floor or guard. Each 0-100 component has a literal neutral midpoint and the
+    final arithmetic mean preserves directional symmetry. EMA2 is smoothing only.
     """
     c = _mc_frame_from_macro(macro)
     if c.empty:
-        # Fail visibly but keep downstream rendering alive in degraded/offline fixtures.
         idx = next((d.index for d in macro.values() if hasattr(d, "index") and len(d.index)), pd.DatetimeIndex([pd.Timestamp.today().normalize()]))
         z = pd.Series(50.0, index=idx, dtype=float)
         vals = pd.DataFrame(index=idx)
         for k in ("pillar_short","pillar_medium","pillar_long","pillar_damage"):
             vals[k] = 50.0
+        vals["breadth_level"] = 50.0
+        vals["breadth_delta10"] = 0.0
         vals["mc_coverage"] = 0.0
         breakdown = [dict(key=k, w=w, group="market", raw=50.0, pts=w*.5, ptsmax=w, frac=.5)
                      for k,w,*_ in STATUS_DEF]
@@ -3744,37 +3755,55 @@ def mri_frame(macro, W=None):
 
     ma10=c.rolling(10).mean(); ma20=c.rolling(20).mean(); ma50=c.rolling(50).mean(); ma200=c.rolling(200).mean()
     p = {}
-    p["ret5"] = _mc_participation((c/c.shift(5)-1 > 0).where(c.shift(5).notna() & c.notna()))
-    p["above10"] = _mc_participation((c > ma10).where(ma10.notna() & c.notna()))
-    p["above20"] = _mc_participation((c > ma20).where(ma20.notna() & c.notna()))
-    short = pd.concat([p["ret5"],p["above10"],p["above20"]],axis=1).mean(axis=1,skipna=True)
 
+    # Momentum: fixed horizons only. YTD intentionally excluded because its horizon changes through the year.
+    p["ret5"] = _mc_participation((c/c.shift(5)-1 > 0).where(c.shift(5).notna() & c.notna()))
     p["ret21"] = _mc_participation((c/c.shift(21)-1 > 0).where(c.shift(21).notna() & c.notna()))
     p["ret63"] = _mc_participation((c/c.shift(63)-1 > 0).where(c.shift(63).notna() & c.notna()))
+    p["ret252"] = _mc_participation((c/c.shift(252)-1 > 0).where(c.shift(252).notna() & c.notna()))
+
+    # Breadth.
+    p["above10"] = _mc_participation((c > ma10).where(ma10.notna() & c.notna()))
+    p["above20"] = _mc_participation((c > ma20).where(ma20.notna() & c.notna()))
     p["above50"] = _mc_participation((c > ma50).where(ma50.notna() & c.notna()))
-    p["ma20_gt_50"] = _mc_participation((ma20 > ma50).where(ma20.notna() & ma50.notna()))
-    p["ma50_rising"] = _mc_participation((ma50 > ma50.shift(20)).where(ma50.notna() & ma50.shift(20).notna()))
-    medium = pd.concat([p[k] for k in ("ret21","ret63","above50","ma20_gt_50","ma50_rising")],axis=1).mean(axis=1,skipna=True)
-
     p["above200"] = _mc_participation((c > ma200).where(ma200.notna() & c.notna()))
-    p["ma50_gt_200"] = _mc_participation((ma50 > ma200).where(ma50.notna() & ma200.notna()))
-    long = pd.concat([p["above200"],p["ma50_gt_200"]],axis=1).mean(axis=1,skipna=True)
 
+    # Trend structure.
+    p["ma20_gt_50"] = _mc_participation((ma20 > ma50).where(ma20.notna() & ma50.notna()))
+    p["ma50_gt_200"] = _mc_participation((ma50 > ma200).where(ma50.notna() & ma200.notna()))
+
+    # Compatibility telemetry retained for existing downstream commentary; not part of the 12-metric score.
+    p["ma50_rising"] = _mc_participation((ma50 > ma50.shift(20)).where(ma50.notna() & ma50.shift(20).notna()))
+
+    # Damage: score every ETF first, then equal-weight. This avoids a median/stratification tilt.
     hi252 = c.rolling(252,min_periods=200).max()
     dd = c/hi252 - 1.0
-    med_dd = _mc_stratified_median(dd)
-    dd_score = _mc_linear(med_dd, -0.30, -0.05)
-    within10 = _mc_participation((dd >= -0.10).where(dd.notna()))
-    damage = pd.concat([dd_score,within10],axis=1).mean(axis=1,skipna=True)
+    dd_by_etf = ((dd + 0.30) / 0.25 * 100.0).clip(0.0, 100.0)
+    p["dd_score"] = dd_by_etf.mean(axis=1, skipna=True)
+    p["within10"] = _mc_participation((dd >= -0.10).where(dd.notna()))
+    med_dd = dd.median(axis=1, skipna=True)
 
-    raw = short*.15 + medium*.55 + long*.20 + damage*.10
+    score_keys = ("ret5","ret21","ret63","ret252",
+                  "above10","above20","above50","above200",
+                  "ma20_gt_50","ma50_gt_200","dd_score","within10")
+    raw = pd.concat([p[k] for k in score_keys], axis=1).mean(axis=1, skipna=True)
     score = raw.ewm(span=2,adjust=False).mean()
 
+    # Four display-only summaries; their weights match the number of equal metrics.
+    momentum = pd.concat([p[k] for k in ("ret5","ret21","ret63","ret252")],axis=1).mean(axis=1,skipna=True)
+    breadth4 = pd.concat([p[k] for k in ("above10","above20","above50","above200")],axis=1).mean(axis=1,skipna=True)
+    trend2 = pd.concat([p[k] for k in ("ma20_gt_50","ma50_gt_200")],axis=1).mean(axis=1,skipna=True)
+    damage = pd.concat([p[k] for k in ("dd_score","within10")],axis=1).mean(axis=1,skipna=True)
+
+    # Breadth momentum is context only, centered on zero and excluded from MC score.
+    breadth_level = pd.concat([p["above20"],p["above50"]],axis=1).mean(axis=1,skipna=True)
+    breadth_delta10 = breadth_level - breadth_level.shift(10)
     coverage = c.notna().sum(axis=1) / float(len(MC_MARKET_TICKERS)) * 100.0
 
     vals = pd.DataFrame(index=score.index)
-    vals["pillar_short"] = short; vals["pillar_medium"] = medium
-    vals["pillar_long"] = long; vals["pillar_damage"] = damage
+    vals["pillar_short"] = momentum; vals["pillar_medium"] = breadth4
+    vals["pillar_long"] = trend2; vals["pillar_damage"] = damage
+    vals["breadth_level"] = breadth_level; vals["breadth_delta10"] = breadth_delta10
     vals["mc_coverage"] = coverage
     for k,v in p.items(): vals[k] = v
     vals["median_dd"] = med_dd*100.0
@@ -3802,8 +3831,7 @@ def mri_frame(macro, W=None):
     vals["rsp_200"] = _rsp / _rsp.rolling(200).mean() - 1.0
     vals["qqqe_50"] = _qqqe / _qqqe.rolling(50).mean() - 1.0
 
-    last = vals.iloc[-1]
-    pmap = {"short":short,"medium":medium,"long":long,"damage":damage}
+    pmap = {"short":momentum,"medium":breadth4,"long":trend2,"damage":damage}
     breakdown=[]; dropped=[]; active=[]
     for key,w,lo,hi,grp in STATUS_DEF:
         ser=pmap[key]; cur=float(ser.dropna().iloc[-1]) if ser.notna().any() else np.nan
@@ -3824,9 +3852,9 @@ def mri_auxiliary(mri, vals, metrics):
         slope_dir = "↑" if d > 0.4 else ("↓" if d < -0.4 else "→")
     last = vals.reindex(clean.index).iloc[-1] if len(clean) else vals.iloc[-1]
     bvals = [
-        ("短期", last.get("pillar_short", np.nan) < 40.0),
-        ("中期", last.get("pillar_medium", np.nan) < 40.0),
-        ("長期", last.get("pillar_long", np.nan) < 40.0),
+        ("モメンタム", last.get("pillar_short", np.nan) < 40.0),
+        ("広がり", last.get("pillar_medium", np.nan) < 40.0),
+        ("トレンド", last.get("pillar_long", np.nan) < 40.0),
         ("Damage", last.get("pillar_damage", np.nan) < 40.0),
     ]
     bear_flags = [(lab, bool(v == True)) for lab,v in bvals]
@@ -3838,8 +3866,15 @@ def mri_auxiliary(mri, vals, metrics):
     elif drop < 7:  peak = "注意"
     elif drop < 12: peak = "減速"
     else:           peak = "深押し"
+    _bd10 = last.get("breadth_delta10", np.nan)
+    try:
+        breadth_delta10 = float(_bd10) if _bd10 is not None and np.isfinite(float(_bd10)) else 0.0
+    except Exception:
+        breadth_delta10 = 0.0
+    breadth_arrow = "↑" if breadth_delta10 > 2.0 else ("↓" if breadth_delta10 < -2.0 else "→")
     return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
-                peak=peak, drop=drop, hi20=hi20)
+                peak=peak, drop=drop, hi20=hi20,
+                breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow)
 
 
 def mri_band(v):
@@ -18756,7 +18791,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     drop_note = ""
     if dropped:
         drop_note = f'<div class="note">注記：データ未取得のため除外し残り指標で100点満点に再正規化 → {", ".join(dropped)}</div>'
-    _kj = {"trend":"トレンド","breadth":"広がり","risk":"ボラティリティ","credit":"信用"}
+    _kj = {"short":"モメンタム","medium":"広がり","long":"トレンド","damage":"Damage","trend":"トレンド","breadth":"広がり","risk":"ボラティリティ","credit":"信用"}
     _gj = {"market":"MARKET CONDITIONS"}
     def _mraw(k, v):
         if v is None or (isinstance(v, float) and np.isnan(v)): return "—"
@@ -18781,7 +18816,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     bear_sec = (f'<div class="mgrp">警戒 {aux["bear_n"]}/4</div>'
                 f'<div class="bflags">{_bchips or "<span class=bfl off>—</span>"}</div>')
     mri_bd = (f'<div id="mri-bd" class="mri-bd" onclick="event.stopPropagation()">'
-              f'<div class="mbd-h">MARKET CONDITIONS 内訳（短期15 / 中期55 / 長期20 / Damage10）</div>'
+              f'<div class="mbd-h">MARKET CONDITIONS 内訳（57ETF × 12指標・完全等加重）</div>'
               + "".join(_bd_rows) + bear_sec
               + '<div class="mnote">赤=点灯中のベア要因。もう一度タップで閉じる ▴</div></div>')
     banner = sar_pill + _ribbon(mkt.get("trend_hist")) + f"""
@@ -18792,6 +18827,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
       <div class="gauge"><div class="mk" style="left:{mk}%"></div></div>
       <div class="aux">
         <div class="a">傾き <b>{aux['slope']}</b></div>
+        <div class="a">内部10D <b>{aux['breadth_arrow']} {aux['breadth_delta10']:+.1f}pt</b></div>
         <div class="a">警戒 <b>{aux['bear_n']}</b>/4 {_led(aux['bear_n'], 4)}</div>
       </div>
       {mri_bd}
