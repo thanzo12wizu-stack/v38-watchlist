@@ -18851,6 +18851,9 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
         f'<span class="mraw">{_bd_arrow} {_bd10:+.1f}pt</span>'
         f'<span class="mbar"></span><span class="mpts">score外</span></div>')
 
+    _bf = aux.get("bear_flags", [])
+    _blit = [lab for lab, on in _bf if on]
+    _boff = [lab for lab, on in _bf if not on]
     _bchips = ("".join(f'<span class="bfl on">{lab}</span>' for lab in _blit)
                + "".join(f'<span class="bfl off">{lab}</span>' for lab in _boff))
     bear_sec = (f'<div class="mgrp">警戒 {aux["bear_n"]}/4</div>'
