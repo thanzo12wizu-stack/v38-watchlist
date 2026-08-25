@@ -1,0 +1,186 @@
+name: One-off analyze MRI historical calibration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/analyze-mri-history-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Historical MRI diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import numpy as np
+          import pandas as pd
+          import yfinance as yf
+
+          broad = ["SPY","QQQ","DIA","IWM","MDY","RSP","VTI","QQQE"]
+          sectors = ["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
+          industry = [
+              "SOXX","SMH","XSD","IGV","SKYY","CIBR","HACK","FDN","XBI","IBB",
+              "PPH","IHI","IHF","KRE","KBE","XRT","ITB","XHB","IYT","JETS","ITA","XAR","ROBO",
+              "XME","COPX","PICK","GDX","SIL","LIT","XOP","OIH","URA","TAN","ICLN","VNQ","MOO","PHO","PAVE"
+          ]
+          tickers = list(dict.fromkeys(broad + sectors + industry))
+          assert len(tickers) == 57
+          all_tickers = tickers + ["^VIX"]
+          raw = yf.download(all_tickers, start="2009-01-01", end="2026-08-26", auto_adjust=True,
+                            progress=False, group_by="column", threads=True)
+          if isinstance(raw.columns, pd.MultiIndex):
+              close = raw["Close"].copy()
+          else:
+              raise SystemExit("unexpected yfinance shape")
+          close.index = pd.to_datetime(close.index).tz_localize(None)
+          c = close.reindex(columns=tickers)
+          vix = pd.to_numeric(close.get("^VIX"), errors="coerce")
+
+          def part(mask):
+              return mask.mean(axis=1, skipna=True) * 100.0
+
+          ma10=c.rolling(10).mean(); ma20=c.rolling(20).mean(); ma50=c.rolling(50).mean(); ma200=c.rolling(200).mean()
+          p={}
+          p["ret5"] = part((c/c.shift(5)-1 > 0).where(c.shift(5).notna() & c.notna()))
+          p["ret21"] = part((c/c.shift(21)-1 > 0).where(c.shift(21).notna() & c.notna()))
+          p["ret63"] = part((c/c.shift(63)-1 > 0).where(c.shift(63).notna() & c.notna()))
+          p["ret252"] = part((c/c.shift(252)-1 > 0).where(c.shift(252).notna() & c.notna()))
+          p["above10"] = part((c>ma10).where(ma10.notna() & c.notna()))
+          p["above20"] = part((c>ma20).where(ma20.notna() & c.notna()))
+          p["above50"] = part((c>ma50).where(ma50.notna() & c.notna()))
+          p["above200"] = part((c>ma200).where(ma200.notna() & c.notna()))
+          p["ma20_gt_50"] = part((ma20>ma50).where(ma20.notna() & ma50.notna()))
+          p["ma50_gt_200"] = part((ma50>ma200).where(ma50.notna() & ma200.notna()))
+          hi252=c.rolling(252,min_periods=200).max(); dd=c/hi252-1.0
+          p["dd_score"] = ((dd+0.30)/0.25*100.0).clip(0,100).mean(axis=1,skipna=True)
+          p["within10"] = part((dd>=-0.10).where(dd.notna()))
+
+          keys=("ret5","ret21","ret63","ret252","above10","above20","above50","above200","ma20_gt_50","ma50_gt_200","dd_score","within10")
+          comps=pd.concat({k:p[k] for k in keys},axis=1)
+          current_raw=comps.mean(axis=1,skipna=True)
+          current=current_raw.ewm(span=2,adjust=False).mean()
+
+          # Candidate VIX fixed absolute stress scale. Interpolation is only a diagnostic candidate, not production logic.
+          x=np.array([10,12,15,20,25,30,40,60],float)
+          y=np.array([100,95,80,50,30,15,5,0],float)
+          vix_score=pd.Series(np.interp(vix.to_numpy(dtype=float),x,y,left=100,right=0),index=vix.index)
+          comps_vix=comps.drop(columns=["within10"]).copy()
+          comps_vix["vix_score"]=vix_score.reindex(comps_vix.index)
+          vix_raw=comps_vix.mean(axis=1,skipna=True)
+          score_vix=vix_raw.ewm(span=2,adjust=False).mean()
+
+          coverage=c.notna().sum(axis=1)/57*100
+          valid=(coverage>=70) & current.notna()
+          start=valid[valid].index.min()
+          print("=== DATA ===")
+          print("first_date_coverage70", start.date() if start is not None else None)
+          print("latest", current.dropna().index.max().date(), "coverage", round(float(coverage.dropna().iloc[-1]),1))
+          print("latest_current", round(float(current.dropna().iloc[-1]),2), "latest_vix_candidate", round(float(score_vix.dropna().iloc[-1]),2), "latest_vix", round(float(vix.dropna().iloc[-1]),2))
+
+          a=current[valid]
+          print("=== OVERALL_CURRENT_DISTRIBUTION ===")
+          print(a.describe(percentiles=[.05,.1,.25,.5,.75,.9,.95]).round(2).to_string())
+          for th in [35,45,55,65,70,75,80]:
+              if th < 50:
+                  print(f"pct_le_{th}", round(float((a<=th).mean()*100),1))
+              else:
+                  print(f"pct_ge_{th}", round(float((a>=th).mean()*100),1))
+
+          print("=== ANNUAL_CURRENT ===")
+          ann=pd.DataFrame({"score":current,"coverage":coverage}).loc[valid].groupby(lambda d:d.year).agg(
+              mean=("score","mean"), median=("score","median"), min=("score","min"), max=("score","max"), coverage=("coverage","mean"))
+          ann["pct_ge70"]=[float((current[valid & (current.index.year==yr)]>=70).mean()*100) for yr in ann.index]
+          print(ann.round(2).to_string())
+
+          print("=== COMPONENT_DISTRIBUTIONS ===")
+          cd=[]
+          for k in keys:
+              s=comps.loc[valid,k].dropna()
+              cd.append([k,s.mean(),s.median(),s.quantile(.1),s.quantile(.9),s.corr(current.loc[s.index])])
+          cdf=pd.DataFrame(cd,columns=["metric","mean","median","p10","p90","corr_score"]).set_index("metric")
+          print(cdf.round(2).to_string())
+
+          print("=== CURRENT_MINUS_VIX_CANDIDATE ===")
+          both=pd.concat([current.rename("current"),score_vix.rename("vix")],axis=1).loc[valid].dropna()
+          d=both["current"]-both["vix"]
+          print("mean_diff",round(float(d.mean()),2),"median_diff",round(float(d.median()),2),"p90_diff",round(float(d.quantile(.9)),2))
+          out=pd.DataFrame({
+              "current_mean":both["current"].groupby(both.index.year).mean(),
+              "vix_mean":both["vix"].groupby(both.index.year).mean(),
+          })
+          out["diff"]=out.current_mean-out.vix_mean
+          print(out.round(2).to_string())
+
+          # Selected stress / recovery windows.
+          windows={
+              "2018_Q4":("2018-10-01","2018-12-31"),
+              "2020_COVID":("2020-02-15","2020-04-30"),
+              "2020_RECOVERY":("2020-05-01","2020-12-31"),
+              "2022_BEAR":("2022-01-01","2022-12-31"),
+              "2023_RECOVERY":("2023-01-01","2023-12-31"),
+              "2024":("2024-01-01","2024-12-31"),
+              "2025":("2025-01-01","2025-12-31"),
+              "2026_YTD":("2026-01-01","2026-08-25"),
+          }
+          print("=== WINDOWS ===")
+          rows=[]
+          for name,(s,e) in windows.items():
+              cur=current.loc[s:e].dropna(); alt=score_vix.loc[s:e].dropna(); vv=vix.loc[s:e].dropna()
+              if len(cur):
+                  rows.append([name,cur.mean(),cur.median(),cur.min(),cur.max(),alt.mean() if len(alt) else np.nan,vv.mean() if len(vv) else np.nan])
+          print(pd.DataFrame(rows,columns=["window","cur_mean","cur_med","cur_min","cur_max","vix_alt_mean","vix_mean"]).set_index("window").round(2).to_string())
+
+          # Exact notable dates (nearest previous trading day if needed).
+          dates=["2018-12-24","2020-02-19","2020-03-23","2020-06-08","2022-01-03","2022-06-16","2022-10-12","2023-07-31","2024-07-10","2025-04-08","2025-08-21","2026-08-24"]
+          print("=== NOTABLE_DATES ===")
+          rr=[]
+          for ds in dates:
+              t=pd.Timestamp(ds)
+              idx=current.index[current.index<=t]
+              if len(idx)==0: continue
+              d0=idx[-1]
+              rr.append([ds,d0.date(),current.get(d0,np.nan),score_vix.get(d0,np.nan),vix.get(d0,np.nan),coverage.get(d0,np.nan)])
+          print(pd.DataFrame(rr,columns=["requested","used","current","vix_alt","vix","coverage"]).set_index("requested").round(2).to_string())
+
+          # Does 70 actually separate future conditions? QQQ forward returns and next-63d worst drawdown.
+          q=pd.to_numeric(c["QQQ"],errors="coerce")
+          f21=q.shift(-21)/q-1
+          f63=q.shift(-63)/q-1
+          future_worst=pd.Series(index=q.index,dtype=float)
+          vals=q.to_numpy(float)
+          for i in range(len(q)-63):
+              if not np.isfinite(vals[i]): continue
+              seg=vals[i+1:i+64]
+              if np.isfinite(seg).any():
+                  future_worst.iloc[i]=np.nanmin(seg/vals[i]-1.0)
+          evaldf=pd.DataFrame({"score":current,"score_vix":score_vix,"f21":f21,"f63":f63,"worst63":future_worst,"coverage":coverage})
+          evaldf=evaldf[(evaldf.coverage>=70)].dropna()
+          bins=[0,35,45,55,65,70,75,80,101]
+          labels=["<35","35-45","45-55","55-65","65-70","70-75","75-80","80+"]
+          def tab(col):
+              x=evaldf.copy(); x["band"]=pd.cut(x[col],bins=bins,labels=labels,right=False)
+              g=x.groupby("band",observed=False).agg(n=(col,"size"),f21=("f21","mean"),p21=("f21",lambda z:(z>0).mean()),f63=("f63","mean"),p63=("f63",lambda z:(z>0).mean()),worst63=("worst63","mean"))
+              for c0 in ["f21","p21","f63","p63","worst63"]: g[c0]=g[c0]*100
+              return g
+          print("=== FORWARD_BY_CURRENT_BAND ===")
+          print(tab("score").round(2).to_string())
+          print("=== FORWARD_BY_VIX_CANDIDATE_BAND ===")
+          print(tab("score_vix").round(2).to_string())
+          print("=== CORRELATIONS ===")
+          for col in ["score","score_vix"]:
+              print(col,"corr_f21",round(evaldf[col].corr(evaldf.f21),3),"corr_f63",round(evaldf[col].corr(evaldf.f63),3),"corr_worst63",round(evaldf[col].corr(evaldf.worst63),3))
+          PY
