@@ -1,4 +1,4 @@
-name: Apply Market Conditions equal12 to main
+name: Fix Market Conditions selftest on main
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 jobs:
   apply:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -25,23 +25,36 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Load reviewed patch helper
+      - name: Patch stale Market Conditions selftest fingerprint only
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --depth=1 origin analysis-market-conditions-deterioration-20260825
-          git show origin/analysis-market-conditions-deterioration-20260825:tools/apply_market_conditions_equal12_main.py > /tmp/apply_mc.py
-          python /tmp/apply_mc.py
+          python - <<'PY'
+          from pathlib import Path
 
-      - name: Install dependencies
-        run: pip install --disable-pip-version-check -r requirements.txt pytest
+          p = Path('build_dashboard.py')
+          s = p.read_text(encoding='utf-8')
+          old = '''        _EXPECT = (("short",15,0.0,100.0,"market"),("medium",55,0.0,100.0,"market"),
+                         ("long",20,0.0,100.0,"market"),("damage",10,0.0,100.0,"market"))'''
+          new = '''        _EXPECT = (("short",33.333333333333336,0.0,100.0,"market"),
+                         ("medium",33.333333333333336,0.0,100.0,"market"),
+                         ("long",16.666666666666668,0.0,100.0,"market"),
+                         ("damage",16.666666666666668,0.0,100.0,"market"))'''
+          if s.count(old) != 1:
+              raise SystemExit(f'expected exactly one stale MC fingerprint, got {s.count(old)}')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
 
       - name: Validate production preflight
         shell: bash
         run: |
           set -euo pipefail
+          pip install --disable-pip-version-check -r requirements.txt pytest
           python -m py_compile build_dashboard.py
           pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
+          git diff --check
+          git diff -- build_dashboard.py
 
       - name: Commit to main
         shell: bash
@@ -50,10 +63,9 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add build_dashboard.py
-          git diff --staged --check
           if git diff --staged --quiet; then
             echo 'No change'
             exit 0
           fi
-          git commit -m 'Use symmetric 57-ETF equal-weight Market Conditions'
+          git commit -m 'Fix Market Conditions selftest fingerprint'
           git push origin HEAD:main
