@@ -34,7 +34,7 @@ jobs:
           pytest -q tests/test_dashboard_build_regressions.py
 
       - name: Validate live long history and crisis windows
-        run: python .github/scripts/oneoff_mc_history_fix.py validate
+        run: PYTHONPATH=. python .github/scripts/oneoff_mc_history_fix.py validate
 
       - name: Commit approved repair and remove temporary files
         shell: bash
