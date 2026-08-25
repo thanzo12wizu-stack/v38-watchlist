@@ -31,19 +31,22 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          import re
 
           p = Path('build_dashboard.py')
           s = p.read_text(encoding='utf-8')
-          old = '''        _EXPECT = (("short",15,0.0,100.0,"market"),("medium",55,0.0,100.0,"market"),
-                         ("long",20,0.0,100.0,"market"),("damage",10,0.0,100.0,"market"))'''
-          new = '''        _EXPECT = (("short",33.333333333333336,0.0,100.0,"market"),
-                         ("medium",33.333333333333336,0.0,100.0,"market"),
-                         ("long",16.666666666666668,0.0,100.0,"market"),
-                         ("damage",16.666666666666668,0.0,100.0,"market"))'''
-          if s.count(old) != 1:
-              raise SystemExit(f'expected exactly one stale MC fingerprint, got {s.count(old)}')
-          s = s.replace(old, new, 1)
-          p.write_text(s, encoding='utf-8')
+          pattern = re.compile(
+              r'_EXPECT\s*=\s*\(\("short",15,0\.0,100\.0,"market"\),\("medium",55,0\.0,100\.0,"market"\),\s*'
+              r'\("long",20,0\.0,100\.0,"market"\),\("damage",10,0\.0,100\.0,"market"\)\)'
+          )
+          replacement = '''_EXPECT = (("short",33.333333333333336,0.0,100.0,"market"),
+                   ("medium",33.333333333333336,0.0,100.0,"market"),
+                   ("long",16.666666666666668,0.0,100.0,"market"),
+                   ("damage",16.666666666666668,0.0,100.0,"market"))'''
+          s2, n = pattern.subn(replacement, s, count=1)
+          if n != 1:
+              raise SystemExit(f'expected exactly one stale MC fingerprint, got {n}')
+          p.write_text(s2, encoding='utf-8')
           PY
 
       - name: Validate production preflight
