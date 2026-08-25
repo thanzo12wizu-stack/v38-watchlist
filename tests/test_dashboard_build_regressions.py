@@ -165,3 +165,27 @@ def test_market_condition_full_equal_weight_contract():
     cols[dashboard.MC_MARKET_TICKERS[0]] = [1.0]
     out = dashboard._mc_participation(pd.DataFrame(cols, index=idx).astype(bool))
     assert np.isclose(out.iloc[-1], 100.0 / 57.0)
+
+
+
+def test_market_condition_15y_temperature_contract():
+    z = pd.Series([-2.0, -1.0, 0.0, 1.0, 2.0])
+    got = dashboard._mc_z_to_temperature(z).to_numpy()
+    assert np.allclose(got, [10.0, 25.0, 50.0, 75.0, 90.0])
+    assert dashboard.MC_BASELINE_BARS == 252 * 15
+
+    raw = pd.Series(np.arange(dashboard.MC_BASELINE_BARS + 2, dtype=float))
+    temp, mean15, sd15, z15 = dashboard._mc_temperature_from_raw(raw)
+    i = dashboard.MC_BASELINE_BARS
+    expected = raw.iloc[:i]
+    assert np.isclose(mean15.iloc[i], expected.mean())
+    assert np.isclose(sd15.iloc[i], expected.std(ddof=0))
+    assert np.isclose(z15.iloc[i], (raw.iloc[i] - expected.mean()) / expected.std(ddof=0))
+    assert np.isfinite(temp.iloc[i])
+
+
+def test_market_condition_fold_contains_occupancy_context():
+    source = Path(dashboard.__file__).read_text(encoding="utf-8")
+    assert "長期滞在比率（検証値・scoreには不算入）" in source
+    assert "右端は各指標のRawへの寄与" in source
+    assert 'mri_band(aux["cur"])' in source
