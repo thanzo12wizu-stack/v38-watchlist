@@ -1,0 +1,28 @@
+name: Inspect sector health integration points
+on:
+  push:
+    branches: [analysis-sector-health-20260825]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Print integration snippets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('build_dashboard.py')
+          lines=p.read_text(encoding='utf-8').splitlines()
+          needles=['def _sector_rank_card','sector_ranks','rrg_etf','etf_hier','def mri_frame','MC_INDUSTRY_PARENT','def _rrg_card','sector =','sector_ranks=']
+          seen=set()
+          for needle in needles:
+              hits=[i for i,s in enumerate(lines) if needle in s]
+              print(f'=== {needle} hits={len(hits)} ===')
+              for i in hits[:12]:
+                  a=max(0,i-35); b=min(len(lines),i+80)
+                  key=(a,b)
+                  if key in seen: continue
+                  seen.add(key)
+                  print(f'--- lines {a+1}-{b} ---')
+                  for j in range(a,b): print(f'{j+1:06d}: {lines[j]}')
+          PY
