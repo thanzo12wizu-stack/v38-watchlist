@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/implement-mc15-once.yml'
+      - '.github/scripts/implement_mc15_once.py'
 
 permissions:
   contents: write
@@ -22,404 +23,44 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
-      - name: Apply narrow Market Conditions patch
-        shell: bash
+      - name: Prepare narrow MC15 patch
+        run: python .github/scripts/implement_mc15_once.py
+      - name: Static checks
         run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('build_dashboard.py')
-          s = path.read_text(encoding='utf-8')
-
-          def rep(old, new, n=1, label='patch'):
-              global s
-              got = s.count(old)
-              if got != n:
-                  raise SystemExit(f'{label}: expected {n} occurrence(s), found {got}')
-              s = s.replace(old, new)
-
-          # 1) MC15 constants. Raw universe/metric weights are intentionally untouched.
-          rep(
-'''MC_MARKET_TICKERS = list(dict.fromkeys(MC_BROAD_ETFS + MC_SECTOR_ETFS + MC_INDUSTRY_ETFS))
-assert len(MC_MARKET_TICKERS) == 57
-MACRO_TICKERS = list(dict.fromkeys(MACRO_TICKERS + MC_MARKET_TICKERS))''',
-'''MC_MARKET_TICKERS = list(dict.fromkeys(MC_BROAD_ETFS + MC_SECTOR_ETFS + MC_INDUSTRY_ETFS))
-assert len(MC_MARKET_TICKERS) == 57
-MC_BASELINE_BARS = 252 * 15
-MC_LONG_LOOKBACK_YEARS = 21
-# Historical occupancy is display-only context from the audited 15Y-normalized series.
-# It is NEVER used in the score itself.
-MC_OCCUPANCY_LONG = ("2008–2026", 52.4, 11.9, 35.6)
-MC_OCCUPANCY_50ETF = ("2013–2026・50ETF以上", 57.1, 12.4, 30.5)
-MACRO_TICKERS = list(dict.fromkeys(MACRO_TICKERS + MC_MARKET_TICKERS))''',
-label='constants')
-
-          # 2) Always enrich only the 57 MC ETFs with long Yahoo history in live production.
-          rep(
-'''    if _net_ok():
-        _vix_full = _fetch_vix_full_history(_macro.get("^VIX"))
-        if _vix_full is not None:
-            _macro["^VIX"] = normalize_timeseries(
-                _vix_full, fail_closed=False, label="macro:^VIX-full")
-    return names, order, s2i, s2t, e2j, _W, _macro, _cache_asof''',
-'''    if _net_ok():
-        _vix_full = _fetch_vix_full_history(_macro.get("^VIX"))
-        if _vix_full is not None:
-            _macro["^VIX"] = normalize_timeseries(
-                _vix_full, fail_closed=False, label="macro:^VIX-full")
-        _mc_long = _fetch_mc_long_history(_macro)
-        for _mt, _mf in _mc_long.items():
-            try:
-                _macro[_mt] = normalize_timeseries(
-                    _mf, fail_closed=False, label="macro:MC15:" + str(_mt))
-            except Exception as _e:
-                sys.stderr.write("[mc15] normalize %s failed: %r\\n" % (_mt, repr(_e)[:80]))
-    return names, order, s2i, s2t, e2j, _W, _macro, _cache_asof''',
-label='load_inputs_long_mc')
-
-          rep(
-'''    return best if best is not None else existing
-
-def _yf_symbol(ticker):''',
-'''    return best if best is not None else existing
-
-
-def _fetch_mc_long_history(existing_macro=None):
-    """Fetch a dedicated long daily history for the fixed 57-ETF MC universe.
-
-    The normal macro cache stays short because many other cards only need a few years.
-    MC15 alone needs 15 completed years plus metric warm-up, so it is enriched here.
-    Missing/late-inception ETFs remain missing before inception; they are never zero-filled.
-    """
-    if not _net_ok():
-        return {}
-    try:
-        import yfinance as yf
-    except Exception as exc:
-        sys.stderr.write("[mc15] yfinance import failed: %s\\n" % type(exc).__name__)
-        return {}
-    try:
-        _now = pd.Timestamp.utcnow()
-        try:
-            _now = _now.tz_localize(None)
-        except TypeError:
-            _now = _now.tz_convert(None)
-        start = (_now.normalize() - pd.DateOffset(years=MC_LONG_LOOKBACK_YEARS)).strftime("%Y-%m-%d")
-    except Exception:
-        start = "2005-01-01"
-
-    out = {}
-    try:
-        raw = yf.download(MC_MARKET_TICKERS, start=start, progress=False,
-                          auto_adjust=True, group_by="ticker", threads=True)
-        out.update(_extract(raw, MC_MARKET_TICKERS, minbars=30))
-    except Exception as exc:
-        sys.stderr.write("[mc15] batch history failed: %s\\n" % type(exc).__name__)
-
-    missing = [t for t in MC_MARKET_TICKERS if t not in out]
-    for t in missing:
-        try:
-            hist = yf.Ticker(t).history(start=start, auto_adjust=True)
-            got = _extract(hist, [t], minbars=30).get(t)
-            if got is not None and len(got):
-                out[t] = got
-        except Exception as exc:
-            sys.stderr.write("[mc15] %s history fallback failed: %s\\n" % (t, type(exc).__name__))
-
-    if out:
-        try:
-            first = min(pd.Timestamp(v.index.min()) for v in out.values() if len(v))
-            last = max(pd.Timestamp(v.index.max()) for v in out.values() if len(v))
-            sys.stderr.write("[mc15] long history: %d/%d ETFs, %s..%s\\n" %
-                             (len(out), len(MC_MARKET_TICKERS), first.date(), last.date()))
-        except Exception:
-            sys.stderr.write("[mc15] long history: %d/%d ETFs\\n" % (len(out), len(MC_MARKET_TICKERS)))
-    return out
-
-
-def _yf_symbol(ticker):''',
-label='mc_long_fetch_helper')
-
-          # 3) 15-year final-score calibration helpers.
-          rep(
-'''def _mc_linear(series, lo, hi):
-    return ((pd.to_numeric(series, errors="coerce") - lo) / (hi - lo)).clip(0.0, 1.0) * 100.0
-
-
-def mri_frame(macro, W=None):''',
-'''def _mc_linear(series, lo, hi):
-    return ((pd.to_numeric(series, errors="coerce") - lo) / (hi - lo)).clip(0.0, 1.0) * 100.0
-
-
-def _mc_z_to_temperature(z):
-    """Symmetric logistic map: z=0→50, ±1σ→75/25, ±2σ→90/10."""
-    z = pd.to_numeric(z, errors="coerce")
-    return 100.0 / (1.0 + np.exp(-np.log(3.0) * z))
-
-
-def _mc_temperature_from_raw(raw_score):
-    """Normalize final Raw MC against the PREVIOUS 3780 trading observations only."""
-    rs = pd.to_numeric(raw_score, errors="coerce")
-    base = rs.shift(1)  # current day never enters its own reference distribution
-    mean15 = base.rolling(MC_BASELINE_BARS, min_periods=MC_BASELINE_BARS).mean()
-    sd15 = base.rolling(MC_BASELINE_BARS, min_periods=MC_BASELINE_BARS).std(ddof=0)
-    z15 = (rs - mean15) / sd15.replace(0.0, np.nan)
-    return _mc_z_to_temperature(z15), mean15, sd15, z15
-
-
-def mri_frame(macro, W=None):''',
-label='mc15_helpers')
-
-          rep(
-'''    """Market Conditions v4: 57 ETFs × 12 metrics, fully equal weighted.
-
-    No historical percentile recentering and no one-sided deterioration penalty,
-    floor or guard. Each 0-100 component has a literal neutral midpoint and the
-    final arithmetic mean preserves directional symmetry. EMA2 is smoothing only.
-    """''',
-'''    """Market Conditions v5: equal-weight 57 ETFs × 12 metrics → EMA2 Raw → 15Y temperature.
-
-    Raw keeps the confirmed v4 construction unchanged. The displayed 0–100 Market
-    Conditions value is the Raw score's deviation from the PREVIOUS 3780 trading-day
-    mean/std, mapped symmetrically by logistic (50=15Y mean, 75/25=±1σ, 90/10=±2σ).
-    No percentile ranking, VIX input, deterioration penalty, family rebalance or guard.
-    """''',
-label='mri_docstring')
-
-          rep(
-'''    if c.empty:
-        idx = next((d.index for d in macro.values() if hasattr(d, "index") and len(d.index)), pd.DatetimeIndex([pd.Timestamp.today().normalize()]))
-        z = pd.Series(50.0, index=idx, dtype=float)''',
-'''    if c.empty:
-        if "--selftest" not in sys.argv:
-            raise RuntimeError("Market Conditions: 57ETF price frame is empty")
-        idx = next((d.index for d in macro.values() if hasattr(d, "index") and len(d.index)), pd.DatetimeIndex([pd.Timestamp.today().normalize()]))
-        z = pd.Series(50.0, index=idx, dtype=float)''',
-label='empty_fail_closed')
-
-          rep(
-'''    raw = pd.concat([p[k] for k in score_keys], axis=1).mean(axis=1, skipna=True)
-    score = raw.ewm(span=2,adjust=False).mean()
-
-    # Four display-only summaries; their weights match the number of equal metrics.''',
-'''    raw = pd.concat([p[k] for k in score_keys], axis=1).mean(axis=1, skipna=True)
-    raw_score = raw.ewm(span=2,adjust=False).mean()
-    temp, mean15, sd15, z15 = _mc_temperature_from_raw(raw_score)
-    _raw_clean = raw_score.dropna()
-    _latest_idx = _raw_clean.index[-1] if len(_raw_clean) else None
-    _latest_temp = temp.get(_latest_idx, np.nan) if _latest_idx is not None else np.nan
-    if np.isfinite(float(_latest_temp)):
-        score = temp
-    elif "--selftest" in sys.argv:
-        # Offline fixtures intentionally contain only a short history. Rendering still
-        # exercises the unchanged Raw path; dedicated tests below fingerprint MC15 math.
-        score = raw_score
-    else:
-        raise RuntimeError(
-            "Market Conditions: 15Y baseline unavailable at latest session "
-            "(need 3780 prior trading observations; long-history fetch may have failed)")
-
-    # Four display-only summaries; their weights match the number of equal metrics.''',
-label='raw_to_temp')
-
-          rep(
-'''    vals["breadth_level"] = breadth_level; vals["breadth_delta10"] = breadth_delta10
-    vals["mc_coverage"] = coverage
-    for k,v in p.items(): vals[k] = v''',
-'''    vals["breadth_level"] = breadth_level; vals["breadth_delta10"] = breadth_delta10
-    vals["mc_coverage"] = coverage
-    vals["mc_raw"] = raw_score
-    vals["mc_mean15"] = mean15
-    vals["mc_sd15"] = sd15
-    vals["mc_z15"] = z15
-    for k,v in p.items(): vals[k] = v''',
-label='mc15_telemetry')
-
-          rep(
-'''    return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
-                peak=peak, drop=drop, hi20=hi20,
-                breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow,
-                components=components, mc_coverage=mc_coverage)''',
-'''    def _last_num(key):
-        try:
-            _v = float(last.get(key, np.nan))
-            return _v if np.isfinite(_v) else None
-        except Exception:
-            return None
-    recent_mri = {d.strftime("%Y-%m-%d"): float(v) for d, v in clean.tail(260).items()
-                  if np.isfinite(float(v))}
-    return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
-                peak=peak, drop=drop, hi20=hi20,
-                breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow,
-                components=components, mc_coverage=mc_coverage,
-                mc_raw=_last_num("mc_raw"), mc_mean15=_last_num("mc_mean15"),
-                mc_sd15=_last_num("mc_sd15"), mc_z15=_last_num("mc_z15"),
-                recent_mri=recent_mri)''',
-label='aux_mc15')
-
-          # 4) Band labels use today's already-smoothed temperature, not an extra 3-day delay.
-          if s.count('mri_band(aux["hl"])') != 3:
-              raise SystemExit(f'band current-value patch: expected 3, found {s.count(chr(109)+"ri_band(aux[\\\"hl\\\"])")}')
-          s = s.replace('mri_band(aux["hl"])', 'mri_band(aux["cur"])')
-          rep('band_lab = mri_band(hl)[0].replace("（過熱・反落注意⚠）", "")',
-              'band_lab = mri_band(last)[0].replace("（過熱・反落注意⚠）", "")',
-              label='chart_band_current')
-
-          # Keep the five existing background colors; align boundaries/grid with actual bands.
-          rep(
-'''    zones = [(0, 25, "#ef4444"), (25, 40, "#f97316"), (40, 55, "#64748b"),
-             (55, 70, "#22c55e"), (70, 100, "#16a34a")]''',
-'''    zones = [(0, 20, "#ef4444"), (20, 45, "#f97316"), (45, 55, "#64748b"),
-             (55, 80, "#22c55e"), (80, 100, "#16a34a")]''',
-label='chart_zones')
-          rep('for g in (25, 40, 55, 70) if lo <= g <= hi)',
-              'for g in (20, 35, 45, 55, 65, 80) if lo <= g <= hi)',
-              label='chart_grid')
-
-          # 5) Folded MC details: show calibration and audited occupancy without new standalone UI.
-          rep(
-'''    _bd_rows.append('<div class="mgrp">コンテキスト（MC点数には不算入）</div>')''',
-'''    _bd_rows.append('<div class="mgrp">15年基準（最終MCへの変換）</div>')
-    _raw_now, _mu_now, _sd_now, _z_now = (aux.get("mc_raw"), aux.get("mc_mean15"), aux.get("mc_sd15"), aux.get("mc_z15"))
-    try:
-        _cal_ok = all(v is not None and np.isfinite(float(v)) for v in (_raw_now, _mu_now, _sd_now, _z_now))
-    except Exception:
-        _cal_ok = False
-    if _cal_ok:
-        _bd_rows.append(
-            f'<div class="mnote">Raw {float(_raw_now):.1f} → 15年平均 {float(_mu_now):.1f} / σ {float(_sd_now):.1f} '
-            f'→ Z {float(_z_now):+.2f}σ → MC {aux["cur"]:.1f}</div>')
-    else:
-        _bd_rows.append('<div class="mnote">15年基準は長期履歴不足のテスト環境では表示しません。</div>')
-    _op, _ob, _on, _or = MC_OCCUPANCY_LONG
-    _op2, _ob2, _on2, _or2 = MC_OCCUPANCY_50ETF
-    _bd_rows.append(
-        f'<div class="mnote">長期滞在比率（検証値・scoreには不算入）: {_op} Bull(55+) {_ob:.1f}% / '
-        f'Neutral(45–55) {_on:.1f}% / Bear(&lt;45) {_or:.1f}%。'
-        f'{_op2}: Bull {_ob2:.1f}% / Neutral {_on2:.1f}% / Bear {_or2:.1f}%。</div>')
-    _bd_rows.append('<div class="mgrp">コンテキスト（MC点数には不算入）</div>')''',
-label='folded_calibration_context')
-
-          rep(
-'''              + '<div class="mnote">各指標は0–100、12指標を完全等加重。右端は各指標の総合点への寄与。Breadth 10日変化はscore外。もう一度タップで閉じる ▴</div></div>')''',
-'''              + '<div class="mnote">Rawは57ETF×12指標を完全等加重→EMA2。右端は各指標のRawへの寄与。最終MCはRawを直前3780営業日（当日除外）の平均・母標準偏差でZ化し、50=15年平均 / 75=+1σ / 25=−1σ / 90=+2σ / 10=−2σとなるよう0–100へ変換。Breadth 10日変化はscore外。もう一度タップで閉じる ▴</div></div>')''',
-label='folded_note')
-
-          # 6) Recalculate old log MRI rows onto the new scale; all other columns remain byte-equivalent by split/rejoin.
-          rep('def _build_log_csv_content(path, asof_date, color, aux, senti, picks):',
-              'def _build_log_csv_content(path, asof_date, color, aux, senti, picks, mri_history=None):',
-              label='log_signature')
-          rep(
-'''    if os.path.exists(path):
-        rows = [ln for ln in open(path).read().splitlines()
-                if ln and not ln.startswith(today + ",") and not ln.startswith("date,")]
-    line = ",".join([today, color or "",  f"{aux['cur']:.1f}", str(aux["bear_n"]),''',
-'''    if os.path.exists(path):
-        rows = [ln for ln in open(path).read().splitlines()
-                if ln and not ln.startswith(today + ",") and not ln.startswith("date,")]
-    if mri_history is not None and rows:
-        try:
-            _hist = pd.to_numeric(mri_history, errors="coerce").dropna()
-            _hmap = {d.strftime("%Y-%m-%d"): float(v) for d, v in _hist.items() if np.isfinite(float(v))}
-            _migrated = []
-            for _ln in rows:
-                _parts = _ln.split(",", 5)
-                if len(_parts) >= 3 and _parts[0] in _hmap:
-                    _parts[2] = f"{_hmap[_parts[0]]:.1f}"
-                _migrated.append(",".join(_parts))
-            rows = _migrated
-        except Exception as _e:
-            sys.stderr.write("[mc15] daily_log MRI migration skipped: %r\\n" % (repr(_e)[:100],))
-    line = ",".join([today, color or "",  f"{aux['cur']:.1f}", str(aux["bear_n"]),''',
-label='log_migration')
-          rep(
-'''                asof_bar.date(), sar[0], aux, mkt["senti"], picks)''',
-'''                asof_bar.date(), sar[0], aux, mkt["senti"], picks, mri_history=mri)''',
-label='log_migration_call')
-
-          # 7) Changelog/prevday: use recalculated new-scale value for the reference date when available.
-          rep(
-'''    try:
-        dm = float(aux["cur"]) - float(base.get("mri", aux["cur"]))
-        if abs(dm) >= 3:
-            ch.append(f'Market Conditions <b>{base.get("mri"):.0f}→{aux["cur"]:.0f}</b>（{dm:+.0f}）')
-    except Exception:
-        pass''',
-'''    try:
-        _base_mri = base.get("mri", aux["cur"])
-        _recalc_prev = (aux.get("recent_mri") or {}).get(str(base.get("date") or ""))
-        if _recalc_prev is not None and np.isfinite(float(_recalc_prev)):
-            _base_mri = float(_recalc_prev)
-        dm = float(aux["cur"]) - float(_base_mri)
-        if abs(dm) >= 3:
-            ch.append(f'Market Conditions <b>{float(_base_mri):.0f}→{aux["cur"]:.0f}</b>（{dm:+.0f}）')
-    except Exception:
-        pass''',
-label='changelog_scale_migration')
-
-          rep(
-'''    _prevday = _older_summary(_prev_state)
-    # state/log/Webhookはここでは実行しない。selftest成功→両HTML出力成功の後に production_run のときだけcommitする。''',
-'''    _prevday = _older_summary(_prev_state)
-    if isinstance(_prevday, dict) and _prevday.get("date"):
-        try:
-            _recalc_pd = (aux.get("recent_mri") or {}).get(str(_prevday.get("date")))
-            if _recalc_pd is not None and np.isfinite(float(_recalc_pd)):
-                _prevday = dict(_prevday)
-                _prevday["mri"] = round(float(_recalc_pd), 1)
-        except Exception:
-            pass
-    # state/log/Webhookはここでは実行しない。selftest成功→両HTML出力成功の後に production_run のときだけcommitする。''',
-label='prevday_scale_migration')
-
-          path.write_text(s, encoding='utf-8')
-
-          # Add regression tests for the new normalization contract without altering unrelated tests.
-          tp = Path('tests/test_dashboard_build_regressions.py')
-          ts = tp.read_text(encoding='utf-8')
-          marker = 'def test_market_condition_15y_temperature_contract():'
-          if marker not in ts:
-              ts += '''\n\n\ndef test_market_condition_15y_temperature_contract():\n    z = pd.Series([-2.0, -1.0, 0.0, 1.0, 2.0])\n    got = dashboard._mc_z_to_temperature(z).to_numpy()\n    assert np.allclose(got, [10.0, 25.0, 50.0, 75.0, 90.0])\n    assert dashboard.MC_BASELINE_BARS == 252 * 15\n\n    # Current observation must not enter its own reference window.\n    raw = pd.Series(np.arange(dashboard.MC_BASELINE_BARS + 2, dtype=float))\n    temp, mean15, sd15, z15 = dashboard._mc_temperature_from_raw(raw)\n    i = dashboard.MC_BASELINE_BARS\n    expected_base = raw.iloc[:i]\n    assert np.isclose(mean15.iloc[i], expected_base.mean())\n    assert np.isclose(sd15.iloc[i], expected_base.std(ddof=0))\n    assert np.isclose(z15.iloc[i], (raw.iloc[i] - expected_base.mean()) / expected_base.std(ddof=0))\n    assert np.isfinite(temp.iloc[i])\n\n\ndef test_market_condition_fold_contains_occupancy_context():\n    source = Path(dashboard.__file__).read_text(encoding="utf-8")\n    assert "長期滞在比率（検証値・scoreには不算入）" in source\n    assert "右端は各指標のRawへの寄与" in source\n    assert "mri_band(aux[\\\"cur\\\"])" in source\n'''
-              tp.write_text(ts, encoding='utf-8')
-          PY
-
           git diff --check
-          git diff --stat
-
-      - name: Compile and regression tests
-        run: |
-          set -euo pipefail
           python -m py_compile build_dashboard.py
-          pytest -q tests/test_dashboard_build_regressions.py \
-            tests/test_options_positioning_quality.py \
-            tests/test_eps_acceleration.py
-
-      - name: Live MC15 smoke test
-        shell: bash
+          git diff --stat
+      - name: Regression tests
         run: |
-          set -euo pipefail
+          pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
+      - name: Live MC15 smoke test
+        run: |
           python - <<'PY'
           import numpy as np
+          import pandas as pd
           import build_dashboard as b
-          long = b._fetch_mc_long_history({})
+          asof = pd.Timestamp('2026-08-24')
+          long = b._fetch_mc_long_history(asof=asof)
           if len(long) < 50:
               raise SystemExit(f'MC15 live history coverage too low: {len(long)}/57')
           mri, breakdown, dropped, active, vals = b.mri_frame(long)
-          cur = float(mri.dropna().iloc[-1])
-          last = vals.reindex(mri.dropna().index).iloc[-1]
-          raw = float(last['mc_raw']); mu = float(last['mc_mean15']); sd = float(last['mc_sd15']); z = float(last['mc_z15'])
+          clean = mri.dropna()
+          cur = float(clean.iloc[-1])
+          last = vals.reindex(clean.index).iloc[-1]
+          raw = float(last['mc_raw'])
+          mu = float(last['mc_mean15'])
+          sd = float(last['mc_sd15'])
+          z = float(last['mc_z15'])
           if not all(np.isfinite(x) for x in (cur, raw, mu, sd, z)):
               raise SystemExit('MC15 produced non-finite latest values')
-          if not (0.0 < cur < 100.0 and sd > 0):
+          if not (0 < cur < 100 and sd > 0):
               raise SystemExit(f'MC15 invalid range: cur={cur} sd={sd}')
-          print(f'MC15_SMOKE current={cur:.2f} raw={raw:.2f} mean15={mu:.2f} sd15={sd:.2f} z={z:+.3f} coverage={len(long)}/57')
+          if not (54 <= cur <= 62 and 67 <= raw <= 74):
+              raise SystemExit(f'MC15 2026-08-24 regression drift: cur={cur:.2f} raw={raw:.2f}')
+          print(f'MC15_SMOKE asof={clean.index[-1].date()} current={cur:.2f} raw={raw:.2f} mean15={mu:.2f} sd15={sd:.2f} z={z:+.3f} coverage={len(long)}/57')
           PY
-
       - name: Commit tested implementation
-        shell: bash
         run: |
-          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add build_dashboard.py tests/test_dashboard_build_regressions.py
