@@ -39,7 +39,7 @@ jobs:
           s = s[:pos] + insert + s[pos:]
           p.write_text(s, encoding='utf-8')
           PY
-      - name: Syntax and undefined-name check for touched region
+      - name: Syntax and touched-region check
         run: |
           python -m py_compile build_dashboard.py
           python - <<'PY'
@@ -53,10 +53,13 @@ jobs:
           assert 'for lab in _boff' in region
           print('MC detail locals OK')
           PY
-      - name: Existing tests
+      - name: Production-equivalent preflight tests
         run: |
           python -m pip install -q -r requirements.txt pytest
-          python -m pytest -q
+          python -m pytest -q \
+            tests/test_dashboard_build_regressions.py \
+            tests/test_options_positioning_quality.py \
+            tests/test_eps_acceleration.py
       - name: Commit only build_dashboard.py
         run: |
           git config user.name 'github-actions[bot]'
