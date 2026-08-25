@@ -1,0 +1,47 @@
+name: V38 FAT FIRE backtest
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/fatfire_backtest/**'
+      - '.github/workflows/fatfire-backtest.yml'
+  push:
+    branches: ['research/v38-fatfire-backtest']
+    paths:
+      - 'research/fatfire_backtest/**'
+      - '.github/workflows/fatfire-backtest.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: research/fatfire_backtest/requirements.txt
+      - name: Install dependencies
+        run: pip install -r research/fatfire_backtest/requirements.txt
+      - name: Unit tests
+        run: pytest -q research/fatfire_backtest/test_backtest.py
+      - name: Run 2011-2025 backtest
+        run: python research/fatfire_backtest/backtest.py --out research/fatfire_backtest/output
+      - name: Show summary
+        run: cat research/fatfire_backtest/output/summary.json
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: v38-fatfire-backtest-results
+          path: |
+            research/fatfire_backtest/output/summary.json
+            research/fatfire_backtest/output/yearly.csv
+            research/fatfire_backtest/output/equity.csv
+            research/fatfire_backtest/output/regimes.csv
+          retention-days: 30
