@@ -17,23 +17,14 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
-      - name: Print MC long-history fetch targets
+      - name: Print final MC15 patch targets
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
           lines=Path('build_dashboard.py').read_text(encoding='utf-8',errors='replace').splitlines()
-          pats=['def fetch_live(', 'MC_MARKET_TICKERS', '_mc_frame_from_macro', 'mri_frame(macro', 'mri, breakdown', 'period=', 'start=']
-          hits=[]
-          for i,line in enumerate(lines,1):
-              if any(p in line for p in pats): hits.append(i)
-          spans=[]
-          for i in hits:
-              a=max(1,i-25); b=min(len(lines),i+80)
-              if spans and a<=spans[-1][1]+1: spans[-1]=(spans[-1][0],max(spans[-1][1],b))
-              else: spans.append((a,b))
-          for a,b in spans:
+          for a,b in [(590,665),(1565,1625),(1875,1975),(3650,3908),(20770,20838)]:
               print(f'\n=== {a}-{b} ===')
-              for n in range(a,b+1): print(f'{n}: {lines[n-1]}')
+              for n in range(a,min(b,len(lines))+1): print(f'{n}: {lines[n-1]}')
           PY
