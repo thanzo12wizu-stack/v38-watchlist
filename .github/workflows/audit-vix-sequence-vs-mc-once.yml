@@ -1,0 +1,79 @@
+name: One-off audit VIX sequence vs MC
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-vix-sequence-vs-mc-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: Audit current VIX sequence implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('build_dashboard.py')
+          txt=p.read_text(encoding='utf-8', errors='replace').splitlines()
+          keys=('vix','sequence','seq','shock','peak','ftd','bottom','follow-through','follow through')
+          hits=[]
+          for i,line in enumerate(txt,1):
+              low=line.lower()
+              if any(k in low for k in keys):
+                  hits.append(i)
+          print('=== HIT_COUNT ===',len(hits))
+          # merge nearby hits into context blocks
+          blocks=[]
+          for i in hits:
+              a=max(1,i-4); b=min(len(txt),i+8)
+              if blocks and a<=blocks[-1][1]+2:
+                  blocks[-1]=(blocks[-1][0],max(blocks[-1][1],b))
+              else:
+                  blocks.append((a,b))
+          # Keep blocks with explicit vix/sequence/state logic, plus render labels that reveal semantics.
+          shown=0
+          for a,b in blocks:
+              seg='\n'.join(txt[a-1:b])
+              low=seg.lower()
+              if ('vix' in low and any(k in low for k in ('sequence','seq','shock','peak','state','ftd','bottom','signal','phase'))) or ('ftd' in low and 'vix' in low):
+                  print(f'\n=== LINES {a}-{b} ===')
+                  for n in range(a,b+1): print(f'{n}: {txt[n-1]}')
+                  shown += 1
+          print('=== BLOCKS_SHOWN ===',shown)
+          PY
+
+      - name: Audit persisted current sequence fields
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          for f in ['state.json','trend_history.json','command-center.html']:
+              p=Path(f)
+              if not p.exists(): continue
+              print('\n=== FILE',f,'===')
+              if f.endswith('.json'):
+                  try:
+                      obj=json.loads(p.read_text(encoding='utf-8'))
+                      s=json.dumps(obj,ensure_ascii=False)
+                      for key in ['vix','sequence','shock','peak','ftd','bottom']:
+                          if key in s.lower(): print('contains',key)
+                  except Exception as e: print('json_error',e)
+              else:
+                  lines=p.read_text(encoding='utf-8',errors='replace').splitlines()
+                  for i,line in enumerate(lines,1):
+                      low=line.lower()
+                      if 'vix' in low and any(k in low for k in ('sequence','shock','peak','ftd','bottom','phase')):
+                          print(f'{i}: {line[:600]}')
+          PY
