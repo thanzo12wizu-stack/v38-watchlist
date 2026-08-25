@@ -1,0 +1,37 @@
+name: Market Conditions 2022 report
+
+on:
+  push:
+    branches:
+      - analysis-market-conditions-deterioration-20260825
+    paths:
+      - tools/market_conditions_2022_report.py
+      - .github/workflows/market-conditions-2022-report.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: analysis-market-conditions-deterioration-20260825
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy yfinance
+      - run: python tools/market_conditions_2022_report.py
+      - name: Persist results
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market_conditions_2022_report.json
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Persist 2022 Market Conditions report"
+          git push origin HEAD:analysis-market-conditions-deterioration-20260825
