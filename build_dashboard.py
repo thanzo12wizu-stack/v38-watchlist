@@ -10650,7 +10650,7 @@ RRG_THEMES = [("SMH","半導体"),("SOXX","半導体装置"),("DTCR","データ�
               ("GDX","金鉱"),("XME","金属"),("URA","ウラン"),
               ("ITA","防衛"),("PAVE","インフラ"),("IYT","運輸")]
 
-def load_market_extras(period="9mo", asof_date=None):
+def load_market_extras(period="2y", asof_date=None):
     """小分類テーマETF + QQQE + ^VIX6M をライブ取得（macroキャッシュとは独立・失敗時は空dict）。
        返り値: {ticker: Close系列}。--selftest(オフライン)時はネット取得せず空dictを返す。
        #7 asof_date指定時は取得系列を index<=asof で切り、過去as-of分析に現在のライブ値を混ぜない。"""
@@ -10683,8 +10683,39 @@ def load_market_extras(period="9mo", asof_date=None):
         sys.stderr.write(f"[extras] fetch failed: {e}\n")
     return out
 
+def _sector_health_series(c):
+    """Per-ETF absolute health using the same 12 equal-weight components as Market Conditions v4."""
+    c = pd.to_numeric(c, errors="coerce").dropna().sort_index()
+    if c.empty:
+        return pd.Series(dtype=float)
+    ma10 = c.rolling(10).mean(); ma20 = c.rolling(20).mean()
+    ma50 = c.rolling(50).mean(); ma200 = c.rolling(200).mean()
+    p = {}
+    def _bool100(cond, valid):
+        return cond.where(valid).astype(float) * 100.0
+    p["ret5"] = _bool100(c/c.shift(5)-1 > 0, c.shift(5).notna() & c.notna())
+    p["ret21"] = _bool100(c/c.shift(21)-1 > 0, c.shift(21).notna() & c.notna())
+    p["ret63"] = _bool100(c/c.shift(63)-1 > 0, c.shift(63).notna() & c.notna())
+    p["ret252"] = _bool100(c/c.shift(252)-1 > 0, c.shift(252).notna() & c.notna())
+    p["above10"] = _bool100(c > ma10, ma10.notna() & c.notna())
+    p["above20"] = _bool100(c > ma20, ma20.notna() & c.notna())
+    p["above50"] = _bool100(c > ma50, ma50.notna() & c.notna())
+    p["above200"] = _bool100(c > ma200, ma200.notna() & c.notna())
+    p["ma20_gt_50"] = _bool100(ma20 > ma50, ma20.notna() & ma50.notna())
+    p["ma50_gt_200"] = _bool100(ma50 > ma200, ma50.notna() & ma200.notna())
+    hi252 = c.rolling(252, min_periods=200).max()
+    dd = c / hi252 - 1.0
+    p["dd_score"] = ((dd + 0.30) / 0.25 * 100.0).clip(0.0, 100.0)
+    p["within10"] = _bool100(dd >= -0.10, dd.notna())
+    keys = ("ret5","ret21","ret63","ret252",
+            "above10","above20","above50","above200",
+            "ma20_gt_50","ma50_gt_200","dd_score","within10")
+    raw = pd.concat([p[k] for k in keys], axis=1).mean(axis=1, skipna=True)
+    return raw.ewm(span=2, adjust=False).mean()
+
+
 def _rank_etfs(close_dict, etf_list, minbars=22):
-    """{tk: Close系列} と [(tk,ja)] から d1/w1/m1 と 63/126/189日リターンを計算した recs を返す。"""
+    """{tk: Close系列} と [(tk,ja)] から d1/w1/m1・中長期リターン・Sector Healthを計算。"""
     recs = []
     for tk, ja in etf_list:
         c = close_dict.get(tk)
@@ -10696,8 +10727,12 @@ def _rank_etfs(close_dict, etf_list, minbars=22):
         last = float(c.iloc[-1])
         def r(d):
             return (last/float(c.iloc[-d-1]) - 1) if len(c) > d else np.nan
+        hs = _sector_health_series(c)
+        hv = float(hs.iloc[-1]) if len(hs) and np.isfinite(float(hs.iloc[-1])) else np.nan
+        h10 = float(hs.iloc[-11]) if len(hs) > 10 and np.isfinite(float(hs.iloc[-11])) else np.nan
         recs.append(dict(tk=tk, ja=ja, d1=r(1), w1=r(5), m1=r(21),
-                         ret63=r(63), ret126=r(126), ret189=r(189)))
+                         ret63=r(63), ret126=r(126), ret189=r(189),
+                         health=hv, health_d10=(hv-h10 if np.isfinite(hv) and np.isfinite(h10) else np.nan)))
     return recs
 
 def build_sector_ranks(macro, extras):
@@ -18230,12 +18265,22 @@ def _sec_rows(recs, tf, topbottom=False):
         for k in ("d1", "w1", "m1"):
             hl = " hl" if k == tf else ""
             cells += f'<td class="{color_pct(s[k])}{hl}">{fmt_pct(s[k])}</td>'
+        hv = s.get("health", np.nan)
+        dv = s.get("health_d10", np.nan)
+        hok = hv is not None and np.isfinite(float(hv))
+        dok = dv is not None and np.isfinite(float(dv))
+        hcls = ("pos" if float(hv) >= 65 else ("neg" if float(hv) < 45 else "mut")) if hok else "mut"
+        dcls = ("pos" if float(dv) >= 2 else ("neg" if float(dv) <= -2 else "mut")) if dok else "mut"
+        htxt = f'{float(hv):.0f}' if hok else '—'
+        dtxt = f'{float(dv):+.0f}' if dok else '—'
         return (f'<tr><td class="l mut">{i}</td>'
                 f'<td class="l tk" style="font-size:12px">{_h(s["ja"])}'
-                f'<span class="mut" style="font-size:10px"> {s["tk"]}</span></td>{cells}</tr>')
+                f'<span class="mut" style="font-size:10px"> {s["tk"]}</span></td>{cells}'
+                f'<td class="{hcls}" title="Market Conditionsと同型の12指標等加重・0〜100">{htxt}</td>'
+                f'<td class="{dcls}" title="Sector Healthの10営業日前比">{dtxt}</td></tr>')
     if topbottom and len(rs) > 10:
         top, bot = rs[:5], rs[-5:]
-        h = lambda lab: f'<tr class="secsub"><td colspan="5" class="l">{lab}</td></tr>'
+        h = lambda lab: f'<tr class="secsub"><td colspan="7" class="l">{lab}</td></tr>'
         return (h("強い") + "".join(row(i + 1, s) for i, s in enumerate(top))
                 + h("弱い") + "".join(row(len(rs) - 4 + i, s) for i, s in enumerate(bot)))
     return "".join(row(i + 1, s) for i, s in enumerate(rs))
@@ -18296,11 +18341,11 @@ def _sector_rank_card(ranks):
         for tf in ("d1", "w1", "m1"):
             disp = "" if (grp == "macro" and tf == "d1") else "display:none"
             head = ('<table><tr><th class="l">#</th><th class="l">セクター</th>'
-                    '<th>日</th><th>週</th><th>月</th></tr>')
+                    '<th>日</th><th>週</th><th>月</th><th>Health</th><th>10日Δ</th></tr>')
             tbls += (f'<div class="sectbl" id="sec-{grp}-{tf}" style="{disp}">'
                      f'{head}{_sec_rows(recs, tf, tb)}</table></div>')
     return (f'<div class="card"><h2>セクターETF強弱</h2>'
-            f'<div class="sub">S&amp;P500の11セクターETFと業種テーマETFの騰落率（下のサブテーマ別RSは個別株のRS中央値・別物）</div>'
+            f'<div class="sub">S&amp;P500の11セクターETFと業種テーマETFの騰落率。Health＝Market Conditionsと同型12指標の等加重・絶対健全度（0〜100）、10日Δ＝10営業日前比。（下のサブテーマ別RSは個別株のRS中央値・別物）</div>'
             f'<div class="sectog">'
             f'<button class="stg-g active" onclick="secG(\'macro\',this)">大分類</button>'
             f'<button class="stg-g" onclick="secG(\'micro\',this)">小分類</button>'
