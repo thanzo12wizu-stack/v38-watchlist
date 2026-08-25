@@ -17,19 +17,14 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
-      - name: Print exact MC15 migration blocks
+      - name: Print MC state migration targets
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
           lines=Path('build_dashboard.py').read_text(encoding='utf-8',errors='replace').splitlines()
-          ranges=[(650,850),(1360,1570),(1620,1690),(3728,3905),(12660,12755),(18180,18230),(18770,18910),(20880,21190)]
-          for a,b in ranges:
+          for a,b in [(5000,5385),(8260,8310),(21290,21345)]:
               print(f'\n=== {a}-{b} ===')
               for n in range(a,min(b,len(lines))+1): print(f'{n}: {lines[n-1]}')
-          print('\n=== SYMBOL HITS ===')
-          keys=['def _summ','def _sanitize_state','def build_changelog','mri_band(aux[','mri_band(hl','aux["hl"]','aux.get("hl"','mri_prev','mri_d','daily_log','LOG_CSV']
-          for i,line in enumerate(lines,1):
-              if any(k in line for k in keys): print(f'{i}: {line}')
           PY
