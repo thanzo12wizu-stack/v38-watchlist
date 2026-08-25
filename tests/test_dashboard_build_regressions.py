@@ -186,6 +186,32 @@ def test_market_condition_15y_temperature_contract():
 
 def test_market_condition_fold_contains_occupancy_context():
     source = Path(dashboard.__file__).read_text(encoding="utf-8")
-    assert "長期滞在比率（検証値・scoreには不算入）" in source
+    assert "長期滞在比率（本番MC15履歴から毎回再計算・scoreには不算入）" in source
     assert "右端は各指標のRawへの寄与" in source
     assert 'mri_band(aux["cur"])' in source
+
+
+
+def test_market_condition_history_is_recomputed_from_production_series():
+    assert dashboard.MC_LONG_HISTORY_START <= "1993-01-01"
+    assert dashboard.MC_HISTORY_DISPLAY_START == "2008-01-01"
+    idx = pd.to_datetime([
+        "2008-01-02", "2012-01-03", "2013-01-02", "2014-01-02", "2015-01-02"
+    ])
+    mri = pd.Series([60.0, 50.0, 40.0, 70.0, 30.0], index=idx)
+    coverage = pd.Series([100.0, 100.0, 100.0, 90.0, 80.0], index=idx)
+    occ = dashboard._mc_occupancy_stats(mri, coverage)
+
+    assert occ["long"]["n"] == 5
+    assert np.isclose(occ["long"]["bull"], 40.0)
+    assert np.isclose(occ["long"]["neutral"], 20.0)
+    assert np.isclose(occ["long"]["bear"], 40.0)
+    assert occ["coverage50"]["n"] == 2
+    assert np.isclose(occ["coverage50"]["bull"], 50.0)
+    assert np.isclose(occ["coverage50"]["bear"], 50.0)
+
+    source = Path(dashboard.__file__).read_text(encoding="utf-8")
+    assert "MC_OCCUPANCY_LONG" not in source
+    assert "MC_OCCUPANCY_50ETF" not in source
+    assert "mri.iloc[-CHART_LB:].items()" not in source
+    assert "本番MC15履歴から毎回再計算" in source

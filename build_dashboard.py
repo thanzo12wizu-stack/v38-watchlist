@@ -1594,11 +1594,10 @@ MC_INDUSTRY_ETFS = [t for _xs in MC_INDUSTRY_PARENT.values() for t in _xs]
 MC_MARKET_TICKERS = list(dict.fromkeys(MC_BROAD_ETFS + MC_SECTOR_ETFS + MC_INDUSTRY_ETFS))
 assert len(MC_MARKET_TICKERS) == 57
 MC_BASELINE_BARS = 252 * 15
-MC_LONG_LOOKBACK_YEARS = 21
-# Historical occupancy is display-only context from the audited MC15 series.
-# It is NEVER an input to the score.
-MC_OCCUPANCY_LONG = ("2008–2026", 52.4, 11.9, 35.6)
-MC_OCCUPANCY_50ETF = ("2013–2026・50ETF以上", 57.1, 12.4, 30.5)
+# SPY begins in 1993. Starting the dedicated MC history in 1992 gives the
+# 2008 MC15 series a full 3780-session prior baseline without future data.
+MC_LONG_HISTORY_START = "1992-01-01"
+MC_HISTORY_DISPLAY_START = "2008-01-01"
 MACRO_TICKERS = list(dict.fromkeys(MACRO_TICKERS + MC_MARKET_TICKERS))
 
 def _extract(df, tickers, minbars=30):
@@ -3693,10 +3692,10 @@ def _fetch_mc_long_history(asof=None):
         except TypeError:
             _end_ts = _end_ts.tz_convert(None)
         _end_ts = _end_ts.normalize()
-        _start = (_end_ts - pd.DateOffset(years=MC_LONG_LOOKBACK_YEARS)).strftime("%Y-%m-%d")
+        _start = MC_LONG_HISTORY_START
         _end = (_end_ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d") if asof is not None else None
     except Exception:
-        _start, _end, _end_ts = "2005-01-01", None, None
+        _start, _end, _end_ts = MC_LONG_HISTORY_START, None, None
 
     out = {}
     try:
@@ -3834,6 +3833,60 @@ def _mc_temperature_from_raw(raw_score):
     sd15 = base.rolling(MC_BASELINE_BARS, min_periods=MC_BASELINE_BARS).std(ddof=0)
     z15 = (rs - mean15) / sd15.replace(0.0, np.nan)
     return _mc_z_to_temperature(z15), mean15, sd15, z15
+
+
+def _mc_occupancy_stats(mri, coverage=None):
+    """Display-only Bull/Neutral/Bear occupancy from the live MC15 series."""
+    s = pd.to_numeric(mri, errors="coerce").dropna()
+    if s.empty:
+        return {"long": None, "coverage50": None}
+    idx = pd.DatetimeIndex(pd.to_datetime(s.index))
+    if idx.tz is not None:
+        idx = idx.tz_convert(None)
+    s = s.copy()
+    s.index = idx
+    last_year = int(s.index.max().year)
+
+    def _pack(sub, label):
+        sub = pd.to_numeric(sub, errors="coerce").dropna()
+        if sub.empty:
+            return {"label": label, "n": 0, "bull": None, "neutral": None, "bear": None}
+        return {
+            "label": label,
+            "n": int(len(sub)),
+            "bull": float((sub >= 55.0).mean() * 100.0),
+            "neutral": float(((sub >= 45.0) & (sub < 55.0)).mean() * 100.0),
+            "bear": float((sub < 45.0).mean() * 100.0),
+        }
+
+    long = s[s.index >= pd.Timestamp(MC_HISTORY_DISPLAY_START)]
+    long_stats = _pack(long, f"2008–{last_year}")
+
+    cov_stats = None
+    if coverage is not None:
+        cov = pd.to_numeric(coverage, errors="coerce")
+        if isinstance(cov, pd.Series):
+            cidx = pd.DatetimeIndex(pd.to_datetime(cov.index))
+            if cidx.tz is not None:
+                cidx = cidx.tz_convert(None)
+            cov = cov.copy()
+            cov.index = cidx
+            cov = cov.reindex(s.index)
+            min_cov = 100.0 * 50.0 / float(len(MC_MARKET_TICKERS))
+            use = (
+                (s.index >= pd.Timestamp("2013-01-01"))
+                & (cov >= min_cov).fillna(False).to_numpy()
+            )
+            cov_stats = _pack(s[use], f"2013–{last_year}・50ETF以上")
+    if cov_stats is None:
+        cov_stats = {
+            "label": f"2013–{last_year}・50ETF以上",
+            "n": 0,
+            "bull": None,
+            "neutral": None,
+            "bear": None,
+        }
+    return {"long": long_stats, "coverage50": cov_stats}
 
 
 def mri_frame(macro, W=None):
@@ -4037,13 +4090,15 @@ def mri_auxiliary(mri, vals, metrics):
         d.strftime("%Y-%m-%d"): float(v)
         for d, v in clean.tail(260).items() if np.isfinite(float(v))
     }
+    _coverage_hist = vals["mc_coverage"] if isinstance(vals, pd.DataFrame) and "mc_coverage" in vals.columns else None
+    mc_occupancy = _mc_occupancy_stats(mri, _coverage_hist)
     return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
                 peak=peak, drop=drop, hi20=hi20,
                 breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow,
                 components=components, mc_coverage=mc_coverage,
                 mc_raw=_last_num("mc_raw"), mc_mean15=_last_num("mc_mean15"),
                 mc_sd15=_last_num("mc_sd15"), mc_z15=_last_num("mc_z15"),
-                recent_mri=recent_mri)
+                recent_mri=recent_mri, mc_occupancy=mc_occupancy)
 
 
 def mri_band(v):
@@ -19017,13 +19072,19 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
         )
     else:
         _bd_rows.append('<div class="mnote">15年基準は長期履歴不足のテスト環境では表示しません。</div>')
-    _op, _ob, _on, _or = MC_OCCUPANCY_LONG
-    _op2, _ob2, _on2, _or2 = MC_OCCUPANCY_50ETF
-    _bd_rows.append(
-        f'<div class="mnote">長期滞在比率（検証値・scoreには不算入）: {_op} Bull(55+) {_ob:.1f}% / '
-        f'Neutral(45–55) {_on:.1f}% / Bear(&lt;45) {_or:.1f}%。'
-        f'{_op2}: Bull {_ob2:.1f}% / Neutral {_on2:.1f}% / Bear {_or2:.1f}%。</div>'
-    )
+    _occ = aux.get("mc_occupancy") or {}
+    _ol = _occ.get("long") or {}
+    _oc = _occ.get("coverage50") or {}
+    if _ol.get("n") and _oc.get("n"):
+        _bd_rows.append(
+            f'<div class="mnote">長期滞在比率（本番MC15履歴から毎回再計算・scoreには不算入）: '
+            f'{_ol.get("label")} Bull(55+) {float(_ol.get("bull")):.1f}% / '
+            f'Neutral(45–55) {float(_ol.get("neutral")):.1f}% / Bear(&lt;45) {float(_ol.get("bear")):.1f}%。'
+            f'{_oc.get("label")}: Bull {float(_oc.get("bull")):.1f}% / '
+            f'Neutral {float(_oc.get("neutral")):.1f}% / Bear {float(_oc.get("bear")):.1f}%。</div>'
+        )
+    else:
+        _bd_rows.append('<div class="mnote">長期滞在比率は本番MC15履歴から算出できた場合のみ表示します。</div>')
     _bd_rows.append('<div class="mgrp">コンテキスト（MC点数には不算入）</div>')
     _cov = aux.get("mc_coverage", np.nan)
     try:
@@ -21097,7 +21158,7 @@ def main():
            "trend_prev": _tprev,
            "trend_hist": _thist,
            "asof_bar": asof_bar,
-           "mri_ts": [(d.strftime("%Y-%m-%d"), float(v)) for d, v in mri.iloc[-CHART_LB:].items()],
+           "mri_ts": [(d.strftime("%Y-%m-%d"), float(v)) for d, v in mri.loc[mri.index >= pd.Timestamp(MC_HISTORY_DISPLAY_START)].dropna().items()],
            "leader_temp": _scard("leader_temp", build_leader_temp, W),
            "leader_run": _scard("leader_run", build_leader_run, m),
            "leader_breadth": _scard("leader_breadth", build_leader_breadth, m, macro),
