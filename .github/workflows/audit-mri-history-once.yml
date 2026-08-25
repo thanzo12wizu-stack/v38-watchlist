@@ -1,0 +1,51 @@
+name: One-off audit MRI history calculation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-mri-history-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Trace MRI calculation and history wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import ast, re
+          s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          lines = s.splitlines()
+          tree = ast.parse(s)
+          print('=== MRI_FRAME_SOURCE ===')
+          for node in ast.walk(tree):
+              if isinstance(node, ast.FunctionDef) and node.name == 'mri_frame':
+                  print('\n'.join(lines[node.lineno-1:node.end_lineno]))
+                  break
+          print('=== MRI_FRAME_CALL_SITES ===')
+          for i, line in enumerate(lines, 1):
+              if 'mri_frame(' in line and not line.lstrip().startswith('def mri_frame'):
+                  print(f'--- around line {i} ---')
+                  for j in range(max(1,i-8), min(len(lines),i+12)+1):
+                      print(f'{j}: {lines[j-1]}')
+          print('=== HISTORY_RELATED_SOURCE_MATCHES ===')
+          pats = [r'mri.*hist', r'hist.*mri', r'market.*hist', r'hist.*market', r'mri_series', r'mriSeries', r'mri_score', r'health_hist']
+          for i,line in enumerate(lines,1):
+              if any(re.search(pat,line,re.I) for pat in pats):
+                  print(f'{i}: {line[:500]}')
+          html = Path('command-center.html').read_text(encoding='utf-8', errors='ignore')
+          print('=== GENERATED_HTML_MRI_HISTORY_TOKENS ===')
+          for pat in [r'mri[^\n]{0,120}hist', r'hist[^\n]{0,120}mri', r'mriSeries[^\n]{0,300}', r'mri_history[^\n]{0,300}']:
+              ms=list(re.finditer(pat, html, re.I))
+              print(f'PATTERN {pat!r}: {len(ms)} matches')
+              for m in ms[:8]:
+                  print(html[max(0,m.start()-200):min(len(html),m.end()+300)].replace('\n',' ')[:900])
+          PY
