@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/implement-mc15-once.yml'
       - '.github/scripts/implement_mc15_once.py'
+      - '.github/scripts/fix_mc15_patch_escape_once.py'
 
 permissions:
   contents: write
@@ -24,7 +25,9 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Prepare narrow MC15 patch
-        run: python .github/scripts/implement_mc15_once.py
+        run: |
+          python .github/scripts/fix_mc15_patch_escape_once.py
+          python .github/scripts/implement_mc15_once.py
       - name: Static checks
         run: |
           git diff --check
