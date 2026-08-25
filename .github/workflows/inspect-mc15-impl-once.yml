@@ -1,0 +1,52 @@
+name: One-off inspect MC15 implementation targets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-mc15-impl-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: Print exact MC implementation targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('build_dashboard.py')
+          lines=p.read_text(encoding='utf-8',errors='replace').splitlines()
+          pats=[
+            'def fetch_live(', 'def mri_frame(', 'def mri_auxiliary(', 'def mri_band(',
+            'def _svg_mri(', 'Market Conditions', 'mc_coverage', 'mri_ts',
+            '_pending_state = dict(', 'mri_prev', 'mri_d', 'prevday', 'cxpl', 'mpts'
+          ]
+          hits=[]
+          for i,line in enumerate(lines,1):
+              if any(x in line for x in pats):
+                  hits.append(i)
+          # Merge nearby windows, print enough context around every relevant hit.
+          spans=[]
+          for i in hits:
+              a=max(1,i-18); b=min(len(lines),i+35)
+              if spans and a <= spans[-1][1]+1:
+                  spans[-1]=(spans[-1][0],max(spans[-1][1],b))
+              else:
+                  spans.append((a,b))
+          for a,b in spans:
+              print(f'\n=== {a}-{b} ===')
+              for n in range(a,b+1):
+                  print(f'{n}: {lines[n-1]}')
+          print('\n=== EXACT FETCH LIVE BLOCK 1880-ish ===')
+          for n in range(1860,2040):
+              if n <= len(lines): print(f'{n}: {lines[n-1]}')
+          PY
