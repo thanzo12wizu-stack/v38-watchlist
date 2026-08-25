@@ -4,25 +4,34 @@ on:
     branches: [analysis-sector-health-20260825]
 jobs:
   inspect:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
-      - name: Print integration snippets
+        with:
+          ref: analysis-sector-health-20260825
+      - name: Capture integration snippets
         run: |
           python - <<'PY'
           from pathlib import Path
-          p=Path('build_dashboard.py')
-          lines=p.read_text(encoding='utf-8').splitlines()
-          needles=['def _sector_rank_card','sector_ranks','rrg_etf','etf_hier','def mri_frame','MC_INDUSTRY_PARENT','def _rrg_card','sector =','sector_ranks=']
-          seen=set()
+          lines=Path('build_dashboard.py').read_text(encoding='utf-8').splitlines()
+          needles=['def _sector_rank_card','def _rrg_card','def mri_frame','MC_INDUSTRY_PARENT','sector_ranks','rrg_sector','rrg_etf','etf_hier','return pd.DataFrame','breadth_delta10']
+          blocks=[]; seen=[]
           for needle in needles:
               hits=[i for i,s in enumerate(lines) if needle in s]
-              print(f'=== {needle} hits={len(hits)} ===')
-              for i in hits[:12]:
-                  a=max(0,i-35); b=min(len(lines),i+80)
-                  key=(a,b)
-                  if key in seen: continue
-                  seen.add(key)
-                  print(f'--- lines {a+1}-{b} ---')
-                  for j in range(a,b): print(f'{j+1:06d}: {lines[j]}')
+              blocks.append(f'=== {needle} hits={len(hits)} ===')
+              for i in hits[:10]:
+                  a=max(0,i-45); b=min(len(lines),i+110)
+                  if any(abs(a-x)<20 for x,_ in seen): continue
+                  seen.append((a,b))
+                  blocks.append(f'--- lines {a+1}-{b} ---')
+                  blocks.extend(f'{j+1:06d}: {lines[j]}' for j in range(a,b))
+          Path('tmp_sector_health_snippets.txt').write_text('\n'.join(blocks), encoding='utf-8')
           PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tmp_sector_health_snippets.txt
+          git commit -m 'Capture sector health integration snippets'
+          git push origin HEAD:analysis-sector-health-20260825
