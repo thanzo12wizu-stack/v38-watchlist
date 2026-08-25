@@ -17,13 +17,13 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           lines=Path('build_dashboard.py').read_text(encoding='utf-8').splitlines()
-          needles=['def _sector_rank_card','def _rrg_card','def mri_frame','MC_INDUSTRY_PARENT','sector_ranks','rrg_sector','rrg_etf','etf_hier','return pd.DataFrame','breadth_delta10']
+          needles=['def _sector_rank_card','_sec_rows','def _rank_etfs','def build_sector_ranks','SECTOR_ETFS','MICRO_ETFS','def _rrg_card','def mri_frame','MC_INDUSTRY_PARENT','sector_ranks','rrg_etf','breadth_delta10']
           blocks=[]; seen=[]
           for needle in needles:
               hits=[i for i,s in enumerate(lines) if needle in s]
               blocks.append(f'=== {needle} hits={len(hits)} ===')
-              for i in hits[:10]:
-                  a=max(0,i-45); b=min(len(lines),i+110)
+              for i in hits[:12]:
+                  a=max(0,i-55); b=min(len(lines),i+130)
                   if any(abs(a-x)<20 for x,_ in seen): continue
                   seen.append((a,b))
                   blocks.append(f'--- lines {a+1}-{b} ---')
@@ -33,5 +33,5 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add tmp_sector_health_snippets.txt
-          git commit -m 'Capture sector health integration snippets'
+          git commit -m 'Refresh sector health integration snippets'
           git push origin HEAD:analysis-sector-health-20260825
