@@ -1,0 +1,107 @@
+name: One-off audit MC long-term bias
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-mc-longterm-bias-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Audit long-term Market Conditions band balance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import numpy as np, pandas as pd, yfinance as yf
+
+          broad=["SPY","QQQ","DIA","IWM","MDY","RSP","VTI","QQQE"]
+          sectors=["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
+          industry=["SOXX","SMH","XSD","IGV","SKYY","CIBR","HACK","FDN","XBI","IBB","PPH","IHI","IHF","KRE","KBE","XRT","ITB","XHB","IYT","JETS","ITA","XAR","ROBO","XME","COPX","PICK","GDX","SIL","LIT","XOP","OIH","URA","TAN","ICLN","VNQ","MOO","PHO","PAVE"]
+          tickers=list(dict.fromkeys(broad+sectors+industry)); assert len(tickers)==57
+
+          d=yf.download(tickers,start='1993-01-01',end='2026-08-25',auto_adjust=True,progress=False,threads=True)
+          c=d['Close'].copy(); c.index=pd.to_datetime(c.index).tz_localize(None); c=c.reindex(columns=tickers)
+          c=c.sort_index()
+
+          def part(mask): return mask.mean(axis=1,skipna=True)*100.0
+          ma10=c.rolling(10).mean(); ma20=c.rolling(20).mean(); ma50=c.rolling(50).mean(); ma200=c.rolling(200).mean()
+          p={}
+          for n,h in [('ret5',5),('ret21',21),('ret63',63),('ret252',252)]:
+              p[n]=part((c/c.shift(h)-1>0).where(c.shift(h).notna()&c.notna()))
+          p['above10']=part((c>ma10).where(ma10.notna()&c.notna()))
+          p['above20']=part((c>ma20).where(ma20.notna()&c.notna()))
+          p['above50']=part((c>ma50).where(ma50.notna()&c.notna()))
+          p['above200']=part((c>ma200).where(ma200.notna()&c.notna()))
+          p['ma20_gt_50']=part((ma20>ma50).where(ma20.notna()&ma50.notna()))
+          p['ma50_gt_200']=part((ma50>ma200).where(ma50.notna()&ma200.notna()))
+          hi252=c.rolling(252,min_periods=200).max(); dd=c/hi252-1
+          p['dd_score']=((dd+0.30)/0.25*100).clip(0,100).mean(axis=1,skipna=True)
+          p['within10']=part((dd>=-0.10).where(dd.notna()))
+          keys=('ret5','ret21','ret63','ret252','above10','above20','above50','above200','ma20_gt_50','ma50_gt_200','dd_score','within10')
+          raw0=pd.concat([p[k] for k in keys],axis=1).mean(axis=1,skipna=True)
+          raw=raw0.ewm(span=2,adjust=False).mean()
+
+          # Effective per-day MC coverage = ETFs with a valid 252-day close history, since the slowest score legs require it.
+          active252=c.notna() & c.shift(252).notna()
+          active_n=active252.sum(axis=1)
+          active_pct=active_n/57*100.0
+
+          W=252*15
+          base=raw.shift(1)
+          mu=base.rolling(W,min_periods=W).mean()
+          sd=base.rolling(W,min_periods=W).std(ddof=0)
+          z=(raw-mu)/sd.replace(0,np.nan)
+          temp=100/(1+np.exp(-np.log(3.0)*z))
+
+          bins=[-1e9,20,35,45,55,65,80,1e9]
+          labs=['STRONG_BEAR','BEAR','WEAK_BEAR','NEUTRAL','WEAK_BULL','BULL','STRONG_BULL']
+          def report(label,mask):
+              s=temp[mask & temp.notna()].dropna()
+              if s.empty:
+                  print(label,'NO_DATA'); return
+              cats=pd.cut(s,bins=bins,labels=labs,right=False)
+              freq=cats.value_counts(normalize=True).sort_index().mul(100)
+              bull=((s>=55).mean()*100)
+              bear=((s<45).mean()*100)
+              neutral=((s>=45)&(s<55)).mean()*100
+              print(f'=== {label} ===')
+              print('dates',s.index.min().date(),s.index.max().date(),'n',len(s))
+              print('mean',round(float(s.mean()),2),'median',round(float(s.median()),2),'bull55+',round(float(bull),1),'bear<45',round(float(bear),1),'neutral45-55',round(float(neutral),1))
+              print('bands', {k:round(float(v),1) for k,v in freq.items()})
+
+          print('=== DATA STARTS ===')
+          for t in tickers:
+              x=c[t].dropna()
+              if len(x): print(t,x.index.min().date(),len(x))
+          print('=== COVERAGE MILESTONES ===')
+          for n in [5,10,15,20,25,30,40,50,57]:
+              x=active_n[active_n>=n]
+              print(n, x.index.min().date() if len(x) else None)
+
+          allmask=pd.Series(True,index=temp.index)
+          report('ALL_VALID_TEMP',allmask)
+          for n in [5,10,15,20,25,30,40,50]:
+              report(f'ACTIVE_ETFS_GE_{n}', active_n>=n)
+          for yr in [2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026]:
+              report(f'YEAR_{yr}', temp.index.year==yr)
+
+          print('=== RECENT / ERA SPLITS ===')
+          for a,b in [('2009-01-01','2013-12-31'),('2014-01-01','2018-12-31'),('2019-01-01','2023-12-31'),('2024-01-01','2026-08-24')]:
+              report(f'{a}_{b}',(temp.index>=a)&(temp.index<=b))
+
+          print('latest',temp.dropna().index[-1].date(),round(float(temp.dropna().iloc[-1]),2),'active_n',int(active_n.loc[temp.dropna().index[-1]]))
+          PY
