@@ -1,0 +1,167 @@
+name: One-off analyze 15y MRI entry regimes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/analyze-mri-15y-entry-regimes-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Recalculate 15y MRI and entry regime diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import numpy as np
+          import pandas as pd
+          import yfinance as yf
+
+          broad=["SPY","QQQ","DIA","IWM","MDY","RSP","VTI","QQQE"]
+          sectors=["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
+          industry=["SOXX","SMH","XSD","IGV","SKYY","CIBR","HACK","FDN","XBI","IBB","PPH","IHI","IHF","KRE","KBE","XRT","ITB","XHB","IYT","JETS","ITA","XAR","ROBO","XME","COPX","PICK","GDX","SIL","LIT","XOP","OIH","URA","TAN","ICLN","VNQ","MOO","PHO","PAVE"]
+          tickers=list(dict.fromkeys(broad+sectors+industry)); assert len(tickers)==57
+
+          # Need pre-2011 history so an exact 15y trailing baseline exists for later years.
+          d=yf.download(tickers,start='2004-01-01',end='2026-08-25',auto_adjust=True,progress=False,threads=True)
+          c=d['Close'].copy(); c.index=pd.to_datetime(c.index).tz_localize(None); c=c.reindex(columns=tickers)
+
+          def part(mask): return mask.mean(axis=1,skipna=True)*100.0
+          ma10=c.rolling(10).mean(); ma20=c.rolling(20).mean(); ma50=c.rolling(50).mean(); ma200=c.rolling(200).mean()
+          p={}
+          for n,h in [('ret5',5),('ret21',21),('ret63',63),('ret252',252)]:
+              p[n]=part((c/c.shift(h)-1>0).where(c.shift(h).notna()&c.notna()))
+          p['above10']=part((c>ma10).where(ma10.notna()&c.notna()))
+          p['above20']=part((c>ma20).where(ma20.notna()&c.notna()))
+          p['above50']=part((c>ma50).where(ma50.notna()&c.notna()))
+          p['above200']=part((c>ma200).where(ma200.notna()&c.notna()))
+          p['ma20_gt_50']=part((ma20>ma50).where(ma20.notna()&ma50.notna()))
+          p['ma50_gt_200']=part((ma50>ma200).where(ma50.notna()&ma200.notna()))
+          hi252=c.rolling(252,min_periods=200).max(); dd=c/hi252-1
+          p['dd_score']=((dd+0.30)/0.25*100).clip(0,100).mean(axis=1,skipna=True)
+          p['within10']=part((dd>=-0.10).where(dd.notna()))
+          keys=('ret5','ret21','ret63','ret252','above10','above20','above50','above200','ma20_gt_50','ma50_gt_200','dd_score','within10')
+          comps=pd.concat({k:p[k] for k in keys},axis=1)
+          raw=comps.mean(axis=1,skipna=True).ewm(span=2,adjust=False).mean()
+          coverage=c.notna().sum(axis=1)/57*100.0
+
+          # Exact trailing 15 trading years (~252*15 observations), excluding today's value from its own baseline.
+          W=252*15
+          base=raw.shift(1)
+          mu15=base.rolling(W,min_periods=W).mean()
+          sd15=base.rolling(W,min_periods=W).std(ddof=0)
+          z15=(raw-mu15)/sd15.replace(0,np.nan)
+          # Logistic mapping chosen so z=0->50, +1->75, +2->90, -1->25, -2->10 exactly.
+          K=np.log(3.0)
+          temp15=100.0/(1.0+np.exp(-K*z15))
+          d5=temp15-temp15.shift(5)
+
+          # Forward outcomes. These are descriptive historical associations, not used in the score.
+          q=c['QQQ']; spy=c['SPY']; iwm=c['IWM']
+          def fwd_ret(s,h): return s.shift(-h)/s-1.0
+          def fwd_mdd(s,h):
+              arr=s.to_numpy(float); out=np.full(len(s),np.nan)
+              for i in range(len(s)-h):
+                  if not np.isfinite(arr[i]): continue
+                  seg=arr[i+1:i+h+1]
+                  if len(seg)<h or not np.isfinite(seg).any(): continue
+                  out[i]=np.nanmin(seg/arr[i]-1.0)
+              return pd.Series(out,index=s.index)
+          q20=fwd_ret(q,20); q60=fwd_ret(q,60); q20dd=fwd_mdd(q,20); q60dd=fwd_mdd(q,60)
+          s20=fwd_ret(spy,20); s60=fwd_ret(spy,60)
+          i20=fwd_ret(iwm,20); i60=fwd_ret(iwm,60)
+          etf20=c.shift(-20)/c-1.0; etf60=c.shift(-60)/c-1.0
+          ew20=etf20.mean(axis=1,skipna=True); ew60=etf60.mean(axis=1,skipna=True)
+          pos20=(etf20>0).where(etf20.notna()).mean(axis=1,skipna=True)*100
+          pos60=(etf60>0).where(etf60.notna()).mean(axis=1,skipna=True)*100
+
+          full=temp15.notna() & (coverage>=70)
+          # Complete 15y windows begin around 2019; use all valid full-window observations.
+          print('=== FULL15_RANGE ===')
+          vv=temp15[full]
+          print('first',vv.index.min().date(),'last',vv.index.max().date(),'days',len(vv))
+          print('temp_mean',round(float(vv.mean()),2),'median',round(float(vv.median()),2),'p10',round(float(vv.quantile(.10)),2),'p25',round(float(vv.quantile(.25)),2),'p75',round(float(vv.quantile(.75)),2),'p90',round(float(vv.quantile(.90)),2))
+
+          print('=== LATEST ===')
+          ix=temp15.dropna().index[-1]
+          print('date',ix.date(),'raw',round(float(raw.at[ix]),2),'mu15',round(float(mu15.at[ix]),2),'sd15',round(float(sd15.at[ix]),2),'z15',round(float(z15.at[ix]),3),'temp15',round(float(temp15.at[ix]),2),'d5',round(float(d5.at[ix]),2),'coverage',round(float(coverage.at[ix]),1))
+          print('components')
+          for k in keys: print(k,round(float(comps.at[ix,k]),2))
+
+          print('=== ANNUAL_TEMP_FULL15 ===')
+          s=temp15[full]
+          ann=s.groupby(s.index.year).agg(['mean','median','min','max','count'])
+          print(ann.round(2).to_string())
+
+          print('=== NOTABLE_DATES ===')
+          dates=['2019-12-31','2020-02-19','2020-03-23','2020-06-08','2021-11-19','2022-01-03','2022-06-16','2022-10-12','2023-07-31','2024-07-10','2025-04-08','2025-08-21','2026-08-21','2026-08-24']
+          rows=[]
+          for ds in dates:
+              t=pd.Timestamp(ds); idx=temp15.index[temp15.index<=t]
+              if not len(idx): continue
+              z=idx[-1]
+              rows.append([ds,raw.get(z,np.nan),mu15.get(z,np.nan),z15.get(z,np.nan),temp15.get(z,np.nan),d5.get(z,np.nan),q20.get(z,np.nan)*100,q60.get(z,np.nan)*100,q20dd.get(z,np.nan)*100,q60dd.get(z,np.nan)*100,ew20.get(z,np.nan)*100,ew60.get(z,np.nan)*100])
+          print(pd.DataFrame(rows,columns=['date','raw','mu15','z15','temp15','d5','qqq20','qqq60','qqq20_mdd','qqq60_mdd','ew57_20','ew57_60']).set_index('date').round(2).to_string())
+
+          # Regime bands; deliberately finer around 50-70 where operational decisions occur.
+          bins=[0,20,35,45,55,65,75,85,100.0001]
+          labels=['00-20','20-35','35-45','45-55','55-65','65-75','75-85','85-100']
+          band=pd.cut(temp15,bins=bins,labels=labels,right=False)
+          print('=== BAND_FORWARD_OUTCOMES_FULL15 ===')
+          rows=[]
+          for lab in labels:
+              m=full & (band==lab) & q60.notna()
+              if not m.any(): continue
+              rows.append([
+                  lab,int(m.sum()),float(temp15[m].mean()),
+                  float(q20[m].mean()*100),float(q20[m].median()*100),float((q20[m]>0).mean()*100),float(q20dd[m].mean()*100),
+                  float(q60[m].mean()*100),float(q60[m].median()*100),float((q60[m]>0).mean()*100),float(q60dd[m].mean()*100),
+                  float(s20[m].mean()*100),float(s60[m].mean()*100),float(i20[m].mean()*100),float(i60[m].mean()*100),
+                  float(ew20[m].mean()*100),float(ew60[m].mean()*100),float(pos20[m].mean()),float(pos60[m].mean())
+              ])
+          cols=['band','n','temp','qqq20_avg','qqq20_med','qqq20_win','qqq20_mdd','qqq60_avg','qqq60_med','qqq60_win','qqq60_mdd','spy20','spy60','iwm20','iwm60','ew57_20','ew57_60','etf_pos20','etf_pos60']
+          print(pd.DataFrame(rows,columns=cols).set_index('band').round(2).to_string())
+
+          print('=== BAND_DIRECTION_FULL15 ===')
+          rows=[]
+          for lab in labels:
+              for direction,cond in [('rising',d5>=3),('flat',d5.abs()<3),('falling',d5<=-3)]:
+                  m=full & (band==lab) & cond & q60.notna()
+                  if m.sum()<15: continue
+                  rows.append([lab,direction,int(m.sum()),float(temp15[m].mean()),float(d5[m].mean()),float(q20[m].mean()*100),float((q20[m]>0).mean()*100),float(q60[m].mean()*100),float((q60[m]>0).mean()*100),float(q20dd[m].mean()*100),float(ew20[m].mean()*100),float(ew60[m].mean()*100)])
+          print(pd.DataFrame(rows,columns=['band','dir','n','temp','d5','qqq20','qqq20_win','qqq60','qqq60_win','qqq20_mdd','ew57_20','ew57_60']).set_index(['band','dir']).round(2).to_string())
+
+          # Threshold crossings: separate re-entry (up-cross) from deterioration (down-cross).
+          print('=== THRESHOLD_CROSSINGS_FULL15 ===')
+          rows=[]
+          for th in [25,35,45,50,55,60,65,70,75]:
+              up=full & (temp15>=th) & (temp15.shift(1)<th) & q60.notna()
+              dn=full & (temp15<=th) & (temp15.shift(1)>th) & q60.notna()
+              for typ,m in [('UP',up),('DOWN',dn)]:
+                  if not m.any(): continue
+                  rows.append([th,typ,int(m.sum()),float(q20[m].mean()*100),float((q20[m]>0).mean()*100),float(q60[m].mean()*100),float((q60[m]>0).mean()*100),float(q20dd[m].mean()*100),float(q60dd[m].mean()*100),float(ew20[m].mean()*100),float(ew60[m].mean()*100)])
+          print(pd.DataFrame(rows,columns=['th','type','n','qqq20','qqq20_win','qqq60','qqq60_win','qqq20_mdd','qqq60_mdd','ew57_20','ew57_60']).set_index(['th','type']).round(2).to_string())
+
+          # Non-overlapping weekly sample as a robustness check against daily overlap.
+          print('=== BAND_WEEKLY_ROBUSTNESS ===')
+          wk=pd.Series(False,index=c.index); wk.iloc[::5]=True
+          rows=[]
+          for lab in labels:
+              m=full & wk & (band==lab) & q60.notna()
+              if m.sum()<8: continue
+              rows.append([lab,int(m.sum()),float(q20[m].mean()*100),float((q20[m]>0).mean()*100),float(q60[m].mean()*100),float((q60[m]>0).mean()*100),float(q20dd[m].mean()*100),float(ew20[m].mean()*100),float(ew60[m].mean()*100)])
+          print(pd.DataFrame(rows,columns=['band','n','qqq20','qqq20_win','qqq60','qqq60_win','qqq20_mdd','ew57_20','ew57_60']).set_index('band').round(2).to_string())
+          PY
