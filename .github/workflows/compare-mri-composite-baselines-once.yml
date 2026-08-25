@@ -76,7 +76,10 @@ jobs:
               s=m.loc[mask,k].dropna(); rows.append([k,s.mean(),s.median(),s.quantile(.1),s.quantile(.25),s.quantile(.75),s.quantile(.9),(s>=70).mean()*100,(s>=80).mean()*100,(s<=30).mean()*100])
           print(pd.DataFrame(rows,columns=['method','mean','median','p10','p25','p75','p90','ge70','ge80','le30']).set_index('method').round(2).to_string())
           print('=== ANNUAL ===')
-          ann={k:m.loc[valid,k].groupby(m.index.year).mean() for k in m}; print(pd.DataFrame(ann).loc[lambda x:x.index>=2018].round(2).to_string())
+          ann={}
+          for k in m:
+              s=m.loc[valid,k].dropna(); ann[k]=s.groupby(s.index.year).mean()
+          print(pd.DataFrame(ann).loc[lambda x:x.index>=2018].round(2).to_string())
           print('=== DATES ===')
           dates=['2018-09-20','2018-12-24','2020-02-19','2020-03-23','2020-06-08','2022-01-03','2022-06-16','2022-10-12','2023-07-31','2024-07-10','2025-04-08','2025-08-21','2026-08-21','2026-08-24']
           print(m.reindex(pd.to_datetime(dates)).round(2).to_string())
@@ -86,10 +89,9 @@ jobs:
           for k in m:
               x=pd.DataFrame({'s':m[k],'state':state}).loc['2018-01-01':].dropna(); g=x.groupby('state').s.agg(['mean','median']); print(k); print(g.round(2).to_string())
           print('=== BASELINE_DRIFT ===')
-          # Show the actual adaptive center to assess whether it drifts too much.
           b=raw.shift(1)
           centers=pd.DataFrame({'mean10':b.rolling(2520,min_periods=1260).mean(),'mean15':b.rolling(3780,min_periods=1764).mean(),'median15':b.rolling(3780,min_periods=1764).median(),'expand_mean':b.expanding(min_periods=1260).mean(),'ewma10_mean':b.ewm(halflife=2520,min_periods=1260,adjust=False).mean()})
           for ds in ['2018-01-02','2020-01-02','2022-01-03','2024-01-02','2026-08-24']:
-              t=pd.Timestamp(ds); ix=centers.index[centers.index<=t];
+              t=pd.Timestamp(ds); ix=centers.index[centers.index<=t]
               if len(ix): print(ds,centers.loc[ix[-1]].round(2).to_dict())
           PY
