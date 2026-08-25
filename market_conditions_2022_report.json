@@ -1,0 +1,162 @@
+{
+  "candidate": {
+    "alpha": 3.0,
+    "floor": 57.5,
+    "struct_th": 60.0,
+    "release_dd_63d": -0.07
+  },
+  "failed_etfs": [],
+  "qqq_2022": {
+    "return_pct": -33.219879418802314,
+    "max_drawdown_pct": -35.11873277686451,
+    "max_drawdown_date": "2022-11-03"
+  },
+  "current_mc_2022": {
+    "start": 78.5573773641498,
+    "start_date": "2022-01-03",
+    "end": 47.93917716001009,
+    "end_date": "2022-12-30",
+    "min": 6.880002222446446,
+    "min_date": "2022-06-17",
+    "max": 78.5573773641498,
+    "max_date": "2022-01-03",
+    "mean": 38.73613437322664,
+    "median": 37.570387619556136,
+    "days_below65": 232,
+    "days_below55": 195,
+    "days_below45": 157,
+    "band_days": {
+      "STRONG BEAR": 50,
+      "BEAR": 59,
+      "WEAK BEAR": 48,
+      "NEUTRAL": 38,
+      "WEAK BULL": 37,
+      "BULL": 19,
+      "STRONG BULL": 0
+    }
+  },
+  "candidate_mc_2022": {
+    "start": 78.17832672951222,
+    "start_date": "2022-01-03",
+    "end": 0.0,
+    "end_date": "2022-12-30",
+    "min": 0.0,
+    "min_date": "2022-01-18",
+    "max": 78.17832672951222,
+    "max_date": "2022-01-03",
+    "mean": 22.074036764026076,
+    "median": 14.057494257615492,
+    "days_below65": 237,
+    "days_below55": 211,
+    "days_below45": 194,
+    "band_days": {
+      "STRONG BEAR": 140,
+      "BEAR": 36,
+      "WEAK BEAR": 18,
+      "NEUTRAL": 17,
+      "WEAK BULL": 26,
+      "BULL": 14,
+      "STRONG BULL": 0
+    }
+  },
+  "episodes_overlapping_2022": [
+    {
+      "peak": "2021-12-27",
+      "start": "2022-01-18",
+      "trough": "2022-11-03",
+      "end": "2023-12-08",
+      "qqq_dd_pct": -35.11873277686451,
+      "current": {
+        "score_at_peak": 71.60260049639747,
+        "first_below65": "2022-01-07",
+        "first_below55": "2022-01-19",
+        "first_below45": "2022-01-21",
+        "score_at_trough": 25.6583935395833,
+        "min_peak_to_trough": 6.880002222446446,
+        "min_date": "2022-06-17"
+      },
+      "candidate": {
+        "score_at_peak": 61.29589685466164,
+        "first_below65": "2021-12-27",
+        "first_below55": "2022-01-18",
+        "first_below45": "2022-01-18",
+        "score_at_trough": 11.744809706919547,
+        "min_peak_to_trough": 0.0,
+        "min_date": "2022-01-18"
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "date": "2022-01-03",
+      "qqq": 390.75677490234375,
+      "current": 78.5573773641498,
+      "candidate": 78.17832672951222,
+      "candidate_band": "BULL",
+      "structural": 87.08424339043201,
+      "deterioration_penalty": 0.37905063463757926,
+      "guard": false
+    },
+    {
+      "date": "2022-01-24",
+      "qqq": 343.6924133300781,
+      "current": 36.6524023938853,
+      "candidate": 0.0,
+      "candidate_band": "STRONG BEAR",
+      "structural": 60.688255991063954,
+      "deterioration_penalty": 36.6524023938853,
+      "guard": false
+    },
+    {
+      "date": "2022-03-14",
+      "qqq": 309.51776123046875,
+      "current": 24.734508057786066,
+      "candidate": 0.0,
+      "candidate_band": "STRONG BEAR",
+      "structural": 41.032027298698125,
+      "deterioration_penalty": 24.734508057786066,
+      "guard": false
+    },
+    {
+      "date": "2022-06-16",
+      "qqq": 264.33636474609375,
+      "current": 7.434645254667174,
+      "candidate": 0.0,
+      "candidate_band": "STRONG BEAR",
+      "structural": 11.982218953372847,
+      "deterioration_penalty": 7.434645254667174,
+      "guard": false
+    },
+    {
+      "date": "2022-08-16",
+      "qqq": 324.2657470703125,
+      "current": 77.23853480288874,
+      "candidate": 77.23090386857349,
+      "candidate_band": "BULL",
+      "structural": 44.5887418966882,
+      "deterioration_penalty": 0.007630934315244531,
+      "guard": false
+    },
+    {
+      "date": "2022-10-13",
+      "qqq": 262.8078308105469,
+      "current": 13.320618059100156,
+      "candidate": 1.8389226666713157,
+      "candidate_band": "STRONG BEAR",
+      "structural": 10.2799704287441,
+      "deterioration_penalty": 11.48169539242884,
+      "guard": false
+    },
+    {
+      "date": "2022-12-30",
+      "qqq": 260.9478454589844,
+      "current": 47.93917716001009,
+      "candidate": 0.0,
+      "candidate_band": "STRONG BEAR",
+      "structural": 38.05676086245741,
+      "deterioration_penalty": 47.93917716001009,
+      "guard": false
+    }
+  ],
+  "guard_days_2022": 8
+}
