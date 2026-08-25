@@ -1,0 +1,35 @@
+name: One-off dispatch dashboard after MC history repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-dispatch-dashboard.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Dispatch production dashboard build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run dashboard.yml --ref main
+
+      - name: Remove temporary dispatcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/oneoff-dispatch-dashboard.yml
+          git commit -m "Remove one-off dashboard dispatcher"
+          git pull --rebase origin main
+          git push origin HEAD:main
