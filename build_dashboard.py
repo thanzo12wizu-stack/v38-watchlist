@@ -14,7 +14,7 @@ Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
      期中退出の空き枠は再投下せず現金で持ち隔週(月曜)トゥルーアップで吸収。銘柄入替は定例月曜＋赤明けは青/緑復帰の翌寄りに即再構築。
   B. レバスリーブ(30%): TQQQ:SOXL=50:50, SOXX MA50<100でSOXL→TQQQ, NQ4色ゲート。配分=個別70/レバ30/現金0。
   C. NQ 4色ゲート(即応・確認日数ゼロ): 個別 青100/緑100/黄=新規停止・保有はワイドトレール0.70継続(締めなし)/赤0(撤退), レバ 青100/緑50/黄0/赤0。執行は翌寄り。
-  D. Market Conditions=57ETF × 12指標の完全等加重（方向対称・EMA2）。Breadth 10日変化は別軸表示。
+  D. Market Conditions=57ETFを3市場層で均衡化し、4柱を25%ずつ合成（方向対称・EMA2）。Breadth 10日変化は別軸表示。
      ※先導株温度計は非対称: 左端(枯渇)のみNQ底に中央値18日先行(的中6割)/右端(過熱)は先取りせず。露出は動かさない。
   E. 8 tabs (マーケット/ピックアップ/ポートフォリオ/配分/RS比較/セクターローテ/業種RS/ルール) + 今日の運用ヘッダ + 隔週リバランス点検（月曜）。RS比較は63/126/189日Top10、1日・1週・1か月のIN/OUT、RS189 Top24の継続性を表示。
   F. 非常口ルール: equity.csvの口座NAV DDとQQQ円建て12ヶ月相対を自動判定。DD≤−28%かつ相対≤−12%でレバ半減、DD>−20%かつ相対>−8%で解除。状態はstate.jsonへ永続化。
@@ -1566,8 +1566,9 @@ MACRO_TICKERS = ["^VIX", "^VIX3M", "^VVIX", "^VXN", "QQQ", "QQQE", "SPY", "HYG",
 
 
 # Market Conditions v4: fixed, non-levered cross-sectional ETF universe.
-# All available ETFs have exactly the same weight. No Broad/Sector/Industry
-# family rebalance is applied, so the score itself has no directional or family tilt.
+# First balance the three market layers (Broad / Sector / Industry) equally.
+# Inside Industry, parent groups are equalized before the Industry layer is formed,
+# so a family with more ETF proxies cannot dominate the market-temperature score.
 MC_BROAD_ETFS = ["SPY","QQQ","DIA","IWM","MDY","RSP","VTI","QQQE"]
 MC_SECTOR_ETFS = ["XLK","XLY","VOX","XLF","XLI","XLE","XLB","XLV","XLP","XLU","XLRE"]
 MC_INDUSTRY_PARENT = {
@@ -3579,12 +3580,12 @@ def load_market_caps(valid, live, strict=False):
 # Market Health v2: highly correlated raw indicators are compressed inside four pillars.
 # The score measures trend health, participation, volatility stress and credit conditions.
 STATUS_DEF = [
-    # Four display groups only. Score itself is the equal mean of all 12 metrics.
-    # Weights below exactly reflect metric counts: 4/12, 4/12, 2/12, 2/12.
-    ("short",   33.333333333333336, 0.0, 100.0, "market"),  # momentum
-    ("medium",  33.333333333333336, 0.0, 100.0, "market"),  # breadth
-    ("long",    16.666666666666668, 0.0, 100.0, "market"),  # trend structure
-    ("damage",  16.666666666666668, 0.0, 100.0, "market"),
+    # Four independent concepts get equal weight. Metric count inside a pillar
+    # must not silently determine the pillar's importance.
+    ("short",   25.0, 0.0, 100.0, "market"),  # momentum
+    ("medium",  25.0, 0.0, 100.0, "market"),  # breadth
+    ("long",    25.0, 0.0, 100.0, "market"),  # trend structure
+    ("damage",  25.0, 0.0, 100.0, "market"),
 ]
 # Directional symmetry: no percentile recentering, no one-sided penalty/floor/guard.
 
@@ -3700,16 +3701,35 @@ def _mc_parent_mean(frame):
     return pd.concat(parents, axis=1).mean(axis=1, skipna=True) if parents else pd.Series(np.nan, index=frame.index)
 
 
-def _mc_participation(mask):
-    """Equal-weight breadth across every available Market Conditions ETF.
+def _mc_stratified_mean(frame):
+    """Equal-weight Broad / Sector / Industry layers.
 
-    50 means exactly half the available ETFs satisfy the condition. The mapping is
-    directionally symmetric: complementing every boolean produces 100-score.
+    Industry is first averaged within each parent group, then across parents. This
+    prevents the number of ETF proxies in a family from becoming an accidental vote.
+    Missing layers are renormalized over the layers available that day.
     """
-    have = [c for c in MC_MARKET_TICKERS if c in mask.columns]
-    if not have:
-        return pd.Series(np.nan, index=mask.index)
-    return mask[have].mean(axis=1, skipna=True) * 100.0
+    pieces = []
+    for cols in (MC_BROAD_ETFS, MC_SECTOR_ETFS):
+        have = [c for c in cols if c in frame.columns]
+        if have:
+            pieces.append(frame[have].mean(axis=1, skipna=True))
+    parents = []
+    for tickers in MC_INDUSTRY_PARENT.values():
+        have = [c for c in tickers if c in frame.columns]
+        if have:
+            parents.append(frame[have].mean(axis=1, skipna=True))
+    if parents:
+        pieces.append(pd.concat(parents, axis=1).mean(axis=1, skipna=True))
+    return pd.concat(pieces, axis=1).mean(axis=1, skipna=True) if pieces else pd.Series(np.nan, index=frame.index)
+
+
+def _mc_participation(mask):
+    """Breadth after equalizing Broad / Sector / Industry market layers.
+
+    The mapping remains directionally symmetric: complementing every available
+    boolean produces the complementary 0-100 score.
+    """
+    return _mc_stratified_mean(mask.astype(float)) * 100.0
 
 
 def _mc_stratified_median(frame):
@@ -3733,11 +3753,11 @@ def _mc_linear(series, lo, hi):
 
 
 def mri_frame(macro, W=None):
-    """Market Conditions v4: 57 ETFs × 12 metrics, fully equal weighted.
+    """Market Conditions v4: 57 ETFs, balanced across 3 layers and 4 pillars.
 
-    No historical percentile recentering and no one-sided deterioration penalty,
-    floor or guard. Each 0-100 component has a literal neutral midpoint and the
-    final arithmetic mean preserves directional symmetry. EMA2 is smoothing only.
+    The ETF universe remains unchanged. Broad / Sector / Industry each receive an
+    equal layer vote, and Momentum / Breadth / Trend / Damage each receive 25%.
+    No percentile recentering or one-sided guard is applied; EMA2 is smoothing only.
     """
     c = _mc_frame_from_macro(macro)
     if c.empty:
@@ -3775,25 +3795,22 @@ def mri_frame(macro, W=None):
     # Compatibility telemetry retained for existing downstream commentary; not part of the 12-metric score.
     p["ma50_rising"] = _mc_participation((ma50 > ma50.shift(20)).where(ma50.notna() & ma50.shift(20).notna()))
 
-    # Damage: score every ETF first, then equal-weight. This avoids a median/stratification tilt.
+    # Damage: score every ETF first, then apply the same 3-layer balance as breadth.
     hi252 = c.rolling(252,min_periods=200).max()
     dd = c/hi252 - 1.0
     dd_by_etf = ((dd + 0.30) / 0.25 * 100.0).clip(0.0, 100.0)
-    p["dd_score"] = dd_by_etf.mean(axis=1, skipna=True)
+    p["dd_score"] = _mc_stratified_mean(dd_by_etf)
     p["within10"] = _mc_participation((dd >= -0.10).where(dd.notna()))
     med_dd = dd.median(axis=1, skipna=True)
 
-    score_keys = ("ret5","ret21","ret63","ret252",
-                  "above10","above20","above50","above200",
-                  "ma20_gt_50","ma50_gt_200","dd_score","within10")
-    raw = pd.concat([p[k] for k in score_keys], axis=1).mean(axis=1, skipna=True)
-    score = raw.ewm(span=2,adjust=False).mean()
-
-    # Four display-only summaries; their weights match the number of equal metrics.
+    # First compress correlated metrics inside each concept, then weight the four
+    # concepts equally. Metric count must not become an accidental score weight.
     momentum = pd.concat([p[k] for k in ("ret5","ret21","ret63","ret252")],axis=1).mean(axis=1,skipna=True)
     breadth4 = pd.concat([p[k] for k in ("above10","above20","above50","above200")],axis=1).mean(axis=1,skipna=True)
     trend2 = pd.concat([p[k] for k in ("ma20_gt_50","ma50_gt_200")],axis=1).mean(axis=1,skipna=True)
     damage = pd.concat([p[k] for k in ("dd_score","within10")],axis=1).mean(axis=1,skipna=True)
+    raw = pd.concat([momentum,breadth4,trend2,damage], axis=1).mean(axis=1, skipna=True)
+    score = raw.ewm(span=2,adjust=False).mean()
 
     # Breadth momentum is context only, centered on zero and excluded from MC score.
     breadth_level = pd.concat([p["above20"],p["above50"]],axis=1).mean(axis=1,skipna=True)
@@ -18859,9 +18876,9 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     bear_sec = (f'<div class="mgrp">警戒 {aux["bear_n"]}/4</div>'
                 f'<div class="bflags">{_bchips or "<span class=bfl off>—</span>"}</div>')
     mri_bd = (f'<div id="mri-bd" class="mri-bd" onclick="event.stopPropagation()">'
-              f'<div class="mbd-h">MARKET CONDITIONS 内訳（57ETF × 12指標・完全等加重）</div>'
+              f'<div class="mbd-h">MARKET CONDITIONS 内訳（57ETF・3市場層 × 4柱等加重）</div>'
               + "".join(_bd_rows) + bear_sec
-              + '<div class="mnote">各指標は0–100、12指標を完全等加重。右端は各指標の総合点への寄与。Breadth 10日変化はscore外。もう一度タップで閉じる ▴</div></div>')
+              + '<div class="mnote">各指標は0–100。指数・セクター・業種の3層を等加重し、Momentum・Breadth・Trend・Damageの4柱を25%ずつ合成。右端は各柱の総合点への寄与。Breadth 10日変化はscore外。もう一度タップで閉じる ▴</div></div>')
     banner = sar_pill + _ribbon(mkt.get("trend_hist")) + f"""
     <div class="banner b-{band_cls}" onclick="toggleMri()">
       <div class="lab">MARKET CONDITIONS<span class="lab-en">MID / LONG TERM</span><span class="tap">タップで内訳 ▾</span></div>
