@@ -17,6 +17,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: analysis-sector-health-20260825
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dashboard dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Patch Sector Health only
         run: python tools/apply_sector_health_patch.py
       - name: Syntax and scope checks
