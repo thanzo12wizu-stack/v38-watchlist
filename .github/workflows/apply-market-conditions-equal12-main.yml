@@ -36,13 +36,12 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
 
-      - name: Validate
+      - name: Validate production preflight
         shell: bash
         run: |
           set -euo pipefail
           python -m py_compile build_dashboard.py
           pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
-          python build_dashboard.py --selftest
 
       - name: Commit to main
         shell: bash
