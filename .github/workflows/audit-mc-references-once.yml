@@ -17,33 +17,21 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
-      - name: Audit Market Conditions references
+      - name: Audit MC fetch and display dependencies
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          p=Path('build_dashboard.py')
-          lines=p.read_text(encoding='utf-8',errors='replace').splitlines()
-          needles=('mri','market conditions','bull','bear','neutral','slope','trend','temperature','temp')
-          hits=[]
+          lines=Path('build_dashboard.py').read_text(encoding='utf-8',errors='replace').splitlines()
+          # Explicit blocks needed to finalize the MC replacement spec.
+          for a,b in [(1540,1605),(3650,3925),(18186,18224),(20720,20825),(21150,21182)]:
+              print(f'\n=== {a}-{b} ===')
+              for n in range(a,b+1):
+                  print(f'{n}: {lines[n-1]}')
+          print('\n=== FETCH-RELATED HITS ===')
           for i,line in enumerate(lines,1):
               low=line.lower()
-              if any(n in low for n in needles):
-                  if ('mri' in low or 'market conditions' in low or 'bull' in low or 'bear' in low):
-                      hits.append(i)
-          blocks=[]
-          for i in hits:
-              a=max(1,i-5); b=min(len(lines),i+8)
-              if blocks and a<=blocks[-1][1]+2:
-                  blocks[-1]=(blocks[-1][0],max(blocks[-1][1],b))
-              else:
-                  blocks.append((a,b))
-          print('=== MC REFERENCE BLOCKS ===')
-          for a,b in blocks:
-              seg='\n'.join(lines[a-1:b]).lower()
-              if any(x in seg for x in ('mri','market conditions')):
-                  print(f'\n--- {a}-{b} ---')
-                  for n in range(a,b+1):
-                      print(f'{n}: {lines[n-1]}')
+              if any(k in low for k in ('yf.download','period=','start=','macro_tickers','mc_market_tickers','_mc_frame_from_macro')):
+                  print(f'{i}: {line}')
           PY
