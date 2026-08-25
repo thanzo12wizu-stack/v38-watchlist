@@ -3872,9 +3872,24 @@ def mri_auxiliary(mri, vals, metrics):
     except Exception:
         breadth_delta10 = 0.0
     breadth_arrow = "↑" if breadth_delta10 > 2.0 else ("↓" if breadth_delta10 < -2.0 else "→")
+    _component_keys = ("ret5","ret21","ret63","ret252",
+                       "above10","above20","above50","above200",
+                       "ma20_gt_50","ma50_gt_200","dd_score","within10")
+    components = {}
+    for _k in _component_keys:
+        try:
+            _v = float(last.get(_k, np.nan))
+            components[_k] = _v if np.isfinite(_v) else None
+        except Exception:
+            components[_k] = None
+    try:
+        mc_coverage = float(last.get("mc_coverage", np.nan))
+    except Exception:
+        mc_coverage = np.nan
     return dict(cur=cur, hl=hl, slope=slope_dir, bear_n=bear_n, bear_flags=bear_flags,
                 peak=peak, drop=drop, hi20=hi20,
-                breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow)
+                breadth_delta10=breadth_delta10, breadth_arrow=breadth_arrow,
+                components=components, mc_coverage=mc_coverage)
 
 
 def mri_band(v):
@@ -18791,26 +18806,51 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     drop_note = ""
     if dropped:
         drop_note = f'<div class="note">注記：データ未取得のため除外し残り指標で100点満点に再正規化 → {", ".join(dropped)}</div>'
-    _kj = {"short":"モメンタム","medium":"広がり","long":"トレンド","damage":"Damage","trend":"トレンド","breadth":"広がり","risk":"ボラティリティ","credit":"信用"}
-    _gj = {"market":"MARKET CONDITIONS"}
-    def _mraw(k, v):
-        if v is None or (isinstance(v, float) and np.isnan(v)): return "—"
-        if k in ("short", "medium", "long", "damage"): return f"{v:.0f}"
-        return f"{v:.2f}"
-    _bd_rows = []; _seen_grp = None
-    for b in breakdown:
-        if b["group"] != _seen_grp:
-            _seen_grp = b["group"]
-            _bd_rows.append(f'<div class="mgrp">{_gj.get(_seen_grp, _seen_grp)}</div>')
+    _component_groups = (
+        ("モメンタム", (("ret5","1Wプラス"),("ret21","1Mプラス"),("ret63","3Mプラス"),("ret252","1Yプラス"))),
+        ("Breadth", (("above10","10SMA上"),("above20","20SMA上"),("above50","50SMA上"),("above200","200SMA上"))),
+        ("トレンド構造", (("ma20_gt_50","20SMA > 50SMA"),("ma50_gt_200","50SMA > 200SMA"))),
+        ("Damage", (("dd_score","52週高値DDスコア"),("within10","52週高値10%以内"))),
+    )
+    _components = aux.get("components") or {}
+    _bd_rows = []
+    for _grp, _items in _component_groups:
+        _bd_rows.append(f'<div class="mgrp">{_grp}</div>')
+        for _k, _lab in _items:
+            _v = _components.get(_k)
+            if _v is None or not np.isfinite(float(_v)):
+                _bd_rows.append(
+                    f'<div class="mrow"><span class="mk2">{_lab}</span><span class="mraw">—</span>'
+                    f'<span class="mbar"></span><span class="mpts">—</span></div>')
+                continue
+            _v = float(_v)
+            _pct = max(0.0, min(100.0, _v))
+            _bd_rows.append(
+                f'<div class="mrow"><span class="mk2">{_lab}</span>'
+                f'<span class="mraw">{_v:.1f}</span>'
+                f'<span class="mbar"><i style="width:{_pct:.0f}%"></i></span>'
+                f'<span class="mpts">{_v/12.0:.1f}点</span></div>')
+
+    _bd_rows.append('<div class="mgrp">コンテキスト（MC点数には不算入）</div>')
+    _cov = aux.get("mc_coverage", np.nan)
+    try:
+        _cov = float(_cov)
+    except Exception:
+        _cov = np.nan
+    if np.isfinite(_cov):
+        _cov_n = int(round(len(MC_MARKET_TICKERS) * _cov / 100.0))
         _bd_rows.append(
-            f'<div class="mrow"><span class="mk2">{_kj.get(b["key"], b["key"])}</span>'
-            f'<span class="mraw">{_mraw(b["key"], b["raw"])}</span>'
-            f'<span class="mbar"><i style="width:{100*b["frac"]:.0f}%"></i></span>'
-            f'<span class="mpts">{b["pts"]:.1f}/{b["ptsmax"]}</span></div>')
-    # ベア警戒：点灯中の要因を明示（点灯=赤、非点灯=グレー）
-    _bf = aux.get("bear_flags", [])
-    _blit = [lab for lab, on in _bf if on]
-    _boff = [lab for lab, on in _bf if not on]
+            f'<div class="mrow"><span class="mk2">57ETFカバレッジ</span>'
+            f'<span class="mraw">{_cov:.1f}%</span>'
+            f'<span class="mbar"><i style="width:{max(0.0,min(100.0,_cov)):.0f}%"></i></span>'
+            f'<span class="mpts">{_cov_n}/{len(MC_MARKET_TICKERS)}</span></div>')
+    _bd10 = float(aux.get("breadth_delta10", 0.0) or 0.0)
+    _bd_arrow = aux.get("breadth_arrow", "→")
+    _bd_rows.append(
+        f'<div class="mrow"><span class="mk2">Breadth 10日変化</span>'
+        f'<span class="mraw">{_bd_arrow} {_bd10:+.1f}pt</span>'
+        f'<span class="mbar"></span><span class="mpts">score外</span></div>')
+
     _bchips = ("".join(f'<span class="bfl on">{lab}</span>' for lab in _blit)
                + "".join(f'<span class="bfl off">{lab}</span>' for lab in _boff))
     bear_sec = (f'<div class="mgrp">警戒 {aux["bear_n"]}/4</div>'
@@ -18818,7 +18858,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     mri_bd = (f'<div id="mri-bd" class="mri-bd" onclick="event.stopPropagation()">'
               f'<div class="mbd-h">MARKET CONDITIONS 内訳（57ETF × 12指標・完全等加重）</div>'
               + "".join(_bd_rows) + bear_sec
-              + '<div class="mnote">赤=点灯中のベア要因。もう一度タップで閉じる ▴</div></div>')
+              + '<div class="mnote">各指標は0–100、12指標を完全等加重。右端は各指標の総合点への寄与。Breadth 10日変化はscore外。もう一度タップで閉じる ▴</div></div>')
     banner = sar_pill + _ribbon(mkt.get("trend_hist")) + f"""
     <div class="banner b-{band_cls}" onclick="toggleMri()">
       <div class="lab">MARKET CONDITIONS<span class="lab-en">MID / LONG TERM</span><span class="tap">タップで内訳 ▾</span></div>
