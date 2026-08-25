@@ -37,7 +37,9 @@ jobs:
           assert 'VIX反転シーケンス' in s
           print('static scope checks OK')
           PY
-          python build_dashboard.py --selftest
+          pytest -q tests/test_dashboard_build_regressions.py \
+            tests/test_options_positioning_quality.py \
+            tests/test_eps_acceleration.py
       - name: Commit Sector Health patch
         run: |
           git config user.name github-actions[bot]
