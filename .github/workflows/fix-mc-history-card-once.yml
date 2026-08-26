@@ -1,0 +1,52 @@
+name: One-off fix Market Conditions history card
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-mc-history-card-once.yml'
+      - '.github/scripts/fix_mc_history_card_once.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Patch only Market Conditions history card
+        run: python .github/scripts/fix_mc_history_card_once.py
+      - name: Static validation
+        run: |
+          python -m py_compile build_dashboard.py
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          assert s.count('def _svg_mri(ts):') == 1
+          assert 'mc-history-card' in s
+          assert 'view = list(ts[-126:])' in s
+          assert 'Market Conditions history card: recent ~6 months only' in s
+          print('MC history static checks OK')
+          PY
+      - name: Regression test
+        run: |
+          pip install --disable-pip-version-check -r requirements.txt pytest
+          pytest -q tests/test_dashboard_build_regressions.py
+      - name: Commit tested card-only fix
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/scripts/fix_mc_history_card_once.py .github/workflows/fix-mc-history-card-once.yml
+          git add build_dashboard.py .github/scripts/fix_mc_history_card_once.py .github/workflows/fix-mc-history-card-once.yml
+          git diff --cached --check
+          git commit -m "Fix Market Conditions history chart readability"
+          git push origin HEAD:main
