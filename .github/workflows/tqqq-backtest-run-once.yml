@@ -21,6 +21,18 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Patch one-off display collision
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('research/tqqq_backtest_once.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('r.shape', 'r["shape"]')
+          s=s.replace('base.shape', 'base["shape"]')
+          s=s.replace('best.shape', 'best["shape"]')
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Run TQQQ backtest
         shell: bash
         run: |
@@ -39,5 +51,3 @@ jobs:
             tqqq_stage2_regime.csv
             tqqq_best_position_audit.csv
             tqqq_vix_signals.csv
-
-# one-off trigger after workflow registration
