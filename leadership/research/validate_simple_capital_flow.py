@@ -140,7 +140,6 @@ def main() -> None:
     high = ohlcv["high"][stock_cols].copy()
     low = ohlcv["low"][stock_cols].copy()
     volume = ohlcv["volume"][stock_cols].copy()
-    spy = close_all["SPY"].copy()
 
     sector_groups: dict[str, list[str]] = {}
     for sym in stock_cols:
@@ -154,7 +153,7 @@ def main() -> None:
     volume = volume[eligible]
     stock_cols = eligible
 
-    # The hypothesis is deliberately simple: where market dollar-volume share is moving.
+    # Deliberately simple hypothesis: follow changes in dollar-volume share only.
     dollar_volume = (close * volume).where((close > 0) & (volume >= 0))
     sector_dv = pd.DataFrame(index=close.index)
     for sector, members in sector_groups.items():
@@ -188,19 +187,16 @@ def main() -> None:
     # Restrict evaluation dates only after factors are calculated.
     eval_dates = close.index[(close.index >= start) & (close.index <= end)]
     close = close.reindex(eval_dates)
-    high_eval = high.reindex(close.index)
-    low_eval = low.reindex(close.index)
     sector_q_stock = sector_q_stock.reindex(close.index)
     stock_q = stock_q.reindex(close.index)
-    spy_eval = spy.reindex(close.index)
 
     sq_arr = sector_q_stock.to_numpy(float)
     cq_arr = stock_q.to_numpy(float)
     dates = close.index
     split_masks = {
         "ALL": np.ones(len(dates), dtype=bool),
-        "DISCOVERY_2016_2021": (dates <= DISCOVERY_END).to_numpy(),
-        "CONFIRMATION_2022_PLUS": (dates >= CONFIRM_START).to_numpy(),
+        "DISCOVERY_2016_2021": np.asarray(dates <= DISCOVERY_END, dtype=bool),
+        "CONFIRMATION_2022_PLUS": np.asarray(dates >= CONFIRM_START, dtype=bool),
     }
 
     result: dict[str, Any] = {
@@ -210,7 +206,7 @@ def main() -> None:
             "sector_flow": "Sector dollar-volume share of mapped market: recent 5d mean / prior 20d mean",
             "stock_capture": "Stock dollar-volume share within its Sector: recent 5d mean / prior 20d mean",
             "ranking": "daily cross-sectional quintiles; no optimized thresholds",
-            "winner10": "20/10/5d stock return minus equal-weight same-Sector peers >= +10%",
+            "winner10": "at each stated horizon, stock return minus equal-weight same-Sector peers >= +10%",
             "market_excess": "stock forward return minus SPY forward return",
             "sector_excess": "stock forward return minus equal-weight same-Sector constituent forward return excluding the stock",
             "warning": "current universe and current Sector mapping are applied retrospectively",
@@ -228,7 +224,7 @@ def main() -> None:
         "horizons": {},
     }
 
-    # Keep full downloaded future prices available for forward outcomes after analysis_end.
+    # Full downloaded matrices retain future observations after analysis_end.
     close_full = close_all[stock_cols]
     high_full = ohlcv["high"][stock_cols]
     low_full = ohlcv["low"][stock_cols]
@@ -256,11 +252,8 @@ def main() -> None:
         sector_excess = (stock_fwd - peer).to_numpy(float)
         winner = sector_excess >= 0.10
 
-        # MFE/MAE use full download matrix so dates near analysis_end retain future observations.
-        cfull = close_full
-        mfe_full, mae_full = future_mfe_mae(high_full, low_full, cfull, h)
-        pos = pd.Series(np.arange(len(cfull.index)), index=cfull.index).reindex(dates).to_numpy()
-        pos = pos.astype(int)
+        mfe_full, mae_full = future_mfe_mae(high_full, low_full, close_full, h)
+        pos = pd.Series(np.arange(len(close_full.index)), index=close_full.index).reindex(dates).to_numpy(dtype=int)
         mfe = mfe_full[pos, :]
         mae = mae_full[pos, :]
 
@@ -283,7 +276,6 @@ def main() -> None:
             hres["splits"][split_name] = sres
         result["horizons"][str(h)] = hres
 
-    # Diagnostics: factor distributions and sector-level incidence, not extra gates.
     result["factor_diagnostics"] = {
         "sector_flow_ratio_quantiles": safe(sector_flow.stack().quantile([0.05, 0.2, 0.5, 0.8, 0.95]).to_dict()),
         "stock_capture_ratio_quantiles": safe(stock_capture.stack().quantile([0.05, 0.2, 0.5, 0.8, 0.95]).to_dict()),
