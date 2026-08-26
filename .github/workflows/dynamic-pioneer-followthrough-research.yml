@@ -6,6 +6,7 @@ on:
       - research/sector-stock-leadership-20260826
     paths:
       - leadership/research/validate_dynamic_pioneer_followthrough.py
+      - leadership/research/dynamic_followthrough_fast_patch.py
       - .github/workflows/dynamic-pioneer-followthrough-research.yml
 
 permissions:
@@ -33,10 +34,12 @@ jobs:
       - name: Install research dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
       - name: Syntax check
-        run: python -m py_compile leadership/research/validate_dynamic_pioneer_followthrough.py
+        run: |
+          python -m py_compile leadership/research/validate_dynamic_pioneer_followthrough.py
+          python -m py_compile leadership/research/dynamic_followthrough_fast_patch.py
       - name: Run fixed dynamic follow-through
         run: |
-          python leadership/research/validate_dynamic_pioneer_followthrough.py \
+          python leadership/research/dynamic_followthrough_fast_patch.py \
             --root . \
             --output leadership/research/dynamic_pioneer_${{ matrix.tranche }} \
             --analysis-start 2016-01-04 \
