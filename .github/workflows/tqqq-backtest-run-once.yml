@@ -5,15 +5,14 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage13_sub20_integrated.py'
-      - 'research/tqqq_stage11_integrated_nqsar.py'
+      - 'research/tqqq_stage14_monte_carlo.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage13:
+  stage14:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -23,20 +22,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run sub-20 integrated NQSAR study
+      - name: Run Monte Carlo robustness study
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage13_sub20_integrated.py 2>&1 | tee tqqq_stage11.log
-      - name: Upload Stage13 results
+          PYTHONPATH=. python research/tqqq_stage14_monte_carlo.py 2>&1 | tee tqqq_stage14.log
+      - name: Upload Stage14 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage13-sub20-integrated
+          name: tqqq-stage14-monte-carlo
           if-no-files-found: warn
           path: |
-            tqqq_stage11.log
-            tqqq_stage11_summary.json
-            tqqq_stage11_base_grid.csv
-            tqqq_stage11_integrated_grid.csv
-            tqqq_stage11_robust.csv
+            tqqq_stage14.log
+            tqqq_stage14_summary.json
+            tqqq_stage14_summary.csv
+            tqqq_stage14_monte_carlo.csv
+            tqqq_stage14_defensive_daily_returns.csv
+            tqqq_stage14_balanced_daily_returns.csv
