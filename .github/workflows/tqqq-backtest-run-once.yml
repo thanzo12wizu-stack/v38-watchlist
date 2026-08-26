@@ -28,9 +28,9 @@ jobs:
           from pathlib import Path
           p=Path('research/tqqq_backtest_once.py')
           s=p.read_text(encoding='utf-8')
-          s=s.replace('r.shape', 'r["shape"]')
-          s=s.replace('base.shape', 'base["shape"]')
-          s=s.replace('best.shape', 'best["shape"]')
+          s=s.replace('r.shape', "r['shape']")
+          s=s.replace('base.shape', "base['shape']")
+          s=s.replace('best.shape', "best['shape']")
           p.write_text(s, encoding='utf-8')
           PY
       - name: Run TQQQ backtest
