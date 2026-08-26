@@ -5,16 +5,16 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage8b_attribution_fix.py'
+      - 'research/tqqq_stage9_nqsar_swing.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage8:
+  stage9:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -22,22 +22,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run TQQQ attribution
+      - name: Run NQSAR swing study
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage8b_attribution_fix.py 2>&1 | tee tqqq_stage8.log
-      - name: Upload Stage8 results
+          PYTHONPATH=. python research/tqqq_stage9_nqsar_swing.py 2>&1 | tee tqqq_stage9.log
+      - name: Upload Stage9 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage8-results-fixed
+          name: tqqq-stage9-nqsar-swing
           if-no-files-found: warn
           path: |
-            tqqq_stage8.log
-            tqqq_stage8_summary.json
-            tqqq_stage8_annual.csv
-            tqqq_stage8_start_year.csv
-            tqqq_stage8_drawdowns.csv
-            tqqq_stage8_monthly.csv
-            tqqq_stage8_daily.csv
+            tqqq_stage9.log
+            tqqq_stage9_summary.json
+            tqqq_stage9_nqsar_events.csv
+            tqqq_stage9_nqsar_stats.csv
+            tqqq_stage9_nqsar_trade_grid.csv
+            tqqq_stage9_nqsar_robust.csv
