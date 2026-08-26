@@ -24,7 +24,8 @@ jobs:
         run: |
           python -m py_compile .github/scripts/oneoff_mc_layer_validation.py
           python -m py_compile .github/scripts/oneoff_mc_layer_validation_v2.py
-      - name: Run replication-gated V0 V1 V2 and subtheme audit
+          python -m py_compile .github/scripts/oneoff_mc_layer_validation_v3.py
+      - name: Run exact replication-gated V0 V1 V2 and subtheme audit
         env:
           PYTHONPATH: .
-        run: python .github/scripts/oneoff_mc_layer_validation_v2.py
+        run: python .github/scripts/oneoff_mc_layer_validation_v3.py
