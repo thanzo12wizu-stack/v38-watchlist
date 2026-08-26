@@ -1,0 +1,52 @@
+name: Early Rotation research validation
+
+on:
+  pull_request:
+    paths:
+      - 'leadership/research/validate_early_rotation.py'
+      - '.github/workflows/early-rotation-research.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: early-rotation-research-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: startsWith(github.head_ref, 'research/early-rotation-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_early_rotation.py
+
+      - name: Run fixed-definition Early Rotation validation
+        run: |
+          python leadership/research/validate_early_rotation.py \
+            --root . \
+            --output leadership/research/output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: early-rotation-validation
+          path: leadership/research/output/
+          if-no-files-found: warn
+          retention-days: 7
