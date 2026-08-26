@@ -1,5 +1,6 @@
 name: Theme Momentum final research
 
+# Research-only workflow. It never writes to the production site.
 on:
   push:
     branches:
