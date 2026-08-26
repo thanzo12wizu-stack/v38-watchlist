@@ -11,13 +11,18 @@ if not GRID.exists():
 d1 = pd.read_csv(GRID)
 
 # Candidate union is selected only from 2011-2018 IS statistics.
+# Preserve signal-family diversity so an IS-specific winner does not crowd out
+# a different family before untouched 2019+ OOS evaluation.
 is_candidates=[]
-is_candidates += list(d1.sort_values(['is_calmar','is_cagr'],ascending=False).head(25).index)
-is_candidates += list(d1.sort_values(['is_cagr','is_calmar'],ascending=False).head(25).index)
-for lim in (0.40,0.50,0.60,0.70):
-    is_candidates += list(d1[d1['is_mdd'] >= -lim].sort_values(['is_cagr','is_calmar'],ascending=False).head(15).index)
+for metric_name in ('ema21_atr','sma50_atr','vwap63_atr','vwap252_atr'):
+    dm=d1[d1['metric']==metric_name]
+    is_candidates += list(dm.sort_values(['is_calmar','is_cagr'],ascending=False).head(12).index)
+    is_candidates += list(dm.sort_values(['is_cagr','is_calmar'],ascending=False).head(12).index)
+    for lim in (0.40,0.50,0.60,0.70):
+        is_candidates += list(dm[dm['is_mdd'] >= -lim].sort_values(['is_cagr','is_calmar'],ascending=False).head(8).index)
 is_candidates=sorted(set(is_candidates))
-print('[stage2] IS-selected base configs',len(is_candidates),flush=True)
+print('[stage2] metric-diverse IS-selected base configs',len(is_candidates),flush=True)
+print('[stage2] family counts',d1.loc[is_candidates,'metric'].value_counts().to_dict(),flush=True)
 
 qqq=bt.dl_one('QQQ','2009-01-01')
 tqqq=bt.dl_one('TQQQ','2010-01-01')
@@ -78,7 +83,6 @@ for _,r in d2.sort_values(['full_calmar','full_cagr'],ascending=False).head(15).
     mg='none' if pd.isna(r['mc_gate']) else f">={int(r['mc_gate'])}"
     print(f"{r['metric']:12s} {r['entries']:20s} exit=+{r['exit']:<3} {r['shape']:6s} MC={mg:5s} VIX={r['vix_mode']:11s} CAGR={r['full_cagr']*100:6.2f}% MDD={r['full_mdd']*100:7.2f}% C={r['full_calmar']:.3f} OOS_C={r['oos_calmar']:.3f}")
 
-# Modifier diagnostics: medians and win rates versus the same technical base.
 print('\n=== MODIFIER DIAGNOSTICS VS SAME TECH BASE ===')
 for mg in mc_gates:
     for vm in vix_modes:
@@ -89,15 +93,13 @@ for mg in mc_gates:
               f"FULL dC={x['full_calmar_delta'].median():+.3f} winC={(x['full_calmar_delta']>0).mean()*100:.0f}% dCAGR={x['full_cagr_delta'].median()*100:+.2f}pt dMDD={x['full_mdd_delta'].median()*100:+.2f}pt |",
               f"OOS dC={x['oos_calmar_delta'].median():+.3f} winC={(x['oos_calmar_delta']>0).mean()*100:.0f}% dCAGR={x['oos_cagr_delta'].median()*100:+.2f}pt dMDD={x['oos_mdd_delta'].median()*100:+.2f}pt")
 
-# Best robust = maximize minimum(IS Calmar, OOS Calmar), but report as diagnostic, not clean OOS-selected estimate.
 d2['min_io_calmar']=d2[['is_calmar','oos_calmar']].min(axis=1)
-rob=d2.sort_values(['min_io_calmar','full_calmar'],ascending=False).head(15)
+rob=d2.sort_values(['min_io_calmar','full_calmar'],ascending=False).head(20)
 print('\n=== ROBUSTNESS DIAGNOSTIC min(IS,OOS Calmar) ===')
 for _,r in rob.iterrows():
     mg='none' if pd.isna(r['mc_gate']) else f">={int(r['mc_gate'])}"
     print(f"{r['metric']:12s} {r['entries']:20s} exit=+{r['exit']:<3} {r['shape']:6s} MC={mg:5s} VIX={r['vix_mode']:11s} minIO={r['min_io_calmar']:.3f} IS={r['is_calmar']:.3f} OOS={r['oos_calmar']:.3f} FULL={r['full_calmar']:.3f}")
 
-# VIX dates and what the baseline/override positions were around the signals for best robust row.
 best=rob.iloc[0]
 mg=None if pd.isna(best['mc_gate']) else float(best['mc_gate'])
 target=bt.build_target(ind[str(best['metric'])],tuple(float(x) for x in str(best['entries']).split('/')),float(best['exit']),bt.ALLOC_SHAPES[str(best['shape'])],mc=mc,mc_gate=mg,vix_state=vstate,vix_mode=str(best['vix_mode']))
@@ -107,6 +109,7 @@ sig=[s for s in vsignals if s['date']>=bt.START.strftime('%Y-%m-%d')]
 pd.DataFrame(sig).to_csv('tqqq_vix_signals.csv',index=False)
 
 summary={'start':str(ind.index[0].date()),'end':str(ind.index[-1].date()),'sessions':len(ind),'n_stage2':len(d2),
+         'family_counts':d1.loc[is_candidates,'metric'].value_counts().to_dict(),
          'vix_counts':pd.Series([s['type'] for s in sig]).value_counts().to_dict() if sig else {},
          'mc_coverage_start':float(mc_cov.iloc[0]),'mc_coverage_median':float(mc_cov.median()),'mc_coverage_latest':float(mc_cov.iloc[-1]),
          'best_robust':{k:(None if pd.isna(v) else v) for k,v in best.to_dict().items()},
