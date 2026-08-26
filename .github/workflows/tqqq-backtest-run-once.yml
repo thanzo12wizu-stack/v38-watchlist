@@ -5,14 +5,14 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage14_monte_carlo.py'
+      - 'research/tqqq_stage15_joint_state_mc.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage14:
+  stage15:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -22,21 +22,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run Monte Carlo robustness study
+      - name: Run joint-state synthetic market Monte Carlo
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage14_monte_carlo.py 2>&1 | tee tqqq_stage14.log
-      - name: Upload Stage14 results
+          PYTHONPATH=. python research/tqqq_stage15_joint_state_mc.py 2>&1 | tee tqqq_stage15.log
+      - name: Upload Stage15 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage14-monte-carlo
+          name: tqqq-stage15-joint-state-mc
           if-no-files-found: warn
           path: |
-            tqqq_stage14.log
-            tqqq_stage14_summary.json
-            tqqq_stage14_summary.csv
-            tqqq_stage14_monte_carlo.csv
-            tqqq_stage14_defensive_daily_returns.csv
-            tqqq_stage14_balanced_daily_returns.csv
+            tqqq_stage15.log
+            tqqq_stage15_summary.json
+            tqqq_stage15_summary.csv
+            tqqq_stage15_joint_state_mc.csv
