@@ -1,0 +1,71 @@
+name: One-off add MC entry guide
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-add-mc-guide.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Patch MC foldout guide only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('build_dashboard.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'Rawは57ETF×12指標を完全等加重→EMA2。右端は各指標のRawへの寄与。最終MCはRawを直前3780営業日（当日除外）の平均・母標準偏差でZ化し、50=15年平均 / 75=+1σ / 25=−1σ / 90=+2σ / 10=−2σとなるよう0–100へ変換。Breadth 10日変化はscore外。もう一度タップで閉じる ▴'
+          new = 'Rawは57ETF×12指標を完全等加重→EMA2。右端は各指標のRawへの寄与。最終MCはRawを直前3780営業日（当日除外）の平均・母標準偏差でZ化し、50=15年平均 / 75=+1σ / 25=−1σ / 90=+2σ / 10=−2σとなるよう0–100へ変換。Breadth 10日変化はscore外。<br><br><b>実戦の見方</b>：&lt;20 Crisis＝底当てせず監視 / 20–35 Bottom Watch＝反転確認 / 35–45 Recovery＝打診候補 / <b>45を下から突破＝再エントリー本命</b> / 55+＝通常エントリー可 / 65–75は上昇中なら順風・下降中なら追い慎重。VIX BOTTOMは早期底候補、MC45回復を本格再参入の確認に使う。もう一度タップで閉じる ▴'
+          n = s.count(old)
+          if n != 1:
+              raise SystemExit(f'expected exactly one MC note target, found {n}')
+          p.write_text(s.replace(old, new), encoding='utf-8')
+          PY
+      - name: Validate source and regression tests
+        run: |
+          python -m py_compile build_dashboard.py
+          pytest -q tests/test_dashboard_build_regressions.py
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          required = [
+              '45を下から突破＝再エントリー本命',
+              '65–75は上昇中なら順風・下降中なら追い慎重',
+              'VIX BOTTOMは早期底候補',
+          ]
+          for x in required:
+              if s.count(x) != 1:
+                  raise SystemExit(f'guide marker count invalid: {x!r} -> {s.count(x)}')
+          PY
+      - name: Commit source change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build_dashboard.py
+          test "$(git diff --cached --name-only)" = 'build_dashboard.py'
+          git commit -m 'Add validated MC entry guide to foldout'
+          git push origin HEAD:main
+      - name: Dispatch dashboard build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run dashboard.yml --ref main
