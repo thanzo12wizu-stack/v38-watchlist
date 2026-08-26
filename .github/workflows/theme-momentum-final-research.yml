@@ -1,0 +1,52 @@
+name: Theme Momentum final research
+
+on:
+  push:
+    branches:
+      - research/theme-momentum-final-20260827
+    paths:
+      - 'leadership/research/validate_theme_momentum_final.py'
+      - '.github/workflows/theme-momentum-final-research.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: theme-momentum-final-research
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Compile research script
+        run: python -m py_compile leadership/research/validate_theme_momentum_final.py
+      - name: Run full-universe frozen validation
+        working-directory: leadership/research
+        run: |
+          python validate_theme_momentum_final.py \
+            --root ../.. \
+            --output leadership/research/theme_momentum_final \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-30 \
+            --batch-size 75 \
+            --min-members 3 \
+            --bootstrap 3000
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-momentum-final
+          path: leadership/research/theme_momentum_final/
+          if-no-files-found: warn
+          retention-days: 14
