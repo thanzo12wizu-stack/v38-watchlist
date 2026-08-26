@@ -1,0 +1,66 @@
+name: Leadership diffusion research
+
+on:
+  pull_request:
+    paths:
+      - 'leadership/backtest_diffusion.py'
+      - 'leadership/tests/test_diffusion_backtest.py'
+      - '.github/workflows/leadership-diffusion-research.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: leadership-diffusion-research-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+
+      - name: Unit tests
+        run: python -m unittest leadership.tests.test_diffusion_backtest -v
+
+      - name: Full 2015-2026 eventized diffusion validation
+        run: |
+          python leadership/backtest_diffusion.py \
+            --universe universe.csv \
+            --start-date 2015-01-01 \
+            --benchmark SPY \
+            --batch-size 80 \
+            --min-sector-members 20 \
+            --bootstrap 1000
+
+      - name: Print decision summary
+        if: always()
+        run: |
+          if [[ -s leadership/research/diffusion_report.json ]]; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('leadership/research/diffusion_report.json').read_text())
+          print(json.dumps({'coverage':r.get('coverage'),'decision':r.get('decision'),'sector_validation':r.get('sector',{}).get('2022-2026H1'),'leader_validation':r.get('leader',{}).get('2022-2026H1'),'entry_validation':r.get('entry',{}).get('2022-2026H1')}, indent=2))
+          PY
+          fi
+
+      - name: Upload research result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leadership-diffusion-research
+          path: leadership/research/
+          if-no-files-found: warn
+          retention-days: 14
