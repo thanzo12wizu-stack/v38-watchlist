@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python research/tqqq_backtest_once.py 2>&1 | tee tqqq_backtest.log
+          PYTHONPATH=. python research/tqqq_backtest_once.py 2>&1 | tee tqqq_backtest.log
       - name: Upload full results
         if: always()
         uses: actions/upload-artifact@v4
