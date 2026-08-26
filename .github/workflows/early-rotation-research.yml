@@ -1,4 +1,4 @@
-name: Pioneer Leader research validation
+name: RS period research validation
 
 on:
   pull_request:
@@ -6,18 +6,19 @@ on:
       - 'leadership/research/validate_early_rotation.py'
       - 'leadership/research/validate_confirmed_leadership.py'
       - 'leadership/research/validate_pioneer_leader.py'
+      - 'leadership/research/validate_rs_periods.py'
       - '.github/workflows/early-rotation-research.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: pioneer-leader-research-${{ github.event.pull_request.number }}
+  group: rs-period-research-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    if: startsWith(github.head_ref, 'research/pioneer-leader-')
+    if: startsWith(github.head_ref, 'research/rs-period-')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -35,12 +36,13 @@ jobs:
           python -m py_compile leadership/research/validate_early_rotation.py
           python -m py_compile leadership/research/validate_confirmed_leadership.py
           python -m py_compile leadership/research/validate_pioneer_leader.py
+          python -m py_compile leadership/research/validate_rs_periods.py
 
-      - name: Run Pioneer Leader validation
+      - name: Run RS period validation
         run: |
-          python leadership/research/validate_pioneer_leader.py \
+          python leadership/research/validate_rs_periods.py \
             --root . \
-            --output leadership/research/pioneer_output \
+            --output leadership/research/rs_period_output \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 1500 \
@@ -51,7 +53,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pioneer-leader-validation
-          path: leadership/research/pioneer_output/
+          name: rs-period-validation
+          path: leadership/research/rs_period_output/
           if-no-files-found: warn
           retention-days: 7
