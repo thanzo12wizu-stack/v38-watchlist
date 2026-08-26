@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage11_ultrafast.py'
+      - 'research/tqqq_stage11_anchor_robust.py'
       - 'research/tqqq_stage11_integrated_nqsar.py'
 
 permissions:
@@ -23,16 +23,16 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run integrated NQSAR study
+      - name: Run anchor robustness integrated NQSAR study
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage11_ultrafast.py 2>&1 | tee tqqq_stage11.log
+          PYTHONPATH=. python research/tqqq_stage11_anchor_robust.py 2>&1 | tee tqqq_stage11.log
       - name: Upload Stage11 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage11-integrated-nqsar-ultrafast
+          name: tqqq-stage11-integrated-nqsar-anchor
           if-no-files-found: warn
           path: |
             tqqq_stage11.log
