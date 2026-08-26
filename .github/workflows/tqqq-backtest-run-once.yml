@@ -1,0 +1,41 @@
+name: TQQQ backtest run once
+
+on:
+  push:
+    branches: [tqqq-backtest-once-20260826]
+    paths:
+      - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_backtest_once.py'
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Run TQQQ backtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/tqqq_backtest_once.py 2>&1 | tee tqqq_backtest.log
+      - name: Upload full results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-backtest-results
+          if-no-files-found: warn
+          path: |
+            tqqq_backtest.log
+            tqqq_summary.json
+            tqqq_stage1_grid.csv
+            tqqq_stage2_regime.csv
+            tqqq_best_position_audit.csv
+            tqqq_vix_signals.csv
