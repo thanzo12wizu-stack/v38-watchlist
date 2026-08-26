@@ -8,6 +8,7 @@ on:
     paths:
       - leadership/research/validate_simple_capital_flow_eventized.py
       - leadership/research/validate_rrg_tail_system.py
+      - leadership/research/validate_rrg_tail_system_v2.py
       - .github/workflows/simple-capital-flow-eventized-research.yml
 
 jobs:
@@ -47,10 +48,12 @@ jobs:
       - name: Install research dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
       - name: Syntax check
-        run: python -m py_compile leadership/research/validate_rrg_tail_system.py
-      - name: Run RRG-like pre-rotation and asymmetric exit validation
         run: |
-          python leadership/research/validate_rrg_tail_system.py \
+          python -m py_compile leadership/research/validate_rrg_tail_system.py
+          python -m py_compile leadership/research/validate_rrg_tail_system_v2.py
+      - name: Run hardened RRG-like pre-rotation and asymmetric exit validation
+        run: |
+          python leadership/research/validate_rrg_tail_system_v2.py \
             --root . \
             --output leadership/research/rrg_tail_outputs \
             --analysis-start 2016-01-04 \
