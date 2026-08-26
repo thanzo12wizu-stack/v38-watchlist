@@ -1,0 +1,39 @@
+name: TQQQ backtest once
+
+on:
+  push:
+    branches: [tqqq-backtest-once-20260826]
+    paths:
+      - '.github/workflows/tqqq-backtest-once.yml'
+      - 'research/tqqq_backtest_once.py'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Inspect current V38 signal implementations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          txt=Path('build_dashboard.py').read_text(encoding='utf-8',errors='replace').splitlines()
+          needles=['NQSAR','NQ-SAR','nq_sar','nqsar','def sar','def mri_frame','MC_MARKET_TICKERS','VIX_CYCLE_FAST','def _vix_run_state']
+          hits=[]
+          for i,line in enumerate(txt,1):
+              low=line.lower()
+              if any(n.lower() in low for n in needles): hits.append(i)
+          blocks=[]
+          for i in hits:
+              a=max(1,i-15); b=min(len(txt),i+35)
+              if blocks and a<=blocks[-1][1]+2: blocks[-1]=(blocks[-1][0],max(blocks[-1][1],b))
+              else: blocks.append((a,b))
+          for a,b in blocks:
+              print(f'\n=== LINES {a}-{b} ===')
+              for n in range(a,b+1): print(f'{n}: {txt[n-1]}')
+          PY
