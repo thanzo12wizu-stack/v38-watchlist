@@ -37,28 +37,28 @@ def clustered_difference(values: pd.DataFrame, metric: str, cluster: str, seed: 
     if point is None:
         return {"weak_minus_not_weak": None, "ci95": [None, None], "clusters": 0}
 
-    grouped: dict[Any, dict[str, np.ndarray]] = {}
-    for key, part in use.groupby(cluster, observed=True):
-        grouped[key] = {
-            "PARENT_WEAK": part.loc[part["parent_state"] == "PARENT_WEAK", metric].to_numpy(float),
-            "PARENT_NOT_WEAK": part.loc[part["parent_state"] == "PARENT_NOT_WEAK", metric].to_numpy(float),
-        }
-    keys = list(grouped)
+    table = use.assign(
+        weak_value=np.where(use["parent_state"] == "PARENT_WEAK", use[metric], 0.0),
+        weak_count=np.where(use["parent_state"] == "PARENT_WEAK", 1.0, 0.0),
+        not_weak_value=np.where(use["parent_state"] == "PARENT_NOT_WEAK", use[metric], 0.0),
+        not_weak_count=np.where(use["parent_state"] == "PARENT_NOT_WEAK", 1.0, 0.0),
+    ).groupby(cluster, observed=True)[["weak_value", "weak_count", "not_weak_value", "not_weak_count"]].sum()
+
+    n_clusters = len(table)
+    if n_clusters == 0:
+        return {"weak_minus_not_weak": point, "ci95": [None, None], "clusters": 0}
+    arr = table.to_numpy(float)
     rng = np.random.default_rng(seed)
-    diffs: list[float] = []
-    for _ in range(reps):
-        sampled = rng.choice(keys, size=len(keys), replace=True)
-        a_parts = [grouped[k]["PARENT_WEAK"] for k in sampled if len(grouped[k]["PARENT_WEAK"])]
-        b_parts = [grouped[k]["PARENT_NOT_WEAK"] for k in sampled if len(grouped[k]["PARENT_NOT_WEAK"])]
-        if not a_parts or not b_parts:
-            continue
-        a = np.concatenate(a_parts)
-        b = np.concatenate(b_parts)
-        diffs.append(float(a.mean() - b.mean()))
-    if not diffs:
-        return {"weak_minus_not_weak": point, "ci95": [None, None], "clusters": len(keys)}
-    lo, hi = np.quantile(np.asarray(diffs), [0.025, 0.975])
-    return {"weak_minus_not_weak": point, "ci95": [float(lo), float(hi)], "clusters": len(keys)}
+    # Multinomial cluster counts are exactly equivalent to resampling n clusters
+    # with replacement, but avoid repeated Python concatenation.
+    draws = rng.multinomial(n_clusters, np.full(n_clusters, 1.0 / n_clusters), size=reps)
+    totals = draws @ arr
+    valid = (totals[:, 1] > 0) & (totals[:, 3] > 0)
+    diffs = totals[valid, 0] / totals[valid, 1] - totals[valid, 2] / totals[valid, 3]
+    if not len(diffs):
+        return {"weak_minus_not_weak": point, "ci95": [None, None], "clusters": n_clusters}
+    lo, hi = np.quantile(diffs, [0.025, 0.975])
+    return {"weak_minus_not_weak": point, "ci95": [float(lo), float(hi)], "clusters": n_clusters}
 
 
 def compare_groups(outcomes: pd.DataFrame) -> dict[str, Any]:
