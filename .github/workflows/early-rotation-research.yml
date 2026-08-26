@@ -1,23 +1,23 @@
-name: Confirmed Leadership research validation
+name: Pioneer Leader research validation
 
 on:
   pull_request:
     paths:
       - 'leadership/research/validate_early_rotation.py'
-      - 'leadership/research/compare_subtheme_momentum.py'
       - 'leadership/research/validate_confirmed_leadership.py'
+      - 'leadership/research/validate_pioneer_leader.py'
       - '.github/workflows/early-rotation-research.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: confirmed-leadership-research-${{ github.event.pull_request.number }}
+  group: pioneer-leader-research-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    if: startsWith(github.head_ref, 'research/confirmed-leadership-')
+    if: startsWith(github.head_ref, 'research/pioneer-leader-')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -34,12 +34,13 @@ jobs:
         run: |
           python -m py_compile leadership/research/validate_early_rotation.py
           python -m py_compile leadership/research/validate_confirmed_leadership.py
+          python -m py_compile leadership/research/validate_pioneer_leader.py
 
-      - name: Run Confirmed Leadership validation
+      - name: Run Pioneer Leader validation
         run: |
-          python leadership/research/validate_confirmed_leadership.py \
+          python leadership/research/validate_pioneer_leader.py \
             --root . \
-            --output leadership/research/confirmed_output \
+            --output leadership/research/pioneer_output \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 1500 \
@@ -50,7 +51,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: confirmed-leadership-validation
-          path: leadership/research/confirmed_output/
+          name: pioneer-leader-validation
+          path: leadership/research/pioneer_output/
           if-no-files-found: warn
           retention-days: 7
