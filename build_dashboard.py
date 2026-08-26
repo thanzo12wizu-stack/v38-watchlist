@@ -18410,53 +18410,85 @@ def _mkt_section(label, q, guide=None, en=None):
             + (f'<div class="msec-q">{q}</div>' if q else "") + "</div>")
 
 def _svg_mri(ts):
-    """Market-status time series, shown as the common ~2-year chart window with regime-zone shading."""
+    """Market Conditions history card: recent ~6 months only, compact mobile-safe layout."""
     if not ts or len(ts) < 5:
         return ""
-    # MC15 needs the long history for normalization/statistics, but the operational chart
-    # must stay on the common trend-chart window. Do not compress 2008-present into one card.
-    plot_ts = ts[-CHART_LB:]
-    ys = [v for _, v in plot_ts]; last = ys[-1]
-    hl = sum(ys[-3:]) / 3 if len(ys) >= 3 else last
+
+    # MC15 needs long history for the score, but the chart itself should stay a
+    # recent-regime view. Never render the full calibration history here.
+    view = list(ts[-126:])
+    ys = [float(v) for _, v in view]
+    n = len(ys)
+    last = ys[-1]
     band_lab = mri_band(last)[0].replace("（過熱・反落注意⚠）", "")
 
-    # Keep a dedicated right gutter for regime labels so the line/current point never overlaps them.
-    n = len(ys); Wd, Ht = 680, 210
-    pad_l, pad_r, pad_y = 8, 42, 8
-    plot_w = Wd - pad_l - pad_r
-    plot_r = pad_l + plot_w
-    lo, hi = min(ys), max(ys)
-    lo = max(0, lo - 4); hi = min(100, hi + 4)
-    rng = (hi - lo) or 1
-    def X(i): return pad_l + i * plot_w / (n - 1)
-    def Y(v): return pad_y + (1 - (v - lo) / rng) * (Ht - 2 * pad_y)
+    Wd, Ht = 680, 214
+    pl, pr, pt, pb = 8, 42, 8, 8
+    iw = Wd - pl - pr
+    ih = Ht - pt - pb
+
+    def X(i):
+        return pl + i * iw / max(1, n - 1)
+
+    def Y(v):
+        vv = max(0.0, min(100.0, float(v)))
+        return pt + (100.0 - vv) * ih / 100.0
 
     zones = [(0, 20, "#ef4444"), (20, 45, "#f97316"), (45, 55, "#64748b"),
              (55, 80, "#22c55e"), (80, 100, "#16a34a")]
-    zr = ""
-    for z0, z1, zc in zones:
-        a, b = max(z0, lo), min(z1, hi)
-        if b <= a:
-            continue
-        zr += (f'<rect x="{pad_l}" y="{Y(b):.1f}" width="{plot_w}" '
-               f'height="{max(0.0, Y(a)-Y(b)):.1f}" fill="{zc}" opacity="0.07"/>')
+    zr = ''.join(
+        f'<rect x="{pl}" y="{Y(hi):.1f}" width="{iw}" height="{Y(lo)-Y(hi):.1f}" fill="{c}" opacity="0.055"/>'
+        for lo, hi, c in zones
+    )
+    grid_vals = (20, 35, 45, 55, 65, 80)
+    gl = ''.join(
+        f'<line x1="{pl}" x2="{Wd-pr}" y1="{Y(g):.1f}" y2="{Y(g):.1f}" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>'
+        f'<text x="{Wd-pr+6}" y="{Y(g)+3.5:.1f}" font-size="10" fill="#94a3b8" opacity="0.9">{g}</text>'
+        for g in grid_vals
+    )
+    pts = ' '.join(f'{X(i):.1f},{Y(v):.1f}' for i, v in enumerate(ys))
+    svg = (
+        f'<svg viewBox="0 0 {Wd} {Ht}" preserveAspectRatio="none" aria-label="Market Conditions recent history" '
+        f'style="display:block;width:100%;height:214px;overflow:visible">'
+        f'{zr}{gl}'
+        f'<polyline points="{pts}" fill="none" stroke="#34d399" stroke-width="2.25" vector-effect="non-scaling-stroke"/>'
+        f'<circle cx="{X(n-1):.1f}" cy="{Y(last):.1f}" r="3.8" fill="#34d399"/>'
+        f'</svg>'
+    )
 
-    pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(ys))
-    gl = "".join(
-        f'<line x1="{pad_l}" y1="{Y(g):.1f}" x2="{plot_r}" y2="{Y(g):.1f}" stroke="#1c2533" stroke-width="1"/>'
-        f'<text x="{Wd-4}" y="{Y(g)-2:.1f}" fill="#8b9bb0" font-size="16" font-weight="600" text-anchor="end">{g}</text>'
-        for g in (20, 35, 45, 55, 65, 80) if lo <= g <= hi)
-    svg = (f'<svg viewBox="0 0 {Wd} {Ht}" preserveAspectRatio="none">'
-           f'<defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">'
-           f'<stop offset="0" stop-color="#34d399" stop-opacity="0.30"/>'
-           f'<stop offset="1" stop-color="#34d399" stop-opacity="0"/></linearGradient></defs>'
-           f'{zr}{gl}'
-           f'<polyline points="{pts}" fill="none" stroke="#34d399" stroke-width="2"/>'
-           f'<circle cx="{X(n-1):.1f}" cy="{Y(ys[-1]):.1f}" r="3.5" fill="#34d399"/></svg>')
-    return (f'<div class="card"><div class="chd"><h2>Market Conditions 推移</h2><div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
-            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">Market Conditionsの推移・{_span_label(plot_ts)}（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
-            f'<div class="chart">{svg}'
-            f'{_date_axis(plot_ts)}</div></div>')
+    # Five evenly-spaced labels are readable on phones and still show the span.
+    k = min(5, n)
+    idxs = sorted(set(round(i * (n - 1) / max(1, k - 1)) for i in range(k)))
+    labs = []
+    for j, idx in enumerate(idxs):
+        d = pd.Timestamp(view[idx][0])
+        lab = f'{d.month}/{d.day}'
+        align = 'left' if j == 0 else 'right' if j == len(idxs)-1 else 'center'
+        labs.append(f'<span style="text-align:{align};white-space:nowrap">{lab}</span>')
+    axis = (
+        f'<div class="mc-history-axis" style="display:grid;grid-template-columns:repeat({len(labs)},1fr);'
+        f'gap:0;margin:4px 42px 0 8px;font-size:11px;line-height:1;color:#7c8178">'
+        + ''.join(labs) + '</div>'
+    )
+
+    return (
+        f'<div class="card mc-history-card" style="padding-bottom:14px">'
+        f'<style>'
+        f'.mc-history-card .chd{{margin-bottom:2px}}'
+        f'.mc-history-card .cxpl{{margin:0 0 4px}}'
+        f'.mc-history-card .chart{{margin-top:0;padding-top:0}}'
+        f'.mc-history-card .cxpl summary{{padding-top:2px;padding-bottom:2px}}'
+        f'@media(max-width:640px){{.mc-history-card{{padding-top:14px!important;padding-bottom:10px!important}}'
+        f'.mc-history-card .chart svg{{height:196px!important}}'
+        f'.mc-history-card .mc-history-axis{{font-size:10px!important;margin-top:3px!important}}}}'
+        f'</style>'
+        f'<div class="chd"><h2>Market Conditions 推移</h2>'
+        f'<div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
+        f'<details class="cxpl"><summary>読み方</summary>'
+        f'<div class="cxpl-b">Market Conditionsの推移・直近約6か月（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
+        f'<div class="chart">{svg}{axis}</div></div>'
+    )
+
 
 def _sec_rows(recs, tf, topbottom=False):
     rs = [x for x in recs if x.get(tf) is not None and not (isinstance(x[tf], float) and np.isnan(x[tf]))]
