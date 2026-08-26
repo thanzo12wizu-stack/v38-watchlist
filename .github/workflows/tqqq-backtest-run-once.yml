@@ -21,7 +21,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Patch one-off display collision
+      - name: Patch one-off research runner
         shell: bash
         run: |
           python - <<'PY'
@@ -31,6 +31,26 @@ jobs:
           s=s.replace('r.shape', "r['shape']")
           s=s.replace('base.shape', "base['shape']")
           s=s.replace('best.shape', "best['shape']")
+          old='''    is_candidates = []
+    is_candidates += list(d1.sort_values(["is_calmar","is_cagr"],ascending=False).head(25).index)
+    is_candidates += list(d1.sort_values(["is_cagr","is_calmar"],ascending=False).head(25).index)
+    for lim in (0.40,0.50,0.60,0.70):
+        is_candidates += list(d1[d1["is_mdd"] >= -lim].sort_values(["is_cagr","is_calmar"],ascending=False).head(15).index)
+    is_candidates = sorted(set(is_candidates))
+'''
+          new='''    is_candidates = []
+    # Preserve metric diversity using IS data only; OOS remains untouched.
+    for _metric in ("ema21_atr", "sma50_atr", "vwap63_atr", "vwap252_atr"):
+        _dm = d1[d1["metric"] == _metric]
+        is_candidates += list(_dm.sort_values(["is_calmar","is_cagr"],ascending=False).head(12).index)
+        is_candidates += list(_dm.sort_values(["is_cagr","is_calmar"],ascending=False).head(12).index)
+        for lim in (0.40,0.50,0.60,0.70):
+            is_candidates += list(_dm[_dm["is_mdd"] >= -lim].sort_values(["is_cagr","is_calmar"],ascending=False).head(8).index)
+    is_candidates = sorted(set(is_candidates))
+'''
+          if old not in s:
+              raise SystemExit('candidate block not found')
+          s=s.replace(old,new)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Run TQQQ backtest
