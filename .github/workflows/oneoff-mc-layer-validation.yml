@@ -20,13 +20,9 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
-      - name: Compile diagnostic scripts
-        run: |
-          python -m py_compile .github/scripts/oneoff_mc_layer_validation.py
-          python -m py_compile .github/scripts/oneoff_mc_layer_validation_v2.py
-          python -m py_compile .github/scripts/oneoff_mc_layer_validation_v3.py
-          python -m py_compile .github/scripts/oneoff_mc_validation_phase2.py
-      - name: Run MC concept phase-2 audit
+      - name: Compile bridge audit
+        run: python -m py_compile .github/scripts/oneoff_subtheme_bridge_audit.py
+      - name: Run subtheme bridge audit
         env:
           PYTHONPATH: .
-        run: python .github/scripts/oneoff_mc_validation_phase2.py
+        run: python .github/scripts/oneoff_subtheme_bridge_audit.py
