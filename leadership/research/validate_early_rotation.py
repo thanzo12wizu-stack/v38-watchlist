@@ -39,8 +39,7 @@ def leaf_strings(value: Any, depth: int = 0) -> list[str]:
         return out
     if isinstance(value, dict):
         out: list[str] = []
-        preferred = ("theme", "themes", "subtheme", "subthemes", "name", "label")
-        for key in preferred:
+        for key in ("theme", "themes", "subtheme", "subthemes", "name", "label"):
             if key in value:
                 out.extend(leaf_strings(value[key], depth + 1))
         if out:
@@ -51,25 +50,32 @@ def leaf_strings(value: Any, depth: int = 0) -> list[str]:
     return []
 
 
+def parse_ticker_theme_map(node: dict[str, Any]) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for raw_sym, value in node.items():
+        sym = str(raw_sym).strip().upper()
+        if not is_ticker(sym):
+            continue
+        vals: list[str] = []
+        seen: set[str] = set()
+        for theme in leaf_strings(value):
+            if theme and not is_ticker(theme) and theme not in seen:
+                seen.add(theme)
+                vals.append(theme)
+        if vals:
+            out[sym] = vals
+    return out
+
+
 def ticker_map_candidates(node: Any, path: str = "root", depth: int = 0) -> list[dict[str, Any]]:
     if depth > 5:
         return []
     out: list[dict[str, Any]] = []
     if isinstance(node, dict):
-        ticker_items = [(str(k).upper(), v) for k, v in node.items() if is_ticker(k)]
-        if len(ticker_items) >= 50 and len(ticker_items) >= max(50, int(len(node) * 0.45)):
-            mapping: dict[str, list[str]] = {}
-            for sym, value in ticker_items:
-                vals = []
-                seen: set[str] = set()
-                for s in leaf_strings(value):
-                    if not s or is_ticker(s) or s in seen:
-                        continue
-                    seen.add(s)
-                    vals.append(s)
-                if vals:
-                    mapping[sym] = vals
-            unique = sorted({x for vals in mapping.values() for x in vals})
+        ticker_keys = [k for k in node if is_ticker(k)]
+        if len(ticker_keys) >= 50 and len(ticker_keys) >= max(50, int(len(node) * 0.45)):
+            mapping = parse_ticker_theme_map(node)
+            unique = {x for vals in mapping.values() for x in vals}
             if mapping:
                 out.append({"path": path, "mapping": mapping, "mapped": len(mapping), "unique": len(unique)})
         for key, value in node.items():
@@ -85,15 +91,23 @@ def ticker_map_candidates(node: Any, path: str = "root", depth: int = 0) -> list
 def extract_theme_members(snapshot: Any) -> tuple[dict[str, list[str]], list[dict[str, Any]]]:
     candidates = ticker_map_candidates(snapshot)
     diagnostics = [{k: c[k] for k in ("path", "mapped", "unique")} for c in candidates]
-    plausible = [c for c in candidates if 200 <= c["unique"] <= 800]
-    if not plausible:
-        raise RuntimeError(f"No plausible ticker→subtheme map found. candidates={diagnostics[:20]}")
-    chosen = min(plausible, key=lambda c: (abs(c["unique"] - 367), -c["mapped"]))
+    if isinstance(snapshot, dict) and isinstance(snapshot.get("s2t"), dict):
+        chosen_mapping = parse_ticker_theme_map(snapshot["s2t"])
+        chosen_path = "root.s2t"
+    else:
+        plausible = [c for c in candidates if 200 <= c["unique"] <= 800]
+        if not plausible:
+            raise RuntimeError(f"No plausible ticker→subtheme map found. candidates={diagnostics[:20]}")
+        chosen = min(plausible, key=lambda c: (abs(c["unique"] - 367), -c["mapped"]))
+        chosen_mapping = chosen["mapping"]
+        chosen_path = chosen["path"]
     theme_members: dict[str, list[str]] = defaultdict(list)
-    for sym, themes in chosen["mapping"].items():
+    for sym, themes in chosen_mapping.items():
         for theme in themes:
             theme_members[theme].append(sym)
-    return {k: sorted(set(v)) for k, v in theme_members.items()}, diagnostics + [{"chosen": chosen["path"], "mapped": chosen["mapped"], "unique": chosen["unique"]}]
+    unique_count = len(theme_members)
+    diagnostics.append({"chosen": chosen_path, "mapped": len(chosen_mapping), "unique": unique_count})
+    return {k: sorted(set(v)) for k, v in theme_members.items()}, diagnostics
 
 
 def read_industry_map(path: Path) -> dict[str, tuple[str, str]]:
@@ -102,7 +116,8 @@ def read_industry_map(path: Path) -> dict[str, tuple[str, str]]:
     out: dict[str, tuple[str, str]] = {}
     if not isinstance(mapping, dict):
         return out
-    for sym, pair in mapping.items():
+    for raw_sym, pair in mapping.items():
+        sym = str(raw_sym).strip().upper()
         if not is_ticker(sym):
             continue
         sector = industry = ""
@@ -112,7 +127,7 @@ def read_industry_map(path: Path) -> dict[str, tuple[str, str]]:
             sector = str(pair.get("sector") or pair.get("Sector") or "")
             industry = str(pair.get("industry") or pair.get("Industry") or "")
         if industry:
-            out[str(sym).upper()] = (sector, industry)
+            out[sym] = (sector, industry)
     return out
 
 
@@ -155,7 +170,7 @@ def yahoo_symbol(sym: str) -> str:
 
 def download_adjusted_close(symbols: list[str], start: str, end: str, batch_size: int) -> tuple[pd.DataFrame, dict[str, Any]]:
     frames: list[pd.DataFrame] = []
-    failed_batches: list[list[str]] = []
+    failed_batches = 0
     requested = list(dict.fromkeys(symbols))
     for pos in range(0, len(requested), batch_size):
         batch = requested[pos: pos + batch_size]
@@ -174,10 +189,10 @@ def download_adjusted_close(symbols: list[str], start: str, end: str, batch_size
                 timeout=30,
             )
         except Exception:
-            failed_batches.append(batch)
+            failed_batches += 1
             continue
-        if raw is None or len(raw) == 0:
-            failed_batches.append(batch)
+        if raw is None or raw.empty:
+            failed_batches += 1
             continue
         cols: dict[str, pd.Series] = {}
         if isinstance(raw.columns, pd.MultiIndex):
@@ -202,49 +217,47 @@ def download_adjusted_close(symbols: list[str], start: str, end: str, batch_size
     close = close.loc[:, ~close.columns.duplicated()].sort_index()
     close.index = pd.to_datetime(close.index).tz_localize(None)
     close = close.replace([np.inf, -np.inf], np.nan)
-    diag = {
+    return close, {
         "requested": len(requested),
         "downloaded": int(close.shape[1]),
         "rows": int(close.shape[0]),
         "start": str(close.index.min().date()),
         "end": str(close.index.max().date()),
-        "failed_batches": len(failed_batches),
+        "failed_batches": failed_batches,
     }
-    return close, diag
 
 
-def log_returns(close: pd.DataFrame) -> pd.DataFrame:
+def arithmetic_returns(close: pd.DataFrame) -> pd.DataFrame:
     ret = close.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
-    ret = ret.where(ret > -0.999999)
-    return np.log1p(ret)
+    return ret.where(ret > -0.999999)
 
 
-def grouped_equal_weight(logret: pd.DataFrame, groups: dict[str, list[str]], min_daily: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+def grouped_equal_weight(ret: pd.DataFrame, groups: dict[str, list[str]], min_daily: int) -> pd.DataFrame:
     values: dict[str, pd.Series] = {}
-    counts: dict[str, pd.Series] = {}
     for name, members in groups.items():
-        cols = [s for s in members if s in logret.columns]
+        cols = [s for s in members if s in ret.columns]
         if len(cols) < min_daily:
             continue
-        part = logret[cols]
+        part = ret[cols]
         count = part.notna().sum(axis=1)
-        series = part.mean(axis=1, skipna=True).where(count >= min_daily)
-        values[name] = series
-        counts[name] = count
-    return pd.DataFrame(values), pd.DataFrame(counts)
+        values[name] = part.mean(axis=1, skipna=True).where(count >= min_daily)
+    return pd.DataFrame(values)
 
 
-def period_return_from_log(logret: pd.DataFrame | pd.Series, window: int, min_ratio: float = 0.8):
+def to_log(ret: pd.DataFrame | pd.Series):
+    safe = ret.where(ret > -0.999999)
+    return np.log1p(safe)
+
+
+def period_return(ret: pd.DataFrame | pd.Series, window: int, min_ratio: float = 0.8):
     min_periods = max(1, int(math.ceil(window * min_ratio)))
-    sums = logret.rolling(window, min_periods=min_periods).sum()
-    return np.expm1(sums)
+    return np.expm1(to_log(ret).rolling(window, min_periods=min_periods).sum())
 
 
-def forward_return_from_log(logret: pd.DataFrame | pd.Series, horizon: int, min_ratio: float = 0.8):
-    shifted = logret.shift(-1)
-    rev = shifted.iloc[::-1]
+def forward_return(ret: pd.DataFrame | pd.Series, horizon: int, min_ratio: float = 0.8):
     min_periods = max(1, int(math.ceil(horizon * min_ratio)))
-    sums = rev.rolling(horizon, min_periods=min_periods).sum().iloc[::-1]
+    shifted = to_log(ret).shift(-1)
+    sums = shifted.iloc[::-1].rolling(horizon, min_periods=min_periods).sum().iloc[::-1]
     return np.expm1(sums)
 
 
@@ -267,11 +280,11 @@ def weighted_matrix(source: pd.DataFrame, weights: dict[str, list[tuple[str, flo
             continue
         num = pd.Series(0.0, index=source.index)
         den = pd.Series(0.0, index=source.index)
-        for key, w in pairs:
+        for key, weight in pairs:
             s = source[key]
             ok = s.notna()
-            num = num.add(s.fillna(0.0) * w, fill_value=0.0)
-            den = den.add(ok.astype(float) * w, fill_value=0.0)
+            num = num.add(s.fillna(0.0) * weight, fill_value=0.0)
+            den = den.add(ok.astype(float) * weight, fill_value=0.0)
         out[name] = (num / den.replace(0.0, np.nan)).where(den > 0)
     return pd.DataFrame(out)
 
@@ -293,20 +306,19 @@ def breadth_above_ema21(close: pd.DataFrame, theme_members: dict[str, list[str]]
 
 def event_mask(theme_pct: pd.DataFrame, parent_pct: pd.DataFrame, breadth: pd.DataFrame, config: dict[str, float]) -> pd.DataFrame:
     common = theme_pct.columns.intersection(parent_pct.columns).intersection(breadth.columns)
-    t = theme_pct[common]
-    p = parent_pct[common]
-    b = breadth[common]
-    delta = t - t.shift(20)
-    return (t >= config["theme_min"]) & (p < config["parent_max"]) & (delta >= config["delta20_min"]) & (b >= config["breadth_min"])
+    t, p, b = theme_pct[common], parent_pct[common], breadth[common]
+    delta20 = t - t.shift(20)
+    return (t >= config["theme_min"]) & (p < config["parent_max"]) & (delta20 >= config["delta20_min"]) & (b >= config["breadth_min"])
 
 
-def extract_events(mask: pd.DataFrame, theme_pct: pd.DataFrame, parent_pct: pd.DataFrame, breadth: pd.DataFrame, member_counts: dict[str, int], analysis_start: pd.Timestamp, analysis_end: pd.Timestamp, cooldown: int = 20) -> pd.DataFrame:
+def extract_events(mask: pd.DataFrame, theme_pct: pd.DataFrame, parent_pct: pd.DataFrame, breadth: pd.DataFrame, member_counts: dict[str, int], start: pd.Timestamp, end: pd.Timestamp, cooldown: int = 20) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
+    shifted20 = theme_pct.shift(20)
     for theme in mask.columns:
         active = mask[theme].fillna(False)
         last_pos = -10_000
         for pos, (date, value) in enumerate(active.items()):
-            if date < analysis_start or date > analysis_end or not bool(value):
+            if date < start or date > end or not bool(value):
                 continue
             previous = bool(active.iloc[pos - 1]) if pos > 0 else False
             if previous or pos - last_pos < cooldown:
@@ -317,29 +329,45 @@ def extract_events(mask: pd.DataFrame, theme_pct: pd.DataFrame, parent_pct: pd.D
                 "theme": theme,
                 "theme_rs_pct": float(theme_pct.at[date, theme]),
                 "parent_rs_pct": float(parent_pct.at[date, theme]),
-                "rank_delta20": float(theme_pct.at[date, theme] - theme_pct[theme].shift(20).at[date]),
+                "rank_delta20": float(theme_pct.at[date, theme] - shifted20.at[date, theme]),
                 "breadth": float(breadth.at[date, theme]),
                 "members_current_taxonomy": int(member_counts.get(theme, 0)),
             })
-    return pd.DataFrame(rows).sort_values(["date", "theme"]).reset_index(drop=True) if rows else pd.DataFrame(columns=["date", "theme"])
+    if not rows:
+        return pd.DataFrame(columns=["date", "theme"])
+    return pd.DataFrame(rows).sort_values(["date", "theme"]).reset_index(drop=True)
 
 
-def clustered_bootstrap(values: pd.DataFrame, metric: str, seed: int = 38, reps: int = 4000) -> dict[str, Any]:
-    use = values[["date", metric]].dropna()
+def bootstrap_cluster(values: pd.DataFrame, metric: str, cluster: str, seed: int = 38, reps: int = 4000) -> tuple[int, list[float | None]]:
+    use = values[[cluster, metric]].dropna()
     if use.empty:
-        return {"n": 0, "dates": 0, "mean": None, "median": None, "ci95": [None, None]}
-    by_date = use.groupby("date", observed=True)[metric].mean()
-    arr = by_date.to_numpy(float)
+        return 0, [None, None]
+    grouped = use.groupby(cluster, observed=True)[metric].mean().to_numpy(float)
     rng = np.random.default_rng(seed)
-    samples = rng.choice(arr, size=(reps, len(arr)), replace=True).mean(axis=1)
+    samples = rng.choice(grouped, size=(reps, len(grouped)), replace=True).mean(axis=1)
     lo, hi = np.quantile(samples, [0.025, 0.975])
+    return int(len(grouped)), [float(lo), float(hi)]
+
+
+def metric_stats(values: pd.DataFrame, metric: str) -> dict[str, Any]:
+    use = values[["date", "theme", metric]].dropna()
+    if use.empty:
+        return {"n": 0, "mean": None, "median": None, "positive_rate": None, "date_cluster_ci95": [None, None], "theme_cluster_ci95": [None, None], "trimmed_5_95_mean": None}
+    _, date_ci = bootstrap_cluster(use, metric, "date")
+    _, theme_ci = bootstrap_cluster(use, metric, "theme", seed=39)
+    s = use[metric]
+    q05, q95 = s.quantile([0.05, 0.95])
+    trimmed = s[(s >= q05) & (s <= q95)]
     return {
-        "n": int(len(use)),
-        "dates": int(len(arr)),
-        "mean": float(use[metric].mean()),
-        "median": float(use[metric].median()),
-        "ci95": [float(lo), float(hi)],
-        "positive_rate": float((use[metric] > 0).mean()),
+        "n": int(len(s)),
+        "dates": int(use["date"].nunique()),
+        "themes": int(use["theme"].nunique()),
+        "mean": float(s.mean()),
+        "median": float(s.median()),
+        "positive_rate": float((s > 0).mean()),
+        "date_cluster_ci95": date_ci,
+        "theme_cluster_ci95": theme_ci,
+        "trimmed_5_95_mean": float(trimmed.mean()) if len(trimmed) else None,
     }
 
 
@@ -372,62 +400,57 @@ def attach_outcomes(events: pd.DataFrame, horizons: tuple[int, ...], theme_fwd: 
 
 
 def summarize_outcomes(outcomes: pd.DataFrame) -> dict[str, Any]:
-    summary: dict[str, Any] = {}
+    result: dict[str, Any] = {}
     for h in HORIZONS:
-        metrics = {}
+        metrics: dict[str, Any] = {}
         for metric in (f"spy_excess_{h}", f"parent_excess_{h}", f"median_theme_excess_{h}", f"rs_delta_{h}"):
-            metrics[metric] = clustered_bootstrap(outcomes, metric)
+            metrics[metric] = metric_stats(outcomes, metric)
         for metric in (f"top20_retained_{h}", f"parent_top20_{h}"):
-            use = outcomes[metric].dropna() if metric in outcomes else pd.Series(dtype=float)
-            metrics[metric] = {"n": int(len(use)), "rate": float(use.mean()) if len(use) else None}
-        core_a = metrics[f"spy_excess_{h}"]["ci95"][0]
-        core_b = metrics[f"parent_excess_{h}"]["ci95"][0]
-        metrics["core_significant_positive"] = bool(core_a is not None and core_b is not None and core_a > 0 and core_b > 0)
-        summary[str(h)] = metrics
-    return summary
+            s = outcomes[metric].dropna()
+            metrics[metric] = {"n": int(len(s)), "rate": float(s.mean()) if len(s) else None}
+        spy = metrics[f"spy_excess_{h}"]
+        parent = metrics[f"parent_excess_{h}"]
+        ci_lows = [spy["date_cluster_ci95"][0], spy["theme_cluster_ci95"][0], parent["date_cluster_ci95"][0], parent["theme_cluster_ci95"][0]]
+        metrics["core_significant_positive"] = bool(all(x is not None and x > 0 for x in ci_lows))
+        result[str(h)] = metrics
+    return result
 
 
 def regime_table(outcomes: pd.DataFrame) -> list[dict[str, Any]]:
-    regimes = [("2016-2019", "2016-01-01", "2019-12-31"), ("2020-2022", "2020-01-01", "2022-12-31"), ("2023-2026H1", "2023-01-01", "2026-06-30")]
-    rows = []
-    for label, start, end in regimes:
-        use = outcomes[(outcomes["date"] >= pd.Timestamp(start)) & (outcomes["date"] <= pd.Timestamp(end))]
+    rows: list[dict[str, Any]] = []
+    for label, start, end in (("2016-2019", "2016-01-01", "2019-12-31"), ("2020-2022", "2020-01-01", "2022-12-31"), ("2023-2026H1", "2023-01-01", "2026-06-30")):
+        part = outcomes[(outcomes["date"] >= pd.Timestamp(start)) & (outcomes["date"] <= pd.Timestamp(end))]
         for h in (20, 63):
-            col = f"spy_excess_{h}"
-            vals = use[col].dropna() if col in use else pd.Series(dtype=float)
-            rows.append({"regime": label, "horizon": h, "n": int(len(vals)), "mean_spy_excess": float(vals.mean()) if len(vals) else None, "win_rate": float((vals > 0).mean()) if len(vals) else None})
+            s = part[f"spy_excess_{h}"].dropna()
+            rows.append({"regime": label, "horizon": h, "n": int(len(s)), "mean_spy_excess": float(s.mean()) if len(s) else None, "win_rate": float((s > 0).mean()) if len(s) else None})
     return rows
 
 
-def sensitivity_table(theme_pct: pd.DataFrame, parent_pct: pd.DataFrame, breadth: pd.DataFrame, member_counts: dict[str, int], analysis_start: pd.Timestamp, analysis_end: pd.Timestamp, theme_fwd20: pd.DataFrame, spy_fwd20: pd.Series, parent_fwd20: pd.DataFrame) -> list[dict[str, Any]]:
+def sensitivity_table(theme_pct: pd.DataFrame, parent_pct: pd.DataFrame, breadth: pd.DataFrame, member_counts: dict[str, int], start: pd.Timestamp, end: pd.Timestamp, theme_fwd20: pd.DataFrame, spy_fwd20: pd.Series, parent_fwd20: pd.DataFrame) -> list[dict[str, Any]]:
     variants: list[tuple[str, dict[str, float]]] = [("base", dict(BASE_CONFIG))]
-    for key, values in {
-        "theme_min": (75.0, 85.0),
-        "parent_max": (50.0, 70.0),
-        "delta20_min": (10.0, 20.0),
-        "breadth_min": (50.0, 70.0),
-    }.items():
+    for key, values in {"theme_min": (75.0, 85.0), "parent_max": (50.0, 70.0), "delta20_min": (10.0, 20.0), "breadth_min": (50.0, 70.0)}.items():
         for value in values:
             cfg = dict(BASE_CONFIG)
             cfg[key] = value
             variants.append((f"{key}={value:g}", cfg))
     rows: list[dict[str, Any]] = []
     for label, cfg in variants:
-        events = extract_events(event_mask(theme_pct, parent_pct, breadth, cfg), theme_pct, parent_pct, breadth, member_counts, analysis_start, analysis_end)
+        events = extract_events(event_mask(theme_pct, parent_pct, breadth, cfg), theme_pct, parent_pct, breadth, member_counts, start, end)
         if events.empty:
-            rows.append({"variant": label, "events": 0, "dates": 0, "mean_spy_excess20": None, "mean_parent_excess20": None})
+            rows.append({"variant": label, "events": 0})
             continue
-        temp = attach_outcomes(events, (20,), {20: theme_fwd20}, {20: spy_fwd20}, {20: parent_fwd20}, theme_pct, parent_pct)
-        a = clustered_bootstrap(temp, "spy_excess_20", reps=2000)
-        b = clustered_bootstrap(temp, "parent_excess_20", reps=2000)
+        out = attach_outcomes(events, (20,), {20: theme_fwd20}, {20: spy_fwd20}, {20: parent_fwd20}, theme_pct, parent_pct)
+        a, b = metric_stats(out, "spy_excess_20"), metric_stats(out, "parent_excess_20")
         rows.append({
             "variant": label,
-            "events": int(len(temp)),
-            "dates": int(temp["date"].nunique()),
+            "events": int(len(out)),
+            "dates": int(out["date"].nunique()),
             "mean_spy_excess20": a["mean"],
-            "spy_ci_low": a["ci95"][0],
+            "spy_date_ci_low": a["date_cluster_ci95"][0],
+            "spy_theme_ci_low": a["theme_cluster_ci95"][0],
             "mean_parent_excess20": b["mean"],
-            "parent_ci_low": b["ci95"][0],
+            "parent_date_ci_low": b["date_cluster_ci95"][0],
+            "parent_theme_ci_low": b["theme_cluster_ci95"][0],
         })
     return rows
 
@@ -437,12 +460,12 @@ def safe_json(value: Any) -> Any:
         return {str(k): safe_json(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [safe_json(v) for v in value]
-    if isinstance(value, (np.integer,)):
+    if isinstance(value, np.integer):
         return int(value)
     if isinstance(value, (np.floating, float)):
         x = float(value)
         return x if math.isfinite(x) else None
-    if isinstance(value, (pd.Timestamp,)):
+    if isinstance(value, pd.Timestamp):
         return value.isoformat()
     return value
 
@@ -467,9 +490,7 @@ def main() -> None:
     industry_map = read_industry_map(root / "industry_map.json")
     universe = read_universe_symbols(root / "universe.csv")
 
-    eligible_symbols = set(industry_map) & universe
-    selected = stratified_symbols(theme_members_all, eligible_symbols, args.max_tickers)
-    # SPY is always required as the benchmark.
+    selected = stratified_symbols(theme_members_all, set(industry_map) & universe, args.max_tickers)
     requested = selected + (["SPY"] if "SPY" not in selected else [])
     download_start = str((pd.Timestamp(args.analysis_start) - pd.Timedelta(days=320)).date())
     download_end = str((pd.Timestamp(args.analysis_end) + pd.Timedelta(days=100)).date())
@@ -479,74 +500,68 @@ def main() -> None:
 
     stock_cols = [s for s in selected if s in close.columns]
     stock_close = close[stock_cols]
-    stock_log = log_returns(stock_close)
-    spy_log = log_returns(close[["SPY"]])["SPY"]
+    stock_ret = arithmetic_returns(stock_close)
+    spy_ret = arithmetic_returns(close[["SPY"]])["SPY"]
 
     theme_members = {theme: [s for s in members if s in stock_cols] for theme, members in theme_members_all.items()}
     member_counts = {theme: len(members) for theme, members in theme_members.items()}
-    theme_log, _ = grouped_equal_weight(stock_log, theme_members, args.min_members)
+    theme_ret = grouped_equal_weight(stock_ret, theme_members, args.min_members)
 
     industry_groups: dict[str, list[str]] = defaultdict(list)
     for sym in stock_cols:
         pair = industry_map.get(sym)
         if pair and pair[1]:
             industry_groups[pair[1]].append(sym)
-    industry_log, _ = grouped_equal_weight(stock_log, dict(industry_groups), args.min_members)
+    industry_ret = grouped_equal_weight(stock_ret, dict(industry_groups), args.min_members)
 
-    parent_weights = build_parent_weights(theme_members_all, industry_map, max_industries=3)
-    common_themes = sorted(set(theme_log.columns) & set(parent_weights))
-    theme_log = theme_log[common_themes]
+    parent_weights = build_parent_weights(theme_members_all, industry_map)
+    common_themes = sorted(set(theme_ret.columns) & set(parent_weights))
+    theme_ret = theme_ret[common_themes]
+    parent_ret = weighted_matrix(industry_ret, parent_weights, common_themes)
 
-    theme_63 = period_return_from_log(theme_log, 63)
-    spy_63 = period_return_from_log(spy_log, 63)
-    theme_rel63 = theme_63.sub(spy_63, axis=0)
-    theme_pct = theme_rel63.rank(axis=1, pct=True, method="average") * 100.0
+    theme_63 = period_return(theme_ret, 63)
+    spy_63 = period_return(spy_ret, 63)
+    theme_pct = theme_63.sub(spy_63, axis=0).rank(axis=1, pct=True, method="average") * 100.0
 
-    industry_63 = period_return_from_log(industry_log, 63)
-    industry_rel63 = industry_63.sub(spy_63, axis=0)
-    industry_pct = industry_rel63.rank(axis=1, pct=True, method="average") * 100.0
+    industry_63 = period_return(industry_ret, 63)
+    industry_pct = industry_63.sub(spy_63, axis=0).rank(axis=1, pct=True, method="average") * 100.0
     parent_pct = weighted_matrix(industry_pct, parent_weights, common_themes)
-    parent_log = weighted_matrix(industry_log, parent_weights, common_themes)
 
-    breadth = breadth_above_ema21(stock_close, theme_members, args.min_members)
-    breadth = breadth.reindex(columns=common_themes)
+    breadth = breadth_above_ema21(stock_close, theme_members, args.min_members).reindex(columns=common_themes)
+    theme_fwd = {h: forward_return(theme_ret, h) for h in HORIZONS}
+    spy_fwd = {h: forward_return(spy_ret, h) for h in HORIZONS}
+    parent_fwd = {h: forward_return(parent_ret, h) for h in HORIZONS}
 
-    theme_fwd = {h: forward_return_from_log(theme_log, h) for h in HORIZONS}
-    spy_fwd = {h: forward_return_from_log(spy_log, h) for h in HORIZONS}
-    parent_fwd = {h: forward_return_from_log(parent_log, h) for h in HORIZONS}
-
-    analysis_start = pd.Timestamp(args.analysis_start)
-    analysis_end = pd.Timestamp(args.analysis_end)
-    base_mask = event_mask(theme_pct, parent_pct, breadth, BASE_CONFIG)
-    events = extract_events(base_mask, theme_pct, parent_pct, breadth, member_counts, analysis_start, analysis_end)
+    analysis_start, analysis_end = pd.Timestamp(args.analysis_start), pd.Timestamp(args.analysis_end)
+    events = extract_events(event_mask(theme_pct, parent_pct, breadth, BASE_CONFIG), theme_pct, parent_pct, breadth, member_counts, analysis_start, analysis_end)
     outcomes = attach_outcomes(events, HORIZONS, theme_fwd, spy_fwd, parent_fwd, theme_pct, parent_pct)
     summary = summarize_outcomes(outcomes)
-    sensitivity = sensitivity_table(theme_pct, parent_pct, breadth, member_counts, analysis_start, analysis_end, theme_fwd[20], spy_fwd[20], parent_fwd[20])
     regimes = regime_table(outcomes) if not outcomes.empty else []
+    sensitivity = sensitivity_table(theme_pct, parent_pct, breadth, member_counts, analysis_start, analysis_end, theme_fwd[20], spy_fwd[20], parent_fwd[20])
 
-    graph_diag = {
-        "themes_current_taxonomy": len(theme_members_all),
-        "themes_with_downloaded_min_members": int(len(theme_log.columns)),
-        "industries_with_downloaded_min_members": int(len(industry_log.columns)),
-        "selected_stock_symbols": len(selected),
-        "downloaded_stock_symbols": len(stock_cols),
-        "themes_member_ge3": int(sum(n >= 3 for n in member_counts.values())),
-        "themes_member_ge5": int(sum(n >= 5 for n in member_counts.values())),
-        "themes_member_ge10": int(sum(n >= 10 for n in member_counts.values())),
-    }
     result = {
         "status": "PRELIMINARY_FIXED_CURRENT_TAXONOMY",
         "bias_warning": "Current ticker→theme and ticker→industry memberships are applied retrospectively. This is hypothesis filtering, not final survivorship/look-ahead-free proof.",
         "signal_definition_frozen_before_outcomes": BASE_CONFIG,
         "event_policy": "first condition day after inactive state, 20-trading-day per-theme cooldown",
-        "theme_index": "equal-weight daily constituent log returns; no market-cap weighting",
+        "theme_index": "daily rebalanced equal-weight arithmetic constituent returns, compounded through time",
         "parent": "top 1-3 current TradingView industries by constituent count, weighted by current constituent share",
-        "rs_definition": "63-trading-day theme or industry return minus SPY 63d return, cross-sectional percentile",
+        "rs_definition": "63-trading-day compounded theme or industry return minus SPY 63d return, cross-sectional percentile",
         "breadth_definition": "share of available current constituents above EMA21",
+        "significance": "95% cluster bootstrap by signal date and separately by theme; core positive requires both SPY and parent excess lower bounds > 0 in both cluster schemes",
         "analysis_window": [args.analysis_start, args.analysis_end],
         "download": download_diag,
         "taxonomy_candidates": taxonomy_candidates,
-        "coverage": graph_diag,
+        "coverage": {
+            "themes_current_taxonomy": len(theme_members_all),
+            "themes_with_downloaded_min_members": int(len(theme_ret.columns)),
+            "industries_with_downloaded_min_members": int(len(industry_ret.columns)),
+            "selected_stock_symbols": len(selected),
+            "downloaded_stock_symbols": len(stock_cols),
+            "themes_member_ge3": int(sum(n >= 3 for n in member_counts.values())),
+            "themes_member_ge5": int(sum(n >= 5 for n in member_counts.values())),
+            "themes_member_ge10": int(sum(n >= 10 for n in member_counts.values())),
+        },
         "events": int(len(outcomes)),
         "event_dates": int(outcomes["date"].nunique()) if not outcomes.empty else 0,
         "horizons": summary,
@@ -558,7 +573,6 @@ def main() -> None:
     pd.DataFrame(sensitivity).to_csv(output / "sensitivity_20d.csv", index=False)
     pd.DataFrame(regimes).to_csv(output / "regimes.csv", index=False)
     (output / "summary.json").write_text(json.dumps(safe_json(result), ensure_ascii=False, indent=2), encoding="utf-8")
-
     print("=== EARLY_ROTATION_RESULT_JSON ===")
     print(json.dumps(safe_json(result), ensure_ascii=False, indent=2))
     print("=== END_EARLY_ROTATION_RESULT_JSON ===", flush=True)
