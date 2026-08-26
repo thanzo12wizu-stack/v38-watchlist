@@ -7,6 +7,7 @@ on:
       - 'leadership/research/validate_confirmed_leadership.py'
       - 'leadership/research/validate_pioneer_leader.py'
       - 'leadership/research/validate_rs_periods.py'
+      - 'leadership/research/validate_rs_periods_fast.py'
       - '.github/workflows/early-rotation-research.yml'
 
 permissions:
@@ -37,10 +38,11 @@ jobs:
           python -m py_compile leadership/research/validate_confirmed_leadership.py
           python -m py_compile leadership/research/validate_pioneer_leader.py
           python -m py_compile leadership/research/validate_rs_periods.py
+          python -m py_compile leadership/research/validate_rs_periods_fast.py
 
       - name: Run RS period validation
         run: |
-          python leadership/research/validate_rs_periods.py \
+          python leadership/research/validate_rs_periods_fast.py \
             --root . \
             --output leadership/research/rs_period_output \
             --analysis-start 2016-01-04 \
