@@ -1,7 +1,9 @@
 name: Pioneer Leader research validation
 
 on:
-  pull_request:
+  push:
+    branches:
+      - 'research/pioneer-leader-*'
     paths:
       - 'leadership/research/validate_early_rotation.py'
       - 'leadership/research/validate_confirmed_leadership.py'
@@ -12,12 +14,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: pioneer-leader-research-${{ github.event.pull_request.number }}
+  group: pioneer-leader-research-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    if: startsWith(github.head_ref, 'research/pioneer-leader-')
+    if: startsWith(github.ref_name, 'research/pioneer-leader-')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
