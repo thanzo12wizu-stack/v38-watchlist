@@ -16,6 +16,11 @@ on:
     # commit below cannot recursively trigger another full build.
     paths:
       - 'leadership/build_market_snapshot.py'
+      - 'leadership/build_market_snapshot_diffusion.py'
+      - 'leadership/diffusion.py'
+      - 'leadership/diffusion_overlay.py'
+      - 'leadership/rotation_diffusion.py'
+      - 'leadership/render_public_diffusion.py'
       - 'leadership/build_leadership.py'
       - 'leadership/build_leadership_exact.py'
       - 'leadership/render_japanese.py'
@@ -69,7 +74,7 @@ jobs:
             # every symbol in the complete source universe as data or NO_DATA.
             MAX_SYMBOLS=400
           fi
-          python leadership/build_market_snapshot.py \
+          python leadership/build_market_snapshot_diffusion.py \
             --universe universe.csv \
             --output leadership/market_snapshot.json \
             --benchmark QQQ \
@@ -80,7 +85,7 @@ jobs:
       - name: Build Leadership Command
         run: |
           python leadership/build_leadership_exact.py --root . --output leadership/dist
-          python leadership/render_public.py \
+          python leadership/render_public_diffusion.py \
             --model leadership/dist/leadership.json \
             --output leadership/dist/index.html
 
