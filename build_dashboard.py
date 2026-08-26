@@ -19115,7 +19115,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
     mri_bd = (f'<div id="mri-bd" class="mri-bd" onclick="event.stopPropagation()">'
               f'<div class="mbd-h">MARKET CONDITIONS 内訳（57ETF × 12指標・完全等加重）</div>'
               + "".join(_bd_rows) + bear_sec
-              + '<div class="mnote">Rawは57ETF×12指標を完全等加重→EMA2。右端は各指標のRawへの寄与。最終MCはRawを直前3780営業日（当日除外）の平均・母標準偏差でZ化し、50=15年平均 / 75=+1σ / 25=−1σ / 90=+2σ / 10=−2σとなるよう0–100へ変換。Breadth 10日変化はscore外。もう一度タップで閉じる ▴</div></div>')
+              + '<div class="mnote">Rawは57ETF×12指標を完全等加重→EMA2。右端は各指標のRawへの寄与。最終MCはRawを直前3780営業日（当日除外）の平均・母標準偏差でZ化し、50=15年平均 / 75=+1σ / 25=−1σ / 90=+2σ / 10=−2σとなるよう0–100へ変換。Breadth 10日変化はscore外。<br><br><b>実戦の見方</b>：&lt;20 Crisis＝底当てせず監視 / 20–35 Bottom Watch＝反転確認 / 35–45 Recovery＝打診候補 / <b>45を下から突破＝再エントリー本命</b> / 55+＝通常エントリー可 / 65–75は上昇中なら順風・下降中なら追い慎重。VIX BOTTOMは早期底候補、MC45回復を本格再参入の確認に使う。もう一度タップで閉じる ▴</div></div>')
     banner = sar_pill + _ribbon(mkt.get("trend_hist")) + f"""
     <div class="banner b-{band_cls}" onclick="toggleMri()">
       <div class="lab">MARKET CONDITIONS<span class="lab-en">MID / LONG TERM</span><span class="tap">タップで内訳 ▾</span></div>
