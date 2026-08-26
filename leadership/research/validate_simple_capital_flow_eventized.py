@@ -68,7 +68,9 @@ def cooldown_crossings(q: pd.Series, accepted_states: set[int], cooldown: int = 
 def block_ids(dates: pd.Series, trading_dates: pd.DatetimeIndex, block_len: int = 20) -> np.ndarray:
     pos = pd.Series(np.arange(len(trading_dates)), index=trading_dates)
     ix = pos.reindex(pd.to_datetime(dates)).to_numpy(float)
-    return np.floor(ix / float(block_len)).astype("Int64")
+    if not np.isfinite(ix).all():
+        raise RuntimeError("event date missing from trading calendar")
+    return np.floor(ix / float(block_len)).astype(np.int64)
 
 
 def cluster_boot_mean(df: pd.DataFrame, value_col: str, cluster_col: str, seed: int, reps: int = BOOT_REPS) -> list[float | None]:
@@ -237,7 +239,6 @@ def main() -> None:
     eval_dates = close.index[(close.index >= start) & (close.index <= end)]
     trading_dates = close.index
 
-    # Sector extreme events: q1/q5 transitions share one cooldown clock per Sector.
     sector_events: list[dict[str, Any]] = []
     for sector in sector_q.columns:
         q = sector_q[sector].reindex(eval_dates)
@@ -245,7 +246,6 @@ def main() -> None:
             sector_events.append({"date": date, "sector": sector, "state": f"Q{state}"})
     sector_events_df = pd.DataFrame(sector_events)
 
-    # Stock Capture q5 transitions: one cooldown clock per symbol.
     stock_events: list[dict[str, Any]] = []
     for sym in stock_q.columns:
         q = stock_q[sym].reindex(eval_dates)
@@ -290,7 +290,6 @@ def main() -> None:
         "horizons": {},
     }
 
-    # Precompute forward stock total returns and forward Sector/market returns by horizon.
     for hi, h in enumerate(HORIZONS):
         print(f"HORIZON {h}", flush=True)
         stock_fwd = close.shift(-h) / close - 1.0
@@ -299,7 +298,6 @@ def main() -> None:
             sector_fwd[sector] = forward_compound(sector_daily[sector], h)
         spy_fwd = forward_compound(spy_ret, h)
 
-        # One row per Sector event.
         srows: list[dict[str, Any]] = []
         for ev in sector_events_df.itertuples(index=False):
             date = pd.Timestamp(ev.date); sector = str(ev.sector); state = str(ev.state)
@@ -326,7 +324,6 @@ def main() -> None:
             srows.append(rec)
         sdf = pd.DataFrame(srows)
 
-        # One row per Stock Capture q5 event.
         crows: list[dict[str, Any]] = []
         for ev in stock_events_df.itertuples(index=False):
             date = pd.Timestamp(ev.date); sym = str(ev.symbol); sector = str(ev.sector); sq = int(ev.sector_q)
