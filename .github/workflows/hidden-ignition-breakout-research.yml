@@ -1,0 +1,53 @@
+name: Hidden ignition breakout research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/validate_hidden_ignition_breakout.py'
+      - '.github/workflows/hidden-ignition-breakout-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_ignition_quality.py leadership/research/validate_hidden_ignition_breakout.py
+      - name: Rebuild frozen ignition-quality rows
+        run: |
+          python leadership/research/validate_ignition_quality.py \
+            --root . \
+            --output leadership/research/ignition_quality_tmp \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Run hidden ignition breakout validation
+        run: |
+          python leadership/research/validate_hidden_ignition_breakout.py \
+            --root . \
+            --quality-rows leadership/research/ignition_quality_tmp/ignition_quality_rows.csv.gz \
+            --output leadership/research/hidden_ignition_breakout_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75
+      - name: Upload research outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: hidden-ignition-breakout-validation
+          path: leadership/research/hidden_ignition_breakout_output/
+          retention-days: 7
