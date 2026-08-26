@@ -5,14 +5,14 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage6_lifeplan_fast.py'
+      - 'research/tqqq_stage7_lowdd_boost.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage6:
+  stage7:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -22,20 +22,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run optimized life-plan TQQQ regime search
+      - name: Run low-drawdown TQQQ boost search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage6_lifeplan_fast.py 2>&1 | tee tqqq_stage6.log
-      - name: Upload Stage6 results
+          PYTHONPATH=. python research/tqqq_stage7_lowdd_boost.py 2>&1 | tee tqqq_stage7.log
+      - name: Upload Stage7 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage6-results
+          name: tqqq-stage7-results
           if-no-files-found: warn
           path: |
-            tqqq_stage6.log
-            tqqq_stage6_summary.json
-            tqqq_stage6_base.csv
-            tqqq_stage6_lifeplan.csv
-# retrigger optimized run
+            tqqq_stage7.log
+            tqqq_stage7_summary.json
+            tqqq_stage7_base.csv
+            tqqq_stage7_lowdd.csv
