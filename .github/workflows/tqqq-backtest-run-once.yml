@@ -5,16 +5,16 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage4_nqsar_proxy.py'
+      - 'research/tqqq_stage5_free_exposure.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage4:
+  stage5:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -22,22 +22,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Download completed Stage3 results
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh run download 32979801442 -n tqqq-stage3-results -D prev3
-      - name: Run NQSAR overlay test
+      - name: Run free-exposure TQQQ return search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage4_nqsar_proxy.py 2>&1 | tee tqqq_stage4.log
-      - name: Upload Stage4 results
+          PYTHONPATH=. python research/tqqq_stage5_free_exposure.py 2>&1 | tee tqqq_stage5.log
+      - name: Upload Stage5 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage4-results
+          name: tqqq-stage5-results
           if-no-files-found: warn
           path: |
-            tqqq_stage4.log
-            tqqq_stage4_summary.json
-            tqqq_stage4_nqsar.csv
+            tqqq_stage5.log
+            tqqq_stage5_summary.json
+            tqqq_stage5_base_grid.csv
+            tqqq_stage5_free_exposure.csv
