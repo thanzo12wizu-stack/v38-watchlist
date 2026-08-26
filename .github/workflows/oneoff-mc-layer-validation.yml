@@ -1,0 +1,28 @@
+name: One-off MC layer and subtheme validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-mc-layer-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Compile diagnostic script
+        run: python -m py_compile .github/scripts/oneoff_mc_layer_validation.py
+      - name: Run V0 V1 V2 and subtheme audit
+        env:
+          PYTHONPATH: .
+        run: python .github/scripts/oneoff_mc_layer_validation.py
