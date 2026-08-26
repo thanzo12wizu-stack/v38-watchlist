@@ -1,0 +1,59 @@
+name: Inspect earnings schema research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - .github/workflows/inspect-earnings-schema-research.yml
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Inspect earnings.json schema
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          p=Path('earnings.json')
+          obj=json.loads(p.read_text(encoding='utf-8'))
+          print('TOP_TYPE', type(obj).__name__)
+          try: print('TOP_LEN', len(obj))
+          except Exception: pass
+          if isinstance(obj, dict):
+              print('TOP_KEYS_SAMPLE', list(obj)[:10])
+              vals=list(obj.items())[:50]
+          elif isinstance(obj, list):
+              vals=list(enumerate(obj[:50]))
+          else:
+              vals=[]
+
+          interesting=('eps','earn','quarter','fiscal','report','date','actual','estimate','surprise','growth')
+          paths=Counter()
+          def walk(x, path='', depth=0):
+              if depth>5: return
+              if isinstance(x, dict):
+                  for k,v in x.items():
+                      kp=f'{path}.{k}' if path else str(k)
+                      if any(s in str(k).lower() for s in interesting):
+                          paths[kp]+=1
+                      walk(v,kp,depth+1)
+              elif isinstance(x,list):
+                  for v in x[:8]: walk(v,path+'[]',depth+1)
+          for _,v in vals: walk(v)
+          print('INTERESTING_PATHS')
+          for k,n in paths.most_common(80): print(n,k)
+
+          print('SAMPLES')
+          for k,v in vals[:3]:
+              print('KEY',k)
+              s=json.dumps(v,ensure_ascii=False,default=str)
+              print(s[:5000])
+          PY
