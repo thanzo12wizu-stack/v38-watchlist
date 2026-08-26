@@ -1,0 +1,52 @@
+name: One-off align Market Conditions history period
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-mc-history-period-once.yml'
+      - '.github/scripts/fix_mc_history_period_once.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Align only MC history period
+        run: python .github/scripts/fix_mc_history_period_once.py
+      - name: Static validation
+        run: |
+          python -m py_compile build_dashboard.py
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          assert 'CHART_LB = 504' in s
+          assert 'view = list(ts[-CHART_LB:])' in s
+          assert 'view = list(ts[-126:])' not in s
+          assert 'mc-history-card' in s
+          print('MC history period alignment static checks OK')
+          PY
+      - name: Regression test
+        run: |
+          pip install --disable-pip-version-check -r requirements.txt pytest
+          pytest -q tests/test_dashboard_build_regressions.py
+      - name: Commit tested period-only fix
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/scripts/fix_mc_history_period_once.py .github/workflows/fix-mc-history-period-once.yml
+          git add build_dashboard.py .github/scripts/fix_mc_history_period_once.py .github/workflows/fix-mc-history-period-once.yml
+          git diff --cached --check
+          git commit -m "Align Market Conditions chart period with other trends"
+          git push origin HEAD:main
