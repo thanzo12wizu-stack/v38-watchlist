@@ -18410,19 +18410,27 @@ def _mkt_section(label, q, guide=None, en=None):
             + (f'<div class="msec-q">{q}</div>' if q else "") + "</div>")
 
 def _svg_mri(ts):
-    """Market-status time series, ~6 months, with regime-zone shading (帯域塗り)."""
+    """Market-status time series, shown as the common ~2-year chart window with regime-zone shading."""
     if not ts or len(ts) < 5:
         return ""
-    ys = [v for _, v in ts]; last = ys[-1]
+    # MC15 needs the long history for normalization/statistics, but the operational chart
+    # must stay on the common trend-chart window. Do not compress 2008-present into one card.
+    plot_ts = ts[-CHART_LB:]
+    ys = [v for _, v in plot_ts]; last = ys[-1]
     hl = sum(ys[-3:]) / 3 if len(ys) >= 3 else last
     band_lab = mri_band(last)[0].replace("（過熱・反落注意⚠）", "")
-    # zone-shaded custom svg (same geometry as _svg_inner)
-    n = len(ys); Wd, Ht, pad = 680, 180, 6
+
+    # Keep a dedicated right gutter for regime labels so the line/current point never overlaps them.
+    n = len(ys); Wd, Ht = 680, 210
+    pad_l, pad_r, pad_y = 8, 42, 8
+    plot_w = Wd - pad_l - pad_r
+    plot_r = pad_l + plot_w
     lo, hi = min(ys), max(ys)
     lo = max(0, lo - 4); hi = min(100, hi + 4)
     rng = (hi - lo) or 1
-    def X(i): return pad + i * (Wd - 2*pad) / (n - 1)
-    def Y(v): return pad + (1 - (v - lo)/rng) * (Ht - 2*pad)
+    def X(i): return pad_l + i * plot_w / (n - 1)
+    def Y(v): return pad_y + (1 - (v - lo) / rng) * (Ht - 2 * pad_y)
+
     zones = [(0, 20, "#ef4444"), (20, 45, "#f97316"), (45, 55, "#64748b"),
              (55, 80, "#22c55e"), (80, 100, "#16a34a")]
     zr = ""
@@ -18430,12 +18438,14 @@ def _svg_mri(ts):
         a, b = max(z0, lo), min(z1, hi)
         if b <= a:
             continue
-        zr += (f'<rect x="{pad}" y="{Y(b):.1f}" width="{Wd-2*pad}" '
+        zr += (f'<rect x="{pad_l}" y="{Y(b):.1f}" width="{plot_w}" '
                f'height="{max(0.0, Y(a)-Y(b)):.1f}" fill="{zc}" opacity="0.07"/>')
+
     pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(ys))
-    gl = "".join(f'<line x1="{pad}" y1="{Y(g):.1f}" x2="{Wd-pad}" y2="{Y(g):.1f}" stroke="#1c2533" stroke-width="1"/>' 
-                 f'<text x="{Wd-pad}" y="{Y(g)-2:.1f}" fill="#8b9bb0" font-size="20" font-weight="600" text-anchor="end">{g}</text>'
-                 for g in (20, 35, 45, 55, 65, 80) if lo <= g <= hi)
+    gl = "".join(
+        f'<line x1="{pad_l}" y1="{Y(g):.1f}" x2="{plot_r}" y2="{Y(g):.1f}" stroke="#1c2533" stroke-width="1"/>'
+        f'<text x="{Wd-4}" y="{Y(g)-2:.1f}" fill="#8b9bb0" font-size="16" font-weight="600" text-anchor="end">{g}</text>'
+        for g in (20, 35, 45, 55, 65, 80) if lo <= g <= hi)
     svg = (f'<svg viewBox="0 0 {Wd} {Ht}" preserveAspectRatio="none">'
            f'<defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">'
            f'<stop offset="0" stop-color="#34d399" stop-opacity="0.30"/>'
@@ -18444,9 +18454,9 @@ def _svg_mri(ts):
            f'<polyline points="{pts}" fill="none" stroke="#34d399" stroke-width="2"/>'
            f'<circle cx="{X(n-1):.1f}" cy="{Y(ys[-1]):.1f}" r="3.5" fill="#34d399"/></svg>')
     return (f'<div class="card"><div class="chd"><h2>Market Conditions 推移</h2><div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
-            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">Market Conditionsの推移・{_span_label(ts)}（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">Market Conditionsの推移・{_span_label(plot_ts)}（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
             f'<div class="chart">{svg}'
-            f'{_date_axis(ts)}</div></div>')
+            f'{_date_axis(plot_ts)}</div></div>')
 
 def _sec_rows(recs, tf, topbottom=False):
     rs = [x for x in recs if x.get(tf) is not None and not (isinstance(x[tf], float) and np.isnan(x[tf]))]
