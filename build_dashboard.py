@@ -18410,13 +18410,13 @@ def _mkt_section(label, q, guide=None, en=None):
             + (f'<div class="msec-q">{q}</div>' if q else "") + "</div>")
 
 def _svg_mri(ts):
-    """Market Conditions history card: recent ~6 months only, compact mobile-safe layout."""
+    """Market Conditions history card: common CHART_LB window, compact mobile-safe layout."""
     if not ts or len(ts) < 5:
         return ""
 
-    # MC15 needs long history for the score, but the chart itself should stay a
-    # recent-regime view. Never render the full calibration history here.
-    view = list(ts[-126:])
+    # MC15 needs long history for the score, but the chart display uses the same
+    # common window as the other trend sparklines.
+    view = list(ts[-CHART_LB:])
     ys = [float(v) for _, v in view]
     n = len(ys)
     last = ys[-1]
@@ -18485,7 +18485,7 @@ def _svg_mri(ts):
         f'<div class="chd"><h2>Market Conditions 推移</h2>'
         f'<div class="chd-now" style="color:#7ff0a8"><b>{last:.0f}</b><span>{band_lab}</span></div></div>'
         f'<details class="cxpl"><summary>読み方</summary>'
-        f'<div class="cxpl-b">Market Conditionsの推移・直近約6か月（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
+        f'<div class="cxpl-b">Market Conditionsの推移・{_span_label(view)}（80 Strong Bull / 65 Bull / 55 Weak Bull / 45 Neutral / 35 Weak Bear / 20 Bear）</div></details>'
         f'<div class="chart">{svg}{axis}</div></div>'
     )
 
