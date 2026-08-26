@@ -5,14 +5,14 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage9_nqsar_swing.py'
+      - 'research/tqqq_stage10_nqsar_partial_profit.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage9:
+  stage10:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -22,21 +22,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run NQSAR swing study
+      - name: Run NQSAR partial profit study
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage9_nqsar_swing.py 2>&1 | tee tqqq_stage9.log
-      - name: Upload Stage9 results
+          PYTHONPATH=. python research/tqqq_stage10_nqsar_partial_profit.py 2>&1 | tee tqqq_stage10.log
+      - name: Upload Stage10 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage9-nqsar-swing
+          name: tqqq-stage10-nqsar-partial-profit
           if-no-files-found: warn
           path: |
-            tqqq_stage9.log
-            tqqq_stage9_summary.json
-            tqqq_stage9_nqsar_events.csv
-            tqqq_stage9_nqsar_stats.csv
-            tqqq_stage9_nqsar_trade_grid.csv
-            tqqq_stage9_nqsar_robust.csv
+            tqqq_stage10.log
+            tqqq_stage10_summary.json
+            tqqq_stage10_signals.csv
+            tqqq_stage10_partial_grid.csv
+            tqqq_stage10_portfolio_grid.csv
+            tqqq_stage10_robust.csv
