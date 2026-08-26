@@ -1,0 +1,36 @@
+name: Simple Capital Flow Eventized Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/validate_simple_capital_flow_eventized.py
+      - .github/workflows/simple-capital-flow-eventized-research.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_simple_capital_flow_eventized.py
+      - name: Run eventized capital flow validation
+        run: |
+          python leadership/research/validate_simple_capital_flow_eventized.py \
+            --root . \
+            --output leadership/research/simple_capital_flow_eventized_outputs \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-capital-flow-eventized-research
+          path: leadership/research/simple_capital_flow_eventized_outputs/
+          retention-days: 7
