@@ -1,0 +1,44 @@
+name: Ignition entry research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/validate_ignition_entry.py
+      - .github/workflows/ignition-entry-research.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_ignition_entry.py
+      - name: Run ignition entry validation
+        run: |
+          python leadership/research/validate_ignition_entry.py \
+            --root . \
+            --output leadership/research/ignition_entry_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ignition-entry-validation
+          path: leadership/research/ignition_entry_output/
+          retention-days: 7
