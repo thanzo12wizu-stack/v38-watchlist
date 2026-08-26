@@ -5,14 +5,14 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage2_from_grid.py'
+      - 'research/tqqq_stage3_smart_vix.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage2:
+  stage3:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -26,20 +26,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh run download 32978209078 -n tqqq-backtest-results -D prev
-      - name: Run MC57 and VIX Stage2
+      - name: Run smart VIX panic release test
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage2_from_grid.py 2>&1 | tee tqqq_stage2.log
-      - name: Upload Stage2 results
+          PYTHONPATH=. python research/tqqq_stage3_smart_vix.py 2>&1 | tee tqqq_stage3.log
+      - name: Upload Stage3 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage2-results
+          name: tqqq-stage3-results
           if-no-files-found: warn
           path: |
-            tqqq_stage2.log
-            tqqq_summary.json
-            tqqq_stage2_regime.csv
-            tqqq_best_position_audit.csv
-            tqqq_vix_signals.csv
+            tqqq_stage3.log
+            tqqq_stage3_summary.json
+            tqqq_stage3_smart_vix.csv
