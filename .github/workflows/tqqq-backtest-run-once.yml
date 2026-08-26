@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage6_lifeplan_regime.py'
+      - 'research/tqqq_stage6_lifeplan_fast.py'
 
 permissions:
   contents: read
@@ -22,11 +22,11 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run life-plan TQQQ regime search
+      - name: Run optimized life-plan TQQQ regime search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage6_lifeplan_regime.py 2>&1 | tee tqqq_stage6.log
+          PYTHONPATH=. python research/tqqq_stage6_lifeplan_fast.py 2>&1 | tee tqqq_stage6.log
       - name: Upload Stage6 results
         if: always()
         uses: actions/upload-artifact@v4
