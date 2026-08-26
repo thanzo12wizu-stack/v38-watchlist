@@ -1,0 +1,38 @@
+name: Lifecycle Direction Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/validate_lifecycle_direction.py
+      - .github/workflows/lifecycle-direction-research.yml
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy scikit-learn yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_lifecycle_direction.py
+      - name: Run frozen lifecycle and direction research
+        run: |
+          python leadership/research/validate_lifecycle_direction.py \
+            --root . \
+            --output leadership/research/lifecycle_direction_outputs \
+            --max-tickers 6000 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Upload research outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifecycle-direction-research
+          path: leadership/research/lifecycle_direction_outputs/
+          retention-days: 7
