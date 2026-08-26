@@ -1,0 +1,36 @@
+name: Base Quality Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - .github/workflows/base-quality-research.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy scikit-learn yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/discover_base_quality.py
+      - name: Run frozen base-quality discovery
+        run: |
+          python leadership/research/discover_base_quality.py \
+            --root . \
+            --output leadership/research/base_quality_outputs \
+            --max-tickers 6000 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Upload research outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-quality-research
+          path: leadership/research/base_quality_outputs/
+          retention-days: 7
