@@ -1,0 +1,63 @@
+name: Research Market Structure
+
+on:
+  push:
+    branches:
+      - research/market-structure-graph
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-taxonomy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect taxonomy schema
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          p = Path('sector_snapshot.json')
+          d = json.loads(p.read_text())
+          print('TOP_KEYS', list(d.keys()))
+          for k,v in d.items():
+              if isinstance(v, dict):
+                  print('DICT', k, 'len=', len(v), 'sample=', list(v.items())[:3])
+              elif isinstance(v, list):
+                  print('LIST', k, 'len=', len(v), 'sample=', v[:3])
+              else:
+                  print('SCALAR', k, type(v).__name__, repr(v)[:200])
+
+          # Industry map schema
+          q = Path('industry_map.json')
+          if q.exists():
+              im = json.loads(q.read_text())
+              print('INDUSTRY_MAP_TYPE', type(im).__name__)
+              if isinstance(im, dict):
+                  print('INDUSTRY_MAP_LEN', len(im), 'SAMPLE', list(im.items())[:5])
+
+          # Locate keys/values that look like theme/subtheme structures.
+          def walk(obj, path='root', depth=0):
+              if depth > 4:
+                  return
+              if isinstance(obj, dict):
+                  for k,v in obj.items():
+                      kl = str(k).lower()
+                      if any(x in kl for x in ('theme','subtheme','s2t','major')):
+                          n = len(v) if hasattr(v,'__len__') else None
+                          print('THEME_LIKE_KEY', path+'.'+str(k), type(v).__name__, 'len=', n)
+                          if isinstance(v, dict): print(' SAMPLE', list(v.items())[:5])
+                          elif isinstance(v, list): print(' SAMPLE', v[:5])
+                      walk(v, path+'.'+str(k), depth+1)
+              elif isinstance(obj, list):
+                  for i,v in enumerate(obj[:20]):
+                      walk(v, path+f'[{i}]', depth+1)
+          walk(d)
+          PY
