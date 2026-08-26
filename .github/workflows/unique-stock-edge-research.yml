@@ -1,0 +1,54 @@
+name: Unique Stock Edge Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/validate_unique_stock_edge.py
+      - .github/workflows/unique-stock-edge-research.yml
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: t1
+            exclude_first: 0
+            max_tickers: 1500
+          - label: t2
+            exclude_first: 1500
+            max_tickers: 1500
+          - label: t3
+            exclude_first: 3000
+            max_tickers: 1500
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_unique_stock_edge.py
+      - name: Run fixed unique stock edge research
+        run: |
+          python leadership/research/validate_unique_stock_edge.py \
+            --root . \
+            --output leadership/research/unique_stock_edge_${{ matrix.label }} \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --exclude-first ${{ matrix.exclude_first }} \
+            --max-tickers ${{ matrix.max_tickers }} \
+            --batch-size 75 \
+            --min-members 3
+      - name: Upload research outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: unique-stock-edge-${{ matrix.label }}
+          path: leadership/research/unique_stock_edge_${{ matrix.label }}/
+          retention-days: 7
