@@ -1,22 +1,23 @@
-name: Early Rotation research validation
+name: Confirmed Leadership research validation
 
 on:
   pull_request:
     paths:
       - 'leadership/research/validate_early_rotation.py'
       - 'leadership/research/compare_subtheme_momentum.py'
+      - 'leadership/research/validate_confirmed_leadership.py'
       - '.github/workflows/early-rotation-research.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: early-rotation-research-${{ github.event.pull_request.number }}
+  group: confirmed-leadership-research-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    if: startsWith(github.head_ref, 'research/early-rotation-')
+    if: startsWith(github.head_ref, 'research/confirmed-leadership-')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -32,13 +33,13 @@ jobs:
       - name: Syntax check
         run: |
           python -m py_compile leadership/research/validate_early_rotation.py
-          python -m py_compile leadership/research/compare_subtheme_momentum.py
+          python -m py_compile leadership/research/validate_confirmed_leadership.py
 
-      - name: Run Momentum versus parent comparison
+      - name: Run Confirmed Leadership validation
         run: |
-          python leadership/research/compare_subtheme_momentum.py \
+          python leadership/research/validate_confirmed_leadership.py \
             --root . \
-            --output leadership/research/momentum_output \
+            --output leadership/research/confirmed_output \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 1500 \
@@ -49,7 +50,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: momentum-parent-comparison
-          path: leadership/research/momentum_output/
+          name: confirmed-leadership-validation
+          path: leadership/research/confirmed_output/
           if-no-files-found: warn
           retention-days: 7
