@@ -5,17 +5,16 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage15b_joint_state_fast.py'
-      - 'research/tqqq_stage15_joint_state_mc.py'
+      - 'research/tqqq_stage15c_joint_state_numpy.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage15b:
+  stage15c:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -23,19 +22,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run 1000-path joint-state Monte Carlo
+      - name: Run NumPy joint-state Monte Carlo
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage15b_joint_state_fast.py 2>&1 | tee tqqq_stage15b.log
-      - name: Upload Stage15b results
+          PYTHONPATH=. python research/tqqq_stage15c_joint_state_numpy.py 2>&1 | tee tqqq_stage15c.log
+      - name: Upload Stage15c results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage15b-joint-state-fast
+          name: tqqq-stage15c-joint-state-numpy
           if-no-files-found: warn
           path: |
-            tqqq_stage15b.log
-            tqqq_stage15b_summary.json
-            tqqq_stage15b_summary.csv
-            tqqq_stage15b_joint_state_mc.csv
+            tqqq_stage15c.log
+            tqqq_stage15c_summary.json
+            tqqq_stage15c_summary.csv
+            tqqq_stage15c_mc.csv
