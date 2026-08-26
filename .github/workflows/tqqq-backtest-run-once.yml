@@ -5,14 +5,14 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage5_free_exposure.py'
+      - 'research/tqqq_stage6_lifeplan_regime.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage5:
+  stage6:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -22,19 +22,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run free-exposure TQQQ return search
+      - name: Run life-plan TQQQ regime search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage5_free_exposure.py 2>&1 | tee tqqq_stage5.log
-      - name: Upload Stage5 results
+          PYTHONPATH=. python research/tqqq_stage6_lifeplan_regime.py 2>&1 | tee tqqq_stage6.log
+      - name: Upload Stage6 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage5-results
+          name: tqqq-stage6-results
           if-no-files-found: warn
           path: |
-            tqqq_stage5.log
-            tqqq_stage5_summary.json
-            tqqq_stage5_base_grid.csv
-            tqqq_stage5_free_exposure.csv
+            tqqq_stage6.log
+            tqqq_stage6_summary.json
+            tqqq_stage6_base.csv
+            tqqq_stage6_lifeplan.csv
