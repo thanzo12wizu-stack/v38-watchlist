@@ -5,15 +5,16 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_backtest_once.py'
+      - 'research/tqqq_stage2_from_grid.py'
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  backtest:
+  stage2:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -21,53 +22,24 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Patch one-off research runner
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('research/tqqq_backtest_once.py')
-          s=p.read_text(encoding='utf-8')
-          s=s.replace('r.shape', "r['shape']")
-          s=s.replace('base.shape', "base['shape']")
-          s=s.replace('best.shape', "best['shape']")
-          old='''    is_candidates = []
-    is_candidates += list(d1.sort_values(["is_calmar","is_cagr"],ascending=False).head(25).index)
-    is_candidates += list(d1.sort_values(["is_cagr","is_calmar"],ascending=False).head(25).index)
-    for lim in (0.40,0.50,0.60,0.70):
-        is_candidates += list(d1[d1["is_mdd"] >= -lim].sort_values(["is_cagr","is_calmar"],ascending=False).head(15).index)
-    is_candidates = sorted(set(is_candidates))
-'''
-          new='''    is_candidates = []
-    # Preserve metric diversity using IS data only; OOS remains untouched.
-    for _metric in ("ema21_atr", "sma50_atr", "vwap63_atr", "vwap252_atr"):
-        _dm = d1[d1["metric"] == _metric]
-        is_candidates += list(_dm.sort_values(["is_calmar","is_cagr"],ascending=False).head(12).index)
-        is_candidates += list(_dm.sort_values(["is_cagr","is_calmar"],ascending=False).head(12).index)
-        for lim in (0.40,0.50,0.60,0.70):
-            is_candidates += list(_dm[_dm["is_mdd"] >= -lim].sort_values(["is_cagr","is_calmar"],ascending=False).head(8).index)
-    is_candidates = sorted(set(is_candidates))
-'''
-          if old not in s:
-              raise SystemExit('candidate block not found')
-          s=s.replace(old,new)
-          p.write_text(s, encoding='utf-8')
-          PY
-      - name: Run TQQQ backtest
+      - name: Download completed Stage1 grid
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 32978209078 -n tqqq-backtest-results -D prev
+      - name: Run MC57 and VIX Stage2
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_backtest_once.py 2>&1 | tee tqqq_backtest.log
-      - name: Upload full results
+          PYTHONPATH=. python research/tqqq_stage2_from_grid.py 2>&1 | tee tqqq_stage2.log
+      - name: Upload Stage2 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-backtest-results
+          name: tqqq-stage2-results
           if-no-files-found: warn
           path: |
-            tqqq_backtest.log
+            tqqq_stage2.log
             tqqq_summary.json
-            tqqq_stage1_grid.csv
             tqqq_stage2_regime.csv
             tqqq_best_position_audit.csv
             tqqq_vix_signals.csv
