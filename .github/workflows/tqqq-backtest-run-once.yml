@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage11_fast.py'
       - 'research/tqqq_stage11_integrated_nqsar.py'
 
 permissions:
@@ -26,12 +27,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage11_integrated_nqsar.py 2>&1 | tee tqqq_stage11.log
+          PYTHONPATH=. python research/tqqq_stage11_fast.py 2>&1 | tee tqqq_stage11.log
       - name: Upload Stage11 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage11-integrated-nqsar
+          name: tqqq-stage11-integrated-nqsar-fast
           if-no-files-found: warn
           path: |
             tqqq_stage11.log
