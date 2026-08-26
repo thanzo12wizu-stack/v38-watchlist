@@ -17,4 +17,4 @@ jobs:
       - name: Dispatch dashboard build
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run dashboard.yml --ref main
+        run: gh workflow run dashboard.yml --repo thanzo12wizu-stack/v38-watchlist --ref main
