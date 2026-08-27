@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage55_caveat_sensitivity.py'
       - 'research/tqqq_stage54_implementation_readiness_audit.py'
       - 'research/tqqq_stage53_qqq_vs_tqqq_4h_rsi.py'
       - 'research/tqqq_stage52_4h_rsi_divergence_backtest.py'
@@ -92,3 +93,32 @@ jobs:
             tqqq_stage54.log
             tqqq_stage54_audit_summary.json
             tqqq_stage54_mc57_coverage.csv
+
+  stage55:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Run MC57 and NQSAR caveat sensitivity
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python research/tqqq_stage55_caveat_sensitivity.py 2>&1 | tee tqqq_stage55.log
+      - name: Upload Stage55 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-stage55-caveat-sensitivity
+          if-no-files-found: warn
+          path: |
+            tqqq_stage55.log
+            tqqq_stage55_summary.json
+            tqqq_stage55_nqsar_validation.csv
+            tqqq_stage55_nqsar_sensitivity.csv
+            tqqq_stage55_mc57_inceptions.csv
+            tqqq_stage55_mc57_cohort_sensitivity.csv
