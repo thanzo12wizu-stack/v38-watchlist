@@ -1,0 +1,60 @@
+name: RSI30 VIX Sequence audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/audit_rsi30_vix_sequence.py'
+      - '.github/workflows/rsi30-vix-sequence-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy yfinance
+
+      - name: Download focused RSI audit trades
+        uses: actions/download-artifact@v4
+        with:
+          name: rsi-reset-focused-robust-audit
+          path: leadership/research/rsi30_vix_input
+          github-token: ${{ github.token }}
+          run-id: 33063836403
+
+      - name: Syntax and input checks
+        run: |
+          python -m py_compile leadership/research/audit_rsi30_vix_sequence.py
+          test -s leadership/research/rsi30_vix_input/audit_trades.csv.gz
+
+      - name: Run RSI30 plus VIX Sequence audit
+        run: |
+          python leadership/research/audit_rsi30_vix_sequence.py \
+            --input leadership/research/rsi30_vix_input/audit_trades.csv.gz \
+            --output leadership/research/rsi30_vix_output \
+            --vix-start 1990-01-02 \
+            --vix-end 2026-08-27
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsi30-vix-sequence-audit
+          path: leadership/research/rsi30_vix_output/
+          retention-days: 14
+          if-no-files-found: warn
