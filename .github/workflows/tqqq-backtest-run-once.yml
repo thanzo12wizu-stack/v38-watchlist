@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage47_crash_seed_plateau.py'
       - 'research/tqqq_stage46_crash_seed_refinement.py'
       - 'research/tqqq_stage45_crash_to_bull_regime.py'
       - 'research/tqqq_stage44_mc_vix_conditional_throttle.py'
@@ -27,7 +28,7 @@ permissions:
   actions: read
 
 jobs:
-  stage46:
+  stage47:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -37,24 +38,24 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run crash seed refinement
+      - name: Run crash seed local plateau
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage46_crash_seed_refinement.py 2>&1 | tee tqqq_stage46.log
-      - name: Upload Stage46 results
+          PYTHONPATH=. python research/tqqq_stage47_crash_seed_plateau.py 2>&1 | tee tqqq_stage47.log
+      - name: Upload Stage47 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage46-crash-seed
+          name: tqqq-stage47-crash-seed-plateau
           if-no-files-found: warn
           path: |
-            tqqq_stage46.log
-            tqqq_stage46_summary.json
-            tqqq_stage46_scan.csv
-            tqqq_stage46_subperiods.csv
-            tqqq_stage46_costs.csv
-            tqqq_stage46_mc.csv
-            tqqq_stage46_mc_summary.csv
-            tqqq_stage46_pairwise.csv
-            tqqq_stage46_final_rank.csv
+            tqqq_stage47.log
+            tqqq_stage47_summary.json
+            tqqq_stage47_scan.csv
+            tqqq_stage47_subperiods.csv
+            tqqq_stage47_costs.csv
+            tqqq_stage47_mc.csv
+            tqqq_stage47_mc_summary.csv
+            tqqq_stage47_pairwise.csv
+            tqqq_stage47_final_rank.csv
