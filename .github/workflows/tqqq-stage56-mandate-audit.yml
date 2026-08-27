@@ -1,0 +1,47 @@
+name: TQQQ Stage56 mandate FX tax audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [tqqq-backtest-once-20260826]
+    paths:
+      - 'research/tqqq_stage56_mandate_portfolio_audit.py'
+      - '.github/workflows/tqqq-stage56-mandate-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  stage56:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Run mandate, FX, tax, and portfolio-input audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python research/tqqq_stage56_mandate_portfolio_audit.py 2>&1 | tee tqqq_stage56.log
+      - name: Upload Stage56 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          if-no-files-found: warn
+          path: |
+            tqqq_stage56.log
+            tqqq_stage56_summary.json
+            tqqq_stage56_mandate_scan.csv
+            tqqq_stage56_subperiods.csv
+            tqqq_stage56_costs.csv
+            tqqq_stage56_fx_tax.csv
+            tqqq_stage56_dividend_tax.csv
+            tqqq_stage56_mc.csv
+            tqqq_stage56_mc_summary.csv
+            tqqq_stage56_daily.csv.gz
