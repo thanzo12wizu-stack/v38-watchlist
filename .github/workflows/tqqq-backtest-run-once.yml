@@ -5,8 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage25_blue_floor.py'
-      - 'research/tqqq_stage23_bull_floor_screen.py'
+      - 'research/tqqq_stage26_event_driven_bull.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
 
@@ -15,7 +14,7 @@ permissions:
   actions: read
 
 jobs:
-  stage25:
+  stage26:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -25,19 +24,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run NQSAR Blue floor screen
+      - name: Run event-driven bull study
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage25_blue_floor.py 2>&1 | tee tqqq_stage25.log
-      - name: Upload Stage25 results
+          PYTHONPATH=. python research/tqqq_stage26_event_driven_bull.py 2>&1 | tee tqqq_stage26.log
+      - name: Upload Stage26 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage25-blue-floor
+          name: tqqq-stage26-event-driven-bull
           if-no-files-found: warn
           path: |
-            tqqq_stage25.log
-            tqqq_stage25_summary.json
-            tqqq_stage25_screen.csv
-            tqqq_stage25_bull_capture.csv
+            tqqq_stage26.log
+            tqqq_stage26_summary.json
+            tqqq_stage26_screen.csv
+            tqqq_stage26_bull_capture.csv
