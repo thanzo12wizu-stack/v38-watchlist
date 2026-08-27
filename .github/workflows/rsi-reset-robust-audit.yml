@@ -1,0 +1,64 @@
+name: RSI reset focused robustness audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/audit_rsi_reset_robust.py'
+      - '.github/workflows/rsi-reset-robust-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scipy yfinance
+
+      - name: Download frozen Theme Momentum event rows
+        uses: actions/download-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-A
+          path: leadership/research/rsi_reset_audit_input
+          github-token: ${{ github.token }}
+          run-id: 33040661731
+
+      - name: Syntax and input checks
+        run: |
+          python -m py_compile leadership/research/audit_rsi_reset_robust.py
+          test -s leadership/research/rsi_reset_audit_input/frozen_event_stock_rows.csv.gz
+
+      - name: Run focused robustness audit
+        run: |
+          python leadership/research/audit_rsi_reset_robust.py \
+            --root . \
+            --input leadership/research/rsi_reset_audit_input/frozen_event_stock_rows.csv.gz \
+            --output leadership/research/rsi_reset_audit_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-30 \
+            --max-tickers 6000 \
+            --batch-size 75 \
+            --min-members 3
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsi-reset-focused-robust-audit
+          path: leadership/research/rsi_reset_audit_output/
+          retention-days: 14
+          if-no-files-found: warn
