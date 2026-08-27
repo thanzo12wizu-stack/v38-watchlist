@@ -5,16 +5,16 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage15c_joint_state_numpy.py'
+      - 'research/tqqq_stage16_adversarial_bear_stress.py'
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  stage15c:
+  stage16:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -22,19 +22,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run NumPy joint-state Monte Carlo
+      - name: Run adversarial bear stress Monte Carlo
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage15c_joint_state_numpy.py 2>&1 | tee tqqq_stage15c.log
-      - name: Upload Stage15c results
+          PYTHONPATH=. python research/tqqq_stage16_adversarial_bear_stress.py 2>&1 | tee tqqq_stage16.log
+      - name: Upload Stage16 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage15c-joint-state-numpy
+          name: tqqq-stage16-adversarial-bear-stress
           if-no-files-found: warn
           path: |
-            tqqq_stage15c.log
-            tqqq_stage15c_summary.json
-            tqqq_stage15c_summary.csv
-            tqqq_stage15c_mc.csv
+            tqqq_stage16.log
+            tqqq_stage16_summary.json
+            tqqq_stage16_summary.csv
+            tqqq_stage16_ranked.csv
+            tqqq_stage16_adversarial_mc.csv
+            tqqq_stage16_historical_candidates.csv
