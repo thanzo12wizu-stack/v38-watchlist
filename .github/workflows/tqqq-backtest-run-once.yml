@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage19_final_candidate_mc.py'
+      - 'research/tqqq_stage20_base_exposure_tradeoff.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
 
@@ -14,7 +14,7 @@ permissions:
   actions: read
 
 jobs:
-  stage19:
+  stage20:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -24,20 +24,22 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run final candidate normal Monte Carlo
+      - name: Run exposure tradeoff validation
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage19_final_candidate_mc.py 2>&1 | tee tqqq_stage19.log
-      - name: Upload Stage19 results
+          PYTHONPATH=. python research/tqqq_stage20_base_exposure_tradeoff.py 2>&1 | tee tqqq_stage20.log
+      - name: Upload Stage20 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage19-final-candidate-mc
+          name: tqqq-stage20-exposure-tradeoff
           if-no-files-found: warn
           path: |
-            tqqq_stage19.log
-            tqqq_stage19_summary.json
-            tqqq_stage19_summary.csv
-            tqqq_stage19_mc.csv
-            tqqq_stage19_historical.csv
+            tqqq_stage20.log
+            tqqq_stage20_summary.json
+            tqqq_stage20_summary.csv
+            tqqq_stage20_normal_mc.csv
+            tqqq_stage20_adversarial_mc.csv
+            tqqq_stage20_family.csv
+            tqqq_stage20_historical.csv
