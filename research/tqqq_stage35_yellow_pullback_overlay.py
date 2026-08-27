@@ -8,7 +8,7 @@ prefix=src.split('# ---------- historical exact validation ----------')[0]
 exec(compile(prefix,'stage34-prefix','exec'),globals())
 print('\n=== STAGE35 YELLOW / BY PULLBACK OVERLAY ===',flush=True)
 
-NSIM=1000; H=2520; BLOCK=120; SEED_NORMAL=350827; SEED_BEAR=350828
+NSIM=1000; HORIZON=2520; BLOCK=120; SEED_NORMAL=350827; SEED_BEAR=350828
 
 # Recompute returns from an altered target using the exact same signal-close -> t+1 open convention.
 def from_target(B,t,cost=.0005):
@@ -64,8 +64,8 @@ for nm in CANDS:
     for bps in (5,10,20): COSTS.append({'candidate':nm,'cost_bps':bps,**run_one(A,nm,bps/10000.0,False)})
 COSTS=pd.DataFrame(COSTS); COSTS.to_csv('tqqq_stage35_costs.csv',index=False)
 
-# Normal block bootstrap. Compute base trace once per path, then overlays through run_one (small enough for final validation).
-L=len(A['ret']); rng=np.random.default_rng(SEED_NORMAL); nb=int(np.ceil(H/BLOCK)); starts=rng.integers(0,L-BLOCK+1,size=(NSIM,nb)); offs=np.arange(BLOCK); paths=(starts[:,:,None]+offs).reshape(NSIM,-1)[:,:H]
+# Normal block bootstrap.
+L=len(A['ret']); rng=np.random.default_rng(SEED_NORMAL); nb=int(np.ceil(HORIZON/BLOCK)); starts=rng.integers(0,L-BLOCK+1,size=(NSIM,nb)); offs=np.arange(BLOCK); paths=(starts[:,:,None]+offs).reshape(NSIM,-1)[:,:HORIZON]
 normal=[]
 for s in range(NSIM):
     ix=paths[s]; B={k:A[k][ix].copy() for k in KEYS}
@@ -74,14 +74,14 @@ for s in range(NSIM):
 NORMAL=pd.DataFrame(normal); NORMAL.to_csv('tqqq_stage35_normal_mc.csv',index=False)
 
 # Adversarial Bear paths.
-rng=np.random.default_rng(SEED_BEAR); starts=rng.integers(0,L-BLOCK+1,size=(NSIM,nb)); paths=(starts[:,:,None]+offs).reshape(NSIM,-1)[:,:H]
+rng=np.random.default_rng(SEED_BEAR); starts=rng.integers(0,L-BLOCK+1,size=(NSIM,nb)); paths=(starts[:,:,None]+offs).reshape(NSIM,-1)[:,:HORIZON]
 families=np.array((['dotcom_like']*250)+(['gfc_like']*250)+(['covid_like']*250)+(['2022_like']*250),dtype=object); rng.shuffle(families)
 bear=[]
 for s in range(NSIM):
     ix=paths[s]; B={k:A[k][ix].copy() for k in KEYS}; fam=str(families[s]); ep=make_episode(fam,rng); le=len(ep['ret'])
-    if le>=H-504:
-        cut=(le-(H-504))//2; ep={k:v[cut:cut+(H-504)] for k,v in ep.items()}; le=len(ep['ret'])
-    pos=int(rng.integers(252,max(253,H-le-252)))
+    if le>=HORIZON-504:
+        cut=(le-(HORIZON-504))//2; ep={k:v[cut:cut+(HORIZON-504)] for k,v in ep.items()}; le=len(ep['ret'])
+    pos=int(rng.integers(252,max(253,HORIZON-le-252)))
     for k in KEYS:B[k][pos:pos+le]=ep[k]
     for nm in CANDS: bear.append({'sim':s,'family':fam,'candidate':nm,**run_one(B,nm,.0005,False)})
     if (s+1)%100==0:print('[bear]',s+1,'/',NSIM,flush=True)
