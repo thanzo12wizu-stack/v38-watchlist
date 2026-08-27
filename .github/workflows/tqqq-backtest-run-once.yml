@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage45_crash_to_bull_regime.py'
       - 'research/tqqq_stage44_mc_vix_conditional_throttle.py'
       - 'research/tqqq_stage43_mc57_vix_2d_optimizer.py'
       - 'research/tqqq_stage42_annual_drawdown_profile.py'
@@ -25,7 +26,7 @@ permissions:
   actions: read
 
 jobs:
-  stage44:
+  stage45:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -35,25 +36,24 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run conditional MC57 x VIX throttle
+      - name: Run crash-to-bull regime optimizer
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage44_mc_vix_conditional_throttle.py 2>&1 | tee tqqq_stage44.log
-      - name: Upload Stage44 results
+          PYTHONPATH=. python research/tqqq_stage45_crash_to_bull_regime.py 2>&1 | tee tqqq_stage45.log
+      - name: Upload Stage45 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage44-mc-vix-conditional
+          name: tqqq-stage45-crash-to-bull
           if-no-files-found: warn
           path: |
-            tqqq_stage44.log
-            tqqq_stage44_summary.json
-            tqqq_stage44_scan.csv
-            tqqq_stage44_subperiods.csv
-            tqqq_stage44_costs.csv
-            tqqq_stage44_normal_mc.csv
-            tqqq_stage44_normal_tax_mc.csv
-            tqqq_stage44_mc_summary.csv
-            tqqq_stage44_tax_mc_summary.csv
-            tqqq_stage44_final_rank.csv
+            tqqq_stage45.log
+            tqqq_stage45_summary.json
+            tqqq_stage45_scan.csv
+            tqqq_stage45_subperiods.csv
+            tqqq_stage45_costs.csv
+            tqqq_stage45_mc.csv
+            tqqq_stage45_mc_summary.csv
+            tqqq_stage45_annual_dd.csv
+            tqqq_stage45_final_rank.csv
