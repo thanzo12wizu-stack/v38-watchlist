@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage27_bull_exit_diagnostics.py'
       - 'research/tqqq_stage26_event_driven_bull.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
@@ -14,7 +15,7 @@ permissions:
   actions: read
 
 jobs:
-  stage26:
+  stage27:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -24,19 +25,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run event-driven bull study
+      - name: Run bull sleeve exit diagnostics
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage26_event_driven_bull.py 2>&1 | tee tqqq_stage26.log
-      - name: Upload Stage26 results
+          PYTHONPATH=. python research/tqqq_stage27_bull_exit_diagnostics.py 2>&1 | tee tqqq_stage27.log
+      - name: Upload Stage27 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage26-event-driven-bull
+          name: tqqq-stage27-bull-exit-diagnostics
           if-no-files-found: warn
           path: |
-            tqqq_stage26.log
-            tqqq_stage26_summary.json
-            tqqq_stage26_screen.csv
-            tqqq_stage26_bull_capture.csv
+            tqqq_stage27.log
+            tqqq_stage27_summary.json
+            tqqq_stage27_screen.csv
+            tqqq_stage27_bull_capture.csv
