@@ -1,0 +1,70 @@
+name: Technical first SEC rerank cached robust
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/validate_technical_fundamental_rerank_cached.py'
+      - '.github/workflows/technical-fundamental-rerank-cached-robust.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy lightgbm scikit-learn requests
+
+      - name: Download frozen technical dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-A
+          path: leadership/research/technical_fund_cached_input
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 33040661731
+
+      - name: Download frozen PIT SEC features
+        uses: actions/download-artifact@v4
+        with:
+          name: technical-first-sec-rerank
+          path: leadership/research/technical_fund_cached_sec
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 33041658422
+
+      - name: Syntax and input checks
+        run: |
+          python -m py_compile leadership/research/validate_technical_fundamental_rerank.py
+          python -m py_compile leadership/research/validate_technical_fundamental_rerank_cached.py
+          test -s leadership/research/technical_fund_cached_input/frozen_event_stock_rows.csv.gz
+          test -s leadership/research/technical_fund_cached_sec/sec_point_in_time_features.csv.gz
+
+      - name: Run cached robust validation
+        working-directory: leadership/research
+        run: |
+          python validate_technical_fundamental_rerank_cached.py \
+            --input technical_fund_cached_input/frozen_event_stock_rows.csv.gz \
+            --sec-features technical_fund_cached_sec/sec_point_in_time_features.csv.gz \
+            --output technical_fund_cached_output
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-first-sec-rerank-cached-robust
+          path: leadership/research/technical_fund_cached_output/
+          retention-days: 14
+          if-no-files-found: warn
