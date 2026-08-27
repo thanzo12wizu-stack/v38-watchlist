@@ -1,0 +1,47 @@
+name: Theme LTR expert gate research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/validate_theme_ltr_expert_gate.py'
+      - '.github/workflows/theme-ltr-expert-gate-research.yml'
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        replicate: [A, B]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance lightgbm scikit-learn
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_theme_ltr_expert_gate.py
+      - name: Run mixture-of-experts gate validation
+        run: |
+          python leadership/research/validate_theme_ltr_expert_gate.py \
+            --root . \
+            --output leadership/research/theme_ltr_gate_${{ matrix.replicate }} \
+            --replicate ${{ matrix.replicate }} \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-30 \
+            --max-tickers 6000 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-${{ matrix.replicate }}
+          path: leadership/research/theme_ltr_gate_${{ matrix.replicate }}/
+          if-no-files-found: warn
+          retention-days: 14
