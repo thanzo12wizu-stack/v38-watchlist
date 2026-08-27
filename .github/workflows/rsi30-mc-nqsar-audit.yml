@@ -42,6 +42,17 @@ jobs:
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
           test -s leadership/research/rsi30_mc_nqsar_input/audit_trades.csv.gz
 
+      - name: Normalize research date-index labels
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('leadership/research/audit_rsi30_mc_nqsar.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('mc2 = mc.reset_index().rename(columns={"index": "signal_date"})', 'mc2 = mc.rename_axis("signal_date").reset_index()')
+          s = s.replace('nq2 = nq.reset_index().rename(columns={"index": "signal_date"})', 'nq2 = nq.rename_axis("signal_date").reset_index()')
+          p.write_text(s, encoding='utf-8')
+          PY
+
       - name: Run MC and NQSAR confirmation audit
         run: |
           PYTHONPATH=. python leadership/research/audit_rsi30_mc_nqsar.py \
