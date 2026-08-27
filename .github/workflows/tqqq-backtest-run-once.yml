@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage31_vol_target_bull.py'
+      - 'research/tqqq_stage32_qqq_bull_bridge.py'
       - 'research/tqqq_stage24_smart_bull_continuation.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
@@ -15,7 +15,7 @@ permissions:
   actions: read
 
 jobs:
-  stage31:
+  stage32:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -25,19 +25,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run volatility-targeted bull allocation study
+      - name: Run QQQ bull bridge study
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage31_vol_target_bull.py 2>&1 | tee tqqq_stage31.log
-      - name: Upload Stage31 results
+          PYTHONPATH=. python research/tqqq_stage32_qqq_bull_bridge.py 2>&1 | tee tqqq_stage32.log
+      - name: Upload Stage32 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage31-vol-target-bull
+          name: tqqq-stage32-qqq-bull-bridge
           if-no-files-found: warn
           path: |
-            tqqq_stage31.log
-            tqqq_stage31_summary.json
-            tqqq_stage31_screen.csv
-            tqqq_stage31_bull_capture.csv
+            tqqq_stage32.log
+            tqqq_stage32_summary.json
+            tqqq_stage32_screen.csv
+            tqqq_stage32_bull_capture.csv
