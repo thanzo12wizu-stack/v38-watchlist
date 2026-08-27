@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage28_bull_event_quality.py'
+      - 'research/tqqq_stage29_prove_it_bull.py'
       - 'research/tqqq_stage27_bull_exit_diagnostics.py'
       - 'research/tqqq_stage26_event_driven_bull.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
@@ -16,7 +16,7 @@ permissions:
   actions: read
 
 jobs:
-  stage28:
+  stage29:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -26,20 +26,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run bull event quality study
+      - name: Run prove-it staged bull accelerator
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage28_bull_event_quality.py 2>&1 | tee tqqq_stage28.log
-      - name: Upload Stage28 results
+          PYTHONPATH=. python research/tqqq_stage29_prove_it_bull.py 2>&1 | tee tqqq_stage29.log
+      - name: Upload Stage29 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage28-bull-event-quality
+          name: tqqq-stage29-prove-it-bull
           if-no-files-found: warn
           path: |
-            tqqq_stage28.log
-            tqqq_stage28_summary.json
-            tqqq_stage28_events.csv
-            tqqq_stage28_groups.csv
-            tqqq_stage28_years.csv
+            tqqq_stage29.log
+            tqqq_stage29_summary.json
+            tqqq_stage29_screen.csv
+            tqqq_stage29_bull_capture.csv
