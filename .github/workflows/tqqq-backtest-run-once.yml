@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage36_goal_first_taxaware.py'
       - 'research/tqqq_stage35_yellow_pullback_overlay.py'
       - 'research/tqqq_stage34_final_gb_runner_validation.py'
       - 'research/tqqq_stage24_smart_bull_continuation.py'
@@ -16,7 +17,7 @@ permissions:
   actions: read
 
 jobs:
-  stage35:
+  stage36:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -26,24 +27,26 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run Yellow pullback overlay validation
+      - name: Run goal-first tax-aware TQQQ search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage35_yellow_pullback_overlay.py 2>&1 | tee tqqq_stage35.log
-      - name: Upload Stage35 results
+          PYTHONPATH=. python research/tqqq_stage36_goal_first_taxaware.py 2>&1 | tee tqqq_stage36.log
+      - name: Upload Stage36 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage35-yellow-pullback
+          name: tqqq-stage36-goal-first-taxaware
           if-no-files-found: warn
           path: |
-            tqqq_stage35.log
-            tqqq_stage35_summary.json
-            tqqq_stage35_historical.csv
-            tqqq_stage35_walkforward.csv
-            tqqq_stage35_annual.csv
-            tqqq_stage35_costs.csv
-            tqqq_stage35_normal_mc.csv
-            tqqq_stage35_bear_mc.csv
-            tqqq_stage35_mc_summary.csv
+            tqqq_stage36.log
+            tqqq_stage36_summary.json
+            tqqq_stage36_scan.csv
+            tqqq_stage36_subperiods.csv
+            tqqq_stage36_costs.csv
+            tqqq_stage36_normal_mc.csv
+            tqqq_stage36_normal_tax_mc.csv
+            tqqq_stage36_bear_mc.csv
+            tqqq_stage36_mc_summary.csv
+            tqqq_stage36_tax_mc_summary.csv
+            tqqq_stage36_final_rank.csv
