@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage43_mc57_vix_2d_optimizer.py'
       - 'research/tqqq_stage42_annual_drawdown_profile.py'
       - 'research/tqqq_stage41_vix_throttle.py'
       - 'research/tqqq_stage40_postcap_frontier.py'
@@ -23,7 +24,7 @@ permissions:
   actions: read
 
 jobs:
-  stage42:
+  stage43:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -33,20 +34,25 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run annual drawdown profile
+      - name: Run MC57 x VIX 2D optimizer
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage42_annual_drawdown_profile.py 2>&1 | tee tqqq_stage42.log
-      - name: Upload Stage42 results
+          PYTHONPATH=. python research/tqqq_stage43_mc57_vix_2d_optimizer.py 2>&1 | tee tqqq_stage43.log
+      - name: Upload Stage43 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage42-annual-drawdown
+          name: tqqq-stage43-mc57-vix-2d
           if-no-files-found: warn
           path: |
-            tqqq_stage42.log
-            tqqq_stage42_summary.json
-            tqqq_stage42_summary.csv
-            tqqq_stage42_annual_drawdowns.csv
-            tqqq_stage42_mdd_episodes.csv
+            tqqq_stage43.log
+            tqqq_stage43_summary.json
+            tqqq_stage43_scan.csv
+            tqqq_stage43_subperiods.csv
+            tqqq_stage43_costs.csv
+            tqqq_stage43_normal_mc.csv
+            tqqq_stage43_normal_tax_mc.csv
+            tqqq_stage43_mc_summary.csv
+            tqqq_stage43_tax_mc_summary.csv
+            tqqq_stage43_final_rank.csv
