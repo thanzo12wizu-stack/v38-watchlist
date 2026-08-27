@@ -1,0 +1,42 @@
+name: Theme learning to rank research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/validate_theme_ltr.py
+      - .github/workflows/theme-learning-to-rank-research.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance lightgbm scikit-learn
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_theme_ltr.py
+      - name: Run Theme learning-to-rank holdout
+        run: |
+          python leadership/research/validate_theme_ltr.py \
+            --root . \
+            --output leadership/research/theme_ltr_outputs \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-30 \
+            --max-tickers 6000 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-learning-to-rank-research
+          path: leadership/research/theme_ltr_outputs/
+          if-no-files-found: warn
+          retention-days: 14
