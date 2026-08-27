@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage38_drawdown_throttle.py'
       - 'research/tqqq_stage37_aggressive_frontier_final.py'
       - 'research/tqqq_stage36_goal_first_taxaware.py'
       - 'research/tqqq_stage35_yellow_pullback_overlay.py'
@@ -18,7 +19,7 @@ permissions:
   actions: read
 
 jobs:
-  stage37:
+  stage38:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -28,27 +29,26 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run aggressive goal-first TQQQ frontier search
+      - name: Run drawdown throttle search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage37_aggressive_frontier_final.py 2>&1 | tee tqqq_stage37.log
-      - name: Upload Stage37 results
+          PYTHONPATH=. python research/tqqq_stage38_drawdown_throttle.py 2>&1 | tee tqqq_stage38.log
+      - name: Upload Stage38 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage37-aggressive-frontier
+          name: tqqq-stage38-drawdown-throttle
           if-no-files-found: warn
           path: |
-            tqqq_stage37.log
-            tqqq_stage37_summary.json
-            tqqq_stage37_historical.csv
-            tqqq_stage37_subperiods.csv
-            tqqq_stage37_costs.csv
-            tqqq_stage37_normal_mc.csv
-            tqqq_stage37_normal_tax_mc.csv
-            tqqq_stage37_bear_mc.csv
-            tqqq_stage37_mc_summary.csv
-            tqqq_stage37_tax_mc_summary.csv
-            tqqq_stage37_drawdowns.csv
-            tqqq_stage37_final_rank.csv
+            tqqq_stage38.log
+            tqqq_stage38_summary.json
+            tqqq_stage38_scan.csv
+            tqqq_stage38_subperiods.csv
+            tqqq_stage38_costs.csv
+            tqqq_stage38_normal_mc.csv
+            tqqq_stage38_normal_tax_mc.csv
+            tqqq_stage38_bear_mc.csv
+            tqqq_stage38_mc_summary.csv
+            tqqq_stage38_tax_mc_summary.csv
+            tqqq_stage38_final_rank.csv
