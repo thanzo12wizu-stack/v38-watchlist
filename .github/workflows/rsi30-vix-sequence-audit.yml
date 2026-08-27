@@ -1,5 +1,6 @@
 name: RSI30 VIX Sequence audit
 
+# Research-only audit; validates reconstructed production VIX Sequence before scoring.
 on:
   workflow_dispatch:
   push:
