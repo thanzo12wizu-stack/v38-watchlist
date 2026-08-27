@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage50_vix_event_semantics_audit.py'
       - 'research/tqqq_stage49_runner_audit.py'
       - 'research/tqqq_stage48_crash_seed_lower_boundary.py'
       - 'research/tqqq_stage47_crash_seed_plateau.py'
@@ -30,7 +31,7 @@ permissions:
   actions: read
 
 jobs:
-  stage49:
+  stage50:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -40,23 +41,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run runner overlap and VIX-bottom audit
+      - name: Run VIX event semantics audit
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage49_runner_audit.py 2>&1 | tee tqqq_stage49.log
-      - name: Upload Stage49 results
+          PYTHONPATH=. python research/tqqq_stage50_vix_event_semantics_audit.py 2>&1 | tee tqqq_stage50.log
+      - name: Upload Stage50 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage49-runner-audit
+          name: tqqq-stage50-vix-semantics
           if-no-files-found: warn
           path: |
-            tqqq_stage49.log
-            tqqq_stage49_summary.json
-            tqqq_stage49_events.csv
-            tqqq_stage49_seed_clusters.csv
-            tqqq_stage49_historical.csv
-            tqqq_stage49_mc.csv
-            tqqq_stage49_mc_summary.csv
-            tqqq_stage49_pairwise.csv
+            tqqq_stage50.log
+            tqqq_stage50_summary.json
+            tqqq_stage50_historical.csv
+            tqqq_stage50_mc.csv
+            tqqq_stage50_mc_summary.csv
+            tqqq_stage50_pairwise.csv
