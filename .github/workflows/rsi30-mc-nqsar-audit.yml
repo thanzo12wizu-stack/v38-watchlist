@@ -44,7 +44,7 @@ jobs:
 
       - name: Run MC and NQSAR confirmation audit
         run: |
-          python leadership/research/audit_rsi30_mc_nqsar.py \
+          PYTHONPATH=. python leadership/research/audit_rsi30_mc_nqsar.py \
             --input leadership/research/rsi30_mc_nqsar_input/audit_trades.csv.gz \
             --output leadership/research/rsi30_mc_nqsar_output \
             --asof 2026-08-27 \
