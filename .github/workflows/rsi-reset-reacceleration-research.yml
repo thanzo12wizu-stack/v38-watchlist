@@ -1,0 +1,60 @@
+name: RSI reset re-acceleration strong stocks research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/validate_rsi_reset_reaccel.py'
+      - '.github/workflows/rsi-reset-reacceleration-research.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy yfinance
+
+      - name: Download frozen Theme Momentum event rows
+        uses: actions/download-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-A
+          path: leadership/research/rsi_reset_input
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 33040661731
+
+      - name: Syntax and input checks
+        run: |
+          python -m py_compile leadership/research/validate_rsi_reset_reaccel.py
+          test -s leadership/research/rsi_reset_input/frozen_event_stock_rows.csv.gz
+
+      - name: Run RSI reset and re-acceleration validation
+        run: |
+          python leadership/research/validate_rsi_reset_reaccel.py \
+            --input leadership/research/rsi_reset_input/frozen_event_stock_rows.csv.gz \
+            --output leadership/research/rsi_reset_output \
+            --start 2014-01-01 \
+            --end 2026-08-27
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsi-reset-reacceleration-strong-stocks
+          path: leadership/research/rsi_reset_output/
+          retention-days: 14
+          if-no-files-found: warn
