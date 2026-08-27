@@ -129,7 +129,7 @@ def main():
         ix = cal[(cal >= lo) & (cal <= hi)]
         tt = t[t.entry_date.isin(ix)]
         for slot in (0.015, 0.029, 0.058):
-            for max_pos in (3, 6):
+            for max_pos in (3, 4, 6):
                 for hold in (10, 20, 40):
                     for mode in ("full", "tranche"):
                         for stop8 in (False, True):
@@ -139,7 +139,7 @@ def main():
                             m, s = simulate(ix, op, cl, active, ema21, tt, slot, max_pos, hold, mode, stop8)
                             rows.append({"period": period, "scenario": nm, "slot": slot, "max_pos": max_pos,
                                          "hold": hold, "mode": mode, "stop8": stop8, **m})
-                            if period == "ALL" and nm in {"S0.029_P6_H20_full", "S0.029_P6_H20_tranche", "S0.029_P6_H20_full_STOP8"}:
+                            if period == "ALL" and nm in {"S0.015_P4_H20_full", "S0.029_P4_H20_full", "S0.029_P4_H20_tranche", "S0.029_P4_H20_full_STOP8", "S0.029_P6_H20_full"}:
                                 z = s.rename(columns={c: f"{nm}_{c}" for c in ("nav", "exposure", "positions")})
                                 series[nm] = z.set_index("date")
     res = pd.DataFrame(rows)
