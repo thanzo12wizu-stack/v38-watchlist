@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage22_bull_gate_diagnostics.py'
       - 'research/tqqq_stage21_bull_capture.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
@@ -14,7 +15,7 @@ permissions:
   actions: read
 
 jobs:
-  stage21:
+  stage22:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -24,20 +25,19 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run bull capture validation
+      - name: Run bull gate diagnostics
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage21_bull_capture.py 2>&1 | tee tqqq_stage21.log
-      - name: Upload Stage21 results
+          PYTHONPATH=. python research/tqqq_stage22_bull_gate_diagnostics.py 2>&1 | tee tqqq_stage22.log
+      - name: Upload Stage22 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage21-bull-capture
+          name: tqqq-stage22-bull-gate-diagnostics
           if-no-files-found: warn
           path: |
-            tqqq_stage21.log
-            tqqq_stage21_summary.json
-            tqqq_stage21_bull_capture.csv
-            tqqq_stage21_missed_up_days.csv
-            tqqq_stage21_daily.csv
+            tqqq_stage22.log
+            tqqq_stage22_summary.json
+            tqqq_stage22_bull_gate_diagnostics.csv
+            tqqq_stage22_mc_threshold_diagnostic.csv
