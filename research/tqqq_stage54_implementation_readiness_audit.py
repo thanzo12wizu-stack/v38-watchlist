@@ -6,19 +6,22 @@ from research import tqqq_backtest_once as bt
 
 print('\n=== STAGE54 IMPLEMENTATION READINESS AUDIT ===',flush=True)
 
-# 1) MC57 coverage/PIT audit. compute_mc returns the exact research score plus number of available ETFs.
-mc,count=bt.compute_mc()
-count=pd.Series(count).dropna().astype(float); count.index=pd.to_datetime(count.index)
+# 1) MC57 coverage/PIT audit. compute_mc's second return is coverage PERCENT (0..100), not ticker count.
+mc,cov_pct=bt.compute_mc()
+cov_pct=pd.Series(cov_pct).dropna().astype(float); cov_pct.index=pd.to_datetime(cov_pct.index)
+count_n=cov_pct*57.0/100.0
 rows=[]
-for y,g in count.groupby(count.index.year):
-    rows.append({'year':int(y),'n_days':int(len(g)),'count_min':float(g.min()),'count_median':float(g.median()),'count_max':float(g.max()),'coverage_median_pct':float(g.median()/57*100)})
+for y,ids in pd.Series(np.arange(len(cov_pct)),index=cov_pct.index).groupby(cov_pct.index.year):
+    idx=ids.to_numpy(int); g=cov_pct.iloc[idx]; n=count_n.iloc[idx]
+    rows.append({'year':int(y),'n_days':int(len(g)),'count_min':float(n.min()),'count_median':float(n.median()),'count_max':float(n.max()),'coverage_median_pct':float(g.median())})
 COV=pd.DataFrame(rows); COV.to_csv('tqqq_stage54_mc57_coverage.csv',index=False)
-first50=count[count>=50].index.min() if (count>=50).any() else pd.NaT
-first57=count[count>=57].index.min() if (count>=57).any() else pd.NaT
+first50=count_n[count_n>=49.5].index.min() if (count_n>=49.5).any() else pd.NaT
+first57=count_n[count_n>=56.5].index.min() if (count_n>=56.5).any() else pd.NaT
 MC_AUDIT={'universe_definition':'current fixed list of 57 non-levered ETFs; each date averages only ETFs available on that date',
+          'coverage_return_semantics':'compute_mc second return is percent coverage; converted here to 57-name equivalent count',
           'pit_indicator_math':True,'historical_universe_membership_pit':False,'delisted_etfs_included':False,
           'survivorship_selection_risk':'present: current 57-name universe is projected backward and delisted/historical alternatives are not reconstructed',
-          'first_date_50plus':None if pd.isna(first50) else str(first50.date()),'first_date_57':None if pd.isna(first57) else str(first57.date()),
+          'first_date_50plus_tickers':None if pd.isna(first50) else str(first50.date()),'first_date_all57':None if pd.isna(first57) else str(first57.date()),
           '2011_median_count':float(COV.loc[COV.year==2011,'count_median'].iloc[0]) if (COV.year==2011).any() else None,
           '2026_median_count':float(COV.loc[COV.year==2026,'count_median'].iloc[0]) if (COV.year==2026).any() else None,
           'verdict':'LIMITED_PIT: calculations are backward-looking, but the ETF universe itself is not point-in-time/survivorship-clean.'}
