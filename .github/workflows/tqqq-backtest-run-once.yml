@@ -5,6 +5,8 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage54_implementation_readiness_audit.py'
+      - 'research/tqqq_stage53_qqq_vs_tqqq_4h_rsi.py'
       - 'research/tqqq_stage52_4h_rsi_divergence_backtest.py'
       - 'research/tqqq_stage51_4h_rsi30_entry_backtest.py'
       - 'research/tqqq_stage50_vix_event_semantics_audit.py'
@@ -33,7 +35,7 @@ permissions:
   actions: read
 
 jobs:
-  stage52:
+  stage53:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -43,27 +45,50 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run 4H RSI divergence backtest
+      - name: Run QQQ vs TQQQ 4H RSI comparison
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage52_4h_rsi_divergence_backtest.py 2>&1 | tee tqqq_stage52.log
-      - name: Upload Stage52 results
+          PYTHONPATH=. python research/tqqq_stage53_qqq_vs_tqqq_4h_rsi.py 2>&1 | tee tqqq_stage53.log
+      - name: Upload Stage53 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage52-4h-rsi-divergence
+          name: tqqq-stage53-qqq-vs-tqqq-rsi
           if-no-files-found: warn
           path: |
-            tqqq_stage52.log
-            tqqq_stage52_summary.json
-            tqqq_stage52_divergence_events_raw.csv
-            tqqq_stage52_event_study.csv
-            tqqq_stage52_event_summary.csv
-            tqqq_stage52_scan.csv
-            tqqq_stage52_subperiods.csv
-            tqqq_stage52_costs.csv
-            tqqq_stage52_mc.csv
-            tqqq_stage52_mc_summary.csv
-            tqqq_stage52_pairwise.csv
-            tqqq_stage52_final_rank.csv
+            tqqq_stage53.log
+            tqqq_stage53_summary.json
+            tqqq_stage53_scan.csv
+            tqqq_stage53_subperiods.csv
+            tqqq_stage53_costs.csv
+            tqqq_stage53_mc.csv
+            tqqq_stage53_mc_summary.csv
+            tqqq_stage53_pairwise.csv
+            tqqq_stage53_final_rank.csv
+
+  stage54:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Run implementation readiness audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python research/tqqq_stage54_implementation_readiness_audit.py 2>&1 | tee tqqq_stage54.log
+      - name: Upload Stage54 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-stage54-readiness-audit
+          if-no-files-found: warn
+          path: |
+            tqqq_stage54.log
+            tqqq_stage54_audit_summary.json
+            tqqq_stage54_mc57_coverage.csv
