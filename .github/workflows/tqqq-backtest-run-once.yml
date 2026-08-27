@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage41_vix_throttle.py'
       - 'research/tqqq_stage40_postcap_frontier.py'
       - 'research/tqqq_stage39_multilevel_ladder.py'
       - 'research/tqqq_stage38_drawdown_throttle.py'
@@ -21,7 +22,7 @@ permissions:
   actions: read
 
 jobs:
-  stage40:
+  stage41:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -31,26 +32,25 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run post-cap drawdown frontier search
+      - name: Run VIX drawdown throttle search
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage40_postcap_frontier.py 2>&1 | tee tqqq_stage40.log
-      - name: Upload Stage40 results
+          PYTHONPATH=. python research/tqqq_stage41_vix_throttle.py 2>&1 | tee tqqq_stage41.log
+      - name: Upload Stage41 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage40-postcap-frontier
+          name: tqqq-stage41-vix-throttle
           if-no-files-found: warn
           path: |
-            tqqq_stage40.log
-            tqqq_stage40_summary.json
-            tqqq_stage40_scan.csv
-            tqqq_stage40_subperiods.csv
-            tqqq_stage40_costs.csv
-            tqqq_stage40_normal_mc.csv
-            tqqq_stage40_normal_tax_mc.csv
-            tqqq_stage40_bear_mc.csv
-            tqqq_stage40_mc_summary.csv
-            tqqq_stage40_tax_mc_summary.csv
-            tqqq_stage40_final_rank.csv
+            tqqq_stage41.log
+            tqqq_stage41_summary.json
+            tqqq_stage41_scan.csv
+            tqqq_stage41_subperiods.csv
+            tqqq_stage41_costs.csv
+            tqqq_stage41_normal_mc.csv
+            tqqq_stage41_normal_tax_mc.csv
+            tqqq_stage41_mc_summary.csv
+            tqqq_stage41_tax_mc_summary.csv
+            tqqq_stage41_final_rank.csv
