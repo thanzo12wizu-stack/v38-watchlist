@@ -96,7 +96,9 @@ pd.DataFrame(costs).to_csv("tqqq_stage56_costs.csv", index=False)
 
 # USDJPY open-to-open exposure: cash remains JPY; only the invested TQQQ sleeve carries FX.
 fx = bt.dl_one("JPY=X", "2010-01-01")
-fxr = fx.Open.astype(float).pct_change().reindex(pd.DatetimeIndex(D)).ffill().fillna(0).to_numpy(float)
+fx_open = fx.Open.astype(float).reindex(pd.DatetimeIndex(D)).ffill()
+# Fill the price before pct_change. Filling returns would repeat the previous FX move on holidays.
+fxr = fx_open.pct_change(fill_method=None).fillna(0).to_numpy(float)
 ret_jpy = (1 + B0["ret"]) * (1 + fxr) - 1
 fxrows = []
 for nm, t in targets.items():
