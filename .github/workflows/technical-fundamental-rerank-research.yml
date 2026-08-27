@@ -1,0 +1,66 @@
+name: Technical first SEC rerank research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - 'leadership/research/validate_technical_fundamental_rerank.py'
+      - '.github/workflows/technical-fundamental-rerank-research.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy lightgbm requests
+
+      - name: Download frozen technical dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-A
+          path: leadership/research/technical_fund_input
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 33040661731
+
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/validate_technical_fundamental_rerank.py
+          test -s leadership/research/technical_fund_input/frozen_event_stock_rows.csv.gz
+
+      - name: Run technical-first SEC rerank
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          if [ -z "$SEC_USER_AGENT" ]; then
+            echo "SEC_USER_AGENT secret is required" >&2
+            exit 1
+          fi
+          python leadership/research/validate_technical_fundamental_rerank.py \
+            --input leadership/research/technical_fund_input/frozen_event_stock_rows.csv.gz \
+            --output leadership/research/technical_fund_output \
+            --cache-dir leadership/research/sec_companyfacts_cache
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-first-sec-rerank
+          path: |
+            leadership/research/technical_fund_output/
+          retention-days: 14
+          if-no-files-found: warn
