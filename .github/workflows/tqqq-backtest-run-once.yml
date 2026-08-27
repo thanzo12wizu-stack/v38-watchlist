@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage18_regime_sized_reentry.py'
+      - 'research/tqqq_stage19_final_candidate_mc.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
 
@@ -14,9 +14,9 @@ permissions:
   actions: read
 
 jobs:
-  stage18:
+  stage19:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -24,21 +24,20 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run regime-sized reentry stress study
+      - name: Run final candidate normal Monte Carlo
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage18_regime_sized_reentry.py 2>&1 | tee tqqq_stage18.log
-      - name: Upload Stage18 results
+          PYTHONPATH=. python research/tqqq_stage19_final_candidate_mc.py 2>&1 | tee tqqq_stage19.log
+      - name: Upload Stage19 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage18-regime-sized-reentry
+          name: tqqq-stage19-final-candidate-mc
           if-no-files-found: warn
           path: |
-            tqqq_stage18.log
-            tqqq_stage18_summary.json
-            tqqq_stage18_summary.csv
-            tqqq_stage18_ranked.csv
-            tqqq_stage18_mc.csv
-            tqqq_stage18_historical.csv
+            tqqq_stage19.log
+            tqqq_stage19_summary.json
+            tqqq_stage19_summary.csv
+            tqqq_stage19_mc.csv
+            tqqq_stage19_historical.csv
