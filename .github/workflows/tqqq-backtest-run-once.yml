@@ -5,7 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
-      - 'research/tqqq_stage33_incremental_bull_alpha.py'
+      - 'research/tqqq_stage35_yellow_pullback_overlay.py'
       - 'research/tqqq_stage34_final_gb_runner_validation.py'
       - 'research/tqqq_stage24_smart_bull_continuation.py'
       - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
@@ -16,9 +16,9 @@ permissions:
   actions: read
 
 jobs:
-  final-validation:
+  stage35:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -26,37 +26,24 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run incremental Bull attribution
+      - name: Run Yellow pullback overlay validation
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage33_incremental_bull_alpha.py 2>&1 | tee tqqq_stage33.log
-      - name: Run final GB runner validation
-        shell: bash
-        run: |
-          set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage34_final_gb_runner_validation.py 2>&1 | tee tqqq_stage34.log
-      - name: Upload final results
+          PYTHONPATH=. python research/tqqq_stage35_yellow_pullback_overlay.py 2>&1 | tee tqqq_stage35.log
+      - name: Upload Stage35 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-final-bull-validation
+          name: tqqq-stage35-yellow-pullback
           if-no-files-found: warn
           path: |
-            tqqq_stage33.log
-            tqqq_stage33_summary.json
-            tqqq_stage33_eligible_days.csv
-            tqqq_stage33_groups.csv
-            tqqq_stage33_robust.csv
-            tqqq_stage33_years.csv
-            tqqq_stage33_incremental_10pp.csv
-            tqqq_stage34.log
-            tqqq_stage34_summary.json
-            tqqq_stage34_historical.csv
-            tqqq_stage34_annual.csv
-            tqqq_stage34_walkforward.csv
-            tqqq_stage34_costs.csv
-            tqqq_stage34_drawdowns.csv
-            tqqq_stage34_normal_mc.csv
-            tqqq_stage34_bear_mc.csv
-            tqqq_stage34_mc_summary.csv
+            tqqq_stage35.log
+            tqqq_stage35_summary.json
+            tqqq_stage35_historical.csv
+            tqqq_stage35_walkforward.csv
+            tqqq_stage35_annual.csv
+            tqqq_stage35_costs.csv
+            tqqq_stage35_normal_mc.csv
+            tqqq_stage35_bear_mc.csv
+            tqqq_stage35_mc_summary.csv
