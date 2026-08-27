@@ -1,0 +1,50 @@
+name: RSI reset portfolio construction audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/sector-stock-leadership-20260826]
+    paths:
+      - 'leadership/research/audit_rsi_reset_portfolio.py'
+      - '.github/workflows/rsi-reset-portfolio-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy scipy yfinance
+      - name: Download prior audited RSI events
+        uses: actions/download-artifact@v4
+        with:
+          name: rsi-reset-focused-robust-audit
+          path: leadership/research/rsi_portfolio_input
+          github-token: ${{ github.token }}
+          run-id: 33063836403
+      - name: Syntax and input checks
+        run: |
+          PYTHONPATH=leadership/research python -m py_compile leadership/research/audit_rsi_reset_portfolio.py
+          test -s leadership/research/rsi_portfolio_input/audit_trades.csv.gz
+      - name: Run portfolio construction audit
+        run: |
+          PYTHONPATH=leadership/research python leadership/research/audit_rsi_reset_portfolio.py \
+            --root . \
+            --trades leadership/research/rsi_portfolio_input/audit_trades.csv.gz \
+            --output leadership/research/rsi_portfolio_output
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsi-reset-portfolio-construction-audit
+          path: leadership/research/rsi_portfolio_output/
+          retention-days: 14
+          if-no-files-found: warn
