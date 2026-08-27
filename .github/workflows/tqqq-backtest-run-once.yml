@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage17_hierarchy_crisis_fix.py'
       - 'research/tqqq_stage16_adversarial_bear_stress.py'
 
 permissions:
@@ -12,7 +13,7 @@ permissions:
   actions: read
 
 jobs:
-  stage16:
+  stage17:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -22,21 +23,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run adversarial bear stress Monte Carlo
+      - name: Run crisis hierarchy validation
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage16_adversarial_bear_stress.py 2>&1 | tee tqqq_stage16.log
-      - name: Upload Stage16 results
+          PYTHONPATH=. python research/tqqq_stage17_hierarchy_crisis_fix.py 2>&1 | tee tqqq_stage17.log
+      - name: Upload Stage17 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage16-adversarial-bear-stress
+          name: tqqq-stage17-hierarchy-crisis
           if-no-files-found: warn
           path: |
-            tqqq_stage16.log
-            tqqq_stage16_summary.json
-            tqqq_stage16_summary.csv
-            tqqq_stage16_ranked.csv
-            tqqq_stage16_adversarial_mc.csv
-            tqqq_stage16_historical_candidates.csv
+            tqqq_stage17.log
+            tqqq_stage17_summary.json
+            tqqq_stage17_summary.csv
+            tqqq_stage17_ranked.csv
+            tqqq_stage17_mc.csv
+            tqqq_stage17_historical.csv
