@@ -5,6 +5,7 @@ on:
     branches: [tqqq-backtest-once-20260826]
     paths:
       - '.github/workflows/tqqq-backtest-run-once.yml'
+      - 'research/tqqq_stage52_4h_rsi_divergence_backtest.py'
       - 'research/tqqq_stage51_4h_rsi30_entry_backtest.py'
       - 'research/tqqq_stage50_vix_event_semantics_audit.py'
       - 'research/tqqq_stage49_runner_audit.py'
@@ -32,9 +33,9 @@ permissions:
   actions: read
 
 jobs:
-  stage51:
+  stage52:
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -42,26 +43,27 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Run 4H RSI30 entry backtest
+      - name: Run 4H RSI divergence backtest
         shell: bash
         run: |
           set -euo pipefail
-          PYTHONPATH=. python research/tqqq_stage51_4h_rsi30_entry_backtest.py 2>&1 | tee tqqq_stage51.log
-      - name: Upload Stage51 results
+          PYTHONPATH=. python research/tqqq_stage52_4h_rsi_divergence_backtest.py 2>&1 | tee tqqq_stage52.log
+      - name: Upload Stage52 results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tqqq-stage51-4h-rsi30
+          name: tqqq-stage52-4h-rsi-divergence
           if-no-files-found: warn
           path: |
-            tqqq_stage51.log
-            tqqq_stage51_summary.json
-            tqqq_stage51_event_study.csv
-            tqqq_stage51_event_summary.csv
-            tqqq_stage51_scan.csv
-            tqqq_stage51_subperiods.csv
-            tqqq_stage51_costs.csv
-            tqqq_stage51_mc.csv
-            tqqq_stage51_mc_summary.csv
-            tqqq_stage51_pairwise.csv
-            tqqq_stage51_final_rank.csv
+            tqqq_stage52.log
+            tqqq_stage52_summary.json
+            tqqq_stage52_divergence_events_raw.csv
+            tqqq_stage52_event_study.csv
+            tqqq_stage52_event_summary.csv
+            tqqq_stage52_scan.csv
+            tqqq_stage52_subperiods.csv
+            tqqq_stage52_costs.csv
+            tqqq_stage52_mc.csv
+            tqqq_stage52_mc_summary.csv
+            tqqq_stage52_pairwise.csv
+            tqqq_stage52_final_rank.csv
