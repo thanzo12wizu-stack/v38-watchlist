@@ -7,6 +7,7 @@ on:
       - research/sector-stock-leadership-20260826
     paths:
       - leadership/research/validate_post_ignition_leaders.py
+      - leadership/research/validate_post_ignition_leaders_v2.py
       - .github/workflows/post-ignition-leader-research.yml
 
 jobs:
@@ -21,10 +22,12 @@ jobs:
       - name: Install research dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
       - name: Syntax check
-        run: python -m py_compile leadership/research/validate_post_ignition_leaders.py
+        run: |
+          python -m py_compile leadership/research/validate_post_ignition_leaders.py
+          python -m py_compile leadership/research/validate_post_ignition_leaders_v2.py
       - name: Run post-ignition leader validation
         run: |
-          python leadership/research/validate_post_ignition_leaders.py \
+          python leadership/research/validate_post_ignition_leaders_v2.py \
             --root . \
             --output leadership/research/post_ignition_leader_outputs \
             --analysis-start 2016-01-04 \
