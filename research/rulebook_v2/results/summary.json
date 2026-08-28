@@ -1,0 +1,127 @@
+{
+  "status": "INTEGRATED_RULEBOOK_ALLOCATION_AUDIT_V2",
+  "coverage": {
+    "start": "2016-01-04",
+    "end": "2026-03-20",
+    "sessions": 2568,
+    "download": {
+      "requested": 3596,
+      "downloaded_common_ohlcvo": 3596,
+      "rows": 3267,
+      "start": "2013-04-09",
+      "end": "2026-04-02",
+      "failed_batches": 0
+    }
+  },
+  "core12": {
+    "n": 2568,
+    "start": "2016-01-04",
+    "end_date": "2026-03-20",
+    "end": 3.690430631887269,
+    "cagr": 0.13647035372579253,
+    "mdd": -0.682470326564613,
+    "vol": 0.3735502991840078,
+    "sharpe0": 0.5297860724310688,
+    "calmar": 0.1999652562372207,
+    "worst_5d": -0.2752613864168829,
+    "worst_10d": -0.27009709024989426,
+    "worst_20d": -0.283572637025128,
+    "turnover_nav": 177.47784742091102,
+    "avg_exposure": 0.7443350167160036,
+    "max_exposure": 1.0,
+    "max_positions": 12,
+    "rebalance_sessions": 266
+  },
+  "panic_stock_unblocked": {
+    "n": 2568,
+    "end": 1.2411473230458492,
+    "cagr": 0.021391248367182758,
+    "mdd": -0.044868986206371364,
+    "avg_exposure": 0.02943185381675356,
+    "max_exposure": 0.13511763864812804,
+    "max_concurrent": 4,
+    "accepted": 128,
+    "skipped_position_cap": 79,
+    "skipped_theme_cap": 2,
+    "confirmation_adds": 0,
+    "turnover_nav": 7.625430686791457,
+    "input_signals": 212,
+    "vix_event_rollover_block": false
+  },
+  "panic_stock_vix_safe": {
+    "n": 2568,
+    "end": 1.2355314047163206,
+    "cagr": 0.020937533607510384,
+    "mdd": -0.014212741333076595,
+    "avg_exposure": 0.027226531124471525,
+    "max_exposure": 0.13311604593665746,
+    "max_concurrent": 4,
+    "accepted": 118,
+    "skipped_position_cap": 59,
+    "skipped_theme_cap": 2,
+    "confirmation_adds": 0,
+    "turnover_nav": 7.040863035780741,
+    "input_signals": 182,
+    "vix_event_rollover_block": true
+  },
+  "capital_cap": {
+    "maximum_total_exposure": 1.0000000000000002,
+    "breach": false
+  },
+  "definitions": {
+    "core12": "production-matched biweekly Core 12: global RS189 top, RS189>=85, RS63>=85, 50SMA>200SMA, close>200SMA, dollar volume>=10M, price>=5, maximum 12, continuation top24, NQSAR gate, next-open execution, initial -25% / peak -30% stop",
+    "panic_stock": "Theme Momentum Day0 RS63 top3; RSI14 <=30 then first up day within 20 sessions; still theme RS63 top3 at signal; next open; 2.9% x max4; max2/theme; 20 sessions; VIX EVENT/ROLLOVER blocked in the integrated rule",
+    "tqqq": "Stage56 raw targets shifted two sessions to match open-to-open return convention; exact rebound is M30_TOUCH30_F80_D10 above CURRENT30",
+    "capital_priority": "existing Panic Reset exposure first, then TQQQ up to residual capital, then Core12 up to its regime cap",
+    "regimes": "EXACT_REBOUND has priority; otherwise NQSAR Blue/Green plus MC57>=35=healthy, MC57 20-35=soft, Yellow/Red or MC57<20=risk-off"
+  },
+  "limitations": [
+    "Current-universe/current-taxonomy survivorship bias remains in both stock sleeves.",
+    "No pristine untouched out-of-sample period remains after iterative research.",
+    "Core12 is reconstructed from the documented production rules; it is not the missing original V38 stock-engine ledger.",
+    "The allocation comparison is pre-tax USD. Stage56 separately supplies TQQQ JPY and Japanese-tax sensitivity.",
+    "Core12 is close-marked while TQQQ is open-to-open; all actions use prior-close signals and next-open execution, but daily mark timing remains approximate.",
+    "Moving-block bootstrap resamples observed strategy returns and is not a forecast distribution.",
+    "V2 explicitly distinguishes the original Stage56 80% floor from the new direct-comparison 80% cap."
+  ],
+  "evidence": {
+    "stock_threshold": {
+      "signal_strength_summary": "rsi-strong-stock-threshold-interaction-audit/signal_strength_summary.csv",
+      "portfolio_rule_comparison": "rsi-strong-stock-threshold-interaction-audit/portfolio_rule_comparison.csv",
+      "threshold_pairwise": "rsi-strong-stock-threshold-interaction-audit/threshold_pairwise.csv"
+    },
+    "theme_free_rs189": {
+      "summary": "market-wide-rs189-rsi-reset-audit/market_rs189_summary.csv",
+      "portfolio": "market-wide-rs189-rsi-reset-audit/market_rs189_portfolio.csv",
+      "combined": "market-wide-rs189-rsi-reset-audit/combined_theme_market_portfolio.csv"
+    },
+    "stock_panic_portfolio": {
+      "scenarios": "rsi-reset-portfolio-construction-audit/portfolio_scenarios.csv",
+      "summary": "rsi-reset-portfolio-construction-audit/summary.json"
+    },
+    "mc_nqsar": {
+      "summary": "rsi30-mc-nqsar-audit/summary.json"
+    },
+    "vix": {
+      "summary": "rsi30-vix-sequence-audit/summary.json",
+      "sequence_validation": "rsi30-vix-sequence-audit/sequence_validation.json"
+    },
+    "tqqq": {
+      "scan": "tqqq-stage56-mandate-fx-tax/tqqq_stage56_mandate_scan.csv",
+      "subperiods": "tqqq-stage56-mandate-fx-tax/tqqq_stage56_subperiods.csv",
+      "mc": "tqqq-stage56-mandate-fx-tax/tqqq_stage56_mc_summary.csv",
+      "summary": "tqqq-stage56-mandate-fx-tax/tqqq_stage56_summary.json"
+    }
+  },
+  "allocation_v2": {
+    "shared_cap": "100% gross exposure hard cap",
+    "capital_priority": "existing Panic Reset exposure first, then TQQQ up to residual capital, then Core12 up to its regime cap",
+    "exact_rebound_comparison": {
+      "base": "CURRENT30 + Core12 cap70",
+      "stage56_floor80": "original Stage56 F80 target; can exceed 80% because F80 is a floor",
+      "tqqq80_cap": "exact rebound TQQQ fixed at 80%; Core12 receives residual",
+      "balanced50": "exact rebound TQQQ 50%; Core12 cap50",
+      "stock80": "exact rebound TQQQ 20%; Core12 cap80"
+    }
+  }
+}
