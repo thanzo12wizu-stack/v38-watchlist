@@ -1,0 +1,39 @@
+name: Market-wide RS189 RSI reset audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/sector-stock-leadership-20260826]
+    paths:
+      - 'leadership/research/audit_market_rs189_rsi_reset.py'
+      - '.github/workflows/market-rs189-rsi-reset-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy scipy yfinance
+      - name: Syntax check
+        run: PYTHONPATH=leadership/research python -m py_compile leadership/research/audit_market_rs189_rsi_reset.py
+      - name: Run market-wide RS189 audit
+        run: |
+          PYTHONPATH=leadership/research python leadership/research/audit_market_rs189_rsi_reset.py \
+            --root . \
+            --output leadership/research/market_rs189_output
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-wide-rs189-rsi-reset-audit
+          path: leadership/research/market_rs189_output/
+          retention-days: 14
+          if-no-files-found: warn
