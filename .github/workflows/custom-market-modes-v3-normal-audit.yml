@@ -1,0 +1,46 @@
+name: Custom market modes v3 normal audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/vix-rsi-rulebook-20260828]
+    paths:
+      - 'research/rulebook_v3/audit_custom_market_modes_v3.py'
+      - '.github/workflows/custom-market-modes-v3-normal-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests gspread
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile research/rulebook_v3/audit_custom_market_modes_v3.py
+      - name: Run audit
+        run: |
+          PYTHONPATH=.:leadership/research python research/rulebook_v3/audit_custom_market_modes_v3.py \
+            --root . \
+            --output research/custom_market_modes_v3/results \
+            --asof 2026-08-28
+      - name: Verify outputs
+        run: |
+          test -s research/custom_market_modes_v3/results/summary.json
+          test -s research/custom_market_modes_v3/results/gate_simulations.csv
+          test -s research/custom_market_modes_v3/results/restart_simulations.csv
+          test -s research/custom_market_modes_v3/results/local_bands.csv
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-market-modes-v3-normal-audit
+          retention-days: 30
+          path: research/custom_market_modes_v3/results/
