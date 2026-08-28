@@ -107,6 +107,11 @@ def portfolio_rules(trades):
             touch35[touch35.rank63 == 1], rise30[rise30.rank63.isin([2, 3])]
         ], ignore_index=True),
         "DUAL_TOP3_RISE30": rise30[rise30.DUAL_TOP3],
+        "RS63_TOP3_RISE30_SIGTOP3": rise30[rise30.RS63_TOP3 & rise30.signal_top3],
+        "RS63_TOP3_RISE30_SIGSPY63": rise30[rise30.RS63_TOP3 & rise30.signal_above_spy63],
+        "RS63_TOP3_RISE30_SIGTOP3_SMA200": rise30[
+            rise30.RS63_TOP3 & rise30.signal_top3 & rise30.signal_above_sma200],
+        "RS63_TOP1_TOUCH35_SIGTOP3": touch35[touch35.RS63_TOP1 & touch35.signal_top3],
     }
     out = {}
     for name, x in rules.items():
@@ -131,6 +136,55 @@ def run_portfolios(trades, market, out):
             rows.append({"period": period, "rule": name, "slot": 0.029, "max_pos": 4,
                          "hold": 20, "input_signals": len(z), **m})
     pd.DataFrame(rows).to_csv(out / "portfolio_rule_comparison.csv", index=False)
+
+
+def annotate_signal_strength(trades, frozen, cl):
+    """Point-in-time strength at the RSI signal close, using the frozen taxonomy roster."""
+    x = trades.copy(); r63 = cl.pct_change(63, fill_method=None); sma200 = cl.rolling(200).mean()
+    members = {str(k): [s for s in pd.unique(g.symbol.astype(str)) if s in cl.columns]
+               for k, g in frozen.groupby("theme", observed=True)}
+    x["signal_rank63"] = np.nan; x["signal_ret63"] = np.nan
+    x["signal_above_spy63"] = False; x["signal_above_sma200"] = False
+    for (d, theme), ix in x.groupby(["signal_date", "theme"], observed=True).groups.items():
+        d = pd.Timestamp(d); syms = members.get(str(theme), [])
+        if d not in r63.index or not syms: continue
+        z = r63.loc[d, syms].dropna(); ranks = z.rank(method="first", ascending=False)
+        spy = r63.at[d, "SPY"] if "SPY" in r63.columns else np.nan
+        for j in ix:
+            s = str(x.at[j, "symbol"])
+            if s in z.index:
+                x.at[j, "signal_rank63"] = ranks.at[s]; x.at[j, "signal_ret63"] = z.at[s]
+                x.at[j, "signal_above_spy63"] = bool(pd.notna(spy) and z.at[s] > spy)
+            if s in cl.columns:
+                c, ma = cl.at[d, s], sma200.at[d, s]
+                x.at[j, "signal_above_sma200"] = bool(pd.notna(c) and pd.notna(ma) and c > ma)
+    x["signal_top3"] = x.signal_rank63 <= 3
+    return x
+
+
+def summarize_signal_strength(trades, cand, calendar, out):
+    base30 = trades[(trades.kind == "RISE") & (trades.threshold == 30) & trades.RS63_TOP3]
+    base35 = trades[(trades.kind == "TOUCH") & (trades.threshold == 35) & trades.RS63_TOP1]
+    rules = {
+        "RS63_TOP3_RISE30": base30,
+        "RS63_TOP3_RISE30_SIGTOP3": base30[base30.signal_top3],
+        "RS63_TOP3_RISE30_SIGSPY63": base30[base30.signal_above_spy63],
+        "RS63_TOP3_RISE30_SMA200": base30[base30.signal_above_sma200],
+        "RS63_TOP3_RISE30_SIGTOP3_SMA200": base30[base30.signal_top3 & base30.signal_above_sma200],
+        "RS63_TOP1_TOUCH35": base35,
+        "RS63_TOP1_TOUCH35_SIGTOP3": base35[base35.signal_top3],
+        "RS63_TOP1_TOUCH35_SIGSPY63": base35[base35.signal_above_spy63],
+        "RS63_TOP1_TOUCH35_SMA200": base35[base35.signal_above_sma200],
+    }
+    rows = []
+    for name, x in rules.items():
+        for period, start, end in (("DISCOVERY", None, DISC_END), ("CONFIRM", CONF_START, None)):
+            z = x
+            den = cand[cand.RS63_TOP3 if "TOP3_RISE30" in name else cand.RS63_TOP1]
+            if start is not None: z, den = z[z.day0_date >= start], den[den.date >= start]
+            if end is not None: z, den = z[z.day0_date <= end], den[den.date <= end]
+            rows.append({"rule": name, "period": period, **summarize(z, len(den), calendar, 1700000+len(rows)*11)})
+    pd.DataFrame(rows).to_csv(out / "signal_strength_summary.csv", index=False)
 
 
 def main():
@@ -166,7 +220,9 @@ def main():
                     rec[f"entry_{h}"] = trade_return(op, cl, sym, entry, end) if end < len(cl) else np.nan
                     rec[f"mfe_{h}"], rec[f"mae_{h}"] = excursions(op, hi, lo, sym, entry, end) if end < len(cl) else (np.nan, np.nan)
                 records.append(rec)
-    trades = pd.DataFrame(records); trades.to_csv(out/"threshold_trade_rows.csv.gz", index=False, compression="gzip")
+    trades = annotate_signal_strength(pd.DataFrame(records), frozen, cl)
+    trades.to_csv(out/"threshold_trade_rows.csv.gz", index=False, compression="gzip")
+    summarize_signal_strength(trades, cand, cl.index, out)
     run_portfolios(trades, market, out)
     rows = []
     periods = (("DISCOVERY", None, DISC_END), ("CONFIRM", CONF_START, None))
