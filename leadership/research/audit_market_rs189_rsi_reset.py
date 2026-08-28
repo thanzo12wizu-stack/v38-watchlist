@@ -10,6 +10,7 @@ import pandas as pd
 
 import audit_rsi_reset_portfolio as portfolio
 import audit_rsi_reset_robust as market_base
+import validate_early_rotation as universe_base
 import validate_rsi_divergence_strong as rsi_base
 
 
@@ -92,9 +93,11 @@ def scan_rule(cl, op, hi, lo, rsi, rs189, rs_cut, rsi_cut):
     return records
 
 
-def run_portfolios(trades, market, out):
+def run_portfolios(trades, market, out, root):
     cl, op, active = market["close"], market["open"], market["active"]
     cal = cl.index; ema21 = cl.ewm(span=21, adjust=False).mean(); rows = []
+    imap = universe_base.read_industry_map(root / "industry_map.json")
+    sector = {s: imap.get(s, (s, s))[0] or s for s in cl.columns}
     for period, start, end in (("ALL", "2016-01-04", "2026-06-30"),
                                ("DISCOVERY", "2016-01-04", "2021-12-31"),
                                ("CONFIRM", "2022-01-03", "2026-06-30")):
@@ -105,7 +108,23 @@ def run_portfolios(trades, market, out):
             z["theme"] = z.symbol; z["rank_priority"] = 100.0 - z.rs189_signal
             m, _ = portfolio.simulate(ix, op, cl, active, ema21, z, .029, 4, 20, "full", False)
             rows.append({"period": period, "rs_cut": rs_cut, "rsi_cut": rsi_cut,
-                         "input_signals": len(z), "slot": .029, "max_pos": 4, "hold": 20, **m})
+                         "scenario": "P4_RS_PRIORITY_NO_GROUP_CAP", "input_signals": len(z),
+                         "slot": .029, "max_pos": 4, "group_cap": "none", "priority": "rs189", "hold": 20, **m})
+        # Capacity and concentration sensitivity only for the two decision candidates.
+        for rs_cut, rsi_cut in ((85, 30), (95, 35)):
+            z0 = trades[(trades.rs_cut == rs_cut) & (trades.rsi_cut == rsi_cut)
+                        & trades.entry_date.isin(ix)].copy()
+            for max_pos, group_cap, priority in ((1, "none", "rs189"), (2, "none", "rs189"),
+                                                  (4, "sector2", "rs189"), (4, "none", "rsi")):
+                z = z0.copy()
+                z["theme"] = z.symbol.map(sector) if group_cap == "sector2" else z.symbol
+                z["rank_priority"] = (100.0 - z.rs189_signal) if priority == "rs189" else z.rsi_signal
+                m, _ = portfolio.simulate(ix, op, cl, active, ema21, z, .029, max_pos, 20, "full", False)
+                scenario = f"P{max_pos}_{priority.upper()}_" + ("SECTOR2" if group_cap == "sector2" else "NO_GROUP_CAP")
+                rows.append({"period": period, "rs_cut": rs_cut, "rsi_cut": rsi_cut,
+                             "scenario": scenario, "input_signals": len(z), "slot": .029,
+                             "max_pos": max_pos, "group_cap": group_cap, "priority": priority,
+                             "hold": 20, **m})
     pd.DataFrame(rows).to_csv(out / "market_rs189_portfolio.csv", index=False)
 
 
@@ -133,7 +152,7 @@ def main():
             rows.append({"period": period, "rs_cut": rs_cut, "rsi_cut": rsi_cut,
                          **summarize(z, cl.index, 2100000 + len(rows)*13)})
     pd.DataFrame(rows).to_csv(out / "market_rs189_summary.csv", index=False)
-    run_portfolios(trades, market, out)
+    run_portfolios(trades, market, out, root)
     meta = {"status": "MARKET_WIDE_RS189_RSI_RESET_AUDIT",
             "definitions": {"universe": "same 3,596-stock current V38 universe; no Theme Momentum condition",
                 "RS189": "daily cross-sectional percentile of trailing 189-session return",
