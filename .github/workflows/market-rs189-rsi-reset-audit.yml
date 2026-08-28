@@ -24,10 +24,18 @@ jobs:
         run: pip install pandas numpy scipy yfinance
       - name: Syntax check
         run: PYTHONPATH=leadership/research python -m py_compile leadership/research/audit_market_rs189_rsi_reset.py
+      - name: Download audited Theme-RS63 trades
+        uses: actions/download-artifact@v4
+        with:
+          name: rsi-strong-stock-threshold-interaction-audit
+          path: leadership/research/theme_rs63_input
+          github-token: ${{ github.token }}
+          run-id: 33130536827
       - name: Run market-wide RS189 audit
         run: |
           PYTHONPATH=leadership/research python leadership/research/audit_market_rs189_rsi_reset.py \
             --root . \
+            --theme-trades leadership/research/theme_rs63_input/threshold_trade_rows.csv.gz \
             --output leadership/research/market_rs189_output
       - name: Upload outputs
         if: always()

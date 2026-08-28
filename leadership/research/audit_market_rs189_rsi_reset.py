@@ -128,8 +128,76 @@ def run_portfolios(trades, market, out, root):
     pd.DataFrame(rows).to_csv(out / "market_rs189_portfolio.csv", index=False)
 
 
+def simulate_combined(cal, op, cl, trades, market_cap):
+    cash = 1.0; lots = []; navs = []; expos = []; accepted_theme = accepted_market = 0
+    skipped_total = skipped_market = skipped_theme = skipped_duplicate = 0; turnover = 0.0
+    by_entry = {d: g for d, g in trades.groupby("entry_date", observed=True)}
+    for i, d in enumerate(cal):
+        keep = []
+        for z in lots:
+            px = op.at[d, z["symbol"]]
+            if i >= z["exit_i"] and pd.notna(px):
+                gross = z["shares"] * px; cash += gross * (1-COST); turnover += gross
+            else: keep.append(z)
+        lots = keep
+        if d in by_entry:
+            day = by_entry[d].sort_values(["source_priority", "rank_priority", "rsi_signal", "symbol"])
+            for r in day.itertuples(index=False):
+                if any(z["symbol"] == r.symbol for z in lots): skipped_duplicate += 1; continue
+                if len(lots) >= 4: skipped_total += 1; continue
+                if r.source == "market" and sum(z["source"] == "market" for z in lots) >= market_cap:
+                    skipped_market += 1; continue
+                if r.source == "theme" and sum(z["source"] == "theme" and z["theme"] == r.theme for z in lots) >= 2:
+                    skipped_theme += 1; continue
+                px = op.at[d, r.symbol]
+                if pd.isna(px) or px <= 0: continue
+                mark = cash + sum(z["shares"] * op.at[d, z["symbol"]] for z in lots
+                                  if pd.notna(op.at[d, z["symbol"]]))
+                amount = .029 * mark
+                if cash < amount * (1+COST): skipped_total += 1; continue
+                cash -= amount * (1+COST); turnover += amount
+                lots.append({"symbol": r.symbol, "theme": r.theme, "source": r.source,
+                             "shares": amount/px, "exit_i": min(i+20, len(cal)-1)})
+                if r.source == "theme": accepted_theme += 1
+                else: accepted_market += 1
+        gross = sum(z["shares"] * cl.at[d, z["symbol"]] for z in lots
+                    if pd.notna(cl.at[d, z["symbol"]]))
+        nav = cash + gross; navs.append(nav); expos.append(gross/nav if nav > 0 else np.nan)
+    ns = pd.Series(navs, index=cal); m = portfolio.metrics(ns)
+    return {**m, "avg_exposure": float(np.nanmean(expos)), "max_exposure": float(np.nanmax(expos)),
+            "accepted_theme": accepted_theme, "accepted_market": accepted_market,
+            "skipped_total_cap": skipped_total, "skipped_market_cap": skipped_market,
+            "skipped_theme_cap": skipped_theme, "skipped_duplicate": skipped_duplicate,
+            "turnover_nav": float(turnover/np.mean(navs))}
+
+
+def run_combined(theme_path, market_trades, market, out):
+    if theme_path is None or not theme_path.exists(): return
+    theme = pd.read_csv(theme_path, compression="gzip", parse_dates=["entry_date", "signal_date"])
+    theme = theme[(theme.kind == "RISE") & (theme.threshold == 30) & theme.RS63_TOP3 & theme.signal_top3].copy()
+    theme["source"] = "theme"; theme["source_priority"] = 0
+    theme["rank_priority"] = theme.rank63; theme = theme[["entry_date","signal_date","symbol","theme","source","source_priority","rank_priority","rsi_signal"]]
+    mk = market_trades[(market_trades.rs_cut == 85) & (market_trades.rsi_cut == 30)].copy()
+    mk["theme"] = mk.symbol; mk["source"] = "market"; mk["source_priority"] = 1
+    mk["rank_priority"] = 100.0 - mk.rs189_signal
+    mk = mk[["entry_date","signal_date","symbol","theme","source","source_priority","rank_priority","rsi_signal"]]
+    both = pd.concat([theme, mk], ignore_index=True)
+    cl, op = market["close"], market["open"]; cal = cl.index; rows = []
+    for period, start, end in (("ALL","2016-01-04","2026-06-30"),
+                               ("DISCOVERY","2016-01-04","2021-12-31"),
+                               ("CONFIRM","2022-01-03","2026-06-30")):
+        ix = cal[(cal >= start) & (cal <= end)]; z = both[both.entry_date.isin(ix)]
+        for market_cap in (0, 1, 2):
+            m = simulate_combined(ix, op, cl, z, market_cap)
+            rows.append({"period": period, "scenario": f"THEME_PRIORITY_MARKET_CAP{market_cap}",
+                         "market_cap": market_cap, "input_theme": int((z.source=='theme').sum()),
+                         "input_market": int((z.source=='market').sum()), **m})
+    pd.DataFrame(rows).to_csv(out / "combined_theme_market_portfolio.csv", index=False)
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--root", default="."); ap.add_argument("--output", required=True)
+    ap.add_argument("--theme-trades")
     args = ap.parse_args(); root = Path(args.root); out = Path(args.output); out.mkdir(parents=True, exist_ok=True)
     market = market_base.rebuild_market(root, "2016-01-04", "2026-06-30", 6000, 75, 3)
     cl, op, hi, lo = market["close"], market["open"], market["high"], market["low"]
@@ -153,6 +221,7 @@ def main():
                          **summarize(z, cl.index, 2100000 + len(rows)*13)})
     pd.DataFrame(rows).to_csv(out / "market_rs189_summary.csv", index=False)
     run_portfolios(trades, market, out, root)
+    run_combined(Path(args.theme_trades) if args.theme_trades else None, trades, market, out)
     meta = {"status": "MARKET_WIDE_RS189_RSI_RESET_AUDIT",
             "definitions": {"universe": "same 3,596-stock current V38 universe; no Theme Momentum condition",
                 "RS189": "daily cross-sectional percentile of trailing 189-session return",
