@@ -1,0 +1,54 @@
+name: Standard correction v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/vix-rsi-rulebook-20260828
+    paths:
+      - leadership/research/audit_standard_correction_v2.py
+      - .github/workflows/standard-correction-v2.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/vix-rsi-rulebook-20260828
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_standard_correction_v2.py
+      - name: Run corrected standard-correction audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/standard_correction_v2/results
+          PYTHONPATH=.:leadership/research python leadership/research/audit_standard_correction_v2.py \
+            --root . \
+            --output research/standard_correction_v2/results \
+            --start 2016-01-04 \
+            --end 2026-06-30 \
+            --asof 2026-08-28 | tee research/standard_correction_v2/run.log
+      - name: Verify outputs
+        run: |
+          test -s research/standard_correction_v2/results/summary.json
+          test -s research/standard_correction_v2/results/correction_exit_summary.csv
+      - name: Upload audit package
+        uses: actions/upload-artifact@v4
+        with:
+          name: standard-correction-v2
+          path: |
+            research/standard_correction_v2/results
+            research/standard_correction_v2/run.log
+          if-no-files-found: error
+          retention-days: 30
