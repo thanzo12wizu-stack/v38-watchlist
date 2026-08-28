@@ -11,6 +11,8 @@ import pandas as pd
 import audit_market_rs189_context as v1
 import audit_rsi_reset_robust as market_base
 
+V1_RULE_MASKS = v1.rule_masks
+
 SHORTLIST = (
     "BASE_RS85_RSI30",
     "MC_GE20_UP1",
@@ -33,7 +35,7 @@ def safe(x):
 
 
 def rule_masks(z: pd.DataFrame) -> dict[str, pd.Series]:
-    m = v1.rule_masks(z)
+    m = V1_RULE_MASKS(z)
     m["MC_LT50"] = z.mc < 50
     m["MC_20_50"] = (z.mc >= 20) & (z.mc < 50)
     m["MC_20_35"] = (z.mc >= 20) & (z.mc < 35)
