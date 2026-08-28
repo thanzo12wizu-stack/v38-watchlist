@@ -1,0 +1,58 @@
+name: MC57 historical distribution audit
+
+on:
+  push:
+    branches:
+      - research/vix-rsi-rulebook-20260828
+    paths:
+      - leadership/research/audit_mc57_distribution.py
+      - .github/workflows/mc57-distribution-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/vix-rsi-rulebook-20260828
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_mc57_distribution.py
+      - name: Run MC57 distribution audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=.:leadership/research python leadership/research/audit_mc57_distribution.py \
+            --output research/mc57_distribution/results \
+            --asof 2026-08-27 \
+            --start 2016-01-04 | tee research/mc57_distribution/run.log
+      - name: Verify outputs
+        run: |
+          test -s research/mc57_distribution/results/summary.json
+          test -s research/mc57_distribution/results/mc57_band_summary.csv
+          test -s research/mc57_distribution/results/mc57_special_conditions.csv
+          test -s research/mc57_distribution/results/mc57_yearly_band_days.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mc57-distribution-audit
+          path: |
+            research/mc57_distribution/results
+            research/mc57_distribution/run.log
+          retention-days: 30
+      - name: Commit compact results to research branch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add research/mc57_distribution/results/*.csv research/mc57_distribution/results/summary.json
+          git diff --cached --quiet && exit 0
+          git commit -m "research: store MC57 distribution audit results"
+          git push origin HEAD:research/vix-rsi-rulebook-20260828
