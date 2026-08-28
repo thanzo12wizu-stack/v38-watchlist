@@ -183,7 +183,7 @@ def mode_outcomes(frame: pd.DataFrame, shallow_input: Path) -> pd.DataFrame:
         mode_series = pd.Series(index=frame.index, dtype=object)
         for mode, mask in masks.items():
             mode_series.loc[mask] = mode
-        mode_map = mode_series.rename("mode").reset_index().rename(columns={"index": "signal_date"})
+        mode_map = mode_series.rename("mode").rename_axis("signal_date").reset_index()
         sh = shallow.merge(mode_map, on="signal_date", how="left", validate="many_to_one")
         for mode, mask in masks.items():
             for period, period_mask in pm.items():
