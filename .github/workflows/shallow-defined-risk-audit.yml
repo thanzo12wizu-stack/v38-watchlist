@@ -1,0 +1,66 @@
+name: Shallow defined-risk audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/vix-rsi-rulebook-20260828
+    paths:
+      - leadership/research/audit_shallow_defined_risk.py
+      - .github/workflows/shallow-defined-risk-audit.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: shallow-defined-risk-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/vix-rsi-rulebook-20260828
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Download true shallow artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python research/rulebook/download_latest_artifacts.py \
+            --repo "${{ github.repository }}" \
+            --output research/defined_risk_input \
+            --name true-shallow-good-market-audit
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_shallow_defined_risk.py
+      - name: Run defined-risk audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/shallow_defined_risk/results
+          PYTHONPATH=.:leadership/research python leadership/research/audit_shallow_defined_risk.py \
+            --root . \
+            --input research/defined_risk_input/true-shallow-good-market-audit/results/trade_rows.csv.gz \
+            --output research/shallow_defined_risk/results | tee research/shallow_defined_risk/run.log
+      - name: Verify outputs
+        run: |
+          test -s research/shallow_defined_risk/results/summary.json
+          test -s research/shallow_defined_risk/results/stop_summary.csv
+          test -s research/shallow_defined_risk/results/stop_rows.csv.gz
+      - name: Upload audit package
+        uses: actions/upload-artifact@v4
+        with:
+          name: shallow-defined-risk-audit
+          path: |
+            research/shallow_defined_risk/results
+            research/shallow_defined_risk/run.log
+          if-no-files-found: error
+          retention-days: 30
