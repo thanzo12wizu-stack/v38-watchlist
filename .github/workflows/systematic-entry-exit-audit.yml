@@ -1,0 +1,73 @@
+name: Systematic entry exit audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/vix-rsi-rulebook-20260828
+    paths:
+      - leadership/research/audit_systematic_entry_exit.py
+      - .github/workflows/systematic-entry-exit-audit.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: systematic-entry-exit-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/vix-rsi-rulebook-20260828
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Download existing research artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python research/rulebook/download_latest_artifacts.py \
+            --repo "${{ github.repository }}" \
+            --output research/systematic_entry_exit/input \
+            --name true-shallow-good-market-audit \
+            --name rsi-strong-stock-threshold-interaction-audit
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_systematic_entry_exit.py
+      - name: Run systematic audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/systematic_entry_exit/results
+          PYTHONPATH=.:leadership/research python leadership/research/audit_systematic_entry_exit.py \
+            --root . \
+            --shallow research/systematic_entry_exit/input/true-shallow-good-market-audit/results/trade_rows.csv.gz \
+            --threshold research/systematic_entry_exit/input/rsi-strong-stock-threshold-interaction-audit/threshold_trade_rows.csv.gz \
+            --output research/systematic_entry_exit/results \
+            --start 2016-01-04 \
+            --end 2026-06-30 \
+            --asof 2026-08-28 | tee research/systematic_entry_exit/run.log
+      - name: Verify outputs
+        run: |
+          test -s research/systematic_entry_exit/results/summary.json
+          test -s research/systematic_entry_exit/results/tested_inventory.csv
+          test -s research/systematic_entry_exit/results/shallow_exit_summary.csv
+          test -s research/systematic_entry_exit/results/correction_exit_summary.csv
+          test -s research/systematic_entry_exit/results/deep_handoff_summary.csv
+      - name: Upload audit package
+        uses: actions/upload-artifact@v4
+        with:
+          name: systematic-entry-exit-audit
+          path: |
+            research/systematic_entry_exit/results
+            research/systematic_entry_exit/run.log
+          if-no-files-found: error
+          retention-days: 30
