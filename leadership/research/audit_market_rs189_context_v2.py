@@ -17,9 +17,14 @@ SHORTLIST = (
     "SECTOR_RS63_PCT_GE60",
     "MC_LT50",
     "MC_20_50",
+    "MC_20_35",
+    "MC_35_50",
     "MC_20_50_SEC50",
     "MC_20_50_SEC60",
+    "MC_20_50_SEC70",
     "MC_20_50_SEC60_UP1",
+    "RSI27P5_MC_20_50_SEC60",
+    "RSI25_MC_20_50_SEC60",
 )
 
 
@@ -31,10 +36,19 @@ def rule_masks(z: pd.DataFrame) -> dict[str, pd.Series]:
     m = v1.rule_masks(z)
     m["MC_LT50"] = z.mc < 50
     m["MC_20_50"] = (z.mc >= 20) & (z.mc < 50)
+    m["MC_20_35"] = (z.mc >= 20) & (z.mc < 35)
+    m["MC_35_50"] = (z.mc >= 35) & (z.mc < 50)
     m["MC_20_50_SEC50"] = (z.mc >= 20) & (z.mc < 50) & (z.sector_rs63_pct >= 50)
     m["MC_20_50_SEC60"] = (z.mc >= 20) & (z.mc < 50) & (z.sector_rs63_pct >= 60)
+    m["MC_20_50_SEC70"] = (z.mc >= 20) & (z.mc < 50) & (z.sector_rs63_pct >= 70)
     m["MC_20_50_SEC60_UP1"] = (
         (z.mc >= 20) & (z.mc < 50) & (z.sector_rs63_pct >= 60) & z.mc_up1.astype(bool)
+    )
+    m["RSI27P5_MC_20_50_SEC60"] = (
+        (z.rsi_min_reset <= 27.5) & (z.mc >= 20) & (z.mc < 50) & (z.sector_rs63_pct >= 60)
+    )
+    m["RSI25_MC_20_50_SEC60"] = (
+        (z.rsi_min_reset <= 25.0) & (z.mc >= 20) & (z.mc < 50) & (z.sector_rs63_pct >= 60)
     )
     return m
 
@@ -156,8 +170,6 @@ def finalize(pre: dict, combined: pd.DataFrame) -> dict:
         if rule not in d.index or rule not in c.index:
             continue
         rd, rc = d.loc[rule], c.loc[rule]
-        # Supplemental slot must add return in both halves, preserve all theme fills,
-        # and cannot worsen confirmation drawdown by more than 2 percentage points.
         if int(rd.accepted_theme) != int(bd.accepted_theme) or int(rc.accepted_theme) != int(bc.accepted_theme):
             continue
         if float(rd.cagr) <= float(bd.cagr) or float(rc.cagr) <= float(bc.cagr):
@@ -233,8 +245,8 @@ def main() -> None:
         "decision": final,
         "pre_combined": pre,
         "interpretation_contract": {
-            "rsi": "Do not demand a deeper reset than RSI30 unless it proves better; deep <=25 is a tested subgroup, not an assumption.",
-            "mc57": "Test both market level and direction; V2 explicitly tests the 20<=MC57<50 middle zone after V1 showed high-MC deterioration.",
+            "rsi": "Do not demand a deeper reset than RSI30 unless it proves better; deep <=25 and <=27.5 are tested subgroups, not assumptions.",
+            "mc57": "Test both market level and direction; V2 explicitly tests 20<=MC57<50 and its 20-35/35-50 sub-bands after V1 showed high-MC deterioration.",
             "sector_strength": "signal-date sector RS63 percentile; >=60 means sector is in the top 40% of sectors by median 63d return.",
             "slot": "supplemental market-wide sleeve max1; Theme RSI signals have preemption priority so market-wide names cannot steal a theme slot.",
         },
@@ -243,7 +255,7 @@ def main() -> None:
             "2022+ is confirmation, not pristine untouched out-of-sample.",
             "Sector strength is reconstructed from current classification and 63d median return, not Theme Momentum.",
             "No individual-stock tax model.",
-            "V2 adds only a small set of upper-MC / sector interaction rules motivated by V1 bin diagnostics.",
+            "V2 adds only a small fixed neighborhood of MC-band / sector / RSI interactions motivated by V1 diagnostics.",
         ],
     }
     (out / "summary.json").write_text(json.dumps(safe(result), ensure_ascii=False, indent=2))
