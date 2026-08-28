@@ -1,0 +1,60 @@
+name: Custom market modes v2 audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/vix-rsi-rulebook-20260828]
+    paths:
+      - 'research/rulebook_v3/audit_custom_market_modes_v2.py'
+      - '.github/workflows/custom-market-modes-v2-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: custom-market-modes-v2-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests gspread
+      - name: Download frozen shallow-pullback event rows
+        uses: actions/download-artifact@v4
+        with:
+          name: strong-stock-micro-pullback-audit
+          path: research/custom_market_modes_v2_input
+          github-token: ${{ github.token }}
+          repository: thanzo12wizu-stack/v38-watchlist
+          run-id: '33161525562'
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile research/rulebook_v3/audit_custom_market_modes_v2.py
+      - name: Run focused audit
+        run: |
+          PYTHONPATH=.:leadership/research python research/rulebook_v3/audit_custom_market_modes_v2.py \
+            --root . \
+            --output research/custom_market_modes_v2/results \
+            --asof 2026-08-28 \
+            --shallow-input research/custom_market_modes_v2_input/strong_stock_micro_pullback_output/event_rows.csv.gz
+      - name: Verify outputs
+        run: |
+          test -s research/custom_market_modes_v2/results/summary.json
+          test -s research/custom_market_modes_v2/results/normal_gate_simulations.csv
+          test -s research/custom_market_modes_v2/results/restart_simulations.csv
+          test -s research/custom_market_modes_v2/results/mode_outcomes.csv
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-market-modes-v2-audit
+          retention-days: 30
+          if-no-files-found: warn
+          path: research/custom_market_modes_v2/results/
