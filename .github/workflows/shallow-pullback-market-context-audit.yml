@@ -1,0 +1,82 @@
+name: Shallow pullback market context audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/vix-rsi-rulebook-20260828]
+    paths:
+      - 'leadership/research/audit_shallow_pullback_market_context.py'
+      - '.github/workflows/shallow-pullback-market-context-audit.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Download micro audit artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: strong-stock-micro-pullback-audit
+          path: research/shallow_context_input
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: thanzo12wizu-stack/v38-watchlist
+          run-id: '33161525562'
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_shallow_pullback_market_context.py
+      - name: Run context audit
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf research/shallow_pullback_market_context_output
+          PYTHONPATH=.:leadership/research python leadership/research/audit_shallow_pullback_market_context.py \
+            --input research/shallow_context_input/strong_stock_micro_pullback_output/event_rows.csv.gz \
+            --output research/shallow_pullback_market_context_output \
+            --asof 2026-08-28 2>&1 | tee research/shallow_pullback_market_context_audit.log
+      - name: Verify outputs
+        run: |
+          test -s research/shallow_pullback_market_context_output/summary.json
+          test -s research/shallow_pullback_market_context_output/policy_summary.csv
+          test -s research/shallow_pullback_market_context_output/year_summary.csv
+          python - <<'PY'
+          import json, pandas as pd
+          from pathlib import Path
+          out=Path('research/shallow_pullback_market_context_output')
+          s=json.loads((out/'summary.json').read_text())
+          assert s['status']=='SHALLOW_PULLBACK_MARKET_CONTEXT_AUDIT'
+          p=pd.read_csv(out/'policy_summary.csv')
+          assert {'BASE','NQ_NOT_RED','NQ_BULL','VIX_NOT_EVENT_ROLLOVER'} <= set(p.rule)
+          assert {'DISCOVERY','CONFIRM','BAD_2022_23'} <= set(p.period)
+          print('context QA passed')
+          PY
+      - name: Upload audit package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shallow-pullback-market-context-audit
+          retention-days: 30
+          path: |
+            research/shallow_pullback_market_context_audit.log
+            research/shallow_pullback_market_context_output/
+      - name: Commit compact results to research branch
+        if: success()
+        run: |
+          mkdir -p research/shallow_pullback_market_context/results
+          cp research/shallow_pullback_market_context_output/summary.json research/shallow_pullback_market_context/results/
+          cp research/shallow_pullback_market_context_output/policy_summary.csv research/shallow_pullback_market_context/results/
+          cp research/shallow_pullback_market_context_output/year_summary.csv research/shallow_pullback_market_context/results/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add research/shallow_pullback_market_context/results
+          git diff --cached --quiet || git commit -m 'research: record shallow pullback market context results'
+          git push origin HEAD:research/vix-rsi-rulebook-20260828
