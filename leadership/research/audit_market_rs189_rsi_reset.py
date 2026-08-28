@@ -62,17 +62,20 @@ def scan_rule(cl, op, hi, lo, rsi, rs189, rs_cut, rsi_cut):
         ca = cl[sym].to_numpy(float); oa = op[sym].to_numpy(float)
         ha = hi[sym].to_numpy(float); la = lo[sym].to_numpy(float)
         ra = rsi[sym].to_numpy(float); sa = rs189[sym].to_numpy(float)
-        i = 190
-        while i < n - 20:
-            if not (np.isfinite(ra[i]) and np.isfinite(sa[i]) and ra[i] <= rsi_cut and sa[i] >= rs_cut):
-                i += 1; continue
-            touch = i; deadline = min(i + 20, n - 21); signal = None
-            for j in range(i + 1, deadline + 1):
-                if (np.isfinite(ra[j]) and np.isfinite(ra[j-1]) and np.isfinite(sa[j])
-                        and ra[j] > ra[j-1] and sa[j] >= rs_cut):
-                    signal = j; break
+        touches = np.flatnonzero(np.isfinite(ra) & np.isfinite(sa) & (ra <= rsi_cut) & (sa >= rs_cut))
+        rises = np.flatnonzero(np.isfinite(ra) & np.isfinite(np.roll(ra, 1)) & np.isfinite(sa)
+                               & (ra > np.roll(ra, 1)) & (sa >= rs_cut))
+        touches = touches[(touches >= 190) & (touches < n - 20)]
+        rises = rises[(rises > 190) & (rises < n - 20)]
+        k = 0; next_allowed = 190
+        while k < len(touches):
+            k = int(np.searchsorted(touches, next_allowed, side="left", sorter=None))
+            if k >= len(touches): break
+            touch = int(touches[k]); deadline = min(touch + 20, n - 21)
+            q = int(np.searchsorted(rises, touch + 1, side="left"))
+            signal = int(rises[q]) if q < len(rises) and rises[q] <= deadline else None
             if signal is None:
-                i = touch + 1; continue
+                next_allowed = touch + 1; k += 1; continue
             entry, end = signal + 1, signal + 20
             a, b = oa[entry], ca[end]
             if np.isfinite(a) and a > 0 and np.isfinite(b):
@@ -85,7 +88,7 @@ def scan_rule(cl, op, hi, lo, rsi, rs189, rs_cut, rsi_cut):
                     "mfe_20": np.nanmax(window_h)/a - 1 if np.isfinite(window_h).any() else np.nan,
                     "mae_20": np.nanmin(window_l)/a - 1 if np.isfinite(window_l).any() else np.nan})
             # No overlapping same-symbol positions or repeated versions of the same reset.
-            i = signal + 21
+            next_allowed = signal + 21; k += 1
     return records
 
 
