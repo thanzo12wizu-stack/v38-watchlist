@@ -1,0 +1,77 @@
+{
+  "status": "MARKET_STOP_REENTRY_AUDIT",
+  "definitions": {
+    "market_damage": "NQSAR Red episode",
+    "baseline_restart": "previous-session NQSAR Blue/Green permits next-open normal-stock rebalance",
+    "stop_only": "Red blocks new normal-stock rebalances but existing positions remain subject to the model's individual exits",
+    "full_exit": "Red liquidates existing normal-stock positions at next open",
+    "ftd_like_15": "after a rally-attempt low, day 4+ QQQ gain >=1.5% with volume above prior session; after a Red episode, restart requires this event and NQSAR no longer Red",
+    "ftd_like_20": "same with QQQ gain >=2.0%",
+    "both": "FTD-like 1.5% has occurred after Red and NQSAR is Blue/Green"
+  },
+  "limitations": [
+    "Normal-stock sleeve is the existing comparison reconstruction, not an exact historical production ledger.",
+    "Current-universe/current-industry survivorship bias remains.",
+    "FTD-like rules are frozen public-style mechanical approximations, not a claim to reproduce a proprietary IBD signal exactly.",
+    "Analysis end follows the integrated comparison model and is 2026-03-20."
+  ],
+  "variants": {
+    "CURRENT_FULL_EXIT_NQ": {
+      "overall": {
+        "n": 2568,
+        "start": "2016-01-04",
+        "end_date": "2026-03-20",
+        "end": 4.463583190683193,
+        "cagr": 0.15784735407171313,
+        "mdd": -0.6847524940580725,
+        "vol": 0.38538549001043565,
+        "sharpe0": 0.5735117548187224,
+        "calmar": 0.23051738466297053,
+        "worst_5d": -0.25899127795767884,
+        "worst_10d": -0.26959149838315166,
+        "worst_20d": -0.2808507400025657,
+        "turnover_nav": 190.0196272529477,
+        "avg_exposure": 0.7868194430331406,
+        "max_exposure": 1.0,
+        "max_positions": 12,
+        "forced_exit_count": 530,
+        "entry_days": 225,
+        "permission_rate": 0.6592679127725857
+      },
+      "periods": {
+        "ALL": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 4.463583190683193, "cagr": 0.15784735407171313, "mdd": -0.6847524940580725, "vol": 0.38538549001043565, "sharpe0": 0.5735117548187224, "calmar": 0.23051738466297053, "worst_5d": -0.25899127795767884, "worst_10d": -0.26959149838315166, "worst_20d": -0.2808507400025657},
+        "DISCOVERY": {"n": 1511, "start": "2016-01-04", "end_date": "2021-12-31", "end": 3.125305873927632, "cagr": 0.20951799144733463, "mdd": -0.6155863546695786, "vol": 0.36366333342585033, "sharpe0": 0.7043626056969164, "calmar": 0.3403551587165951, "worst_5d": -0.19769482514820147, "worst_10d": -0.22164514357425635, "worst_20d": -0.2808507400025657},
+        "CONFIRM": {"n": 1057, "start": "2022-01-03", "end_date": "2026-03-20", "end": 1.417577248072257, "cagr": 0.0864570494735426, "mdd": -0.5500632661019669, "vol": 0.4146092484957153, "sharpe0": 0.4076601823756209, "calmar": 0.15717655550100995, "worst_5d": -0.25899127795767884, "worst_10d": -0.26959149838315166, "worst_20d": -0.27970699568477264},
+        "2018Q4": {"n": 63, "start": "2018-10-01", "end_date": "2018-12-31", "end": 0.8233350295107789, "cagr": -0.5416959777771319, "mdd": -0.19353701231462117, "vol": 0.2931869384006444, "sharpe0": -2.504366761412355, "calmar": -2.7989270439730163, "worst_5d": -0.14032706135776973, "worst_10d": -0.11579088325817, "worst_20d": -0.14081471342757934},
+        "COVID2020": {"n": 93, "start": "2020-02-19", "end_date": "2020-06-30", "end": 1.6227467141156633, "cagr": 2.817344929864586, "mdd": -0.20929001875240483, "vol": 0.4634000820622383, "sharpe0": 3.0658058167397293, "calmar": 13.461439521382879, "worst_5d": -0.18013916520460505, "worst_10d": -0.1841725147598673, "worst_20d": -0.1841725147598673},
+        "BEAR2022": {"n": 251, "start": "2022-01-03", "end_date": "2022-12-30", "end": 1.0469251363650907, "cagr": 0.04748949735123231, "mdd": -0.24291709498652514, "vol": 0.2988816592021879, "sharpe0": 0.30256162385855456, "calmar": 0.19549672843678048, "worst_5d": -0.16342239242305945, "worst_10d": -0.13533145022101412, "worst_20d": -0.21551738253901698}
+      }
+    },
+    "STOP_ONLY_NQ": {
+      "overall": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 4.972479773996755, "cagr": 0.1701598462043108, "mdd": -0.750563743625767, "vol": 0.4142180281787156, "sharpe0": 0.5873735036259254, "calmar": 0.22670938697666818, "worst_5d": -0.22628758612480226, "worst_10d": -0.26443282507381205, "worst_20d": -0.34716398827491257, "turnover_nav": 142.55913832987486, "avg_exposure": 0.9149534115683701, "max_exposure": 1.0, "max_positions": 12, "forced_exit_count": 0, "entry_days": 225, "permission_rate": 0.6592679127725857},
+      "periods": {
+        "ALL": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 4.972479773996755, "cagr": 0.1701598462043108, "mdd": -0.750563743625767, "vol": 0.4142180281787156, "sharpe0": 0.5873735036259254, "calmar": 0.22670938697666818, "worst_5d": -0.22628758612480226, "worst_10d": -0.26443282507381205, "worst_20d": -0.34716398827491257},
+        "DISCOVERY": {"n": 1511, "start": "2016-01-04", "end_date": "2021-12-31", "end": 3.860262042010285, "cagr": 0.2529214632222898, "mdd": -0.5951928778206539, "vol": 0.38880644873505044, "sharpe0": 0.7741295638221124, "calmar": 0.4249403389173303, "worst_5d": -0.2096352937216306, "worst_10d": -0.21055128245176347, "worst_20d": -0.34716398827491257},
+        "CONFIRM": {"n": 1057, "start": "2022-01-03", "end_date": "2026-03-20", "end": 1.2783882190304936, "cagr": 0.06009950511617479, "mdd": -0.6042965647936469, "vol": 0.4481750006534924, "sharpe0": 0.354823154084584, "calmar": 0.09945366003643817, "worst_5d": -0.22628758612480226, "worst_10d": -0.26443282507381205, "worst_20d": -0.32159918832997747},
+        "2018Q4": {"n": 63, "start": "2018-10-01", "end_date": "2018-12-31", "end": 0.7530331873998979, "cagr": -0.6796870437668094, "mdd": -0.29671310790975736, "vol": 0.4326854512736426, "sharpe0": -2.4026919102009736, "calmar": -2.2907213252389584, "worst_5d": -0.1403242001218319, "worst_10d": -0.1730099141701229, "worst_20d": -0.1577852181249595},
+        "COVID2020": {"n": 93, "start": "2020-02-19", "end_date": "2020-06-30", "end": 1.2985435181451854, "cagr": 1.060311423000127, "mdd": -0.36726334926438775, "vol": 0.5323928298482248, "sharpe0": 1.5958683658086708, "calmar": 2.887060266492379, "worst_5d": -0.2096352937216306, "worst_10d": -0.2084757823419333, "worst_20d": -0.34716398827491257},
+        "BEAR2022": {"n": 251, "start": "2022-01-03", "end_date": "2022-12-30", "end": 0.732208547660934, "cagr": -0.2704686288807656, "mdd": -0.39605971968234643, "vol": 0.3949069103047575, "sharpe0": -0.5929400730501956, "calmar": -0.6828986020029777, "worst_5d": -0.1830129900024957, "worst_10d": -0.2577488530061661, "worst_20d": -0.319466150733545}
+      }
+    },
+    "FULL_EXIT_FTD15": {
+      "overall": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 4.949781797992636, "cagr": 0.16963544886743231, "mdd": -0.6799814780122491, "vol": 0.35164779639587057, "sharpe0": 0.621520995519531, "calmar": 0.24947069053015666, "worst_5d": -0.20206905368064532, "worst_10d": -0.2660077371760474, "worst_20d": -0.266311015659334, "turnover_nav": 165.81715207869556, "avg_exposure": 0.6347853019866251, "max_exposure": 1.0, "max_positions": 12, "forced_exit_count": 440, "entry_days": 188, "permission_rate": 0.6573208722741433},
+      "periods": {
+        "ALL": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 4.949781797992636, "cagr": 0.16963544886743231, "mdd": -0.6799814780122491, "vol": 0.35164779639587057, "sharpe0": 0.621520995519531, "calmar": 0.24947069053015666, "worst_5d": -0.20206905368064532, "worst_10d": -0.2660077371760474, "worst_20d": -0.266311015659334},
+        "DISCOVERY": {"n": 1511, "start": "2016-01-04", "end_date": "2021-12-31", "end": 2.531542192910991, "cagr": 0.16771544296620733, "mdd": -0.6114176963704556, "vol": 0.3310417918105979, "sharpe0": 0.6331760488806748, "calmar": 0.2743058370109543, "worst_5d": -0.20206905368064532, "worst_10d": -0.2216451435742568, "worst_20d": -0.26630405279731284},
+        "CONFIRM": {"n": 1057, "start": "2022-01-03", "end_date": "2026-03-20", "end": 1.9471877649951772, "cagr": 0.17158272767905403, "mdd": -0.32540170182395756, "vol": 0.37932223384296576, "sharpe0": 0.6073003889101637, "calmar": 0.5272951146760761, "worst_5d": -0.18817782010730322, "worst_10d": -0.2660077371760474, "worst_20d": -0.266311015659334},
+        "2018Q4": {"n": 63, "start": "2018-10-01", "end_date": "2018-12-31", "end": 0.8176730640306827, "cagr": -0.5542153172034394, "mdd": -0.19745110300887425, "vol": 0.2934542417367078, "sharpe0": -2.5955348592452983, "calmar": -2.806848423523523, "worst_5d": -0.1403270613577694, "worst_10d": -0.11579088325817033, "worst_20d": -0.1408147134275789},
+        "COVID2020": {"n": 93, "start": "2020-02-19", "end_date": "2020-06-30", "end": 1.6082830732070257, "cagr": 2.7239399389867383, "mdd": -0.20928844325139684, "vol": 0.46369880560797133, "sharpe0": 3.0115544925607987, "calmar": 13.015242966448689, "worst_5d": -0.18013751313706405, "worst_10d": -0.18417088921187152, "worst_20d": -0.18417088921187152},
+        "BEAR2022": {"n": 251, "start": "2022-01-03", "end_date": "2022-12-30", "end": 1.0356894203234726, "cagr": 0.036116330151881426, "mdd": -0.24291709498652525, "vol": 0.2976889828236654, "sharpe0": 0.2663712237248193, "calmar": 0.14867431011781006, "worst_5d": -0.16342239242305945, "worst_10d": -0.13533145022101412, "worst_20d": -0.21551738253901698}
+      }
+    },
+    "STOP_ONLY_FTD15": {"overall": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 5.659, "cagr": 0.185081, "mdd": -0.691297, "vol": 0.397673, "sharpe0": 0.626375, "calmar": 0.267731, "worst_5d": -0.226288, "worst_10d": -0.264433, "worst_20d": -0.347164, "turnover_nav": 130.4, "avg_exposure": 0.833, "max_exposure": 1.0, "max_positions": 12, "forced_exit_count": 0, "entry_days": 188, "permission_rate": 0.6573}, "periods": {"DISCOVERY": {"cagr": 0.279682, "mdd": -0.584691, "sharpe0": 0.843405}, "CONFIRM": {"cagr": 0.062057, "mdd": -0.421912, "sharpe0": 0.354203}, "BEAR2022": {"cagr": -0.2251, "mdd": -0.3849}}},
+    "STOP_ONLY_FTD20": {"overall": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 7.824, "cagr": 0.22329, "mdd": -0.480215, "vol": 0.376819, "sharpe0": 0.723893, "calmar": 0.464979, "turnover_nav": 106.7, "avg_exposure": 0.759, "forced_exit_count": 0, "entry_days": 150, "permission_rate": 0.516}, "periods": {"DISCOVERY": {"cagr": 0.35125, "mdd": -0.430461, "sharpe0": 1.049195}, "CONFIRM": {"cagr": 0.060484, "mdd": -0.421912, "sharpe0": 0.349659}, "BEAR2022": {"cagr": -0.1413, "mdd": -0.3849}}},
+    "STOP_ONLY_NQ_AND_FTD15": {"overall": {"n": 2568, "start": "2016-01-04", "end_date": "2026-03-20", "end": 5.721, "cagr": 0.186337, "mdd": -0.700696, "vol": 0.386698, "sharpe0": 0.635932, "calmar": 0.265931, "turnover_nav": 124.5, "avg_exposure": 0.818, "forced_exit_count": 0, "entry_days": 179, "permission_rate": 0.529}, "periods": {"DISCOVERY": {"cagr": 0.247169, "mdd": -0.572204, "sharpe0": 0.789531}, "CONFIRM": {"cagr": 0.102595, "mdd": -0.430933, "sharpe0": 0.443024}, "BEAR2022": {"cagr": -0.2506, "mdd": -0.3961}}}
+  },
+  "episodes": {"n": 57, "median_restart_sessions": {"NQ": 7.0, "FTD15": 10.0, "FTD20": 11.0, "NQ_AND_FTD15": 10.0}}
+}
