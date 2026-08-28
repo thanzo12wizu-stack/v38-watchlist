@@ -161,8 +161,8 @@ def attach_context(
     mc = state_audit.build_mc(asof)
     nq_end = (pd.Timestamp(asof) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
     nq = state_audit.build_nqsar(nq_start, nq_end)
-    mc2 = mc.reset_index().rename(columns={"index": "signal_date"})
-    nq2 = nq.reset_index().rename(columns={"index": "signal_date"})
+    mc2 = mc.copy(); mc2.index.name = "signal_date"; mc2 = mc2.reset_index()
+    nq2 = nq.copy(); nq2.index.name = "signal_date"; nq2 = nq2.reset_index()
     z = z.merge(mc2, on="signal_date", how="left", validate="many_to_one")
     z = z.merge(nq2, on="signal_date", how="left", validate="many_to_one")
 
