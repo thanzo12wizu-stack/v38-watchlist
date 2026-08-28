@@ -138,9 +138,10 @@ def run_portfolios(trades, market, out):
     pd.DataFrame(rows).to_csv(out / "portfolio_rule_comparison.csv", index=False)
 
 
-def annotate_signal_strength(trades, frozen, cl):
+def annotate_signal_strength(trades, frozen, cl, spy_close):
     """Point-in-time strength at the RSI signal close, using the frozen taxonomy roster."""
     x = trades.copy(); r63 = cl.pct_change(63, fill_method=None); sma200 = cl.rolling(200).mean()
+    spy63 = spy_close.pct_change(63, fill_method=None)
     members = {str(k): [s for s in pd.unique(g.symbol.astype(str)) if s in cl.columns]
                for k, g in frozen.groupby("theme", observed=True)}
     x["signal_rank63"] = np.nan; x["signal_ret63"] = np.nan
@@ -149,7 +150,7 @@ def annotate_signal_strength(trades, frozen, cl):
         d = pd.Timestamp(d); syms = members.get(str(theme), [])
         if d not in r63.index or not syms: continue
         z = r63.loc[d, syms].dropna(); ranks = z.rank(method="first", ascending=False)
-        spy = r63.at[d, "SPY"] if "SPY" in r63.columns else np.nan
+        spy = spy63.at[d] if d in spy63.index else np.nan
         for j in ix:
             s = str(x.at[j, "symbol"])
             if s in z.index:
@@ -220,7 +221,7 @@ def main():
                     rec[f"entry_{h}"] = trade_return(op, cl, sym, entry, end) if end < len(cl) else np.nan
                     rec[f"mfe_{h}"], rec[f"mae_{h}"] = excursions(op, hi, lo, sym, entry, end) if end < len(cl) else (np.nan, np.nan)
                 records.append(rec)
-    trades = annotate_signal_strength(pd.DataFrame(records), frozen, cl)
+    trades = annotate_signal_strength(pd.DataFrame(records), frozen, cl, market["spy_close"])
     trades.to_csv(out/"threshold_trade_rows.csv.gz", index=False, compression="gzip")
     summarize_signal_strength(trades, cand, cl.index, out)
     run_portfolios(trades, market, out)
