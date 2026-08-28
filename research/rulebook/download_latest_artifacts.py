@@ -7,6 +7,7 @@ import shutil
 import urllib.request
 import zipfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 DEFAULT_NAMES = (
@@ -20,6 +21,24 @@ DEFAULT_NAMES = (
 )
 
 
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Do not forward GitHub bearer auth to Actions artifact storage hosts."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        old_host = (urlparse(req.full_url).hostname or "").lower()
+        new_host = (urlparse(newurl).hostname or "").lower()
+        if old_host != new_host:
+            redirected.remove_header("Authorization")
+            redirected.remove_header("X-GitHub-Api-Version")
+        return redirected
+
+
+OPENER = urllib.request.build_opener(SafeRedirectHandler())
+
+
 def api_json(url: str, token: str) -> dict:
     req = urllib.request.Request(
         url,
@@ -30,7 +49,7 @@ def api_json(url: str, token: str) -> dict:
             "User-Agent": "v38-rulebook-audit",
         },
     )
-    with urllib.request.urlopen(req, timeout=60) as response:
+    with OPENER.open(req, timeout=60) as response:
         return json.load(response)
 
 
@@ -44,7 +63,7 @@ def download(url: str, token: str, destination: Path) -> None:
             "User-Agent": "v38-rulebook-audit",
         },
     )
-    with urllib.request.urlopen(req, timeout=180) as response, destination.open("wb") as handle:
+    with OPENER.open(req, timeout=180) as response, destination.open("wb") as handle:
         shutil.copyfileobj(response, handle)
 
 
