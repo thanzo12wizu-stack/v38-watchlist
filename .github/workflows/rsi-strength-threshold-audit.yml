@@ -1,0 +1,50 @@
+name: RSI strong-stock threshold interaction audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/sector-stock-leadership-20260826]
+    paths:
+      - 'leadership/research/audit_rsi_strength_thresholds.py'
+      - '.github/workflows/rsi-strength-threshold-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy scipy yfinance
+      - name: Download frozen Theme Momentum rows
+        uses: actions/download-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-A
+          path: leadership/research/rsi_strength_input
+          github-token: ${{ github.token }}
+          run-id: 33040661731
+      - name: Syntax and input checks
+        run: |
+          PYTHONPATH=leadership/research python -m py_compile leadership/research/audit_rsi_strength_thresholds.py
+          test -s leadership/research/rsi_strength_input/frozen_event_stock_rows.csv.gz
+      - name: Run strength-threshold audit
+        run: |
+          PYTHONPATH=leadership/research python leadership/research/audit_rsi_strength_thresholds.py \
+            --root . \
+            --input leadership/research/rsi_strength_input/frozen_event_stock_rows.csv.gz \
+            --output leadership/research/rsi_strength_output
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsi-strong-stock-threshold-interaction-audit
+          path: leadership/research/rsi_strength_output/
+          retention-days: 14
+          if-no-files-found: warn
