@@ -1,0 +1,39 @@
+name: Market stop and reentry audit
+
+on:
+  push:
+    branches:
+      - research/vix-rsi-rulebook-20260828
+    paths:
+      - research/rulebook_v2/audit_market_stop_reentry.py
+      - .github/workflows/market-stop-reentry-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests
+      - name: Syntax check
+        run: python -m py_compile research/rulebook_v2/audit_market_stop_reentry.py
+      - name: Run audit
+        run: |
+          python research/rulebook_v2/audit_market_stop_reentry.py \
+            --root . \
+            --output research/market_stop_reentry/results
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-stop-reentry-audit
+          path: research/market_stop_reentry/results/
+          retention-days: 30
