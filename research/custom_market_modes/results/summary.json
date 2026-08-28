@@ -1,0 +1,30 @@
+{
+  "status": "CUSTOM_MARKET_MODE_AUDIT_V1",
+  "coverage": {
+    "start": "2016-01-04",
+    "end": "2026-03-20",
+    "sessions": 2568
+  },
+  "indicators": {
+    "NQSAR": "production-reconstructed NQ four-color state",
+    "MC57": "production 57 ETF x 12 equal-metric MC15 temperature",
+    "MC_pillars": "momentum / breadth / trend / damage plus breadth level and 10-session change",
+    "F1": "20-session-ago top24 leader dropout rate; dashboard reference warning 20%, red 30%",
+    "F2": "current top24 whose RS63 is below85; dashboard reference caution25%, red40%",
+    "F3": "RS189>=85 queue in pullback/damage state; dashboard reference caution40%, red60%",
+    "broad_breadth": "current-universe percent above 50MA/200MA and 10-session change"
+  },
+  "design": {
+    "threshold_policy": "small predeclared grids around existing dashboard thresholds; no optimizer-selected arbitrary cutpoints",
+    "validation": "2016-2021 Discovery and 2022-2026-03 Confirmation shown separately",
+    "outcome": "next-open to 5/10/20-session return of daily top12 normal-stock candidates, plus full normal-stock portfolio simulation",
+    "dependency_control": "Spearman correlation table used to identify redundant indicators",
+    "uncertainty": "20-session cluster bootstrap CI for forward 20-session means"
+  },
+  "limitations": [
+    "Normal-stock portfolio is the existing comparison reconstruction, not the missing exact production ledger.",
+    "Current-universe survivorship bias remains in leader/breadth features and stock outcomes.",
+    "Confirmation has already been inspected in prior research; it is robustness confirmation, not pristine OOS.",
+    "No dashboard or main-branch logic is changed by this audit."
+  ]
+}
