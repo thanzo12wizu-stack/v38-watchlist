@@ -1,0 +1,103 @@
+name: VIX RSI MC57 NQSAR rulebook allocation audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/vix-rsi-rulebook-20260828]
+    paths:
+      - 'research/rulebook/**'
+      - '.github/workflows/vix-rsi-rulebook-allocation-audit.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: vix-rsi-rulebook-allocation-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Download latest completed research artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python research/rulebook/download_latest_artifacts.py \
+            --repo "${{ github.repository }}" \
+            --output research/rulebook_inputs
+      - name: Syntax checks
+        run: |
+          PYTHONPATH=.:leadership/research python -m py_compile \
+            research/rulebook/download_latest_artifacts.py \
+            research/rulebook/audit_integrated_allocation.py
+      - name: Run integrated allocation audit
+        run: |
+          PYTHONPATH=.:leadership/research python research/rulebook/audit_integrated_allocation.py \
+            --root . \
+            --inputs research/rulebook_inputs \
+            --output research/rulebook_output 2>&1 | tee research/rulebook_audit.log
+      - name: Verify decision-critical outputs
+        run: |
+          test -s research/rulebook_output/summary.json
+          test -s research/rulebook_output/strategy_summary.csv
+          test -s research/rulebook_output/regime_component_summary.csv
+          test -s research/rulebook_output/exact_rebound_events.csv
+          test -s research/rulebook_output/paired_bootstrap_summary.csv
+          python - <<'PY'
+          import json
+          import pandas as pd
+          from pathlib import Path
+
+          out = Path('research/rulebook_output')
+          summary = json.loads((out / 'summary.json').read_text())
+          assert summary['status'] == 'INTEGRATED_RULEBOOK_ALLOCATION_AUDIT'
+          assert not summary['capital_cap']['breach']
+          strategies = pd.read_csv(out / 'strategy_summary.csv')
+          assert {'ALL', 'DISCOVERY', 'CONFIRM'} <= set(strategies.period)
+          assert strategies.cap_breach_days.sum() == 0
+          assert strategies.groupby('period').strategy.nunique().min() >= 6
+          events = pd.read_csv(out / 'exact_rebound_events.csv')
+          assert len(events) >= 3
+          print('decision-critical QA passed')
+          PY
+      - name: Upload complete audit package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vix-rsi-rulebook-allocation-audit
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            research/rulebook_audit.log
+            research/rulebook_inputs/artifact_manifest.json
+            research/rulebook_output/
+      - name: Commit compact results to the research branch
+        if: success()
+        run: |
+          mkdir -p research/rulebook/results
+          cp research/rulebook_inputs/artifact_manifest.json research/rulebook/results/
+          cp research/rulebook_output/summary.json research/rulebook/results/
+          cp research/rulebook_output/strategy_summary.csv research/rulebook/results/
+          cp research/rulebook_output/regime_component_summary.csv research/rulebook/results/
+          cp research/rulebook_output/exact_rebound_events.csv research/rulebook/results/
+          cp research/rulebook_output/paired_bootstrap_summary.csv research/rulebook/results/
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add research/rulebook/results
+          if git diff --cached --quiet; then
+            echo "No result changes to commit"
+          else
+            git commit -m "research: record integrated rulebook allocation results [skip ci]"
+            git push origin HEAD:research/vix-rsi-rulebook-20260828
+          fi
