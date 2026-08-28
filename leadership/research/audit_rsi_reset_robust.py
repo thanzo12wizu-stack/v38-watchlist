@@ -160,6 +160,7 @@ def rebuild_market(root: Path, analysis_start: str, analysis_end: str, max_ticke
     active = (theme_pct >= 80.0) & (delta20 >= 15.0) & (breadth >= 60.0)
     return {
         "close": close, "open": open_, "high": high, "low": low,
+        "spy_close": close_all["SPY"],
         "theme_pct": theme_pct, "delta20": delta20, "breadth": breadth, "active": active,
         "members": members, "diag": diag, "taxonomy": taxonomy, "selected": selected,
     }
