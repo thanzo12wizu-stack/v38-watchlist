@@ -70,25 +70,22 @@ def paired_block_bootstrap(a: pd.DataFrame, b: pd.DataFrame, start: pd.Timestamp
     n = len(arr)
     block = 20
     starts = np.arange(0, max(1, n - block + 1))
+    n_blocks = int(np.ceil(n / block))
     rng = np.random.default_rng(seed)
-    deltas = []
-    for _ in range(2000):
-        pieces = []
-        while sum(len(p) for p in pieces) < n:
-            s = int(rng.choice(starts))
-            pieces.append(arr[s:s + block])
-        x = np.vstack(pieces)[:n]
-        years = n / 252.0
+    deltas = np.empty(2000, dtype=float)
+    years = n / 252.0
+    for i in range(2000):
+        chosen = rng.choice(starts, size=n_blocks, replace=True)
+        x = np.concatenate([arr[int(s):int(s) + block] for s in chosen], axis=0)[:n]
         ea = float(np.prod(1.0 + x[:, 0]) ** (1.0 / years) - 1.0)
         eb = float(np.prod(1.0 + x[:, 1]) ** (1.0 / years) - 1.0)
-        deltas.append(ea - eb)
-    q = np.asarray(deltas, float)
+        deltas[i] = ea - eb
     return {
         "n": int(n),
-        "median_cagr_delta": float(np.median(q)),
-        "p05_cagr_delta": float(np.quantile(q, 0.05)),
-        "p95_cagr_delta": float(np.quantile(q, 0.95)),
-        "prob_a_beats_b": float((q > 0).mean()),
+        "median_cagr_delta": float(np.median(deltas)),
+        "p05_cagr_delta": float(np.quantile(deltas, 0.05)),
+        "p95_cagr_delta": float(np.quantile(deltas, 0.95)),
+        "prob_a_beats_b": float((deltas > 0).mean()),
     }
 
 
@@ -130,7 +127,6 @@ def main():
             seed += 1
     pd.DataFrame(comparisons).to_csv(out / "paired_block_bootstrap.csv", index=False)
 
-    # Year-by-year paired differences, easier to inspect than only aggregate CAGR.
     pivot = annual.pivot(index="year", columns="strategy", values="end")
     year_rows = []
     for year, row in pivot.iterrows():
