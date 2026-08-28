@@ -1,0 +1,45 @@
+name: ETF breadth normal modes v5 audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/vix-rsi-rulebook-20260828
+    paths:
+      - 'research/rulebook_v3/audit_etf_breadth_normal_modes_v5.py'
+      - '.github/workflows/etf-breadth-normal-modes-v5-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests gspread
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile research/rulebook_v3/audit_etf_breadth_normal_modes_v5.py
+      - name: Run audit
+        run: |
+          PYTHONPATH=.:leadership/research python research/rulebook_v3/audit_etf_breadth_normal_modes_v5.py \
+            --root . \
+            --output research/etf_breadth_normal_modes_v5/results \
+            --asof 2026-08-28
+      - name: Verify outputs
+        run: |
+          test -s research/etf_breadth_normal_modes_v5/results/gate_simulations.csv
+          test -s research/etf_breadth_normal_modes_v5/results/restart_simulations.csv
+          test -s research/etf_breadth_normal_modes_v5/results/candidate_outcomes.csv
+          test -s research/etf_breadth_normal_modes_v5/results/summary.json
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-breadth-normal-modes-v5-audit
+          retention-days: 30
+          path: research/etf_breadth_normal_modes_v5/results/
