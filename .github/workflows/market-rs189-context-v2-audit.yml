@@ -1,0 +1,105 @@
+name: Market RS189 context plateau audit v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/vix-rsi-rulebook-20260828]
+    paths:
+      - 'leadership/research/audit_market_rs189_context_v2.py'
+      - '.github/workflows/market-rs189-context-v2-audit.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: market-rs189-context-v2-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Download completed research artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python research/rulebook/download_latest_artifacts.py \
+            --repo "${{ github.repository }}" \
+            --output research/market_rs189_context_v2_inputs
+      - name: Syntax check
+        run: |
+          PYTHONPATH=.:leadership/research python -m py_compile \
+            leadership/research/audit_market_rs189_context.py \
+            leadership/research/audit_market_rs189_context_v2.py
+      - name: Run focused plateau audit
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf research/market_rs189_context_v2_output
+          PYTHONPATH=.:leadership/research python leadership/research/audit_market_rs189_context_v2.py \
+            --root . \
+            --market-trades research/market_rs189_context_v2_inputs/market-wide-rs189-rsi-reset-audit/market_rs189_trades.csv.gz \
+            --theme-trades research/market_rs189_context_v2_inputs/rsi-strong-stock-threshold-interaction-audit/threshold_trade_rows.csv.gz \
+            --output research/market_rs189_context_v2_output \
+            --asof 2026-08-28 2>&1 | tee research/market_rs189_context_v2_audit.log
+      - name: Verify outputs
+        run: |
+          test -s research/market_rs189_context_v2_output/summary.json
+          test -s research/market_rs189_context_v2_output/context_rule_summary.csv
+          test -s research/market_rs189_context_v2_output/context_portfolio_max1.csv
+          test -s research/market_rs189_context_v2_output/context_combined_preempt.csv
+          python - <<'PY'
+          import json
+          import pandas as pd
+          from pathlib import Path
+          out = Path('research/market_rs189_context_v2_output')
+          s = json.loads((out/'summary.json').read_text())
+          assert s['status'] == 'MARKET_RS189_CONTEXT_AUDIT_V2'
+          r = pd.read_csv(out/'context_rule_summary.csv')
+          p = pd.read_csv(out/'context_portfolio_max1.csv')
+          c = pd.read_csv(out/'context_combined_preempt.csv')
+          required = {'MC_20_50','MC_20_35','MC_35_50','MC_20_50_SEC50','MC_20_50_SEC60','MC_20_50_SEC70','RSI27P5_MC_20_50_SEC60'}
+          assert required <= set(r.rule)
+          assert required <= set(p.rule)
+          assert {'THEME_ONLY','MC_20_50_SEC60'} <= set(c.rule)
+          assert {'DISCOVERY','CONFIRM'} <= set(r.period)
+          print('market RS189 plateau QA passed:', s['decision']['selected'])
+          PY
+      - name: Upload audit package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-rs189-context-plateau-audit-v2
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            research/market_rs189_context_v2_audit.log
+            research/market_rs189_context_v2_inputs/artifact_manifest.json
+            research/market_rs189_context_v2_output/
+      - name: Commit compact results to research branch
+        if: success()
+        run: |
+          mkdir -p research/market_rs189_context_v2/results
+          cp research/market_rs189_context_v2_output/summary.json research/market_rs189_context_v2/results/
+          cp research/market_rs189_context_v2_output/context_rule_summary.csv research/market_rs189_context_v2/results/
+          cp research/market_rs189_context_v2_output/context_portfolio_max1.csv research/market_rs189_context_v2/results/
+          cp research/market_rs189_context_v2_output/context_combined_preempt.csv research/market_rs189_context_v2/results/
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add research/market_rs189_context_v2/results
+          if git diff --cached --quiet; then
+            echo 'No result changes to commit'
+          else
+            git commit -m 'research: record market RS189 plateau results [skip ci]'
+            git push origin HEAD:research/vix-rsi-rulebook-20260828
+          fi
