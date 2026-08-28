@@ -71,7 +71,7 @@ def simulate_tiered(market,signal,frame,selective_n:int,allow_repair:bool,active
                 selected=survivors[:target_n]
                 selected.extend([s for s in picks if s not in selected][:target_n-len(selected)])
                 nav_open,_=base.mark_nav(cash,lots,open_prices)
-                # Keep per-position size equal to full 12-slot mode. Fewer slots must reduce
+                # Keep per-position size equal to full 12-slot mode. Fewer slots reduce
                 # total exposure instead of concentrating the same NAV into fewer names.
                 target_value=nav_open/N_FULL
                 for symbol in list(lots):
@@ -109,7 +109,7 @@ def simulate_tiered(market,signal,frame,selective_n:int,allow_repair:bool,active
 
 def mode_shares(daily):
     x=daily.copy(); total=len(x)
-    return {m:float((x.mode==m).sum()/total) for m in ['ATTACK','SELECTIVE','REPAIR','HOLD','WAIT','DEFENSE']}
+    return {m:float((x['mode']==m).sum()/total) for m in ['ATTACK','SELECTIVE','REPAIR','HOLD','WAIT','DEFENSE']}
 
 
 def main():
