@@ -26,10 +26,11 @@ jobs:
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
       - name: Run ordinary-stock market-mode robustness audit
+        env:
+          PYTHONPATH: .:leadership/research
         run: |
-          cd leadership/research
-          python audit_ordinary_stock_market_mode_robustness.py \
-            --root ../.. \
+          python leadership/research/audit_ordinary_stock_market_mode_robustness.py \
+            --root . \
             --output leadership/research/ordinary_stock_market_mode_robustness \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
