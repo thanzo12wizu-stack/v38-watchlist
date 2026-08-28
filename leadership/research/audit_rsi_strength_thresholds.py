@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 import audit_rsi_reset_robust as prior
+import audit_rsi_reset_portfolio as portfolio
 import validate_rsi_divergence_strong as rd
 import validate_rsi_reset_reaccel as rr
 
@@ -88,6 +89,50 @@ def summarize(g, denominator, calendar, seed):
             "delay_mean": x.delay.mean(), "rsi_signal_mean": x.rsi_signal.mean()}
 
 
+def portfolio_rules(trades):
+    """Pre-registered rule set for the already selected 2.9% / max-four sleeve."""
+    rise30 = trades[(trades.kind == "RISE") & (trades.threshold == 30)].copy()
+    rise35 = trades[(trades.kind == "RISE") & (trades.threshold == 35)].copy()
+    touch35 = trades[(trades.kind == "TOUCH") & (trades.threshold == 35)].copy()
+    rules = {
+        "UNION_RISE30": rise30,
+        "RS63_TOP3_RISE30": rise30[rise30.RS63_TOP3],
+        "RS63_TOP1_RISE30": rise30[rise30.RS63_TOP1],
+        "RS63_TOP1_RISE35": rise35[rise35.RS63_TOP1],
+        "RS63_TOP1_TOUCH35": touch35[touch35.RS63_TOP1],
+        "TIER_R1_RISE35_R23_RISE30": pd.concat([
+            rise35[rise35.rank63 == 1], rise30[rise30.rank63.isin([2, 3])]
+        ], ignore_index=True),
+        "TIER_R1_TOUCH35_R23_RISE30": pd.concat([
+            touch35[touch35.rank63 == 1], rise30[rise30.rank63.isin([2, 3])]
+        ], ignore_index=True),
+        "DUAL_TOP3_RISE30": rise30[rise30.DUAL_TOP3],
+    }
+    out = {}
+    for name, x in rules.items():
+        x = x.sort_values(["day0_date", "theme", "symbol", "signal_date"]).drop_duplicates(
+            ["day0_date", "theme", "symbol"], keep="first").copy()
+        x["rank_priority"] = np.where(x.rank63 <= 3, x.rank63 - 1, 3 + x.rank189)
+        out[name] = x
+    return out
+
+
+def run_portfolios(trades, market, out):
+    cl, op, active = market["close"], market["open"], market["active"]
+    cal = cl.index; ema21 = cl.ewm(span=21, adjust=False).mean(); rows = []
+    rules = portfolio_rules(trades)
+    for period, start, end in (("ALL", "2016-01-04", "2026-06-30"),
+                               ("DISCOVERY", "2016-01-04", "2021-12-31"),
+                               ("CONFIRM", "2022-01-03", "2026-06-30")):
+        ix = cal[(cal >= start) & (cal <= end)]
+        for name, x in rules.items():
+            z = x[x.entry_date.isin(ix) & x.symbol.isin(cl.columns)].copy()
+            m, _ = portfolio.simulate(ix, op, cl, active, ema21, z, 0.029, 4, 20, "full", False)
+            rows.append({"period": period, "rule": name, "slot": 0.029, "max_pos": 4,
+                         "hold": 20, "input_signals": len(z), **m})
+    pd.DataFrame(rows).to_csv(out / "portfolio_rule_comparison.csv", index=False)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".")
@@ -122,6 +167,7 @@ def main():
                     rec[f"mfe_{h}"], rec[f"mae_{h}"] = excursions(op, hi, lo, sym, entry, end) if end < len(cl) else (np.nan, np.nan)
                 records.append(rec)
     trades = pd.DataFrame(records); trades.to_csv(out/"threshold_trade_rows.csv.gz", index=False, compression="gzip")
+    run_portfolios(trades, market, out)
     rows = []
     periods = (("DISCOVERY", None, DISC_END), ("CONFIRM", CONF_START, None))
     for group in GROUPS:
