@@ -1,0 +1,81 @@
+name: Strong stock micro pullback audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/vix-rsi-rulebook-20260828]
+    paths:
+      - 'leadership/research/audit_strong_stock_micro_pullback.py'
+      - '.github/workflows/strong-stock-micro-pullback-audit.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strong-stock-micro-pullback-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_strong_stock_micro_pullback.py
+      - name: Run micro pullback audit
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf research/strong_stock_micro_pullback_output
+          PYTHONPATH=.:leadership/research python leadership/research/audit_strong_stock_micro_pullback.py \
+            --root . --output research/strong_stock_micro_pullback_output --asof 2026-08-28 \
+            2>&1 | tee research/strong_stock_micro_pullback_audit.log
+      - name: Verify outputs
+        run: |
+          test -s research/strong_stock_micro_pullback_output/summary.json
+          test -s research/strong_stock_micro_pullback_output/event_summary.csv
+          test -s research/strong_stock_micro_pullback_output/runner_coverage.csv
+          test -s research/strong_stock_micro_pullback_output/runner_examples.csv
+          python - <<'PY'
+          import json,pandas as pd
+          from pathlib import Path
+          out=Path('research/strong_stock_micro_pullback_output')
+          s=json.loads((out/'summary.json').read_text())
+          assert s['status']=='STRONG_STOCK_MICRO_PULLBACK_AUDIT'
+          e=pd.read_csv(out/'event_summary.csv')
+          assert 'M10_RSI65_DD075' in set(e.method)
+          assert {'DISCOVERY','CONFIRM'} <= set(e.period)
+          print('micro pullback QA passed')
+          PY
+      - name: Upload audit package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strong-stock-micro-pullback-audit
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            research/strong_stock_micro_pullback_audit.log
+            research/strong_stock_micro_pullback_output/
+      - name: Commit compact results to research branch
+        if: success()
+        run: |
+          mkdir -p research/strong_stock_micro_pullback/results
+          cp research/strong_stock_micro_pullback_output/summary.json research/strong_stock_micro_pullback/results/
+          cp research/strong_stock_micro_pullback_output/event_summary.csv research/strong_stock_micro_pullback/results/
+          cp research/strong_stock_micro_pullback_output/context_summary.csv research/strong_stock_micro_pullback/results/
+          cp research/strong_stock_micro_pullback_output/opportunity_summary.csv research/strong_stock_micro_pullback/results/
+          cp research/strong_stock_micro_pullback_output/runner_coverage.csv research/strong_stock_micro_pullback/results/
+          cp research/strong_stock_micro_pullback_output/runner_examples.csv research/strong_stock_micro_pullback/results/
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add research/strong_stock_micro_pullback/results
+          if git diff --cached --quiet; then echo 'No result changes'; else git commit -m 'research: record micro-pullback results [skip ci]'; git push origin HEAD:research/vix-rsi-rulebook-20260828; fi
