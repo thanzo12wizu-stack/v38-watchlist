@@ -126,14 +126,14 @@ def main():
         meta,daily=simulate_tiered(market,signal,frame,n,repair,trim)
         for period,vals in ms.period_metrics(daily).items():
             if period in ('ALL','DISCOVERY','CONFIRM','2018Q4','COVID2020','BEAR2022'):
-                rows.append({'rule':name,'period':period,**vals,**meta})
+                rows.append({'rule':name,'period':period,**meta,**vals})
         shares.append({'rule':name,**mode_shares(daily)})
     bg=frame.nq_color.isin(['Blue','Green'])
     for name,mask in [('PA50_FULL',bg&(frame.stock_pa50>=.50)),('PA60_FULL',bg&(frame.stock_pa50>=.60))]:
         meta,daily=ms.simulate_core(market,signal,v2.v1.permission_from_mask(frame,mask),force_exit_red=True)
         for period,vals in ms.period_metrics(daily).items():
             if period in ('ALL','DISCOVERY','CONFIRM','2018Q4','COVID2020','BEAR2022'):
-                rows.append({'rule':name,'period':period,**vals,**meta})
+                rows.append({'rule':name,'period':period,**meta,**vals})
     pd.DataFrame(rows).to_csv(out/'tiered_simulations.csv',index=False)
     pd.DataFrame(shares).to_csv(out/'mode_shares.csv',index=False)
     summary={'status':'NORMAL_STOCK_TIERED_MODES_V4','scope':'normal stock only','fixed_boundaries':{'attack_pa50':.60,'selective_pa50':[.50,.60],'post_red_restart_pa50':.50,'defense':'NQSAR Red'},'selective_capacity_tests':[4,6,8],'sizing':'each slot remains 1/12 of normal-stock sleeve NAV; 4/6/8 slots target about 33/50/67% sleeve exposure rather than concentration','repair':'Yellow/non-Red with breadth>=50 tested on/off','downgrade_trim':'entry-only vs immediate trim tested at N=6','note':'Thresholds frozen from V3 before this sizing test. No RSI30/TQQQ/shallow rule changes. No main/dashboard changes.'}
