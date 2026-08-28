@@ -1,0 +1,98 @@
+{
+  "status": "MARKET_RS189_CONTEXT_AUDIT",
+  "base_rule": "market-wide RS189 percentile >=85; RSI14 <=30 reset; first RSI rise; next-open; 20 sessions",
+  "new_context_dimensions": {
+    "rsi": "minimum RSI from first <=30 touch through signal",
+    "mc57": "production MC57 on signal date; fixed cutoffs and one-day slope",
+    "sector_strength": "current-classification sector median 63d return ranked across sectors; signal-date percentile",
+    "nqsar": "production-reconstructed NQSAR used only in one pre-registered combination"
+  },
+  "selection": {
+    "selected": "SECTOR_RS63_PCT_GE80",
+    "reason": "Highest score among filters passing discovery/confirmation guardrails.",
+    "ranking": [
+      {
+        "rule": "SECTOR_RS63_PCT_GE80",
+        "disc_n": 408,
+        "conf_n": 279,
+        "disc_mean20": 0.02108163999150865,
+        "conf_mean20": 0.030313382655429832,
+        "conf_median20": 0.0231475324608577,
+        "conf_win20": 0.5591397849462365,
+        "conf_pf20": 1.7684397040575335,
+        "conf_mae20": -0.09841081455355762,
+        "conf_p10_20": -0.12240598571694554,
+        "conf_port_cagr": -0.004833476121444802,
+        "conf_port_mdd": -0.038175333332055916,
+        "score": 0.03713323578154811
+      },
+      {
+        "rule": "SECTOR_RS63_PCT_GE60",
+        "disc_n": 765,
+        "conf_n": 537,
+        "disc_mean20": 0.026340689706534658,
+        "conf_mean20": 0.03619349526105252,
+        "conf_median20": 0.0144881842645153,
+        "conf_win20": 0.5493482309124768,
+        "conf_pf20": 1.9166601955801736,
+        "conf_mae20": -0.09660297186495777,
+        "conf_p10_20": -0.12607359712876723,
+        "conf_port_cagr": 0.008308396444623556,
+        "conf_port_mdd": -0.02415981332748751,
+        "score": 0.027905839233922036
+      },
+      {
+        "rule": "SECTOR_RS63_PCT_GE70",
+        "disc_n": 561,
+        "conf_n": 398,
+        "disc_mean20": 0.02481070304875925,
+        "conf_mean20": 0.03640669501668626,
+        "conf_median20": 0.0110895407380918,
+        "conf_win20": 0.5376884422110553,
+        "conf_pf20": 1.9499342166629123,
+        "conf_mae20": -0.09767747343696977,
+        "conf_p10_20": -0.11815411556425882,
+        "conf_port_cagr": -0.00015318256633201077,
+        "conf_port_mdd": -0.0208528155555181,
+        "score": 0.017713815801166342
+      },
+      {
+        "rule": "RSI_MIN_LE30P0",
+        "disc_n": 1559,
+        "conf_n": 1414,
+        "disc_mean20": 0.02388476144842413,
+        "conf_mean20": 0.03144532757324939,
+        "conf_median20": 0.0145073589467199,
+        "conf_win20": 0.545968882602546,
+        "conf_pf20": 1.665247569484278,
+        "conf_mae20": -0.1081478632686598,
+        "conf_p10_20": -0.15935157437316258,
+        "conf_port_cagr": 0.01793921792386488,
+        "conf_port_mdd": -0.0254418337823602,
+        "score": 0.009843148467382254
+      },
+      {
+        "rule": "SECTOR_RS63_PCT_GE50",
+        "disc_n": 913,
+        "conf_n": 675,
+        "disc_mean20": 0.02367645263549599,
+        "conf_mean20": 0.02961243516532406,
+        "conf_median20": 0.0110644054152296,
+        "conf_win20": 0.5407407407407407,
+        "conf_pf20": 1.6864174464383108,
+        "conf_mae20": -0.100664849260977,
+        "conf_p10_20": -0.13616264988601728,
+        "conf_port_cagr": 0.017492879949927653,
+        "conf_port_mdd": -0.02957868915564421,
+        "score": 0.007914320471804986
+      }
+    ]
+  },
+  "limitations": [
+    "Current-universe and current industry classification survivorship bias remain.",
+    "2022+ is confirmation, not pristine untouched out-of-sample, because prior research has inspected it.",
+    "Sector strength is a simple point-in-time return/breadth reconstruction, not the dashboard's broader Theme Momentum score.",
+    "No tax model in the individual-stock sleeve.",
+    "Context search is deliberately limited to pre-registered cutoffs to reduce multiple-testing risk."
+  ]
+}
