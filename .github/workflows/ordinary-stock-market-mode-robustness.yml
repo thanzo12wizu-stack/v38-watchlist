@@ -7,11 +7,7 @@ on:
       - research/sector-stock-leadership-20260826
     paths:
       - leadership/research/audit_ordinary_stock_market_mode_robustness.py
-      - leadership/research/audit_ordinary_stock_rebalance_phase.py
-      - leadership/research/audit_selective_band_marginal_slots.py
-      - leadership/research/audit_ordinary_stock_rebalance_vs_trail.py
-      - leadership/research/audit_ordinary_stock_rebalance_isolation.py
-      - leadership/research/audit_ordinary_stock_prune_under_daily_refresh.py
+      - leadership/research/audit_ordinary_stock_theme_ranking.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -29,16 +25,15 @@ jobs:
       - name: Syntax check
         run: |
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
-          python -m py_compile leadership/research/audit_ordinary_stock_rebalance_vs_trail.py
-          python -m py_compile leadership/research/audit_ordinary_stock_prune_under_daily_refresh.py
+          python -m py_compile leadership/research/audit_ordinary_stock_theme_ranking.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock prune under daily refresh audit
+      - name: Run ordinary-stock theme-aware ranking audit
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_prune_under_daily_refresh.py \
+          python leadership/research/audit_ordinary_stock_theme_ranking.py \
             --root . \
-            --output leadership/research/ordinary_stock_prune_under_daily_refresh \
+            --output leadership/research/ordinary_stock_theme_ranking \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -47,6 +42,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ordinary-stock-market-mode-robustness
-          path: leadership/research/ordinary_stock_prune_under_daily_refresh/
+          name: ordinary-stock-theme-ranking
+          path: leadership/research/ordinary_stock_theme_ranking/
           retention-days: 7
