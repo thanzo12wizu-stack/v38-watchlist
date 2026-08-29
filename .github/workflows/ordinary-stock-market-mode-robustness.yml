@@ -9,7 +9,7 @@ on:
       - leadership/research/audit_ordinary_stock_market_mode_robustness.py
       - leadership/research/audit_ordinary_stock_theme_leave_one_out.py
       - leadership/research/audit_ordinary_stock_exit_trail.py
-      - leadership/research/audit_ordinary_stock_exit_sensitivity.py
+      - leadership/research/audit_ordinary_stock_exit_overlays.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -29,15 +29,15 @@ jobs:
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_leave_one_out.py
           python -m py_compile leadership/research/audit_ordinary_stock_exit_trail.py
-          python -m py_compile leadership/research/audit_ordinary_stock_exit_sensitivity.py
+          python -m py_compile leadership/research/audit_ordinary_stock_exit_overlays.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run loose trail sensitivity
+      - name: Run ordinary-stock exit overlays
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_exit_sensitivity.py \
+          python leadership/research/audit_ordinary_stock_exit_overlays.py \
             --root . \
-            --output leadership/research/ordinary_stock_exit_sensitivity \
+            --output leadership/research/ordinary_stock_exit_overlays \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -46,6 +46,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ordinary-stock-exit-sensitivity
-          path: leadership/research/ordinary_stock_exit_sensitivity/
+          name: ordinary-stock-exit-overlays
+          path: leadership/research/ordinary_stock_exit_overlays/
           retention-days: 7
