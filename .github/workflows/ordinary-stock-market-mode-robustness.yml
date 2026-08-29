@@ -10,6 +10,7 @@ on:
       - leadership/research/audit_ordinary_stock_theme_ranking.py
       - leadership/research/audit_ordinary_stock_theme_attack_only.py
       - leadership/research/audit_ordinary_stock_theme_leave_one_out.py
+      - leadership/research/audit_ordinary_stock_theme_loo_sensitivity.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -30,14 +31,15 @@ jobs:
           python -m py_compile leadership/research/audit_ordinary_stock_theme_ranking.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_attack_only.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_leave_one_out.py
+          python -m py_compile leadership/research/audit_ordinary_stock_theme_loo_sensitivity.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock leave-one-out theme audit
+      - name: Run ordinary-stock leave-one-out theme sensitivity
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_theme_leave_one_out.py \
+          python leadership/research/audit_ordinary_stock_theme_loo_sensitivity.py \
             --root . \
-            --output leadership/research/ordinary_stock_theme_leave_one_out \
+            --output leadership/research/ordinary_stock_theme_loo_sensitivity \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -46,6 +48,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ordinary-stock-theme-leave-one-out
-          path: leadership/research/ordinary_stock_theme_leave_one_out/
+          name: ordinary-stock-theme-loo-sensitivity
+          path: leadership/research/ordinary_stock_theme_loo_sensitivity/
           retention-days: 7
