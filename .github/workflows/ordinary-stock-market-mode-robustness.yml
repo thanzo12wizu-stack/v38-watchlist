@@ -8,6 +8,7 @@ on:
     paths:
       - leadership/research/audit_ordinary_stock_market_mode_robustness.py
       - leadership/research/audit_ordinary_stock_rebalance_phase.py
+      - leadership/research/audit_selective_band_marginal_slots.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -25,15 +26,15 @@ jobs:
       - name: Syntax check
         run: |
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
-          python -m py_compile leadership/research/audit_ordinary_stock_rebalance_phase.py
+          python -m py_compile leadership/research/audit_selective_band_marginal_slots.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock rebalance phase calibration audit
+      - name: Run selective-band marginal slot audit
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_rebalance_phase.py \
+          python leadership/research/audit_selective_band_marginal_slots.py \
             --root . \
-            --output leadership/research/ordinary_stock_rebalance_phase \
+            --output leadership/research/selective_band_marginal_slots \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -43,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ordinary-stock-market-mode-robustness
-          path: leadership/research/ordinary_stock_rebalance_phase/
+          path: leadership/research/selective_band_marginal_slots/
           retention-days: 7
