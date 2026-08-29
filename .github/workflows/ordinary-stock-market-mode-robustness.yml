@@ -9,7 +9,7 @@ on:
       - leadership/research/audit_ordinary_stock_market_mode_robustness.py
       - leadership/research/audit_ordinary_stock_theme_ranking.py
       - leadership/research/audit_ordinary_stock_theme_attack_only.py
-      - leadership/research/audit_ordinary_stock_theme_group_size.py
+      - leadership/research/audit_ordinary_stock_theme_leave_one_out.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -29,15 +29,15 @@ jobs:
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_ranking.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_attack_only.py
-          python -m py_compile leadership/research/audit_ordinary_stock_theme_group_size.py
+          python -m py_compile leadership/research/audit_ordinary_stock_theme_leave_one_out.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock theme group-size stress
+      - name: Run ordinary-stock leave-one-out theme audit
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_theme_group_size.py \
+          python leadership/research/audit_ordinary_stock_theme_leave_one_out.py \
             --root . \
-            --output leadership/research/ordinary_stock_theme_group_size \
+            --output leadership/research/ordinary_stock_theme_leave_one_out \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -46,6 +46,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ordinary-stock-theme-group-size
-          path: leadership/research/ordinary_stock_theme_group_size/
+          name: ordinary-stock-theme-leave-one-out
+          path: leadership/research/ordinary_stock_theme_leave_one_out/
           retention-days: 7
