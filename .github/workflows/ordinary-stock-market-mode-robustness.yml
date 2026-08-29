@@ -11,6 +11,7 @@ on:
       - leadership/research/audit_selective_band_marginal_slots.py
       - leadership/research/audit_ordinary_stock_rebalance_vs_trail.py
       - leadership/research/audit_ordinary_stock_rebalance_isolation.py
+      - leadership/research/audit_ordinary_stock_prune_under_daily_refresh.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -29,15 +30,15 @@ jobs:
         run: |
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
           python -m py_compile leadership/research/audit_ordinary_stock_rebalance_vs_trail.py
-          python -m py_compile leadership/research/audit_ordinary_stock_rebalance_isolation.py
+          python -m py_compile leadership/research/audit_ordinary_stock_prune_under_daily_refresh.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock rebalance isolation audit
+      - name: Run ordinary-stock prune under daily refresh audit
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_rebalance_isolation.py \
+          python leadership/research/audit_ordinary_stock_prune_under_daily_refresh.py \
             --root . \
-            --output leadership/research/ordinary_stock_rebalance_isolation \
+            --output leadership/research/ordinary_stock_prune_under_daily_refresh \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -47,5 +48,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ordinary-stock-market-mode-robustness
-          path: leadership/research/ordinary_stock_rebalance_isolation/
+          path: leadership/research/ordinary_stock_prune_under_daily_refresh/
           retention-days: 7
