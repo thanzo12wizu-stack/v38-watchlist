@@ -8,6 +8,7 @@ on:
     paths:
       - leadership/research/audit_ordinary_stock_market_mode_robustness.py
       - leadership/research/audit_ordinary_stock_theme_ranking.py
+      - leadership/research/audit_ordinary_stock_theme_attack_only.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -26,14 +27,15 @@ jobs:
         run: |
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_ranking.py
+          python -m py_compile leadership/research/audit_ordinary_stock_theme_attack_only.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock theme-aware ranking audit
+      - name: Run ordinary-stock attack-only theme audit
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_theme_ranking.py \
+          python leadership/research/audit_ordinary_stock_theme_attack_only.py \
             --root . \
-            --output leadership/research/ordinary_stock_theme_ranking \
+            --output leadership/research/ordinary_stock_theme_attack_only \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -42,6 +44,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ordinary-stock-theme-ranking
-          path: leadership/research/ordinary_stock_theme_ranking/
+          name: ordinary-stock-theme-attack-only
+          path: leadership/research/ordinary_stock_theme_attack_only/
           retention-days: 7
