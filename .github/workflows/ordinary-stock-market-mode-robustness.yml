@@ -7,11 +7,8 @@ on:
       - research/sector-stock-leadership-20260826
     paths:
       - leadership/research/audit_ordinary_stock_market_mode_robustness.py
-      - leadership/research/audit_ordinary_stock_theme_ranking.py
-      - leadership/research/audit_ordinary_stock_theme_attack_only.py
       - leadership/research/audit_ordinary_stock_theme_leave_one_out.py
-      - leadership/research/audit_ordinary_stock_theme_loo_sensitivity.py
-      - leadership/research/audit_ordinary_stock_theme_loo_pair_ablation.py
+      - leadership/research/audit_ordinary_stock_exit_trail.py
       - .github/workflows/ordinary-stock-market-mode-robustness.yml
   workflow_dispatch:
 
@@ -29,19 +26,16 @@ jobs:
       - name: Syntax check
         run: |
           python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
-          python -m py_compile leadership/research/audit_ordinary_stock_theme_ranking.py
-          python -m py_compile leadership/research/audit_ordinary_stock_theme_attack_only.py
           python -m py_compile leadership/research/audit_ordinary_stock_theme_leave_one_out.py
-          python -m py_compile leadership/research/audit_ordinary_stock_theme_loo_sensitivity.py
-          python -m py_compile leadership/research/audit_ordinary_stock_theme_loo_pair_ablation.py
+          python -m py_compile leadership/research/audit_ordinary_stock_exit_trail.py
           python -m py_compile leadership/research/audit_rsi30_mc_nqsar.py
-      - name: Run ordinary-stock leave-one-out pair ablation
+      - name: Run ordinary-stock exit trail audit
         env:
           PYTHONPATH: .:leadership/research
         run: |
-          python leadership/research/audit_ordinary_stock_theme_loo_pair_ablation.py \
+          python leadership/research/audit_ordinary_stock_exit_trail.py \
             --root . \
-            --output leadership/research/ordinary_stock_theme_loo_pair_ablation \
+            --output leadership/research/ordinary_stock_exit_trail \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-06-20 \
             --max-tickers 6000 \
@@ -50,6 +44,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ordinary-stock-theme-loo-pair-ablation
-          path: leadership/research/ordinary_stock_theme_loo_pair_ablation/
+          name: ordinary-stock-exit-trail
+          path: leadership/research/ordinary_stock_exit_trail/
           retention-days: 7
