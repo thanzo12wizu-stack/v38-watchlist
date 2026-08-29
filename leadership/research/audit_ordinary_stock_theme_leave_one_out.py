@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -41,7 +40,7 @@ def _replacement_percentile(values: np.ndarray, reference: np.ndarray, pair_them
         counts = np.searchsorted(sorted_ref, vv, side="right").astype(float)
         orig_finite = np.isfinite(orig)
         counts -= (orig_finite & (orig <= vv)).astype(float)
-        counts += 1.0  # the replacement peer-only theme itself
+        counts += 1.0
         denom = float(len(sorted_ref)) + (~orig_finite).astype(float)
         out[i, pos] = (counts / denom * 100.0).astype(np.float32)
     return out
@@ -56,10 +55,7 @@ def build_leave_one_out_scores(root: Path, matrices: dict[str, pd.DataFrame]) ->
 
     snapshot = er.load_json(root / "sector_snapshot.json")
     theme_members_all, _ = er.extract_theme_members(snapshot)
-    theme_members = {
-        t: [s for s in members if s in stock_set]
-        for t, members in theme_members_all.items()
-    }
+    theme_members = {t: [s for s in members if s in stock_set] for t, members in theme_members_all.items()}
     theme_members = {t: m for t, m in theme_members.items() if len(m) >= MIN_THEME_MEMBERS}
 
     normal_theme_ret = er.grouped_equal_weight(stock_ret, theme_members, MIN_THEME_MEMBERS)
@@ -105,13 +101,11 @@ def build_leave_one_out_scores(root: Path, matrices: dict[str, pd.DataFrame]) ->
         peer_daily = np.divide(num, den, out=np.full_like(num, np.nan), where=den >= 2)
         peer_log = np.log1p(np.where(peer_daily > -0.999999, peer_daily, np.nan))
         peer_log_df = pd.DataFrame(peer_log, index=close.index)
-        peer63[:, start:end] = np.expm1(
-            peer_log_df.rolling(63, min_periods=min_periods).sum().to_numpy(float)
-        ).astype(np.float32)
+        peer63[:, start:end] = np.expm1(peer_log_df.rolling(63, min_periods=min_periods).sum().to_numpy(float)).astype(np.float32)
 
         vb = valid_b[members].to_numpy(bool)
-        ab_raw = above_b[members].to_numpy()
-        ab = np.where(np.isfinite(ab_raw), ab_raw.astype(float), 0.0)
+        ab_raw = above_b[members].astype(float).to_numpy()
+        ab = np.nan_to_num(ab_raw, nan=0.0, posinf=0.0, neginf=0.0)
         total_valid = vb.sum(axis=1)
         total_above = ab.sum(axis=1)
         peer_valid = total_valid[:, None] - vb.astype(np.int16)
@@ -178,6 +172,12 @@ def peer_ranked_candidates(d: pd.Timestamp, matrices: dict[str, pd.DataFrame], p
         }))
     records.sort(key=lambda x: (x[1], x[2]["stock_rs189"]), reverse=True)
     return [(sym, c) for sym, _, c in records[:n]]
+
+
+def stock_only_candidates(d: pd.Timestamp, matrices: dict[str, pd.DataFrame], n: int = base.N_PORT) -> list[tuple[str, dict[str, Any]]]:
+    elig = matrices["new_eligible"].loc[d]
+    stock_rs = matrices["rs189"].loc[d].where(elig).dropna().sort_values(ascending=False).head(n)
+    return [(str(sym), {"stock_rs189": float(rs), "peer_theme_score": None, "rank_score": float(rs)}) for sym, rs in stock_rs.items()]
 
 
 def simulate_peer_attack(meta: dict[str, Any], matrices: dict[str, pd.DataFrame], peer_ctx: dict[str, Any]) -> dict[str, Any]:
@@ -248,9 +248,7 @@ def simulate_peer_attack(meta: dict[str, Any], matrices: dict[str, pd.DataFrame]
             is_bull = prev_color in ("Blue", "Green")
             capacity = base.N_PORT if is_bull and bucket == 2 else SELECTIVE_SLOTS if is_bull and bucket == 1 else 0
             if (not red_force) and capacity > 0 and len(pos) < capacity:
-                candidates = peer_ranked_candidates(prev, matrices, peer_ctx, base.N_PORT) if bucket == 2 else [
-                    (sym, c) for sym, c in tr.ranked_candidates(prev, matrices, {"stock_themes": {}, "theme_score": pd.DataFrame(), "theme_active": pd.DataFrame(), "sector_pct": pd.DataFrame(), "industry_pct": pd.DataFrame(), "symbol_sector": {}, "symbol_industry": {}}, "STOCK_RS189", base.N_PORT)
-                ]
+                candidates = peer_ranked_candidates(prev, matrices, peer_ctx, base.N_PORT) if bucket == 2 else stock_only_candidates(prev, matrices, base.N_PORT)
                 nav_open = cash
                 for sym, p in pos.items():
                     fb = px_at(closes, prev, sym, p["entry_price"])
@@ -358,15 +356,9 @@ def main() -> None:
             "LEAVE_ONE_OUT_THEME30_ATTACK_ONLY": pack_peer(peer),
         },
         "comparisons": {
-            "NORMAL_VS_BASELINE": {
-                "block20_win": base.bootstrap_block_win(normal["equity"], baseline["equity"], block=20, reps=10000, seed=98101),
-            },
-            "LOO_VS_BASELINE": {
-                "block20_win": base.bootstrap_block_win(peer["equity"], baseline["equity"], block=20, reps=10000, seed=98102),
-            },
-            "LOO_VS_NORMAL": {
-                "block20_win": base.bootstrap_block_win(peer["equity"], normal["equity"], block=20, reps=10000, seed=98103),
-            },
+            "NORMAL_VS_BASELINE": {"block20_win": base.bootstrap_block_win(normal["equity"], baseline["equity"], block=20, reps=10000, seed=98101)},
+            "LOO_VS_BASELINE": {"block20_win": base.bootstrap_block_win(peer["equity"], baseline["equity"], block=20, reps=10000, seed=98102)},
+            "LOO_VS_NORMAL": {"block20_win": base.bootstrap_block_win(peer["equity"], normal["equity"], block=20, reps=10000, seed=98103)},
         },
     }
     for name, sim in (("stock_rs189", baseline), ("normal_theme30_attack", normal), ("loo_theme30_attack", peer)):
