@@ -37,7 +37,6 @@ def _finite(value) -> bool:
 
 
 def _optional_group_payload(path: Path) -> dict:
-    """Read an optional exact-data group contract; malformed input fails closed."""
     if not path.is_file():
         return {}
     try:
@@ -59,12 +58,20 @@ def _optional_object_payload(path: Path) -> dict:
     return raw if isinstance(raw, dict) else {}
 
 
-def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
-    """Match researched structural small-clinical-biotech exclusion.
+def _valid_loo_payload(path: Path, asof: str | None) -> dict:
+    raw = _optional_object_payload(path)
+    if raw.get("schema") != "v38-loo-theme-live-1":
+        return {}
+    if raw.get("status") != "LIVE_CURRENT_TAXONOMY":
+        return {}
+    if str(raw.get("asof") or "") != str(asof or ""):
+        return {}
+    if raw.get("taxonomy") != "CURRENT_S2T_NOT_PIT" or not isinstance(raw.get("stocks"), dict):
+        return {}
+    return raw
 
-    Exclude Biotechnology / Pharmaceuticals: Other only when mcap<$10B AND
-    known TTM revenue<$50M. Missing revenue is fail-open.
-    """
+
+def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
     if not universe_csv.is_file():
         return set(), False
     try:
@@ -109,7 +116,6 @@ def _rotation_macro_snapshot(raw: dict) -> dict:
 
 
 def _rotation_history_snapshot(groups: dict) -> dict:
-    """Expose dated transitions only from an explicit exact history route."""
     clean: dict[str, dict] = {}
     for name, raw in groups.items():
         if not bool(raw.get("exact")):
@@ -123,20 +129,17 @@ def _rotation_history_snapshot(groups: dict) -> dict:
         for event in raw.get("events") or []:
             if not isinstance(event, dict):
                 continue
-            date, event_type = str(event.get("date") or "").strip(), str(event.get("type") or "").strip()
+            date = str(event.get("date") or "").strip()
+            event_type = str(event.get("type") or "").strip()
             if date and event_type:
                 events.append({"date": date, "type": event_type, "detail": str(event.get("detail") or "").strip() or None})
         clean[name] = {
-            "status": "EXACT",
-            "asof": raw.get("asof"),
-            "source": raw.get("source"),
-            "changes": changes,
-            "events": events[-20:],
+            "status": "EXACT", "asof": raw.get("asof"), "source": raw.get("source"),
+            "changes": changes, "events": events[-20:],
         }
     return {
         "status": "EXACT" if clean else "DATA_REQUIRED",
-        "exact_groups": len(clean),
-        "groups": clean,
+        "exact_groups": len(clean), "groups": clean,
         "optional_input": "rotation-history.json",
         "role": "dated 1D/5D/20D changes and machine-computed events; current snapshot never invents transition dates",
     }
@@ -178,11 +181,14 @@ def build_state(legacy_html: Path) -> dict:
         secrot = {}
 
     root = legacy_html.parent
+    asof = calc.get("asof")
     bio_excluded, structural_bio_metadata_ok = _structural_bio_exclusions(root / "universe.csv")
     exact_flows = _optional_group_payload(root / "rotation-flow.json")
     exact_internals = _optional_group_payload(root / "rotation-internals.json")
     exact_history = _optional_group_payload(root / "rotation-history.json")
     exact_macro = _optional_object_payload(root / "rotation-macro.json")
+    loo_live = _valid_loo_payload(root / "loo-theme-live.json", asof)
+    loo_stocks = loo_live.get("stocks") or {}
 
     valid50 = [row for row in details.values() if _finite(row.get("v50"))]
     coverage = len(valid50) / len(details) if details else 0.0
@@ -205,38 +211,56 @@ def build_state(legacy_html: Path) -> dict:
         )
         if not eligible:
             continue
+
+        loo_row = loo_stocks.get(ticker_key) if loo_live else None
+        selected = loo_row.get("selected") if isinstance(loo_row, dict) and isinstance(loo_row.get("selected"), dict) else None
+        peer_score = float(selected["peer_theme_score"]) if selected and _finite(selected.get("peer_theme_score")) else None
+        use_peer = peer_score if peer_score is not None else 50.0
+        attack_final = 0.70 * float(row["rs189"]) + 0.30 * use_peer if loo_live else None
+
         if mode.name == "SELECTIVE":
+            entry_status = "NEXT_OPEN_WHEN_CAPACITY"
+        elif mode.name == "ATTACK" and loo_live:
             entry_status = "NEXT_OPEN_WHEN_CAPACITY"
         elif mode.name == "ATTACK":
             entry_status = "RS189_PREVIEW_ONLY_LOO_DATA_REQUIRED"
         else:
             entry_status = "NO_NEW_ENTRY"
+
         candidates.append({
             "ticker": ticker,
             "price": row.get("px"),
             "rs189": row.get("rs189"),
             "rs63": row.get("rs"),
-            "peer_theme": None,
+            "peer_theme": selected.get("theme") if selected else None,
             "legacy_theme_label": row.get("sth"),
-            "peer_theme_score": None,
-            "theme_rs63": None,
-            "theme_acceleration": None,
-            "theme_breadth21": None,
-            "peer_only_status": "DATA_REQUIRED",
+            "peer_theme_score": peer_score,
+            "theme_rs63": selected.get("theme_rs63_pct") if selected else None,
+            "theme_acceleration": selected.get("theme_acceleration_pct") if selected else None,
+            "theme_breadth21": selected.get("theme_breadth21") if selected else None,
+            "peer_only_status": "LIVE_CURRENT_TAXONOMY" if loo_live and selected else "NO_VALID_THEME_NEUTRAL50" if loo_live else "DATA_REQUIRED",
             "candidate_exclusion_required": True,
-            "candidate_excluded_from_return": None,
-            "candidate_excluded_from_acceleration": None,
-            "candidate_excluded_from_breadth21": None,
+            "candidate_excluded_from_return": True if loo_live and selected else None,
+            "candidate_excluded_from_acceleration": True if loo_live and selected else None,
+            "candidate_excluded_from_breadth21": True if loo_live and selected else None,
             "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
             "missing_theme_neutral_score": 50,
-            "final_rank": row.get("rs189") if mode.name == "SELECTIVE" else None,
+            "attack_final_score": round(attack_final, 6) if attack_final is not None else None,
+            "final_rank": None,
             "eligibility": "ELIGIBLE",
             "entry_status": entry_status,
+            "taxonomy_status": "CURRENT_S2T_NOT_PIT" if loo_live else "DATA_REQUIRED",
         })
-    candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
-    if mode.name == "SELECTIVE":
+
+    if mode.name == "ATTACK" and loo_live:
+        candidates.sort(key=lambda x: (float(x["attack_final_score"]), float(x["rs189"])), reverse=True)
         for rank, row in enumerate(candidates, 1):
             row["final_rank"] = rank
+    else:
+        candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
+        if mode.name == "SELECTIVE":
+            for rank, row in enumerate(candidates, 1):
+                row["final_rank"] = rank
 
     rotation = build_rotation_intelligence(details, secrot=secrot, exact_flows=exact_flows, exact_internals=exact_internals)
     history = _rotation_history_snapshot(exact_history)
@@ -244,25 +268,29 @@ def build_state(legacy_html: Path) -> dict:
     rotation["macro"] = _rotation_macro_snapshot(exact_macro)
     _attach_rotation_context(rotation, details, history)
 
-    attack_preview_note = (
-        "ATTACK Final Rank is NOT computed until exact LOO Peer Theme is live. "
-        "Candidate list order is RS189 preview only; do not treat Top50 as Final Rank or an executable buy list."
-    )
+    loo_ready = bool(loo_live)
+    if mode.name == "SELECTIVE":
+        ranking_mode = "RS189_ONLY"
+        ranking_note = "Selective: Stock RS189 only"
+        candidate_semantics = "EXECUTABLE_RS189_RANK"
+    elif mode.name == "ATTACK" and loo_ready:
+        ranking_mode = "LOO_THEME30_LIVE_CURRENT_TAXONOMY"
+        ranking_note = "Attack Final Rank live: strict candidate-excluded Full3 LOO score using current s2t taxonomy; historical PIT taxonomy remains unresolved."
+        candidate_semantics = "EXECUTABLE_ATTACK_FINAL_RANK_CURRENT_TAXONOMY"
+    else:
+        ranking_mode = "LOO_THEME30_DATA_REQUIRED"
+        ranking_note = "ATTACK Final Rank is NOT computed until strict LOO Peer Theme is live. Candidate list order is RS189 preview only; do not treat Top50 as Final Rank or an executable buy list."
+        candidate_semantics = "RS189_PREVIEW_ONLY_UNTIL_LOO_LIVE"
+
     return {
         "schema": "v38-live-state-1",
         "source": str(legacy_html.name),
-        "asof": calc.get("asof"),
+        "asof": asof,
         "market": {
-            "nqsar": calc.get("color"),
-            "breadth50": round(breadth50, 2) if breadth50 is not None else None,
-            "breadth_valid": len(valid50),
-            "breadth_universe": len(details),
-            "coverage": round(coverage, 4),
-            "coverage_ok": coverage_ok,
-            "mode": mode.name,
-            "reason": mode.reason,
-            "new_entry_limit": mode.new_entry_limit,
-            "force_exit_next_open": mode.force_exit_next_open,
+            "nqsar": calc.get("color"), "breadth50": round(breadth50, 2) if breadth50 is not None else None,
+            "breadth_valid": len(valid50), "breadth_universe": len(details), "coverage": round(coverage, 4),
+            "coverage_ok": coverage_ok, "mode": mode.name, "reason": mode.reason,
+            "new_entry_limit": mode.new_entry_limit, "force_exit_next_open": mode.force_exit_next_open,
         },
         "eligibility": {
             "structural_bio_rule": "Biotechnology/Pharmaceuticals: Other AND mcap<$10B AND known revenue<$50M",
@@ -271,34 +299,30 @@ def build_state(legacy_html: Path) -> dict:
             "excluded_count": len(bio_excluded) if structural_bio_metadata_ok else None,
         },
         "normal_tqqq": {
-            "status": "CURRENT30 HIERARCHY DATA REQUIRED",
-            "strategy": "CURRENT30",
-            "normal_exposure_pct": 30,
+            "status": "CURRENT30 HIERARCHY DATA REQUIRED", "strategy": "CURRENT30", "normal_exposure_pct": 30,
             "underlying_target_pct": None,
             "note": "30% is the normal exposure inside the existing hierarchy; risk locks and hierarchy can change the target",
         },
         "panic_tqqq": {
-            "status": "DATA REQUIRED",
-            "candidate": "M30_TOUCH30_F80_D10",
-            "floor_pct_when_active": 80,
+            "status": "DATA REQUIRED", "candidate": "M30_TOUCH30_F80_D10", "floor_pct_when_active": 80,
             "floor_semantics": "max(underlying CURRENT30 hierarchy target, 80%)",
-            "seed_age_rule": "age <= 30; seed day = 0",
-            "entry_requires_mc57_gte": 20,
+            "seed_age_rule": "age <= 30; seed day = 0", "entry_requires_mc57_gte": 20,
             "active_exit_mc57_lt": 20,
             "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
-            "allocation_priority": "NOT REPRODUCED",
-            "required_route": "tqqq-panic-state.json",
+            "allocation_priority": "NOT REPRODUCED", "required_route": "tqqq-panic-state.json",
             "fields": ["vix_close", "qqq_sma50_atr_deviation", "qqq_drawdown10", "seed_age_sessions", "rsi4h", "prior_rsi4h", "mc57", "active", "held_sessions", "underlying_target_pct", "other_sleeve_exposure_pct"],
         },
         "ranking": {
-            "mode": "RS189_ONLY" if mode.name == "SELECTIVE" else "LOO_THEME30_DATA_REQUIRED",
-            "note": "Selective: Stock RS189 only" if mode.name == "SELECTIVE" else attack_preview_note,
+            "mode": ranking_mode, "note": ranking_note,
             "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
             "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
             "candidate_exclusion_required_for_all_components": True,
-            "multiple_theme_policy": "MAX_VALID_MEMBERSHIP_SCORE",
-            "missing_theme_policy": "NEUTRAL_50",
-            "candidate_list_semantics": "EXECUTABLE_RS189_RANK" if mode.name == "SELECTIVE" else "RS189_PREVIEW_ONLY_UNTIL_LOO_LIVE",
+            "multiple_theme_policy": "MAX_VALID_MEMBERSHIP_SCORE", "missing_theme_policy": "NEUTRAL_50",
+            "candidate_list_semantics": candidate_semantics,
+            "loo_live_status": loo_live.get("status") if loo_live else "DATA_REQUIRED",
+            "loo_taxonomy": loo_live.get("taxonomy") if loo_live else "DATA_REQUIRED",
+            "loo_coverage": loo_live.get("coverage") if loo_live else None,
+            "pit_taxonomy_status": "NOT_REPRODUCED",
         },
         "candidates": candidates[:50],
         "rotation_intelligence": rotation,
