@@ -1,0 +1,16 @@
+{
+  "schema": "v38-rotation-flow-1",
+  "groups": {
+    "Healthcare": {
+      "ticker": "XLV",
+      "asof": "YYYY-MM-DD",
+      "flow_1d": null,
+      "flow_5d": null,
+      "flow_20d": null,
+      "aum": null,
+      "source": "EXACT_PROVIDER_NAME",
+      "exact": false
+    }
+  },
+  "note": "Set exact=true only for ETF creation/redemption fund-flow data. Trading volume, dollar volume and RRG are not fund flow."
+}
