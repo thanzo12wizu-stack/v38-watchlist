@@ -2,8 +2,7 @@
 """Build the isolated V38 audited companion state.
 
 The legacy ``command-center.html`` is read-only input and is never rewritten.
-The generated companion deliberately reports unavailable research inputs as
-DATA REQUIRED rather than substituting an approximate production rule.
+Unavailable research inputs stay DATA REQUIRED rather than being approximated.
 """
 
 from __future__ import annotations
@@ -45,16 +44,12 @@ def _optional_group_payload(path: Path) -> dict:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {}
-    if not isinstance(raw, dict):
+    if not isinstance(raw, dict) or not isinstance(raw.get("groups"), dict):
         return {}
-    groups = raw.get("groups")
-    if not isinstance(groups, dict):
-        return {}
-    return {str(name): value for name, value in groups.items() if isinstance(value, dict)}
+    return {str(name): value for name, value in raw["groups"].items() if isinstance(value, dict)}
 
 
 def _optional_object_payload(path: Path) -> dict:
-    """Read an optional exact-data object contract; malformed input fails closed."""
     if not path.is_file():
         return {}
     try:
@@ -65,13 +60,10 @@ def _optional_object_payload(path: Path) -> dict:
 
 
 def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
-    """Reproduce the researched small-clinical-biotech eligibility exclusion.
+    """Match researched structural small-clinical-biotech exclusion.
 
-    Exclude Biotechnology / Pharmaceuticals: Other only when market cap is
-    below $10B AND reported TTM revenue is below $50M. Missing revenue is
-    fail-open, matching the research/production selection rule. The bool says
-    whether a usable universe file was available; callers may use the legacy
-    display label only as a compatibility fallback when it was not.
+    Exclude Biotechnology / Pharmaceuticals: Other only when mcap<$10B AND
+    known TTM revenue<$50M. Missing revenue is fail-open.
     """
     if not universe_csv.is_file():
         return set(), False
@@ -89,8 +81,7 @@ def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
             industry = str(row.get("業種") or "").strip()
             if not ticker or industry not in BIO_EXCLUDE_INDUSTRIES:
                 continue
-            mcap = row.get("時価総額")
-            revenue = row.get("売上高TTM")
+            mcap, revenue = row.get("時価総額"), row.get("売上高TTM")
             if not _finite(mcap) or not _finite(revenue):
                 continue
             if float(mcap) < BIO_KEEP_MCAP and float(revenue) < BIO_REVENUE_MAX:
@@ -101,13 +92,8 @@ def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
 
 
 def _rotation_macro_snapshot(raw: dict) -> dict:
-    """Expose macro observations only when an explicit exact route is supplied."""
-    fields = (
-        "us10y_yield", "real10y_yield", "dxy", "credit_spread",
-        "vix", "fear_greed",
-    )
+    fields = ("us10y_yield", "real10y_yield", "dxy", "credit_spread", "vix", "fear_greed")
     exact = bool(raw.get("exact"))
-    values = {name: (_num if False else None) for name in ()}  # keep schema local and explicit
     out = {
         "status": "EXACT" if exact else "DATA_REQUIRED",
         "source": raw.get("source") if exact else None,
@@ -122,6 +108,40 @@ def _rotation_macro_snapshot(raw: dict) -> dict:
     return out
 
 
+def _rotation_history_snapshot(groups: dict) -> dict:
+    """Expose dated transitions only from an explicit exact history route."""
+    clean: dict[str, dict] = {}
+    for name, raw in groups.items():
+        if not bool(raw.get("exact")):
+            continue
+        changes_raw = raw.get("changes") if isinstance(raw.get("changes"), dict) else {}
+        changes = {}
+        for key in ("price_1d", "price_5d", "price_20d", "internal_1d", "internal_5d", "internal_20d"):
+            value = changes_raw.get(key)
+            changes[key] = float(value) if _finite(value) else None
+        events = []
+        for event in raw.get("events") or []:
+            if not isinstance(event, dict):
+                continue
+            date, event_type = str(event.get("date") or "").strip(), str(event.get("type") or "").strip()
+            if date and event_type:
+                events.append({"date": date, "type": event_type, "detail": str(event.get("detail") or "").strip() or None})
+        clean[name] = {
+            "status": "EXACT",
+            "asof": raw.get("asof"),
+            "source": raw.get("source"),
+            "changes": changes,
+            "events": events[-20:],
+        }
+    return {
+        "status": "EXACT" if clean else "DATA_REQUIRED",
+        "exact_groups": len(clean),
+        "groups": clean,
+        "optional_input": "rotation-history.json",
+        "role": "dated 1D/5D/20D changes and machine-computed events; current snapshot never invents transition dates",
+    }
+
+
 def _top_group_stocks(details: dict, group_name: str, key: str, limit: int = 5) -> list[dict]:
     rows = []
     for ticker, row in details.items():
@@ -131,20 +151,21 @@ def _top_group_stocks(details: dict, group_name: str, key: str, limit: int = 5) 
         rs63 = float(row["rs"]) if _finite(row.get("rs")) else None
         if rs189 is None and rs63 is None:
             continue
-        rows.append({
-            "ticker": str(ticker).upper(),
-            "rs189": round(rs189, 1) if rs189 is not None else None,
-            "rs63": round(rs63, 1) if rs63 is not None else None,
-        })
+        rows.append({"ticker": str(ticker).upper(), "rs189": round(rs189, 1) if rs189 is not None else None, "rs63": round(rs63, 1) if rs63 is not None else None})
     rows.sort(key=lambda row: (row["rs189"] is not None, row["rs189"] or -1, row["rs63"] or -1), reverse=True)
     return rows[:limit]
 
 
-def _attach_rotation_stock_context(rotation: dict, details: dict) -> None:
+def _attach_rotation_context(rotation: dict, details: dict, history: dict) -> None:
+    history_groups = history.get("groups") or {}
     for row in rotation.get("sector_groups") or []:
-        row["top_stocks"] = _top_group_stocks(details, str(row.get("name") or ""), "sec")
+        name = str(row.get("name") or "")
+        row["top_stocks"] = _top_group_stocks(details, name, "sec")
+        row["history"] = history_groups.get(name, {"status": "DATA_REQUIRED"})
     for row in rotation.get("theme_groups") or []:
-        row["top_stocks"] = _top_group_stocks(details, str(row.get("name") or ""), "sth")
+        name = str(row.get("name") or "")
+        row["top_stocks"] = _top_group_stocks(details, name, "sth")
+        row["history"] = history_groups.get(name, {"status": "DATA_REQUIRED"})
 
 
 def build_state(legacy_html: Path) -> dict:
@@ -157,29 +178,22 @@ def build_state(legacy_html: Path) -> dict:
         secrot = {}
 
     root = legacy_html.parent
-    bio_excluded, structural_bio_metadata_ok = _structural_bio_exclusions(
-        root / "universe.csv"
-    )
+    bio_excluded, structural_bio_metadata_ok = _structural_bio_exclusions(root / "universe.csv")
     exact_flows = _optional_group_payload(root / "rotation-flow.json")
     exact_internals = _optional_group_payload(root / "rotation-internals.json")
+    exact_history = _optional_group_payload(root / "rotation-history.json")
     exact_macro = _optional_object_payload(root / "rotation-macro.json")
 
     valid50 = [row for row in details.values() if _finite(row.get("v50"))]
     coverage = len(valid50) / len(details) if details else 0.0
     coverage_ok = len(valid50) >= 30 and coverage >= 0.45
-    breadth50 = (100 * sum(float(row["v50"]) > 0 for row in valid50) / len(valid50)
-                 if valid50 else None)
+    breadth50 = 100 * sum(float(row["v50"]) > 0 for row in valid50) / len(valid50) if valid50 else None
     mode = market_mode(calc.get("color"), breadth50, coverage_ok)
 
     candidates = []
     for ticker, row in details.items():
         ticker_key = str(ticker).strip().upper()
-        if structural_bio_metadata_ok:
-            biotech_ok = ticker_key not in bio_excluded
-        else:
-            # Compatibility fallback only. A single current display taxonomy
-            # is not considered equivalent to the researched structural rule.
-            biotech_ok = row.get("sth") != "臨床段階・中小型バイオ"
+        biotech_ok = ticker_key not in bio_excluded if structural_bio_metadata_ok else row.get("sth") != "臨床段階・中小型バイオ"
         eligible = (
             _finite(row.get("px")) and float(row["px"]) >= 5
             and _finite(row.get("dvol")) and float(row["dvol"]) >= 10
@@ -196,8 +210,6 @@ def build_state(legacy_html: Path) -> dict:
             "price": row.get("px"),
             "rs189": row.get("rs189"),
             "rs63": row.get("rs"),
-            # Legacy DET has no complete multi-membership/PIT peer history.
-            # Do not mislabel its single display taxonomy as the selected LOO Theme.
             "peer_theme": None,
             "legacy_theme_label": row.get("sth"),
             "peer_theme_score": None,
@@ -211,25 +223,20 @@ def build_state(legacy_html: Path) -> dict:
             "candidate_excluded_from_breadth21": None,
             "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
             "missing_theme_neutral_score": 50,
-            "final_rank": (row.get("rs189") if mode.name == "SELECTIVE" else None),
+            "final_rank": row.get("rs189") if mode.name == "SELECTIVE" else None,
             "eligibility": "ELIGIBLE",
             "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
         })
-    # Selective can be ranked exactly from the static snapshot. Attack needs
-    # historical peer returns and LOO acceleration, which legacy DET lacks.
     candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
     if mode.name == "SELECTIVE":
         for rank, row in enumerate(candidates, 1):
             row["final_rank"] = rank
 
-    rotation = build_rotation_intelligence(
-        details,
-        secrot=secrot,
-        exact_flows=exact_flows,
-        exact_internals=exact_internals,
-    )
+    rotation = build_rotation_intelligence(details, secrot=secrot, exact_flows=exact_flows, exact_internals=exact_internals)
+    history = _rotation_history_snapshot(exact_history)
+    rotation["history"] = history
     rotation["macro"] = _rotation_macro_snapshot(exact_macro)
-    _attach_rotation_stock_context(rotation, details)
+    _attach_rotation_context(rotation, details, history)
 
     return {
         "schema": "v38-live-state-1",
@@ -271,15 +278,11 @@ def build_state(legacy_html: Path) -> dict:
             "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
             "allocation_priority": "NOT REPRODUCED",
             "required_route": "tqqq-panic-state.json",
-            "fields": ["vix_close", "qqq_sma50_atr_deviation", "qqq_drawdown10",
-                       "seed_age_sessions", "rsi4h", "prior_rsi4h", "mc57",
-                       "active", "held_sessions", "underlying_target_pct",
-                       "other_sleeve_exposure_pct"],
+            "fields": ["vix_close", "qqq_sma50_atr_deviation", "qqq_drawdown10", "seed_age_sessions", "rsi4h", "prior_rsi4h", "mc57", "active", "held_sessions", "underlying_target_pct", "other_sleeve_exposure_pct"],
         },
         "ranking": {
             "mode": "RS189_ONLY" if mode.name == "SELECTIVE" else "LOO_THEME30_DATA_REQUIRED",
-            "note": ("Selective: Stock RS189 only" if mode.name == "SELECTIVE"
-                     else "Attack: candidate-excluded peer-only Theme RS63, 20d rank acceleration, and Breadth21; max valid membership; missing Theme uses neutral 50"),
+            "note": "Selective: Stock RS189 only" if mode.name == "SELECTIVE" else "Attack: candidate-excluded peer-only Theme RS63, 20d rank acceleration, and Breadth21; max valid membership; missing Theme uses neutral 50",
             "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
             "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
             "candidate_exclusion_required_for_all_components": True,
