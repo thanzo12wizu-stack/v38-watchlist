@@ -9,12 +9,18 @@ DATA REQUIRED rather than substituting an approximate production rule.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import re
 from pathlib import Path
 
+from rotation_intelligence import build_rotation_intelligence
 from v38_rules import market_mode
+
+BIO_EXCLUDE_INDUSTRIES = {"Biotechnology", "Pharmaceuticals: Other"}
+BIO_KEEP_MCAP = 10_000_000_000.0
+BIO_REVENUE_MAX = 50_000_000.0
 
 
 def _embedded_json(source: str, name: str):
@@ -31,10 +37,54 @@ def _finite(value) -> bool:
         return False
 
 
+def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
+    """Reproduce the researched small-clinical-biotech eligibility exclusion.
+
+    Exclude Biotechnology / Pharmaceuticals: Other only when market cap is
+    below $10B AND reported TTM revenue is below $50M.  Missing revenue is
+    fail-open, matching the research/production selection rule.  The bool says
+    whether a usable universe file was available; callers may use the legacy
+    display label only as a compatibility fallback when it was not.
+    """
+    if not universe_csv.is_file():
+        return set(), False
+    try:
+        with universe_csv.open(encoding="utf-8-sig", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        if not rows:
+            return set(), False
+        required = {"シンボル", "業種", "時価総額", "売上高TTM"}
+        if not required.issubset(rows[0].keys()):
+            return set(), False
+        excluded: set[str] = set()
+        for row in rows:
+            ticker = str(row.get("シンボル") or "").strip().upper()
+            industry = str(row.get("業種") or "").strip()
+            if not ticker or industry not in BIO_EXCLUDE_INDUSTRIES:
+                continue
+            mcap = row.get("時価総額")
+            revenue = row.get("売上高TTM")
+            if not _finite(mcap) or not _finite(revenue):
+                continue
+            if float(mcap) < BIO_KEEP_MCAP and float(revenue) < BIO_REVENUE_MAX:
+                excluded.add(ticker)
+        return excluded, True
+    except Exception:
+        return set(), False
+
+
 def build_state(legacy_html: Path) -> dict:
     source = legacy_html.read_text(encoding="utf-8")
     calc = _embedded_json(source, "CALC")
     details = _embedded_json(source, "DET")
+    try:
+        secrot = _embedded_json(source, "SECROT")
+    except ValueError:
+        secrot = {}
+
+    bio_excluded, structural_bio_metadata_ok = _structural_bio_exclusions(
+        legacy_html.with_name("universe.csv")
+    )
 
     valid50 = [row for row in details.values() if _finite(row.get("v50"))]
     coverage = len(valid50) / len(details) if details else 0.0
@@ -45,6 +95,13 @@ def build_state(legacy_html: Path) -> dict:
 
     candidates = []
     for ticker, row in details.items():
+        ticker_key = str(ticker).strip().upper()
+        if structural_bio_metadata_ok:
+            biotech_ok = ticker_key not in bio_excluded
+        else:
+            # Compatibility fallback only.  A single current display taxonomy
+            # is not considered equivalent to the researched structural rule.
+            biotech_ok = row.get("sth") != "臨床段階・中小型バイオ"
         eligible = (
             _finite(row.get("px")) and float(row["px"]) >= 5
             and _finite(row.get("dvol")) and float(row["dvol"]) >= 10
@@ -52,7 +109,7 @@ def build_state(legacy_html: Path) -> dict:
             and _finite(row.get("v200")) and float(row["v200"]) > 0
             and _finite(row.get("rs189")) and float(row["rs189"]) >= 85
             and _finite(row.get("rs")) and float(row["rs"]) >= 85
-            and row.get("sth") != "臨床段階・中小型バイオ"
+            and biotech_ok
         )
         if not eligible:
             continue
@@ -87,6 +144,8 @@ def build_state(legacy_html: Path) -> dict:
         for rank, row in enumerate(candidates, 1):
             row["final_rank"] = rank
 
+    rotation = build_rotation_intelligence(details, secrot=secrot)
+
     return {
         "schema": "v38-live-state-1",
         "source": str(legacy_html.name),
@@ -102,6 +161,12 @@ def build_state(legacy_html: Path) -> dict:
             "reason": mode.reason,
             "new_entry_limit": mode.new_entry_limit,
             "force_exit_next_open": mode.force_exit_next_open,
+        },
+        "eligibility": {
+            "structural_bio_rule": "Biotechnology/Pharmaceuticals: Other AND mcap<$10B AND known revenue<$50M",
+            "revenue_missing_policy": "FAIL_OPEN",
+            "structural_metadata_status": "LIVE" if structural_bio_metadata_ok else "FALLBACK_LEGACY_LABEL",
+            "excluded_count": len(bio_excluded) if structural_bio_metadata_ok else None,
         },
         "normal_tqqq": {
             "status": "CURRENT30 HIERARCHY DATA REQUIRED",
@@ -137,6 +202,7 @@ def build_state(legacy_html: Path) -> dict:
             "missing_theme_policy": "NEUTRAL_50",
         },
         "candidates": candidates[:50],
+        "rotation_intelligence": rotation,
         "panic_reset": {"status": "MONITOR / NOT LIVE", "separate_sleeve": True},
         "gross_limit_pct": 100,
     }
