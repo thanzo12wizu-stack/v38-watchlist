@@ -8,6 +8,8 @@ from scripts.export_public_site import PUBLIC_FILES, export_public_site
 def _source(root: Path) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command Center</h1>", encoding="utf-8")
+    (root / "command-center-v38.html").write_text("<h1>V38 Audited Rule Engine</h1>", encoding="utf-8")
+    (root / "v38-live-state.json").write_text('{"schema":"v38-live-state-1"}', encoding="utf-8")
     swinote = root / "swinote"
     swinote.mkdir()
     (swinote / "index.html").write_text("<h1>Swinote</h1>", encoding="utf-8")
