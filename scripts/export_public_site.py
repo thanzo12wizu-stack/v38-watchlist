@@ -11,6 +11,7 @@ PUBLIC_FILES = (
     "index.html",
     "command-center.html",
     "command-center-v38.html",
+    "rotation-intelligence.html",
     "v38-live-state.json",
     "swinote/index.html",
     "swinote/live.js",
