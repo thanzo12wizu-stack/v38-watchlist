@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'build_v38_companion.py'
+      - 'build_tqqq_panic_state.py'
+      - 'tqqq_live_engine.py'
       - 'command-center-v38.html'
       - 'rotation-intelligence.html'
       - 'rotation_intelligence.py'
@@ -12,6 +14,7 @@ on:
       - 'scripts/export_public_site.py'
       - 'scripts/privacy_audit.py'
       - 'tests/test_v38_*.py'
+      - 'tests/test_tqqq_*.py'
       - 'tests/test_rotation_*.py'
       - 'tests/test_public_site_export.py'
       - 'tests/test_privacy_audit.py'
@@ -33,13 +36,14 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Python compile
-        run: python -m py_compile build_v38_companion.py rotation_intelligence.py v38_rules.py leadership/loo_theme_live.py scripts/export_public_site.py scripts/privacy_audit.py
+        run: python -m py_compile build_v38_companion.py build_tqqq_panic_state.py tqqq_live_engine.py rotation_intelligence.py v38_rules.py leadership/loo_theme_live.py scripts/export_public_site.py scripts/privacy_audit.py
       - name: Audited V38 tests
         run: |
           pytest -q \
             tests/test_v38_rules.py \
             tests/test_v38_companion.py \
             tests/test_v38_loo_live.py \
+            tests/test_tqqq_live_engine.py \
             tests/test_rotation_intelligence.py \
             tests/test_rotation_history.py \
             tests/test_public_site_export.py \
