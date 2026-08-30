@@ -12,6 +12,10 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: gross100-component-series-research
+  cancel-in-progress: true
+
 jobs:
   audit:
     runs-on: ubuntu-24.04
@@ -32,21 +36,14 @@ jobs:
           run-id: 33063836403
       - name: Syntax and inputs
         run: |
-          PYTHONPATH=leadership/research python -m py_compile \
-            leadership/research/audit_gross100_component_series.py \
-            leadership/research/audit_rsi_reset_portfolio.py
+          PYTHONPATH=leadership/research python -m py_compile leadership/research/audit_gross100_component_series.py
           test -s leadership/research/gross100_input/audit_trades.csv.gz
-      - name: Rebuild RSI Reset selected daily series
-        run: |
-          PYTHONPATH=leadership/research python leadership/research/audit_rsi_reset_portfolio.py \
-            --root . \
-            --trades leadership/research/gross100_input/audit_trades.csv.gz \
-            --output leadership/research/gross100_rsi
-      - name: Rebuild ordinary selected daily gross series
+      - name: Rebuild selected ordinary and RSI Reset daily gross series
         run: |
           PYTHONPATH=leadership/research python leadership/research/audit_gross100_component_series.py \
             --root . \
-            --output leadership/research/gross100_ordinary \
+            --reset-trades leadership/research/gross100_input/audit_trades.csv.gz \
+            --output leadership/research/gross100_components \
             --analysis-start 2016-01-04 \
             --analysis-end 2026-03-20
       - name: Upload component series
@@ -55,9 +52,7 @@ jobs:
         with:
           name: gross100-component-series
           path: |
-            leadership/research/gross100_rsi/selected_daily_series.csv.gz
-            leadership/research/gross100_rsi/portfolio_scenarios.csv
-            leadership/research/gross100_rsi/summary.json
-            leadership/research/gross100_ordinary/ordinary_PEAK30_PART25_R3_daily.csv.gz
+            leadership/research/gross100_components/ordinary_PEAK30_PART25_R3_daily.csv.gz
+            leadership/research/gross100_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
           retention-days: 14
           if-no-files-found: warn
