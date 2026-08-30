@@ -8,6 +8,12 @@ def test_no_exact_flow_never_promotes_distribution_trap():
     assert out["state"] != "DISTRIBUTION_TRAP"
 
 
+def test_exact_flow_without_full_internals_stays_distribution_candidate():
+    out = classify_divergence(82, 35, flow_20d=-4_200_000_000, internal_complete=False)
+    assert out["state"] == "DISTRIBUTION_CANDIDATE"
+    assert out["confidence"] == "PARTIAL"
+
+
 def test_exact_negative_flow_can_confirm_distribution_observation_without_trading_validation():
     out = classify_divergence(82, 35, flow_20d=-4_200_000_000, internal_complete=True)
     assert out["state"] == "DISTRIBUTION_TRAP"
