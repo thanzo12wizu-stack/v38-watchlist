@@ -23,7 +23,7 @@ def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_th
         det[f"T{i}"] = {
             "px": 100, "dvol": 20, "ma5020": True, "v200": 5,
             "v50": 5 if i < 26 else -5, "rs189": 90, "rs": 90,
-            "sth": "Theme A",
+            "sth": "Theme A", "sec": "Technology",
         }
     source = tmp_path / "command-center.html"
     original = (f'<script>window.CALC={json.dumps(calc)};</script>'
@@ -42,7 +42,9 @@ def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_th
     assert state["candidates"][0]["candidate_excluded_from_return"] is None
     assert state["candidates"][0]["peer_theme"] is None
     assert state["rotation_intelligence"]["fund_flow"]["status"] == "DATA_REQUIRED"
-    assert state["rotation_intelligence"]["matrix"]["quality"].startswith("PARTIAL")
+    assert "RESEARCH" in state["rotation_intelligence"]["matrix"]["quality"]
+    assert state["rotation_intelligence"]["macro"]["status"] == "DATA_REQUIRED"
+    assert state["rotation_intelligence"]["sector_groups"][0]["top_stocks"][0]["ticker"].startswith("T")
 
 
 def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
@@ -128,3 +130,22 @@ def test_structural_small_clinical_biotech_exclusion_matches_research_rule(tmp_p
     assert state["eligibility"]["structural_metadata_status"] == "LIVE"
     assert state["eligibility"]["revenue_missing_policy"] == "FAIL_OPEN"
     assert state["eligibility"]["excluded_count"] == 1
+
+
+def test_rotation_macro_requires_explicit_exact_route(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    det = {f"T{i}": {"v50": 1, "sec": "Technology", "sth": "Software", "rs189": 80, "rs": 78} for i in range(40)}
+    source = tmp_path / "command-center.html"
+    source.write_text(
+        f'<script>window.CALC={json.dumps(calc)};</script>'
+        f'<script>window.DET={json.dumps(det)};</script>', encoding="utf-8")
+    (tmp_path / "rotation-macro.json").write_text(json.dumps({
+        "exact": True, "asof": "2026-08-28", "source": "fixture",
+        "us10y_yield": 4.73, "real10y_yield": 2.11, "dxy": 101.4,
+        "credit_spread": 0.82, "vix": 14.42, "fear_greed": 54,
+    }), encoding="utf-8")
+    state = build_state(source)
+    macro = state["rotation_intelligence"]["macro"]
+    assert macro["status"] == "EXACT"
+    assert macro["us10y_yield"] == 4.73
+    assert macro["fear_greed"] == 54.0
