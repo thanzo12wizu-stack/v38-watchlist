@@ -37,12 +37,28 @@ def _finite(value) -> bool:
         return False
 
 
+def _optional_group_payload(path: Path) -> dict:
+    """Read an optional exact-data contract; malformed input fails closed."""
+    if not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    groups = raw.get("groups")
+    if not isinstance(groups, dict):
+        return {}
+    return {str(name): value for name, value in groups.items() if isinstance(value, dict)}
+
+
 def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
     """Reproduce the researched small-clinical-biotech eligibility exclusion.
 
     Exclude Biotechnology / Pharmaceuticals: Other only when market cap is
-    below $10B AND reported TTM revenue is below $50M.  Missing revenue is
-    fail-open, matching the research/production selection rule.  The bool says
+    below $10B AND reported TTM revenue is below $50M. Missing revenue is
+    fail-open, matching the research/production selection rule. The bool says
     whether a usable universe file was available; callers may use the legacy
     display label only as a compatibility fallback when it was not.
     """
@@ -82,9 +98,12 @@ def build_state(legacy_html: Path) -> dict:
     except ValueError:
         secrot = {}
 
+    root = legacy_html.parent
     bio_excluded, structural_bio_metadata_ok = _structural_bio_exclusions(
-        legacy_html.with_name("universe.csv")
+        root / "universe.csv"
     )
+    exact_flows = _optional_group_payload(root / "rotation-flow.json")
+    exact_internals = _optional_group_payload(root / "rotation-internals.json")
 
     valid50 = [row for row in details.values() if _finite(row.get("v50"))]
     coverage = len(valid50) / len(details) if details else 0.0
@@ -99,7 +118,7 @@ def build_state(legacy_html: Path) -> dict:
         if structural_bio_metadata_ok:
             biotech_ok = ticker_key not in bio_excluded
         else:
-            # Compatibility fallback only.  A single current display taxonomy
+            # Compatibility fallback only. A single current display taxonomy
             # is not considered equivalent to the researched structural rule.
             biotech_ok = row.get("sth") != "臨床段階・中小型バイオ"
         eligible = (
@@ -137,14 +156,19 @@ def build_state(legacy_html: Path) -> dict:
             "eligibility": "ELIGIBLE",
             "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
         })
-    # Selective can be ranked exactly from the static snapshot.  Attack needs
+    # Selective can be ranked exactly from the static snapshot. Attack needs
     # historical peer returns and LOO acceleration, which legacy DET lacks.
     candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
     if mode.name == "SELECTIVE":
         for rank, row in enumerate(candidates, 1):
             row["final_rank"] = rank
 
-    rotation = build_rotation_intelligence(details, secrot=secrot)
+    rotation = build_rotation_intelligence(
+        details,
+        secrot=secrot,
+        exact_flows=exact_flows,
+        exact_internals=exact_internals,
+    )
 
     return {
         "schema": "v38-live-state-1",
