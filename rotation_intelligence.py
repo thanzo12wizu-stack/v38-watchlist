@@ -161,9 +161,10 @@ def classify_divergence(
 ) -> dict[str, str]:
     """Classify only what the available evidence supports.
 
-    Flow-dependent labels are emitted only when exact 20-day flow exists.
-    Data-complete labels still remain research observations; they are not entry
-    or exit rules until a separate predictive validation is passed.
+    Strong Flow-dependent labels require both exact 20-day flow and complete
+    A/D+OBV+Breadth internals. With exact flow but incomplete internals, only a
+    CANDIDATE label is allowed. All labels remain research observations until a
+    separate forward-predictive validation is passed.
     """
     if price_score is None or internal_score is None:
         return {"state": "DATA_REQUIRED", "label": "データ不足", "confidence": "NONE"}
@@ -203,13 +204,29 @@ def classify_divergence(
             "confidence": complete_label,
         }
     if price < 60 and internal >= 60 and flow > 0:
-        return {"state": "HIDDEN_ACCUMULATION", "label": "Hidden Accumulation / 先回り研究候補", "confidence": complete_label}
+        state = "HIDDEN_ACCUMULATION" if internal_complete else "HIDDEN_ACCUMULATION_CANDIDATE"
+        return {
+            "state": state,
+            "label": "Hidden Accumulation / 先回り研究候補" if internal_complete else "Hidden Accumulation候補 / 内部詳細確認待ち",
+            "confidence": complete_label,
+        }
     if price >= 70 and internal < 50 and flow < 0:
-        return {"state": "DISTRIBUTION_TRAP", "label": "価格先行×内部/Flow逆行（研究観測）", "confidence": complete_label}
+        state = "DISTRIBUTION_TRAP" if internal_complete else "DISTRIBUTION_CANDIDATE"
+        return {
+            "state": state,
+            "label": "価格先行×内部/Flow逆行（研究観測）" if internal_complete else "Distribution候補 / A/D・OBV確認待ち",
+            "confidence": complete_label,
+        }
     if price >= 60 and internal >= 60 and flow < 0:
-        return {"state": "REDEMPTION_DIVERGENCE", "label": "ETF流出≠構成株売り", "confidence": complete_label}
+        state = "REDEMPTION_DIVERGENCE" if internal_complete else "REDEMPTION_DIVERGENCE_CANDIDATE"
+        return {
+            "state": state,
+            "label": "ETF流出≠構成株売り" if internal_complete else "Redemption Divergence候補 / 内部詳細確認待ち",
+            "confidence": complete_label,
+        }
     if price < 60 and flow > 0 and delta is not None and delta >= 10:
-        return {"state": "EARLY_ROTATION", "label": "Flow先行・内部改善 / Watch", "confidence": complete_label}
+        state = "EARLY_ROTATION" if internal_complete else "EARLY_ROTATION_CANDIDATE"
+        return {"state": state, "label": "Flow先行・内部改善 / Watch", "confidence": complete_label}
     return {"state": "NEUTRAL", "label": "方向感なし", "confidence": complete_label}
 
 
@@ -319,10 +336,13 @@ def build_rotation_intelligence(
         _group_rows(details, "sth"), exact_flows, exact_internals, level="THEME_DISPLAY_TAXONOMY"
     )
 
-    divergences = [row for row in sector_groups if row["classification"]["state"] in {
-        "PRICE_INTERNAL_DIVERGENCE", "DISTRIBUTION_TRAP", "REDEMPTION_DIVERGENCE",
-        "HIDDEN_INTERNAL_STRENGTH", "HIDDEN_ACCUMULATION", "EARLY_ROTATION",
-    }]
+    divergence_states = {
+        "PRICE_INTERNAL_DIVERGENCE", "DISTRIBUTION_TRAP", "DISTRIBUTION_CANDIDATE",
+        "REDEMPTION_DIVERGENCE", "REDEMPTION_DIVERGENCE_CANDIDATE",
+        "HIDDEN_INTERNAL_STRENGTH", "HIDDEN_ACCUMULATION", "HIDDEN_ACCUMULATION_CANDIDATE",
+        "EARLY_ROTATION", "EARLY_ROTATION_CANDIDATE",
+    }
+    divergences = [row for row in sector_groups if row["classification"]["state"] in divergence_states]
     leaders = [row for row in sector_groups if row["classification"]["state"] in {
         "BREADTH_CONFIRMED_STRENGTH", "CONFIRMED_ACCUMULATION", "ACCUMULATION_CANDIDATE",
     }]
