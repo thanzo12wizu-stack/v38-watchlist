@@ -205,6 +205,12 @@ def build_state(legacy_html: Path) -> dict:
         )
         if not eligible:
             continue
+        if mode.name == "SELECTIVE":
+            entry_status = "NEXT_OPEN_WHEN_CAPACITY"
+        elif mode.name == "ATTACK":
+            entry_status = "RS189_PREVIEW_ONLY_LOO_DATA_REQUIRED"
+        else:
+            entry_status = "NO_NEW_ENTRY"
         candidates.append({
             "ticker": ticker,
             "price": row.get("px"),
@@ -225,7 +231,7 @@ def build_state(legacy_html: Path) -> dict:
             "missing_theme_neutral_score": 50,
             "final_rank": row.get("rs189") if mode.name == "SELECTIVE" else None,
             "eligibility": "ELIGIBLE",
-            "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+            "entry_status": entry_status,
         })
     candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
     if mode.name == "SELECTIVE":
@@ -238,6 +244,10 @@ def build_state(legacy_html: Path) -> dict:
     rotation["macro"] = _rotation_macro_snapshot(exact_macro)
     _attach_rotation_context(rotation, details, history)
 
+    attack_preview_note = (
+        "ATTACK Final Rank is NOT computed until exact LOO Peer Theme is live. "
+        "Candidate list order is RS189 preview only; do not treat Top50 as Final Rank or an executable buy list."
+    )
     return {
         "schema": "v38-live-state-1",
         "source": str(legacy_html.name),
@@ -282,12 +292,13 @@ def build_state(legacy_html: Path) -> dict:
         },
         "ranking": {
             "mode": "RS189_ONLY" if mode.name == "SELECTIVE" else "LOO_THEME30_DATA_REQUIRED",
-            "note": "Selective: Stock RS189 only" if mode.name == "SELECTIVE" else "Attack: candidate-excluded peer-only Theme RS63, 20d rank acceleration, and Breadth21; max valid membership; missing Theme uses neutral 50",
+            "note": "Selective: Stock RS189 only" if mode.name == "SELECTIVE" else attack_preview_note,
             "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
             "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
             "candidate_exclusion_required_for_all_components": True,
             "multiple_theme_policy": "MAX_VALID_MEMBERSHIP_SCORE",
             "missing_theme_policy": "NEUTRAL_50",
+            "candidate_list_semantics": "EXECUTABLE_RS189_RANK" if mode.name == "SELECTIVE" else "RS189_PREVIEW_ONLY_UNTIL_LOO_LIVE",
         },
         "candidates": candidates[:50],
         "rotation_intelligence": rotation,
