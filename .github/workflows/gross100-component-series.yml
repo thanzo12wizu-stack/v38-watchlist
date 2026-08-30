@@ -1,0 +1,63 @@
+name: Gross100 component series audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/sector-stock-leadership-20260826]
+    paths:
+      - 'leadership/research/audit_gross100_component_series.py'
+      - '.github/workflows/gross100-component-series.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy scipy yfinance
+      - name: Download prior audited RSI events
+        uses: actions/download-artifact@v4
+        with:
+          name: rsi-reset-focused-robust-audit
+          path: leadership/research/gross100_input
+          github-token: ${{ github.token }}
+          run-id: 33063836403
+      - name: Syntax and inputs
+        run: |
+          PYTHONPATH=leadership/research python -m py_compile \
+            leadership/research/audit_gross100_component_series.py \
+            leadership/research/audit_rsi_reset_portfolio.py
+          test -s leadership/research/gross100_input/audit_trades.csv.gz
+      - name: Rebuild RSI Reset selected daily series
+        run: |
+          PYTHONPATH=leadership/research python leadership/research/audit_rsi_reset_portfolio.py \
+            --root . \
+            --trades leadership/research/gross100_input/audit_trades.csv.gz \
+            --output leadership/research/gross100_rsi
+      - name: Rebuild ordinary selected daily gross series
+        run: |
+          PYTHONPATH=leadership/research python leadership/research/audit_gross100_component_series.py \
+            --root . \
+            --output leadership/research/gross100_ordinary \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-03-20
+      - name: Upload component series
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gross100-component-series
+          path: |
+            leadership/research/gross100_rsi/selected_daily_series.csv.gz
+            leadership/research/gross100_rsi/portfolio_scenarios.csv
+            leadership/research/gross100_rsi/summary.json
+            leadership/research/gross100_ordinary/ordinary_PEAK30_PART25_R3_daily.csv.gz
+          retention-days: 14
+          if-no-files-found: warn
