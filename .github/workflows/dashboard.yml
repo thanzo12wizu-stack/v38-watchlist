@@ -447,6 +447,7 @@ jobs:
 
           if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
             echo "::warning::Public mirror is not configured; build and privacy validation completed"
+            echo "mirror_status=SKIPPED / NOT CONFIGURED" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -477,12 +478,29 @@ jobs:
 
           if git diff --staged --quiet; then
             echo "Public site mirror already current"
+            echo "mirror_status=PASS / MIRROR ALREADY CURRENT" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git commit \
             -m "Publish dashboard ${{ steps.persist.outputs.source_sha }}"
           git push origin HEAD:main
+          echo "mirror_status=PASS / MIRROR PUSHED" >> "$GITHUB_OUTPUT"
+
+      - name: Report build and delivery stages
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard stage status"
+            echo "- Build / validation: PASS"
+            echo "- main generated-state persistence: PASS"
+            echo "- Public export creation: PASS"
+            echo "- Public mirror push: ${{ steps.publish.outputs.mirror_status || 'FAILED / SEE PUBLISH STEP' }}"
+            echo "- GitHub Pages currentness: SEPARATE CHECK REQUIRED"
+            echo ""
+            echo "A successful workflow is not, by itself, proof that the public mirror or GitHub Pages is current."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report publish failure
         if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true' && steps.publish.outcome == 'failure'

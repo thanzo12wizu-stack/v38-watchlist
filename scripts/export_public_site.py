@@ -21,6 +21,9 @@ PUBLIC_FILES = (
 # preserve it when present without making the existing dashboard depend on it.
 OPTIONAL_PUBLIC_FILES = (
     ("leadership/dist/index.html", "leadership/index.html"),
+    # Publishable when the live producer creates it. Optionality is deliberate:
+    # allowlisting this file does not claim that CURRENT30/4H RSI generation is live.
+    ("tqqq-panic-state.json", "tqqq-panic-state.json"),
 )
 
 

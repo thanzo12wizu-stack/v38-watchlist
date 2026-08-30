@@ -30,7 +30,7 @@
     "entry_requires_mc57_gte": 20,
     "active_exit_mc57_lt": 20,
     "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
-    "allocation_priority": "NOT REPRODUCED",
+    "allocation_priority": "GROSS100 RESEARCH CANDIDATE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
     "required_route": "tqqq-panic-state.json",
     "fields": [
       "vix_close",
@@ -43,17 +43,23 @@
       "active",
       "held_sessions",
       "underlying_target_pct",
-      "other_sleeve_exposure_pct"
+      "reset_desired_pct",
+      "normal_stock_desired_pct"
     ]
   },
   "ranking": {
-    "mode": "LOO_THEME30_DATA_REQUIRED",
-    "note": "Attack: candidate-excluded peer-only Theme RS63, 20d rank acceleration, and Breadth21; max valid membership; missing Theme uses neutral 50",
+    "mode": "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED",
+    "note": "RS189 PREVIEW ONLY. Formal Attack rank requires 21 sessions of strict LOO history for every eligible symbol; LOO is computed before the display Top50 cap.",
     "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
     "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
     "candidate_exclusion_required_for_all_components": true,
     "multiple_theme_policy": "MAX_VALID_MEMBERSHIP_SCORE",
-    "missing_theme_policy": "NEUTRAL_50"
+    "missing_theme_policy": "NEUTRAL_50",
+    "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
+    "history_min_sessions": 21,
+    "full_eligible_count": 149,
+    "display_limit_applied_after_full_sort": 50,
+    "strict_loo_live_status": "DATA REQUIRED"
   },
   "candidates": [
     {
@@ -62,6 +68,11 @@
       "rs189": 100.0,
       "rs63": 95.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "15. ディフェンシブ（公益・通信・大手医薬）",
+        "通信キャリア（ワイヤレス）"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "無線通信",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -74,8 +85,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Wireless Telecommunications",
+        "market_cap": 1813747840.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -84,6 +104,11 @@
       "rs189": 100.0,
       "rs63": 90.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -96,8 +121,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 1001688320.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -106,6 +140,11 @@
       "rs189": 100.0,
       "rs63": 94.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -118,8 +157,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 6393650688.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -128,6 +176,8 @@
       "rs189": 100.0,
       "rs63": 97.0,
       "peer_theme": null,
+      "theme_memberships": [],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -140,8 +190,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 846790720.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -150,6 +209,11 @@
       "rs189": 100.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "mRNA/ワクチン"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -162,8 +226,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 55707381760.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "MARKET_CAP_GTE_10B_PASS"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -172,6 +245,11 @@
       "rs189": 100.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "12. 金融・銀行・保険",
+        "SPAC・ブランクチェック"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "金融コングロマリット",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -184,8 +262,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Financial Conglomerates",
+        "market_cap": 483938368.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -194,6 +281,11 @@
       "rs189": 100.0,
       "rs63": 94.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -206,8 +298,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 2625294336.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -216,6 +317,11 @@
       "rs189": 100.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "ゲノミクス/シーケンシング"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -228,8 +334,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 7801431040.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -238,6 +353,11 @@
       "rs189": 99.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -250,8 +370,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 3434048256.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -260,6 +389,11 @@
       "rs189": 99.0,
       "rs63": 88.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "AI創薬/ヘルスケアAI"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -272,8 +406,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 1585713408.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -282,6 +425,11 @@
       "rs189": 99.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "8. デジタルインフラ・先進テック",
+        "データストレージ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "コンピュータ周辺機器",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -294,8 +442,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Computer Peripherals",
+        "market_cap": 935629696.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -304,6 +461,11 @@
       "rs189": 99.0,
       "rs63": 97.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -316,8 +478,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 930465792.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -326,6 +497,11 @@
       "rs189": 99.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "医療機器"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "医療機器・専門",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -338,8 +514,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Medical Specialties",
+        "market_cap": 2399433472.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -348,6 +533,11 @@
       "rs189": 99.0,
       "rs63": 98.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -360,8 +550,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 6081447424.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -370,6 +569,11 @@
       "rs189": 99.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -382,8 +586,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 1764436992.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -392,6 +605,11 @@
       "rs189": 99.0,
       "rs63": 96.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -404,8 +622,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 807294080.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -414,6 +641,11 @@
       "rs189": 99.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "がん免疫療法"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -426,8 +658,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 3216097024.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -436,6 +677,11 @@
       "rs189": 99.0,
       "rs63": 98.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -448,8 +694,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 1491341696.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -458,6 +713,11 @@
       "rs189": 99.0,
       "rs63": 97.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -470,8 +730,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 7459185152.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -480,6 +749,11 @@
       "rs189": 99.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "医療機器・専門",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -492,8 +766,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Medical Specialties",
+        "market_cap": 3337184768.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -502,6 +785,11 @@
       "rs189": 99.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "8. デジタルインフラ・先進テック",
+        "データストレージ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "コンピュータ周辺機器",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -514,8 +802,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Computer Peripherals",
+        "market_cap": 982097216.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -524,6 +821,11 @@
       "rs189": 99.0,
       "rs63": 90.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "その他医薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -536,8 +838,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Other",
+        "market_cap": 46810001408.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "MARKET_CAP_GTE_10B_PASS"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -546,6 +857,11 @@
       "rs189": 99.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "ゲノミクス/シーケンシング"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -558,8 +874,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 7555585024.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -568,6 +893,11 @@
       "rs189": 99.0,
       "rs63": 96.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "遺伝子治療/細胞治療"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -580,8 +910,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 1246817024.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -590,6 +929,11 @@
       "rs189": 98.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "神経疾患（アルツハイマー等）"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -602,8 +946,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 2387795968.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -612,6 +965,11 @@
       "rs189": 98.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -624,8 +982,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 1318534656.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -634,6 +1001,11 @@
       "rs189": 98.0,
       "rs63": 86.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "1. AI・テック成長テーマ",
+        "AIエンタープライズSaaS"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "パッケージソフト",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -646,8 +1018,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Packaged Software",
+        "market_cap": 1085957760.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -656,6 +1037,8 @@
       "rs189": 98.0,
       "rs63": 91.0,
       "peer_theme": null,
+      "theme_memberships": [],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "貴金属",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -668,8 +1051,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Precious Metals",
+        "market_cap": 4028691200.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -678,6 +1070,11 @@
       "rs189": 98.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "医療機器（大型）"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "医療機器・専門",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -690,8 +1087,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Medical Specialties",
+        "market_cap": 2401892608.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -700,6 +1106,11 @@
       "rs189": 98.0,
       "rs63": 98.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "9. 消費者・小売りテーマ",
+        "レストラン"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "レストラン",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -712,8 +1123,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Restaurants",
+        "market_cap": 5576673792.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -722,6 +1142,11 @@
       "rs189": 98.0,
       "rs63": 91.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "10. エネルギー（化石燃料）",
+        "石油精製"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "石油精製",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -734,8 +1159,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Oil Refining/Marketing",
+        "market_cap": 3851032064.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -744,6 +1178,11 @@
       "rs189": 98.0,
       "rs63": 95.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -756,8 +1195,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 4362174464.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -766,6 +1214,11 @@
       "rs189": 98.0,
       "rs63": 97.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "10. エネルギー（化石燃料）",
+        "石油機器/装置"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "油田サービス・装置",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -778,8 +1231,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Oilfield Services/Equipment",
+        "market_cap": 795256512.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -788,6 +1250,11 @@
       "rs189": 98.0,
       "rs63": 88.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "9. 消費者・小売りテーマ",
+        "レジャーサービス"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "ホテル・クルーズ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -800,8 +1267,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Hotels/Resorts/Cruise lines",
+        "market_cap": 2172672000.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -810,6 +1286,11 @@
       "rs189": 98.0,
       "rs63": 97.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "8. デジタルインフラ・先進テック",
+        "電子部品"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "電子部品",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -822,8 +1303,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Electronic Components",
+        "market_cap": 499088320.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -832,6 +1322,11 @@
       "rs189": 98.0,
       "rs63": 94.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "10. エネルギー（化石燃料）",
+        "オイルフィールドサービス"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "油田サービス・装置",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -844,8 +1339,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Oilfield Services/Equipment",
+        "market_cap": 3473334272.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -854,6 +1358,11 @@
       "rs189": 98.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "7. フィンテック・デジタル金融",
+        "決済ネットワーク"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "商業サービス",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -866,8 +1375,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Miscellaneous Commercial Services",
+        "market_cap": 734008000.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -876,6 +1394,11 @@
       "rs189": 98.0,
       "rs63": 91.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "バイオ",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -888,8 +1411,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 4529657344.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": true,
+        "reason": "REVENUE_MISSING_FAIL_OPEN"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -898,6 +1430,11 @@
       "rs189": 98.0,
       "rs63": 98.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "8. デジタルインフラ・先進テック",
+        "コラボレーションSaaS"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "パッケージソフト",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -910,8 +1447,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Packaged Software",
+        "market_cap": 4664215552.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -920,6 +1466,11 @@
       "rs189": 97.0,
       "rs63": 90.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "12. 金融・銀行・保険",
+        "資産運用"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "資産運用",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -932,8 +1483,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Investment Managers",
+        "market_cap": 3398534656.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -942,6 +1502,11 @@
       "rs189": 97.0,
       "rs63": 90.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "臨床段階・中小型バイオ"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -954,8 +1519,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 871417472.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -964,6 +1538,11 @@
       "rs189": 97.0,
       "rs63": 99.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "mRNA/ワクチン"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "大手製薬",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -976,8 +1555,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Pharmaceuticals: Major",
+        "market_cap": 239322240.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -986,6 +1574,8 @@
       "rs189": 97.0,
       "rs63": 86.0,
       "peer_theme": null,
+      "theme_memberships": [],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "石油ガス生産",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -998,8 +1588,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Oil & Gas Production",
+        "market_cap": 332186848.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1008,6 +1607,11 @@
       "rs189": 97.0,
       "rs63": 98.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "9. 消費者・小売りテーマ",
+        "化粧品/パーソナルケア"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "専門小売",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1020,8 +1624,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Specialty Stores",
+        "market_cap": 504236544.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1030,6 +1643,11 @@
       "rs189": 97.0,
       "rs63": 86.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "10. エネルギー（化石燃料）",
+        "ミッドストリーム/パイプライン"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "海運",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1042,8 +1660,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Marine Shipping",
+        "market_cap": 1965436288.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1052,6 +1679,11 @@
       "rs189": 97.0,
       "rs63": 100.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "13. 産業・資本財・輸送",
+        "人材派遣"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "人材サービス",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1064,8 +1696,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Personnel Services",
+        "market_cap": 2516047360.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1074,6 +1715,11 @@
       "rs189": 97.0,
       "rs63": 93.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "12. 金融・銀行・保険",
+        "特殊金融"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "ネットサービス",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1086,8 +1732,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Internet Software/Services",
+        "market_cap": 4669752320.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1096,6 +1751,8 @@
       "rs189": 97.0,
       "rs63": 86.0,
       "peer_theme": null,
+      "theme_memberships": [],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "農産品",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1108,8 +1765,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Agricultural Commodities/Milling",
+        "market_cap": 1663456000.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1118,6 +1784,8 @@
       "rs189": 97.0,
       "rs63": 97.0,
       "peer_theme": null,
+      "theme_memberships": [],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "アパレル小売",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1130,8 +1798,17 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Apparel/Footwear Retail",
+        "market_cap": 6983347712.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     },
     {
@@ -1140,6 +1817,11 @@
       "rs189": 97.0,
       "rs63": 87.0,
       "peer_theme": null,
+      "theme_memberships": [
+        "12. 金融・銀行・保険",
+        "資産運用"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
       "legacy_theme_label": "資産運用",
       "peer_theme_score": null,
       "theme_rs63": null,
@@ -1152,14 +1834,47 @@
       "candidate_excluded_from_breadth21": null,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
+      "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Investment Managers",
+        "market_cap": 3701441024.0,
+        "revenue_ttm": null,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED"
+      },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY"
     }
   ],
   "panic_reset": {
     "status": "MONITOR / NOT LIVE",
     "separate_sleeve": true
+  },
+  "gross100_allocation": {
+    "status": "RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE INPUT DATA REQUIRED",
+    "priority": [
+      "RSI_RESET",
+      "TQQQ_PROTECTED_TO_80",
+      "NORMAL_STOCK",
+      "TQQQ_EXTRA"
+    ],
+    "run_id": 33339918881,
+    "artifact_id": 9740224569,
+    "workflow_commit": "02c6746e65fe688bcad68d3d76f27fef344b7cab",
+    "comparison_period": [
+      "2016-01-04",
+      "2026-03-20"
+    ],
+    "note": "80% is the protected amount under competition, not a TQQQ cap"
+  },
+  "rotation_intelligence": {
+    "role": "WHERE_ONLY_NOT_A_TRADE_RULE",
+    "exact_etf_fund_flow": "DATA REQUIRED",
+    "internal_advance_decline": "DATA REQUIRED",
+    "internal_obv": "DATA REQUIRED",
+    "volume_is_not_fund_flow": true
   },
   "gross_limit_pct": 100
 }

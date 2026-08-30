@@ -4,7 +4,8 @@ import pytest
 
 from v38_rules import (
     NormalPosition, apply_pending_at_open, attack_rank_score, crash_seed,
-    evaluate_normal_close, market_mode, new_entry_capacity, peer_theme_score,
+    clinical_biotech_exclusion, evaluate_normal_close, gross100_allocation,
+    market_mode, new_entry_capacity, peer_theme_score,
     select_peer_theme, tqqq_allocation, tqqq_panic_entry, tqqq_panic_exit,
 )
 
@@ -131,3 +132,41 @@ def test_requested_and_executable_tqqq_are_separate_without_auto_trim():
     assert math.isclose(a.available_capacity, .30)
     assert math.isclose(a.executable_target, .30)
     assert math.isclose(a.shortfall, .50)
+
+
+@pytest.mark.parametrize("industry,cap,revenue,excluded,missing", [
+    ("Biotechnology", 2_000_000_000, 20_000_000, True, False),
+    ("Pharmaceuticals: Other", 9_999_999_999, 49_999_999, True, False),
+    ("Biotechnology", 10_000_000_000, 1_000_000, False, False),
+    ("Biotechnology", 2_000_000_000, None, False, True),
+])
+def test_structural_clinical_biotech_exclusion(industry, cap, revenue, excluded, missing):
+    result = clinical_biotech_exclusion(industry, cap, revenue)
+    assert result.excluded is excluded
+    assert result.revenue_missing_fail_open is missing
+
+
+def test_legacy_theme_label_is_not_an_exclusion_input():
+    assert not clinical_biotech_exclusion("Semiconductors", 1_000_000_000, 0).excluded
+
+
+def test_gross100_reset_tqqq80_normal_tqqq_extra_examples():
+    a = gross100_allocation(.08, .80, .50)
+    assert (a.reset_allocated, a.tqqq_allocated, a.normal_stock_allocated) == (.08, .80, .12)
+    assert math.isclose(a.gross_allocated, 1.0)
+
+    b = gross100_allocation(0, 1.0, 0)
+    assert math.isclose(b.tqqq_protected, .80)
+    assert math.isclose(b.tqqq_extra, .20)
+    assert math.isclose(b.tqqq_allocated, 1.0)
+
+
+@pytest.mark.parametrize("reset,tqqq,normal", [
+    (0, .30, .70), (.116, .80, .70), (.08, .95, .50), (2, 2, 2), (0, 0, 0),
+])
+def test_gross100_invariants(reset, tqqq, normal):
+    a = gross100_allocation(reset, tqqq, normal)
+    assert 0 <= a.gross_allocated <= 1.0 + 1e-12
+    assert a.tqqq_allocated <= max(0, tqqq) + 1e-12
+    assert a.normal_stock_allocated <= max(0, normal) + 1e-12
+    assert a.reset_allocated <= max(0, reset) + 1e-12

@@ -19,6 +19,9 @@ PANIC_RESET_MAX_THEME_POSITIONS = 2
 NORMAL_STOCK_MAX_POSITIONS = 12
 SELECTIVE_NEW_ENTRY_LIMIT = 4
 GROSS_EXPOSURE_LIMIT = 1.0
+CLINICAL_BIOTECH_INDUSTRIES = frozenset({"Biotechnology", "Pharmaceuticals: Other"})
+CLINICAL_BIOTECH_MAX_MARKET_CAP = 10_000_000_000.0
+CLINICAL_BIOTECH_MAX_REVENUE_TTM = 50_000_000.0
 
 
 @dataclass(frozen=True)
@@ -144,6 +147,38 @@ def attack_rank_score(stock_rs189: float, selected_peer_score: Optional[float]) 
     return 0.70 * float(stock_rs189) + 0.30 * peer
 
 
+@dataclass(frozen=True)
+class ClinicalBiotechDecision:
+    excluded: bool
+    revenue_missing_fail_open: bool
+    reason: str
+
+
+def clinical_biotech_exclusion(industry: Optional[str], market_cap: Optional[float],
+                               revenue_ttm: Optional[float]) -> ClinicalBiotechDecision:
+    """Apply the audited structural Clinical Biotech exclusion.
+
+    A legacy Theme label is deliberately not accepted. Revenue missing is a
+    fail-open condition, so it is visible in the decision but never excludes.
+    """
+    industry_name = str(industry or "").strip()
+    if industry_name not in CLINICAL_BIOTECH_INDUSTRIES:
+        return ClinicalBiotechDecision(False, False, "INDUSTRY_NOT_TARGETED")
+    try:
+        cap = float(market_cap)
+    except (TypeError, ValueError):
+        return ClinicalBiotechDecision(False, False, "MARKET_CAP_DATA_REQUIRED_PASS")
+    if cap >= CLINICAL_BIOTECH_MAX_MARKET_CAP:
+        return ClinicalBiotechDecision(False, False, "MARKET_CAP_GTE_10B_PASS")
+    try:
+        revenue = float(revenue_ttm)
+    except (TypeError, ValueError):
+        return ClinicalBiotechDecision(False, True, "REVENUE_MISSING_FAIL_OPEN")
+    if revenue < CLINICAL_BIOTECH_MAX_REVENUE_TTM:
+        return ClinicalBiotechDecision(True, False, "STRUCTURAL_CLINICAL_BIOTECH_EXCLUDED")
+    return ClinicalBiotechDecision(False, False, "REVENUE_GTE_50M_PASS")
+
+
 def crash_seed(vix_close: float, qqq_close: float, qqq_sma50: float,
                qqq_atr14: float, qqq_drawdown10: float) -> bool:
     if qqq_atr14 is None or float(qqq_atr14) <= 0:
@@ -194,3 +229,46 @@ def tqqq_allocation(underlying_target: float, panic_active: bool,
     executable = min(requested, available)
     return TqqqAllocation(underlying, requested, other, available, executable,
                           max(0.0, requested - executable))
+
+
+@dataclass(frozen=True)
+class Gross100Allocation:
+    reset_desired: float
+    tqqq_desired: float
+    normal_stock_desired: float
+    reset_allocated: float
+    tqqq_protected: float
+    normal_stock_allocated: float
+    tqqq_extra: float
+    tqqq_allocated: float
+    gross_allocated: float
+    remaining_capacity: float
+
+
+def gross100_allocation(reset_desired: float, tqqq_desired: float,
+                        normal_stock_desired: float) -> Gross100Allocation:
+    """Gross100 research candidate: Reset -> TQQQ80 -> Normal -> TQQQ extra.
+
+    This is the scalar equivalent of research function
+    ``reset_first_tqqq_floor(..., floor=.80)``.  The 80% value is neither a
+    TQQQ cap nor a fixed target; it is the amount protected before normal
+    stocks only when sleeves compete for Gross100 capacity.
+    """
+    reset = max(0.0, float(reset_desired))
+    tqqq = max(0.0, float(tqqq_desired))
+    normal = max(0.0, float(normal_stock_desired))
+
+    reset_alloc = min(reset, GROSS_EXPOSURE_LIMIT)
+    remaining = GROSS_EXPOSURE_LIMIT - reset_alloc
+    protected = min(tqqq, PANIC_TQQQ_FLOOR, remaining)
+    remaining -= protected
+    normal_alloc = min(normal, remaining)
+    remaining -= normal_alloc
+    extra = min(max(tqqq - protected, 0.0), remaining)
+    remaining -= extra
+    tqqq_alloc = protected + extra
+    gross = reset_alloc + normal_alloc + tqqq_alloc
+    return Gross100Allocation(
+        reset, tqqq, normal, reset_alloc, protected, normal_alloc, extra,
+        tqqq_alloc, gross, max(0.0, remaining),
+    )
