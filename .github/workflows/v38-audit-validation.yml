@@ -8,6 +8,7 @@ on:
       - 'rotation-intelligence.html'
       - 'rotation_intelligence.py'
       - 'v38_rules.py'
+      - 'leadership/loo_theme_live.py'
       - 'scripts/export_public_site.py'
       - 'scripts/privacy_audit.py'
       - 'tests/test_v38_*.py'
@@ -32,12 +33,13 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Python compile
-        run: python -m py_compile build_v38_companion.py rotation_intelligence.py v38_rules.py scripts/export_public_site.py scripts/privacy_audit.py
+        run: python -m py_compile build_v38_companion.py rotation_intelligence.py v38_rules.py leadership/loo_theme_live.py scripts/export_public_site.py scripts/privacy_audit.py
       - name: Audited V38 tests
         run: |
           pytest -q \
             tests/test_v38_rules.py \
             tests/test_v38_companion.py \
+            tests/test_v38_loo_live.py \
             tests/test_rotation_intelligence.py \
             tests/test_rotation_history.py \
             tests/test_public_site_export.py \
@@ -52,11 +54,14 @@ jobs:
           s=json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
           assert s['schema']=='v38-live-state-1'
           assert s['ranking']['candidate_exclusion_required_for_all_components'] is True
-          if s['market']['mode']=='ATTACK':
+          if s['market']['mode']=='ATTACK' and s['ranking']['loo_live_status']=='DATA_REQUIRED':
               assert s['ranking']['candidate_list_semantics']=='RS189_PREVIEW_ONLY_UNTIL_LOO_LIVE'
               assert all(x['final_rank'] is None for x in s['candidates'])
+          if s['ranking']['loo_live_status']!='DATA_REQUIRED':
+              assert s['ranking']['loo_taxonomy']=='CURRENT_S2T_NOT_PIT'
+              assert s['ranking']['pit_taxonomy_status']=='NOT_REPRODUCED'
           assert s['panic_tqqq']['allocation_priority']=='NOT REPRODUCED'
-          print(s['asof'], s['market']['mode'], len(s['candidates']))
+          print(s['asof'], s['market']['mode'], len(s['candidates']), s['ranking']['loo_live_status'])
           PY
       - name: Export public site and privacy audit
         run: |
