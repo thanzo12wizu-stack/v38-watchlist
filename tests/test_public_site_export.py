@@ -58,6 +58,19 @@ def test_export_preserves_optional_leadership_under_public_subpath(tmp_path: Pat
     assert leadership_file["source_path"] == "leadership/dist/index.html"
 
 
+def test_export_includes_tqqq_panic_state_when_live_route_exists(tmp_path: Path):
+    source = tmp_path / "source"
+    output = tmp_path / "public"
+    source.mkdir()
+    _source(source)
+    (source / "tqqq-panic-state.json").write_text('{"schema":"tqqq-panic-state-1"}', encoding="utf-8")
+
+    manifest = export_public_site(source, output, source_commit="tqqq123")
+
+    assert "tqqq-panic-state.json" in manifest["allowlist"]
+    assert (output / "tqqq-panic-state.json").read_text(encoding="utf-8") == '{"schema":"tqqq-panic-state-1"}'
+
+
 def test_export_ignores_non_allowlisted_files(tmp_path: Path):
     source = tmp_path / "source"
     output = tmp_path / "public"
