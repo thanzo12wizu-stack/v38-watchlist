@@ -36,11 +36,11 @@ jobs:
           run-id: 33063836403
       - name: Syntax and inputs
         run: |
-          PYTHONPATH=leadership/research python -m py_compile leadership/research/audit_gross100_component_series.py
+          PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_gross100_component_series.py
           test -s leadership/research/gross100_input/audit_trades.csv.gz
       - name: Rebuild selected ordinary and RSI Reset daily gross series
         run: |
-          PYTHONPATH=leadership/research python leadership/research/audit_gross100_component_series.py \
+          PYTHONPATH=.:leadership/research python leadership/research/audit_gross100_component_series.py \
             --root . \
             --reset-trades leadership/research/gross100_input/audit_trades.csv.gz \
             --output leadership/research/gross100_components \
