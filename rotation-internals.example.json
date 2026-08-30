@@ -1,0 +1,28 @@
+{
+  "schema": "v38-rotation-internals-2",
+  "groups": {
+    "Healthcare": {
+      "equal_weight": {
+        "asof": "YYYY-MM-DD",
+        "ad_score": null,
+        "obv_score": null,
+        "breadth21_pct": null,
+        "breadth50_pct": null,
+        "internal_delta_20d": null,
+        "source": "POINT_IN_TIME_CONSTITUENT_ENGINE",
+        "exact": false
+      },
+      "cap_weight": {
+        "asof": "YYYY-MM-DD",
+        "ad_score": null,
+        "obv_score": null,
+        "breadth21_pct": null,
+        "breadth50_pct": null,
+        "internal_delta_20d": null,
+        "source": "POINT_IN_TIME_CONSTITUENT_ENGINE",
+        "exact": false
+      }
+    }
+  },
+  "note": "Equal-weight is the primary participation view. Cap-weight is a separate concentration diagnostic to reveal mega-cap masking. Each 30/30/25/15 composite is display/research only until predictive validation is complete."
+}

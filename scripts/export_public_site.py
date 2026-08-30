@@ -11,6 +11,7 @@ PUBLIC_FILES = (
     "index.html",
     "command-center.html",
     "command-center-v38.html",
+    "rotation-intelligence.html",
     "v38-live-state.json",
     "swinote/index.html",
     "swinote/live.js",
@@ -19,8 +20,12 @@ PUBLIC_FILES = (
 # Optional source -> public-target mappings. Leadership is produced by its own
 # workflow and persisted independently, so the normal dashboard exporter must
 # preserve it when present without making the existing dashboard depend on it.
+# TQQQ panic state remains optional until its live 4H/CURRENT30 route exists;
+# once generated, it is allowlisted automatically rather than being silently
+# dropped from the public export.
 OPTIONAL_PUBLIC_FILES = (
     ("leadership/dist/index.html", "leadership/index.html"),
+    ("tqqq-panic-state.json", "tqqq-panic-state.json"),
 )
 
 

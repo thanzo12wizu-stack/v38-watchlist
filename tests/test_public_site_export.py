@@ -9,6 +9,7 @@ def _source(root: Path) -> None:
     (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
     (root / "command-center.html").write_text("<h1>Command Center</h1>", encoding="utf-8")
     (root / "command-center-v38.html").write_text("<h1>V38 Audited Rule Engine</h1>", encoding="utf-8")
+    (root / "rotation-intelligence.html").write_text("<h1>Rotation Intelligence</h1>", encoding="utf-8")
     (root / "v38-live-state.json").write_text('{"schema":"v38-live-state-1"}', encoding="utf-8")
     swinote = root / "swinote"
     swinote.mkdir()
@@ -36,6 +37,7 @@ def test_export_copies_only_allowlisted_site_files(tmp_path: Path):
     }
     assert actual == set(PUBLIC_FILES) | {".nojekyll", "public-site-manifest.json"}
     assert not (output / "data").exists()
+    assert (output / "rotation-intelligence.html").is_file()
 
 
 def test_export_preserves_optional_leadership_under_public_subpath(tmp_path: Path):
@@ -54,6 +56,19 @@ def test_export_preserves_optional_leadership_under_public_subpath(tmp_path: Pat
     assert not (output / "leadership" / "dist").exists()
     leadership_file = next(x for x in manifest["files"] if x["path"] == "leadership/index.html")
     assert leadership_file["source_path"] == "leadership/dist/index.html"
+
+
+def test_export_includes_tqqq_panic_state_when_live_route_exists(tmp_path: Path):
+    source = tmp_path / "source"
+    output = tmp_path / "public"
+    source.mkdir()
+    _source(source)
+    (source / "tqqq-panic-state.json").write_text('{"schema":"tqqq-panic-state-1"}', encoding="utf-8")
+
+    manifest = export_public_site(source, output, source_commit="tqqq123")
+
+    assert "tqqq-panic-state.json" in manifest["allowlist"]
+    assert (output / "tqqq-panic-state.json").read_text(encoding="utf-8") == '{"schema":"tqqq-panic-state-1"}'
 
 
 def test_export_ignores_non_allowlisted_files(tmp_path: Path):

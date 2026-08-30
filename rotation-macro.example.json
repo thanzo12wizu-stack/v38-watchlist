@@ -1,0 +1,13 @@
+{
+  "schema": "v38-rotation-macro-1",
+  "asof": "YYYY-MM-DD",
+  "source": "EXACT_PROVIDER_NAME",
+  "us10y_yield": null,
+  "real10y_yield": null,
+  "dxy": null,
+  "credit_spread": null,
+  "vix": null,
+  "fear_greed": null,
+  "exact": false,
+  "note": "Macro is a WHY/context layer only. Do not make it a normal-stock hard gate unless separately validated. Set exact=true only when fields come from an explicit current data source."
+}

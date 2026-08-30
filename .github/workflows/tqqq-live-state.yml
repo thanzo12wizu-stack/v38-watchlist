@@ -1,0 +1,79 @@
+name: TQQQ Stage56 live state
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'build_tqqq_panic_state.py'
+      - 'tqqq_live_engine.py'
+      - 'research/tqqq_backtest_once.py'
+      - 'build_dashboard.py'
+      - '.github/workflows/tqqq-live-state.yml'
+  schedule:
+    # After the US regular-session close and after the first Leadership run.
+    - cron: '40 23 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tqqq-stage56-live-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Build exact Stage34 CURRENT30 plus Stage56 overlay state
+        run: python build_tqqq_panic_state.py --output /tmp/tqqq-panic-state.json
+      - name: Validate live state contract
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/tqqq-panic-state.json', encoding='utf-8'))
+          assert x['schema']=='v38-tqqq-panic-state-1'
+          assert x['strategy']=='M30_TOUCH30_F80_D10'
+          assert x['allocation_priority']=='NOT REPRODUCED'
+          assert x['underlying_target_pct'] is not None
+          assert 0 <= float(x['underlying_target_pct']) <= 100
+          assert 0 <= float(x['panic_requested_target_pct']) <= 100
+          assert x['current30']['risklock'] in (True, False)
+          print(json.dumps({k:x.get(k) for k in ['asof','status','seed_age_sessions','rsi4h','mc57','nqsar','active','entry_pending_next_open','exit_pending_next_open','underlying_target_pct','panic_requested_target_pct']}, indent=2))
+          PY
+      - name: Persist only TQQQ live state
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated=/tmp/tqqq-panic-state.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            cp "$generated" tqqq-panic-state.json
+            git add -f tqqq-panic-state.json
+            if git diff --staged --quiet; then
+              echo 'TQQQ live state already current'
+              exit 0
+            fi
+            git commit -m 'Update TQQQ Stage56 live state'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "::warning::TQQQ state persistence raced with main; retry $attempt/3"
+            sleep $((attempt * 2))
+          done
+          echo 'TQQQ state persistence failed after retries'
+          exit 1

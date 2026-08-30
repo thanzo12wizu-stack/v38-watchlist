@@ -8,15 +8,19 @@ from pathlib import Path
 try:
     from leadership import build_market_snapshot as base
     from leadership.diffusion import compute_diffusion_snapshot
+    from leadership.loo_theme_live import build_loo_theme_live
 except ModuleNotFoundError:  # direct execution
     import build_market_snapshot as base
     from diffusion import compute_diffusion_snapshot
+    from loo_theme_live import build_loo_theme_live
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build Leadership market snapshot with eventized diffusion")
     parser.add_argument("--universe", type=Path, default=Path("universe.csv"))
     parser.add_argument("--output", type=Path, default=Path("leadership/market_snapshot.json"))
+    parser.add_argument("--sector-snapshot", type=Path, default=Path("sector_snapshot.json"))
+    parser.add_argument("--loo-output", type=Path, default=Path("loo-theme-live.json"))
     parser.add_argument("--benchmark", default="QQQ")
     parser.add_argument("--period", default="15mo")
     parser.add_argument("--batch-size", type=int, default=80)
@@ -33,7 +37,7 @@ def main() -> None:
     if args.max_symbols > 0:
         download_rows = source_universe[:args.max_symbols]
     symbols = [row.symbol for row in download_rows if row.symbol != args.benchmark]
-    print(f"leadership source_universe={source_total} download_request={len(symbols)} diffusion=enabled")
+    print(f"leadership source_universe={source_total} download_request={len(symbols)} diffusion=enabled loo=enabled")
 
     benchmark_query = base.yahoo_symbol(args.benchmark)
     benchmark_data = base._download_batch([benchmark_query], args.period)
@@ -57,8 +61,32 @@ def main() -> None:
     }
     diffusion = compute_diffusion_snapshot(frames, benchmark_frame, download_rows)
 
+    if not args.sector_snapshot.is_file():
+        loo = {
+            "schema": "v38-loo-theme-live-1",
+            "status": "DATA_REQUIRED",
+            "reason": "sector_snapshot.json missing",
+        }
+    else:
+        sector_snapshot = json.loads(args.sector_snapshot.read_text(encoding="utf-8"))
+        loo = build_loo_theme_live(
+            frames,
+            sector_snapshot,
+            source_universe_total=source_total,
+            full_download_requested=args.max_symbols == 0,
+        )
+    args.loo_output.parent.mkdir(parents=True, exist_ok=True)
+    args.loo_output.write_text(json.dumps(loo, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+
+    loo_summary = {
+        "status": loo.get("status"),
+        "asof": loo.get("asof"),
+        "taxonomy": loo.get("taxonomy"),
+        "coverage": loo.get("coverage"),
+        "file": str(args.loo_output),
+    }
     output = {
-        "schema": 4,
+        "schema": 5,
         "source": "Yahoo Finance daily adjusted OHLCV (independent Leadership flow)",
         "universe_source": str(args.universe),
         "universe_policy": "exact source universe; no Leadership-only symbol filter",
@@ -71,6 +99,7 @@ def main() -> None:
         "universe_valid": len(enriched),
         "failed_sample": sorted(set(failed))[:100],
         "diffusion": diffusion,
+        "loo_theme": loo_summary,
         **metric_payload,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -86,6 +115,7 @@ def main() -> None:
         "entry_inputs": len(metric_maps.get("ema21", {})),
         "breakout_inputs": len(metric_maps.get("breakout20_cross", {})),
         "diffusion": diffusion.get("coverage", {}),
+        "loo": loo_summary,
         "fingerprint": fingerprint,
     }, ensure_ascii=False, indent=2))
 
