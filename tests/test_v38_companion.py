@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 
@@ -40,6 +41,8 @@ def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_th
     assert state["candidates"][0]["peer_only_status"] == "DATA_REQUIRED"
     assert state["candidates"][0]["candidate_excluded_from_return"] is None
     assert state["candidates"][0]["peer_theme"] is None
+    assert state["rotation_intelligence"]["fund_flow"]["status"] == "DATA_REQUIRED"
+    assert state["rotation_intelligence"]["matrix"]["quality"].startswith("PARTIAL")
 
 
 def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
@@ -85,3 +88,43 @@ def test_companion_coverage_guard_stops_new_entries(tmp_path):
     state = build_state(source)
     assert state["market"]["mode"] == "STOP"
     assert not state["market"]["coverage_ok"]
+
+
+def test_structural_small_clinical_biotech_exclusion_matches_research_rule(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {}
+    for i in range(37):
+        det[f"T{i}"] = {
+            "px": 100, "dvol": 20, "ma5020": True, "v200": 5,
+            "v50": 5, "rs189": 90, "rs": 90, "sth": "Other",
+        }
+    det.update({
+        "CLYM": {"px": 14.57, "dvol": 20, "ma5020": True, "v200": 5,
+                 "v50": 5, "rs189": 99, "rs": 95, "sth": "バイオ"},
+        "BIGBIO": {"px": 100, "dvol": 20, "ma5020": True, "v200": 5,
+                   "v50": 5, "rs189": 98, "rs": 95, "sth": "バイオ"},
+        "MISSREV": {"px": 80, "dvol": 20, "ma5020": True, "v200": 5,
+                    "v50": 5, "rs189": 97, "rs": 94, "sth": "バイオ"},
+    })
+    source = tmp_path / "command-center.html"
+    source.write_text(
+        f'<script>window.CALC={json.dumps(calc)};</script>'
+        f'<script>window.DET={json.dumps(det)};</script>', encoding="utf-8")
+
+    with (tmp_path / "universe.csv").open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["シンボル", "業種", "時価総額", "売上高TTM"])
+        writer.writeheader()
+        writer.writerow({"シンボル": "CLYM", "業種": "Biotechnology", "時価総額": 836_846_183, "売上高TTM": 0})
+        writer.writerow({"シンボル": "BIGBIO", "業種": "Biotechnology", "時価総額": 20_000_000_000, "売上高TTM": 0})
+        writer.writerow({"シンボル": "MISSREV", "業種": "Pharmaceuticals: Other", "時価総額": 800_000_000, "売上高TTM": ""})
+        for i in range(37):
+            writer.writerow({"シンボル": f"T{i}", "業種": "Software", "時価総額": 2_000_000_000, "売上高TTM": 200_000_000})
+
+    state = build_state(source)
+    tickers = {row["ticker"] for row in state["candidates"]}
+    assert "CLYM" not in tickers
+    assert "BIGBIO" in tickers
+    assert "MISSREV" in tickers
+    assert state["eligibility"]["structural_metadata_status"] == "LIVE"
+    assert state["eligibility"]["revenue_missing_policy"] == "FAIL_OPEN"
+    assert state["eligibility"]["excluded_count"] == 1
