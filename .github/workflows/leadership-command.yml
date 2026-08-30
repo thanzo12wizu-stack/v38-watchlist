@@ -12,11 +12,12 @@ on:
   push:
     branches:
       - main
-    # Generated public HTML is intentionally excluded so the persistence
-    # commit below cannot recursively trigger another full build.
+    # Generated public HTML / LOO state are intentionally excluded so the
+    # persistence commit below cannot recursively trigger another full build.
     paths:
       - 'leadership/build_market_snapshot.py'
       - 'leadership/build_market_snapshot_diffusion.py'
+      - 'leadership/loo_theme_live.py'
       - 'leadership/diffusion.py'
       - 'leadership/diffusion_overlay.py'
       - 'leadership/rotation_diffusion.py'
@@ -29,7 +30,7 @@ on:
       - '.github/workflows/leadership-command.yml'
   schedule:
     # Existing dashboard runs independently at UTC 22:17 and 04:17.
-    # Leadership starts later but has no needs/dependency/writeback to that flow.
+    # Leadership starts later but has no writeback to the legacy dashboard.
     - cron: '10 23 * * 1-5'
     - cron: '10 5 * * 2-6'
   workflow_dispatch: {}
@@ -72,11 +73,14 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # PR limits Yahoo downloads only. The rendered model still keeps
             # every symbol in the complete source universe as data or NO_DATA.
+            # LOO output is therefore explicitly PARTIAL_SMOKE_ONLY on PRs.
             MAX_SYMBOLS=400
           fi
           python leadership/build_market_snapshot_diffusion.py \
             --universe universe.csv \
             --output leadership/market_snapshot.json \
+            --sector-snapshot sector_snapshot.json \
+            --loo-output loo-theme-live.json \
             --benchmark QQQ \
             --period 15mo \
             --batch-size 80 \
@@ -96,9 +100,11 @@ jobs:
           import csv
           import hashlib
           import json
+          import os
           from pathlib import Path
 
           snap=json.loads(Path('leadership/market_snapshot.json').read_text())
+          loo=json.loads(Path('loo-theme-live.json').read_text())
           diag=json.loads(Path('leadership/dist/diagnostics.json').read_text())
           cov=diag.get('coverage', {})
 
@@ -126,6 +132,10 @@ jobs:
             'rs63': cov.get('rs63'),
             'entry_inputs': cov.get('entry_inputs'),
             'confidence': cov.get('confidence'),
+            'loo_status': loo.get('status'),
+            'loo_asof': loo.get('asof'),
+            'loo_taxonomy': loo.get('taxonomy'),
+            'loo_coverage': loo.get('coverage'),
           }
           print(json.dumps(report, ensure_ascii=False, indent=2))
 
@@ -145,23 +155,43 @@ jobs:
               raise SystemExit('Insufficient RS coverage')
           if int(cov.get('entry_inputs') or 0) < 30:
               raise SystemExit('Insufficient entry-metric coverage')
+          if loo.get('schema') != 'v38-loo-theme-live-1':
+              raise SystemExit('Invalid LOO Theme schema')
+          event=os.environ.get('GITHUB_EVENT_NAME','')
+          expected='PARTIAL_SMOKE_ONLY' if event == 'pull_request' else 'LIVE_CURRENT_TAXONOMY'
+          if loo.get('status') != expected:
+              raise SystemExit(f"LOO Theme status {loo.get('status')} != {expected}")
+          if loo.get('asof') != snap.get('asof'):
+              raise SystemExit(f"LOO Theme asof mismatch: {loo.get('asof')} != {snap.get('asof')}")
+          if loo.get('taxonomy') != 'CURRENT_S2T_NOT_PIT':
+              raise SystemExit('LOO Theme taxonomy caveat missing')
           PY
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:
           name: leadership-command-preview
-          path: leadership/dist/
+          path: |
+            leadership/dist/
+            loo-theme-live.json
           if-no-files-found: error
           retention-days: 7
 
-      - name: Persist public Leadership entrypoint only
+      - name: Persist public Leadership entrypoint and audited LOO state
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           generated=/tmp/leadership-index.html
+          loo_generated=/tmp/loo-theme-live.json
           cp leadership/dist/index.html "$generated"
+          cp loo-theme-live.json "$loo_generated"
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/loo-theme-live.json', encoding='utf-8'))
+          if x.get('status') != 'LIVE_CURRENT_TAXONOMY':
+              raise SystemExit('Refuse to persist incomplete LOO Theme state')
+          PY
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -172,14 +202,15 @@ jobs:
             mkdir -p leadership/dist leadership
             cp "$generated" leadership/dist/index.html
             cp "$generated" leadership/index.html
-            git add -f leadership/dist/index.html leadership/index.html
+            cp "$loo_generated" loo-theme-live.json
+            git add -f leadership/dist/index.html leadership/index.html loo-theme-live.json
 
             if git diff --staged --quiet; then
-              echo 'Persisted Leadership entrypoints already current'
+              echo 'Persisted Leadership entrypoints and LOO state already current'
               exit 0
             fi
 
-            git commit -m 'Update Leadership public entrypoint'
+            git commit -m 'Update Leadership public entrypoint and LOO Theme state'
             if git push origin HEAD:main; then
               exit 0
             fi
@@ -187,7 +218,7 @@ jobs:
             sleep $((attempt * 2))
           done
 
-          echo 'Leadership entrypoint persistence failed after retries'
+          echo 'Leadership persistence failed after retries'
           exit 1
 
   publish:
