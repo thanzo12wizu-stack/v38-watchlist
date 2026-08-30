@@ -108,6 +108,8 @@ def test_structural_small_clinical_biotech_exclusion_matches_research_rule(tmp_p
     det.update({
         "CLYM": {"px": 14.57, "dvol": 20, "ma5020": True, "v200": 5,
                  "v50": 5, "rs189": 99, "rs": 95, "sth": "バイオ"},
+        "SMALLPHARMA": {"px": 22, "dvol": 20, "ma5020": True, "v200": 5,
+                        "v50": 5, "rs189": 98.5, "rs": 95, "sth": "医薬"},
         "BIGBIO": {"px": 100, "dvol": 20, "ma5020": True, "v200": 5,
                    "v50": 5, "rs189": 98, "rs": 95, "sth": "バイオ"},
         "MISSREV": {"px": 80, "dvol": 20, "ma5020": True, "v200": 5,
@@ -122,6 +124,7 @@ def test_structural_small_clinical_biotech_exclusion_matches_research_rule(tmp_p
         writer = csv.DictWriter(handle, fieldnames=["シンボル", "業種", "時価総額", "売上高TTM"])
         writer.writeheader()
         writer.writerow({"シンボル": "CLYM", "業種": "Biotechnology", "時価総額": 836_846_183, "売上高TTM": 0})
+        writer.writerow({"シンボル": "SMALLPHARMA", "業種": "Pharmaceuticals: Other", "時価総額": 800_000_000, "売上高TTM": 10_000_000})
         writer.writerow({"シンボル": "BIGBIO", "業種": "Biotechnology", "時価総額": 20_000_000_000, "売上高TTM": 0})
         writer.writerow({"シンボル": "MISSREV", "業種": "Pharmaceuticals: Other", "時価総額": 800_000_000, "売上高TTM": ""})
         for i in range(37):
@@ -130,11 +133,12 @@ def test_structural_small_clinical_biotech_exclusion_matches_research_rule(tmp_p
     state = build_state(source)
     tickers = {row["ticker"] for row in state["candidates"]}
     assert "CLYM" not in tickers
+    assert "SMALLPHARMA" not in tickers
     assert "BIGBIO" in tickers
     assert "MISSREV" in tickers
     assert state["eligibility"]["structural_metadata_status"] == "LIVE"
     assert state["eligibility"]["revenue_missing_policy"] == "FAIL_OPEN"
-    assert state["eligibility"]["excluded_count"] == 1
+    assert state["eligibility"]["excluded_count"] == 2
 
 
 def test_rotation_macro_requires_explicit_exact_route(tmp_path):
