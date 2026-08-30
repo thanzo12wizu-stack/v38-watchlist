@@ -14,6 +14,9 @@ on:
       - 'sar_state.txt'
       - 'equity.csv'
       - 'build_dashboard.py'
+      - 'build_v38_companion.py'
+      - 'command-center-v38.html'
+      - 'v38_rules.py'
       - 'scripts/export_public_site.py'
       - 'scripts/privacy_audit.py'
       - '.github/workflows/dashboard.yml'
@@ -42,6 +45,7 @@ jobs:
       V38_ARTIFACTS: >-
         command-center.html
         command-center_share.html
+        v38-live-state.json
         mktcap.json
         trend_history.json
         fred_cache.json
@@ -81,10 +85,12 @@ jobs:
 
       - name: Preflight tests
         run: |
-          python -m py_compile build_dashboard.py
+          python -m py_compile build_dashboard.py build_v38_companion.py v38_rules.py
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
-            tests/test_eps_acceleration.py
+            tests/test_eps_acceleration.py \
+            tests/test_v38_rules.py \
+            tests/test_v38_companion.py
 
       - name: Build dashboard
         id: build
@@ -136,6 +142,13 @@ jobs:
             echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build isolated audited V38 companion
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --out v38-live-state.json
+
       - name: Report skipped stale run
         if: steps.build.outputs.skipped == 'true'
         shell: bash
@@ -161,6 +174,8 @@ jobs:
           required = {
               "command-center.html": 200_000,
               "command-center_share.html": 2_500,
+              "command-center-v38.html": 8_000,
+              "v38-live-state.json": 1_000,
           }
           for name, minimum in required.items():
               path = Path(name)
@@ -172,7 +187,7 @@ jobs:
                       f"generated file too small: {name}={size} bytes < {minimum}"
                   )
               text = path.read_text(encoding="utf-8", errors="strict")
-              if "<!doctype html>" not in text.lower():
+              if name.endswith(".html") and "<!doctype html>" not in text.lower():
                   raise SystemExit(f"doctype missing: {name}")
 
           main = Path("command-center.html").read_text(encoding="utf-8")
@@ -192,6 +207,16 @@ jobs:
           state_date = str(state.get("date") or "")
           if not iso.fullmatch(state_date):
               raise SystemExit(f"invalid state market-session date: {state_date!r}")
+
+          companion = json.loads(
+              Path("v38-live-state.json").read_text(encoding="utf-8")
+          )
+          if companion.get("schema") != "v38-live-state-1":
+              raise SystemExit("invalid V38 companion schema")
+          if companion.get("asof") != state_date:
+              raise SystemExit(
+                  f"V38 companion date mismatch: {companion.get('asof')} != {state_date}"
+              )
 
           log_dates = []
           with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
@@ -316,7 +341,7 @@ jobs:
           # Same-session stale-source guard. Artifact/options commits are harmless;
           # generation logic and explicit dashboard inputs are not.
           git fetch --depth=1 origin main
-          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
             echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
             echo "source_drift=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
