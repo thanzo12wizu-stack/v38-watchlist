@@ -12,9 +12,23 @@ import audit_ordinary_stock_theme_leave_one_out as loo
 SELECTIVE_SLOTS = 4
 PEAK_PCT = 30
 PARTIAL_FRAC = 0.25
+RESET_SLOT = 0.029
+RESET_MAX_POS = 4
+RESET_HOLD = 20
+RESET_COST = 5.0 / 10000.0
 
 
-def simulate_selected(meta, matrices, peer_ctx):
+def _px(frame, date, sym, fallback=None):
+    try:
+        x = float(frame.at[date, sym])
+        if np.isfinite(x) and x > 0:
+            return x
+    except Exception:
+        pass
+    return fallback
+
+
+def simulate_ordinary(meta, matrices, peer_ctx):
     """Exact PEAK30_PART25_R3 mechanics, with daily gross/exposure diagnostics added."""
     idx = meta["analysis_idx"]
     opens, closes = matrices["open"], matrices["close"]
@@ -23,15 +37,6 @@ def simulate_selected(meta, matrices, peer_ctx):
     pos = {}
     rows = []
     red_run = 0
-
-    def px(frame, date, sym, fallback=None):
-        try:
-            x = float(frame.at[date, sym])
-            if np.isfinite(x) and x > 0:
-                return x
-        except Exception:
-            pass
-        return fallback
 
     def close_position(sym, date, price):
         nonlocal cash
@@ -48,30 +53,26 @@ def simulate_selected(meta, matrices, peer_ctx):
 
             if red_force:
                 for sym in list(pos):
-                    opx = px(opens, d, sym, px(closes, prev, sym, pos[sym]["entry_price"]))
+                    opx = _px(opens, d, sym, _px(closes, prev, sym, pos[sym]["entry_price"]))
                     if opx is not None:
                         close_position(sym, d, opx)
             else:
                 for sym in list(pos):
                     p = pos[sym]
-                    pc = px(closes, prev, sym, p["entry_price"])
+                    pc = _px(closes, prev, sym, p["entry_price"])
                     if pc is None:
                         continue
                     p["sessions"] += 1
-
                     if (not p["partial_done"]) and pc >= p["entry_price"] * 1.24:
-                        opx = px(opens, d, sym, pc)
+                        opx = _px(opens, d, sym, pc)
                         if opx is not None:
                             sold = p["shares"] * PARTIAL_FRAC
                             cash += sold * opx
                             p["shares"] -= sold
                             p["partial_done"] = True
-
-                    stop = p["entry_price"] * 0.92
-                    peak_stop = p["peak_close"] * (1.0 - PEAK_PCT / 100.0)
-                    stop = max(stop, peak_stop)
+                    stop = max(p["entry_price"] * 0.92, p["peak_close"] * (1.0 - PEAK_PCT / 100.0))
                     if pc <= stop:
-                        opx = px(opens, d, sym, pc)
+                        opx = _px(opens, d, sym, pc)
                         if opx is not None:
                             close_position(sym, d, opx)
 
@@ -83,7 +84,7 @@ def simulate_selected(meta, matrices, peer_ctx):
                 candidates = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, base.N_PORT)
                 nav_open = cash
                 for sym, p in pos.items():
-                    opx = px(opens, d, sym, px(closes, prev, sym, p["entry_price"]))
+                    opx = _px(opens, d, sym, _px(closes, prev, sym, p["entry_price"]))
                     if opx is not None:
                         nav_open += p["shares"] * opx
                 slot_cash = nav_open / base.N_PORT
@@ -92,7 +93,7 @@ def simulate_selected(meta, matrices, peer_ctx):
                         break
                     if sym in pos:
                         continue
-                    opx = px(opens, d, sym, px(closes, prev, sym, None))
+                    opx = _px(opens, d, sym, _px(closes, prev, sym, None))
                     if opx is None:
                         continue
                     alloc = min(slot_cash, cash)
@@ -112,29 +113,94 @@ def simulate_selected(meta, matrices, peer_ctx):
         gross = 0.0
         nav = cash
         for sym, p in pos.items():
-            cp = px(closes, d, sym, px(opens, d, sym, p["entry_price"]))
+            cp = _px(closes, d, sym, _px(opens, d, sym, p["entry_price"]))
             if cp is None:
                 cp = p["entry_price"]
             p["peak_close"] = max(p["peak_close"], cp)
             mark = p["shares"] * cp
             gross += mark
             nav += mark
-        rows.append({
-            "date": d,
-            "nav": nav,
-            "gross_value": gross,
-            "gross_exposure": gross / nav if nav > 0 else np.nan,
-            "positions": len(pos),
-        })
+        rows.append({"date": d, "nav": nav, "gross_value": gross,
+                     "gross_exposure": gross / nav if nav > 0 else np.nan, "positions": len(pos)})
 
     out = pd.DataFrame(rows).set_index("date")
     out["return"] = out["nav"].pct_change(fill_method=None).fillna(0.0)
     return out.reset_index()
 
 
+def prepare_reset_trades(path: Path, calendar: pd.DatetimeIndex, columns: pd.Index) -> pd.DataFrame:
+    t = pd.read_csv(path, compression="gzip", parse_dates=["day0_date", "signal_date", "entry_date"])
+    t = t[t.method.eq("RISE_LE30_W20")].copy()
+    t["rank_priority"] = t.rank_type.map({"RS63_TOP3": 0, "RS189_TOP3": 1}).fillna(9)
+    t = t.sort_values(["day0_date", "theme", "symbol", "rank_priority"]).drop_duplicates(
+        ["day0_date", "theme", "symbol"], keep="first")
+    t = t[t.entry_date.isin(calendar) & t.symbol.isin(columns)].copy()
+    return t
+
+
+def simulate_reset(calendar, opens, closes, trades):
+    """Exact selected RSI Reset portfolio: 2.9% x max4, full entry, fixed 20 sessions, max2/theme."""
+    cash = 1.0
+    lots = []
+    rows = []
+    turnover = 0.0
+    by_entry = {pd.Timestamp(d): g for d, g in trades.groupby("entry_date", observed=True)}
+    for i, d0 in enumerate(calendar):
+        d = pd.Timestamp(d0)
+        keep = []
+        for z in lots:
+            px = _px(opens, d, z["symbol"])
+            if i >= z["exit_i"] and px is not None:
+                gross = z["shares"] * px
+                cash += gross * (1 - RESET_COST)
+                turnover += gross
+            else:
+                keep.append(z)
+        lots = keep
+
+        if d in by_entry:
+            day = by_entry[d].sort_values(["rank_priority", "rsi_signal", "symbol"])
+            for r in day.itertuples(index=False):
+                if len(lots) >= RESET_MAX_POS:
+                    continue
+                if sum(q["theme"] == r.theme for q in lots) >= 2:
+                    continue
+                px = _px(opens, d, r.symbol)
+                if px is None:
+                    continue
+                mark = cash
+                for q in lots:
+                    qpx = _px(opens, d, q["symbol"])
+                    if qpx is not None:
+                        mark += q["shares"] * qpx
+                amount = RESET_SLOT * mark
+                if cash < amount * (1 + RESET_COST):
+                    continue
+                cash -= amount * (1 + RESET_COST)
+                turnover += amount
+                lots.append({"symbol": r.symbol, "theme": r.theme, "shares": amount / px,
+                             "entry_i": i, "exit_i": min(i + RESET_HOLD, len(calendar) - 1)})
+
+        gross = 0.0
+        nav = cash
+        for z in lots:
+            cp = _px(closes, d, z["symbol"])
+            if cp is not None:
+                mark = z["shares"] * cp
+                gross += mark
+                nav += mark
+        rows.append({"date": d, "nav": nav, "gross_value": gross,
+                     "gross_exposure": gross / nav if nav > 0 else np.nan,
+                     "positions": len(lots)})
+    out = pd.DataFrame(rows).set_index("date")
+    out["return"] = out["nav"].pct_change(fill_method=None).fillna(0.0)
+    return out.reset_index(), turnover
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".")
+    ap.add_argument("--reset-trades", required=True)
     ap.add_argument("--output", required=True)
     ap.add_argument("--analysis-start", default="2016-01-04")
     ap.add_argument("--analysis-end", default="2026-03-20")
@@ -147,15 +213,24 @@ def main():
 
     meta, matrices = ex.build_inputs_ext(root, args.analysis_start, args.analysis_end, args.max_tickers, args.batch_size)
     peer_ctx = loo.build_leave_one_out_scores(root, matrices)
-    daily = simulate_selected(meta, matrices, peer_ctx)
-    daily.to_csv(out / "ordinary_PEAK30_PART25_R3_daily.csv.gz", index=False, compression="gzip")
-    print(daily.tail().to_string(index=False), flush=True)
+    ordinary = simulate_ordinary(meta, matrices, peer_ctx)
+    cal = pd.DatetimeIndex(meta["analysis_idx"])
+    reset_trades = prepare_reset_trades(Path(args.reset_trades), cal, matrices["close"].columns)
+    reset, reset_turnover = simulate_reset(cal, matrices["open"], matrices["close"], reset_trades)
+
+    ordinary.to_csv(out / "ordinary_PEAK30_PART25_R3_daily.csv.gz", index=False, compression="gzip")
+    reset.to_csv(out / "rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz", index=False, compression="gzip")
     print({
-        "start": str(pd.Timestamp(daily.date.min()).date()),
-        "end": str(pd.Timestamp(daily.date.max()).date()),
-        "days": int(len(daily)),
-        "avg_gross": float(daily.gross_exposure.mean()),
-        "max_gross": float(daily.gross_exposure.max()),
+        "start": str(pd.Timestamp(ordinary.date.min()).date()),
+        "end": str(pd.Timestamp(ordinary.date.max()).date()),
+        "days": int(len(ordinary)),
+        "ordinary_avg_gross": float(ordinary.gross_exposure.mean()),
+        "ordinary_max_gross": float(ordinary.gross_exposure.max()),
+        "reset_avg_gross": float(reset.gross_exposure.mean()),
+        "reset_max_gross": float(reset.gross_exposure.max()),
+        "reset_max_positions": int(reset.positions.max()),
+        "reset_trades_input": int(len(reset_trades)),
+        "reset_turnover_value": float(reset_turnover),
     }, flush=True)
 
 
