@@ -1,0 +1,26 @@
+{
+  "schema": "v38-rotation-history-1",
+  "groups": {
+    "Healthcare": {
+      "asof": "YYYY-MM-DD",
+      "source": "POINT_IN_TIME_ROTATION_HISTORY",
+      "exact": false,
+      "changes": {
+        "price_1d": null,
+        "price_5d": null,
+        "price_20d": null,
+        "internal_1d": null,
+        "internal_5d": null,
+        "internal_20d": null
+      },
+      "events": [
+        {
+          "date": "YYYY-MM-DD",
+          "type": "INTERNAL_TURNED_UP",
+          "detail": "Machine-computed event text only"
+        }
+      ]
+    }
+  },
+  "note": "Used only to state dated transitions such as 'internal turned up 7 sessions ago'. Never infer transition dates from the current snapshot. Threshold/event definitions remain research-only until forward validation."
+}
