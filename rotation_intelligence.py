@@ -1,16 +1,9 @@
 """Truthful Sector / Theme Rotation Intelligence for the audited V38 companion.
 
-This module deliberately separates:
-- price / relative-strength observations,
-- internal participation,
-- exact ETF fund flow,
-- divergence classification,
-- V38 trading actions.
-
-It must never treat trading volume as ETF creation/redemption fund flow. When
-exact flow, A/D, OBV, or 21EMA participation are not available, the output is
-explicitly marked partial / DATA_REQUIRED rather than promoted to a complete
-rotation signal.
+The research view deliberately keeps five layers separate:
+Price -> Internal participation -> Exact ETF fund flow -> Rotation/Divergence -> V38 action.
+Missing data stays DATA_REQUIRED. Trading volume is never relabelled as ETF fund flow.
+None of the display composites in this module are trading gates until separately validated.
 """
 
 from __future__ import annotations
@@ -19,6 +12,7 @@ from statistics import median
 from typing import Any, Mapping, Optional
 
 MIN_GROUP_MEMBERS = 3
+INTERNAL_FIELDS = ("ad_score", "obv_score", "breadth21_pct", "breadth50_pct")
 
 
 def _num(value: Any) -> Optional[float]:
@@ -28,9 +22,11 @@ def _num(value: Any) -> Optional[float]:
         x = float(value)
     except (TypeError, ValueError):
         return None
-    if x != x or x in (float("inf"), float("-inf")):
-        return None
-    return x
+    return x if x == x and x not in (float("inf"), float("-inf")) else None
+
+
+def _clip(value: float) -> float:
+    return max(0.0, min(100.0, float(value)))
 
 
 def _med(values: list[float]) -> Optional[float]:
@@ -39,25 +35,6 @@ def _med(values: list[float]) -> Optional[float]:
 
 def _mean(values: list[float]) -> Optional[float]:
     return sum(values) / len(values) if values else None
-
-
-def _clip(value: float) -> float:
-    return max(0.0, min(100.0, float(value)))
-
-
-def _percent_above(rows: list[Mapping[str, Any]], keys: tuple[str, ...]) -> Optional[float]:
-    values: list[float] = []
-    for row in rows:
-        value = None
-        for key in keys:
-            value = _num(row.get(key))
-            if value is not None:
-                break
-        if value is not None:
-            values.append(value)
-    if not values:
-        return None
-    return 100.0 * sum(value > 0 for value in values) / len(values)
 
 
 def _median_field(rows: list[Mapping[str, Any]], *keys: str) -> Optional[float]:
@@ -71,12 +48,20 @@ def _median_field(rows: list[Mapping[str, Any]], *keys: str) -> Optional[float]:
     return _med(values)
 
 
+def _percent_above(rows: list[Mapping[str, Any]], keys: tuple[str, ...]) -> Optional[float]:
+    values: list[float] = []
+    for row in rows:
+        for key in keys:
+            value = _num(row.get(key))
+            if value is not None:
+                values.append(value)
+                break
+    return None if not values else 100.0 * sum(v > 0 for v in values) / len(values)
+
+
 def _flow_snapshot(flow: Optional[Mapping[str, Any]]) -> dict[str, Any]:
     flow = flow or {}
-    one = _num(flow.get("flow_1d"))
-    five = _num(flow.get("flow_5d"))
-    twenty = _num(flow.get("flow_20d"))
-    aum = _num(flow.get("aum"))
+    one, five, twenty, aum = (_num(flow.get(k)) for k in ("flow_1d", "flow_5d", "flow_20d", "aum"))
     exact = bool(flow.get("exact")) and twenty is not None
     return {
         "status": "EXACT" if exact else "DATA_REQUIRED",
@@ -92,62 +77,89 @@ def _flow_snapshot(flow: Optional[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _internal_snapshot(
-    rows: list[Mapping[str, Any]],
-    exact_internal: Optional[Mapping[str, Any]],
-) -> dict[str, Any]:
-    """Return exact Full4 internals when supplied, otherwise a truthful proxy.
+def _exact_internal_variant(payload: Mapping[str, Any], *, parent_exact: bool = False) -> Optional[dict[str, Any]]:
+    values = {key: _num(payload.get(key)) for key in INTERNAL_FIELDS}
+    exact = bool(payload.get("exact", parent_exact))
+    if not exact or not all(v is not None and 0 <= v <= 100 for v in values.values()):
+        return None
+    ad, obv, b21, b50 = (values[k] for k in INTERNAL_FIELDS)
+    score = _clip(0.30 * ad + 0.30 * obv + 0.25 * b21 + 0.15 * b50)
+    delta = _num(payload.get("internal_delta_20d"))
+    return {
+        "score": round(score, 1),
+        "ad_trend_score": round(ad, 1),
+        "obv_trend_score": round(obv, 1),
+        "above21_pct": round(b21, 1),
+        "above50_pct": round(b50, 1),
+        "internal_delta_20d": round(delta, 1) if delta is not None else None,
+        "source": payload.get("source"),
+        "asof": payload.get("asof"),
+        "status": "EXACT_INPUTS_UNVALIDATED_COMPOSITE",
+    }
 
-    The exact-input composite uses the originally proposed 30/30/25/15 display
-    weights for A/D, OBV, %Above21EMA and %Above50MA. Those weights are NOT a
-    validated trading rule and are explicitly labelled as such.
+
+def _internal_snapshot(rows: list[Mapping[str, Any]], exact_internal: Optional[Mapping[str, Any]]) -> dict[str, Any]:
+    """Primary matrix internal is equal-weight participation.
+
+    A cap-weight version can be supplied in parallel to diagnose mega-cap concentration.
+    Both use the proposed 30/30/25/15 display weights, which remain unvalidated.
+    Legacy flat exact input is treated as the equal-weight variant for compatibility.
     """
-    exact_internal = exact_internal or {}
-    ad = _num(exact_internal.get("ad_score"))
-    obv = _num(exact_internal.get("obv_score"))
-    b21_exact = _num(exact_internal.get("breadth21_pct"))
-    b50_exact = _num(exact_internal.get("breadth50_pct"))
-    delta20 = _num(exact_internal.get("internal_delta_20d"))
-    exact = bool(exact_internal.get("exact")) and all(
-        value is not None and 0 <= value <= 100
-        for value in (ad, obv, b21_exact, b50_exact)
-    )
+    raw = exact_internal or {}
+    parent_exact = bool(raw.get("exact"))
+    ew_payload = raw.get("equal_weight") if isinstance(raw.get("equal_weight"), Mapping) else raw
+    cw_payload = raw.get("cap_weight") if isinstance(raw.get("cap_weight"), Mapping) else {}
+    ew = _exact_internal_variant(ew_payload, parent_exact=parent_exact)
+    cw = _exact_internal_variant(cw_payload, parent_exact=parent_exact) if cw_payload else None
     uv_ratio = _median_field(rows, "uvdv20", "uvdv")
 
-    if exact:
-        score = _clip(0.30 * ad + 0.30 * obv + 0.25 * b21_exact + 0.15 * b50_exact)
+    if ew is not None:
+        gap = (cw["score"] - ew["score"]) if cw is not None else None
         return {
-            "score": round(score, 1),
-            "above21_pct": round(b21_exact, 1),
-            "above50_pct": round(b50_exact, 1),
+            "score": ew["score"],
+            "above21_pct": ew["above21_pct"],
+            "above50_pct": ew["above50_pct"],
             "median_up_down_volume_ratio20": round(uv_ratio, 2) if uv_ratio is not None else None,
-            "ad_trend_score": round(ad, 1),
-            "obv_trend_score": round(obv, 1),
-            "internal_delta_20d": round(delta20, 1) if delta20 is not None else None,
-            "source": exact_internal.get("source"),
-            "asof": exact_internal.get("asof"),
+            "ad_trend_score": ew["ad_trend_score"],
+            "obv_trend_score": ew["obv_trend_score"],
+            "internal_delta_20d": ew["internal_delta_20d"],
+            "source": ew.get("source") or raw.get("source"),
+            "asof": ew.get("asof") or raw.get("asof"),
             "status": "EXACT_INPUTS_UNVALIDATED_COMPOSITE",
             "complete": True,
             "weights": {"ad": 0.30, "obv": 0.30, "breadth21": 0.25, "breadth50": 0.15},
+            "primary_weighting": "EQUAL_WEIGHT",
+            "equal_weight": ew,
+            "cap_weight": cw or {"status": "DATA_REQUIRED", "score": None},
+            "cap_minus_equal_gap": round(gap, 1) if gap is not None else None,
+            "concentration_diagnostic": "DISPLAY_ONLY_UNVALIDATED",
         }
 
     above21 = _percent_above(rows, ("dma21", "v21", "vs21"))
     above50 = _percent_above(rows, ("v50", "dma50", "vs50"))
     components = [x for x in (above21, above50) if x is not None]
     score = _clip(_mean(components)) if components else None
-    return {
+    partial = {
         "score": round(score, 1) if score is not None else None,
         "above21_pct": round(above21, 1) if above21 is not None else None,
         "above50_pct": round(above50, 1) if above50 is not None else None,
-        "median_up_down_volume_ratio20": round(uv_ratio, 2) if uv_ratio is not None else None,
         "ad_trend_score": None,
         "obv_trend_score": None,
         "internal_delta_20d": None,
+        "status": "PARTIAL_BREADTH_ONLY" if score is not None else "DATA_REQUIRED",
+    }
+    return {
+        **partial,
+        "median_up_down_volume_ratio20": round(uv_ratio, 2) if uv_ratio is not None else None,
         "source": None,
         "asof": None,
-        "status": "PARTIAL_BREADTH_ONLY" if score is not None else "DATA_REQUIRED",
         "complete": False,
         "weights": None,
+        "primary_weighting": "EQUAL_WEIGHT_PROXY",
+        "equal_weight": partial,
+        "cap_weight": {"status": "DATA_REQUIRED", "score": None},
+        "cap_minus_equal_gap": None,
+        "concentration_diagnostic": "DATA_REQUIRED",
     }
 
 
@@ -159,124 +171,68 @@ def classify_divergence(
     internal_delta_20d: Optional[float] = None,
     internal_complete: bool = False,
 ) -> dict[str, str]:
-    """Classify only what the available evidence supports.
-
-    Strong Flow-dependent labels require both exact 20-day flow and complete
-    A/D+OBV+Breadth internals. With exact flow but incomplete internals, only a
-    CANDIDATE label is allowed. All labels remain research observations until a
-    separate forward-predictive validation is passed.
-    """
+    """Observation labels only; not a validated entry/exit signal."""
     if price_score is None or internal_score is None:
         return {"state": "DATA_REQUIRED", "label": "データ不足", "confidence": "NONE"}
-
-    price = float(price_score)
-    internal = float(internal_score)
+    price, internal = float(price_score), float(internal_score)
     delta = _num(internal_delta_20d)
-    complete_label = "FULL_DATA_UNVALIDATED_SIGNAL" if internal_complete else "PARTIAL"
-
+    confidence = "FULL_DATA_UNVALIDATED_SIGNAL" if internal_complete else "PARTIAL"
     if flow_20d is None:
         if price >= 70 and internal < 50:
-            return {
-                "state": "PRICE_INTERNAL_DIVERGENCE",
-                "label": "価格強・内部弱（分配候補、Flow未確認）",
-                "confidence": "PARTIAL",
-            }
+            return {"state": "PRICE_INTERNAL_DIVERGENCE", "label": "価格強・内部弱（分配候補、Flow未確認）", "confidence": "PARTIAL"}
         if price >= 65 and internal >= 60:
-            return {
-                "state": "BREADTH_CONFIRMED_STRENGTH",
-                "label": "価格強・参加率強（Flow未確認）",
-                "confidence": "PARTIAL",
-            }
+            return {"state": "BREADTH_CONFIRMED_STRENGTH", "label": "価格強・参加率強（Flow未確認）", "confidence": "PARTIAL"}
         if price < 55 and internal >= 60:
-            return {
-                "state": "HIDDEN_INTERNAL_STRENGTH",
-                "label": "価格未発火・内部強（先回り監視）",
-                "confidence": "PARTIAL",
-            }
+            return {"state": "HIDDEN_INTERNAL_STRENGTH", "label": "価格未発火・内部強（先回り監視）", "confidence": "PARTIAL"}
         return {"state": "NEUTRAL", "label": "中立 / Flow確認待ち", "confidence": "PARTIAL"}
-
     flow = float(flow_20d)
     if price >= 65 and internal >= 60 and flow > 0:
-        state = "CONFIRMED_ACCUMULATION" if internal_complete else "ACCUMULATION_CANDIDATE"
-        return {
-            "state": state,
-            "label": "蓄積×強（研究観測）" if internal_complete else "蓄積候補（A/D・OBV確認待ち）",
-            "confidence": complete_label,
-        }
+        return {"state": "CONFIRMED_ACCUMULATION" if internal_complete else "ACCUMULATION_CANDIDATE", "label": "蓄積×強（研究観測）" if internal_complete else "蓄積候補（A/D・OBV確認待ち）", "confidence": confidence}
     if price < 60 and internal >= 60 and flow > 0:
-        state = "HIDDEN_ACCUMULATION" if internal_complete else "HIDDEN_ACCUMULATION_CANDIDATE"
-        return {
-            "state": state,
-            "label": "Hidden Accumulation / 先回り研究候補" if internal_complete else "Hidden Accumulation候補 / 内部詳細確認待ち",
-            "confidence": complete_label,
-        }
+        return {"state": "HIDDEN_ACCUMULATION" if internal_complete else "HIDDEN_ACCUMULATION_CANDIDATE", "label": "Hidden Accumulation / 先回り研究候補" if internal_complete else "Hidden Accumulation候補 / 内部詳細確認待ち", "confidence": confidence}
     if price >= 70 and internal < 50 and flow < 0:
-        state = "DISTRIBUTION_TRAP" if internal_complete else "DISTRIBUTION_CANDIDATE"
-        return {
-            "state": state,
-            "label": "価格先行×内部/Flow逆行（研究観測）" if internal_complete else "Distribution候補 / A/D・OBV確認待ち",
-            "confidence": complete_label,
-        }
+        return {"state": "DISTRIBUTION_TRAP" if internal_complete else "DISTRIBUTION_CANDIDATE", "label": "価格先行×内部/Flow逆行（研究観測）" if internal_complete else "Distribution候補 / A/D・OBV確認待ち", "confidence": confidence}
     if price >= 60 and internal >= 60 and flow < 0:
-        state = "REDEMPTION_DIVERGENCE" if internal_complete else "REDEMPTION_DIVERGENCE_CANDIDATE"
-        return {
-            "state": state,
-            "label": "ETF流出≠構成株売り" if internal_complete else "Redemption Divergence候補 / 内部詳細確認待ち",
-            "confidence": complete_label,
-        }
+        return {"state": "REDEMPTION_DIVERGENCE" if internal_complete else "REDEMPTION_DIVERGENCE_CANDIDATE", "label": "ETF流出≠構成株売り" if internal_complete else "Redemption Divergence候補 / 内部詳細確認待ち", "confidence": confidence}
     if price < 60 and flow > 0 and delta is not None and delta >= 10:
-        state = "EARLY_ROTATION" if internal_complete else "EARLY_ROTATION_CANDIDATE"
-        return {"state": state, "label": "Flow先行・内部改善 / Watch", "confidence": complete_label}
-    return {"state": "NEUTRAL", "label": "方向感なし", "confidence": complete_label}
+        return {"state": "EARLY_ROTATION" if internal_complete else "EARLY_ROTATION_CANDIDATE", "label": "Flow先行・内部改善 / Watch", "confidence": confidence}
+    return {"state": "NEUTRAL", "label": "方向感なし", "confidence": confidence}
 
 
-def _group_rows(
-    details: Mapping[str, Mapping[str, Any]],
-    key: str,
-    *,
-    fallback: Optional[str] = None,
-) -> dict[str, list[Mapping[str, Any]]]:
+def _group_rows(details: Mapping[str, Mapping[str, Any]], key: str, *, fallback: Optional[str] = None) -> dict[str, list[Mapping[str, Any]]]:
     groups: dict[str, list[Mapping[str, Any]]] = {}
     for row in details.values():
         name = str(row.get(key) or (row.get(fallback) if fallback else "") or "").strip()
-        if not name:
-            continue
-        groups.setdefault(name, []).append(row)
+        if name:
+            groups.setdefault(name, []).append(row)
     return groups
 
 
-def _group_snapshot(
-    name: str,
-    rows: list[Mapping[str, Any]],
-    flow: Optional[Mapping[str, Any]],
-    exact_internal: Optional[Mapping[str, Any]],
-    *,
-    level: str,
-) -> dict[str, Any]:
+def _group_snapshot(name: str, rows: list[Mapping[str, Any]], flow: Optional[Mapping[str, Any]], exact_internal: Optional[Mapping[str, Any]], *, level: str) -> dict[str, Any]:
     rs189 = _median_field(rows, "rs189")
     rs63 = _median_field(rows, "rs", "rs63")
     price_components = [x for x in (rs189, rs63) if x is not None]
     price_score = _clip(_mean(price_components)) if price_components else None
-
-    internal_state = _internal_snapshot(rows, exact_internal)
-    flow_state = _flow_snapshot(flow)
+    internal = _internal_snapshot(rows, exact_internal)
+    fund_flow = _flow_snapshot(flow)
     classification = classify_divergence(
         price_score,
-        internal_state["score"],
-        flow_20d=flow_state["flow_20d"],
-        internal_delta_20d=internal_state["internal_delta_20d"],
-        internal_complete=bool(internal_state["complete"]),
+        internal["score"],
+        flow_20d=fund_flow["flow_20d"],
+        internal_delta_20d=internal["internal_delta_20d"],
+        internal_complete=bool(internal["complete"]),
     )
     missing = []
-    if internal_state["above21_pct"] is None:
+    if internal["above21_pct"] is None:
         missing.append("Breadth21")
-    if internal_state["ad_trend_score"] is None:
+    if internal["ad_trend_score"] is None:
         missing.append("A/D")
-    if internal_state["obv_trend_score"] is None:
+    if internal["obv_trend_score"] is None:
         missing.append("OBV")
-    if flow_state["status"] != "EXACT":
+    if internal["cap_weight"]["status"] == "DATA_REQUIRED":
+        missing.append("Cap-weight Internal")
+    if fund_flow["status"] != "EXACT":
         missing.append("Exact ETF Flow")
-
     return {
         "name": name,
         "level": level,
@@ -287,35 +243,19 @@ def _group_snapshot(
             "median_rs63": round(rs63, 1) if rs63 is not None else None,
             "status": "DISPLAY_PROXY_UNVALIDATED",
         },
-        "internal": internal_state,
-        "fund_flow": flow_state,
+        "internal": internal,
+        "fund_flow": fund_flow,
         "classification": classification,
         "missing": missing,
     }
 
 
-def _snapshots(
-    grouped: Mapping[str, list[Mapping[str, Any]]],
-    exact_flows: Mapping[str, Mapping[str, Any]],
-    exact_internals: Mapping[str, Mapping[str, Any]],
-    *,
-    level: str,
-) -> list[dict[str, Any]]:
-    rows = []
-    for name, members in grouped.items():
-        if len(members) < MIN_GROUP_MEMBERS:
-            continue
-        rows.append(_group_snapshot(
-            name, members, exact_flows.get(name), exact_internals.get(name), level=level
-        ))
-    rows.sort(
-        key=lambda row: (
-            row["price"]["score"] is not None,
-            row["price"]["score"] or -1,
-            row["internal"]["score"] or -1,
-        ),
-        reverse=True,
-    )
+def _snapshots(grouped: Mapping[str, list[Mapping[str, Any]]], exact_flows: Mapping[str, Mapping[str, Any]], exact_internals: Mapping[str, Mapping[str, Any]], *, level: str) -> list[dict[str, Any]]:
+    rows = [
+        _group_snapshot(name, members, exact_flows.get(name), exact_internals.get(name), level=level)
+        for name, members in grouped.items() if len(members) >= MIN_GROUP_MEMBERS
+    ]
+    rows.sort(key=lambda row: (row["price"]["score"] is not None, row["price"]["score"] or -1, row["internal"]["score"] or -1), reverse=True)
     return rows
 
 
@@ -326,56 +266,35 @@ def build_rotation_intelligence(
     exact_flows: Optional[Mapping[str, Mapping[str, Any]]] = None,
     exact_internals: Optional[Mapping[str, Mapping[str, Any]]] = None,
 ) -> dict[str, Any]:
-    """Build a research-facing rotation snapshot without inventing missing data."""
-    exact_flows = exact_flows or {}
-    exact_internals = exact_internals or {}
-    sector_groups = _snapshots(
-        _group_rows(details, "sec", fallback="sth"), exact_flows, exact_internals, level="SECTOR_OR_PARENT"
-    )
-    theme_groups = _snapshots(
-        _group_rows(details, "sth"), exact_flows, exact_internals, level="THEME_DISPLAY_TAXONOMY"
-    )
-
+    exact_flows, exact_internals = exact_flows or {}, exact_internals or {}
+    sector_groups = _snapshots(_group_rows(details, "sec", fallback="sth"), exact_flows, exact_internals, level="SECTOR_OR_PARENT")
+    theme_groups = _snapshots(_group_rows(details, "sth"), exact_flows, exact_internals, level="THEME_DISPLAY_TAXONOMY")
     divergence_states = {
         "PRICE_INTERNAL_DIVERGENCE", "DISTRIBUTION_TRAP", "DISTRIBUTION_CANDIDATE",
-        "REDEMPTION_DIVERGENCE", "REDEMPTION_DIVERGENCE_CANDIDATE",
-        "HIDDEN_INTERNAL_STRENGTH", "HIDDEN_ACCUMULATION", "HIDDEN_ACCUMULATION_CANDIDATE",
-        "EARLY_ROTATION", "EARLY_ROTATION_CANDIDATE",
+        "REDEMPTION_DIVERGENCE", "REDEMPTION_DIVERGENCE_CANDIDATE", "HIDDEN_INTERNAL_STRENGTH",
+        "HIDDEN_ACCUMULATION", "HIDDEN_ACCUMULATION_CANDIDATE", "EARLY_ROTATION", "EARLY_ROTATION_CANDIDATE",
     }
     divergences = [row for row in sector_groups if row["classification"]["state"] in divergence_states]
-    leaders = [row for row in sector_groups if row["classification"]["state"] in {
-        "BREADTH_CONFIRMED_STRENGTH", "CONFIRMED_ACCUMULATION", "ACCUMULATION_CANDIDATE",
-    }]
+    leaders = [row for row in sector_groups if row["classification"]["state"] in {"BREADTH_CONFIRMED_STRENGTH", "CONFIRMED_ACCUMULATION", "ACCUMULATION_CANDIDATE"}]
 
     themes = []
     for name, raw in (secrot or {}).items():
-        if not isinstance(raw, Mapping):
-            continue
-        themes.append({
-            "name": str(name),
-            "rotation": raw.get("rot"),
-            "rank": raw.get("rk"),
-            "universe_n": raw.get("n"),
-            "median_rs": raw.get("med"),
-            "weekly_change": raw.get("d1w"),
-            "source": "LEGACY_SECROT_DISPLAY_ONLY",
-        })
-    themes.sort(
-        key=lambda row: (_num(row.get("rank")) is not None, -(_num(row.get("rank")) or 999999)),
-        reverse=True,
-    )
+        if isinstance(raw, Mapping):
+            themes.append({"name": str(name), "rotation": raw.get("rot"), "rank": raw.get("rk"), "universe_n": raw.get("n"), "median_rs": raw.get("med"), "weekly_change": raw.get("d1w"), "source": "LEGACY_SECROT_DISPLAY_ONLY"})
+    themes.sort(key=lambda row: (_num(row.get("rank")) is not None, -(_num(row.get("rank")) or 999999)), reverse=True)
 
-    all_snapshots = sector_groups + theme_groups
-    exact_flow_count = sum(1 for row in all_snapshots if row["fund_flow"]["status"] == "EXACT")
-    exact_internal_count = sum(1 for row in all_snapshots if row["internal"]["complete"])
+    all_groups = sector_groups + theme_groups
+    exact_flow_count = sum(row["fund_flow"]["status"] == "EXACT" for row in all_groups)
+    exact_internal_count = sum(bool(row["internal"]["complete"]) for row in all_groups)
+    cap_internal_count = sum(row["internal"]["cap_weight"]["status"] != "DATA_REQUIRED" for row in all_groups)
     return {
-        "schema": "v38-rotation-intelligence-1",
+        "schema": "v38-rotation-intelligence-2",
         "status": "RESEARCH_VIEW",
         "matrix": {
             "x": "Price proxy = median Stock RS189 / RS63",
-            "y": "Internal participation; exact Full4 when supplied, otherwise available breadth proxy",
+            "y": "Equal-weight Internal participation; Cap-weight is a separate concentration diagnostic",
             "bubble": "Exact 20D ETF Flow / AUM only; unavailable values are not approximated",
-            "quality": "RESEARCH / not an entry-exit gate; exact-data composite weights remain unvalidated",
+            "quality": "RESEARCH / not an entry-exit gate; score weights and thresholds remain unvalidated",
         },
         "fund_flow": {
             "status": "EXACT" if exact_flow_count else "DATA_REQUIRED",
@@ -387,10 +306,19 @@ def build_rotation_intelligence(
         },
         "internals": {
             "status": "EXACT" if exact_internal_count else "DATA_REQUIRED",
-            "exact_groups": exact_internal_count,
-            "required_fields": ["ad_score", "obv_score", "breadth21_pct", "breadth50_pct", "source", "asof", "exact=true"],
+            "exact_equal_weight_groups": exact_internal_count,
+            "exact_cap_weight_groups": cap_internal_count,
+            "primary": "EQUAL_WEIGHT",
+            "required_variants": ["equal_weight", "cap_weight"],
+            "required_fields_per_variant": [*INTERNAL_FIELDS, "internal_delta_20d", "source", "asof", "exact=true"],
             "optional_input": "rotation-internals.json",
             "composite": "30% A/D + 30% OBV + 25% Breadth21 + 15% Breadth50 (DISPLAY / UNVALIDATED)",
+            "cap_weight_role": "diagnose concentration / mega-cap masking; never substitute for equal-weight participation",
+        },
+        "history": {
+            "status": "DATA_REQUIRED",
+            "optional_input": "rotation-history.json",
+            "role": "1D/5D/20D state transitions and dated events; never infer dates from one current snapshot",
         },
         "groups": sector_groups,
         "sector_groups": sector_groups,
@@ -400,7 +328,7 @@ def build_rotation_intelligence(
         "themes": themes[:30],
         "narrative_contract": {
             "rule": "Facts first; prose may summarize only fields present in this state",
-            "do_not_infer": ["ETF Fund Flow", "A/D", "OBV", "PIT Theme taxonomy", "LOO Theme"],
+            "do_not_infer": ["ETF Fund Flow", "A/D", "OBV", "Macro causality", "PIT Theme taxonomy", "LOO Theme", "historical transition dates"],
         },
         "validation": {
             "predictive_status": "NOT VALIDATED",
