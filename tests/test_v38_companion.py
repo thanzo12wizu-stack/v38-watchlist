@@ -34,6 +34,9 @@ def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_th
     assert state["market"]["mode"] == "ATTACK"
     assert state["market"]["breadth50"] == 65
     assert state["ranking"]["mode"] == "LOO_THEME30_DATA_REQUIRED"
+    assert state["ranking"]["candidate_list_semantics"] == "RS189_PREVIEW_ONLY_UNTIL_LOO_LIVE"
+    assert "RS189 preview only" in state["ranking"]["note"]
+    assert state["candidates"][0]["entry_status"] == "RS189_PREVIEW_ONLY_LOO_DATA_REQUIRED"
     assert state["candidates"][0]["peer_theme_score"] is None
     assert state["ranking"]["candidate_exclusion_required_for_all_components"] is True
     assert state["ranking"]["multiple_theme_policy"] == "MAX_VALID_MEMBERSHIP_SCORE"
@@ -63,7 +66,9 @@ def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
     state = build_state(source)
     assert state["market"]["mode"] == "SELECTIVE"
     assert state["ranking"]["mode"] == "RS189_ONLY"
+    assert state["ranking"]["candidate_list_semantics"] == "EXECUTABLE_RS189_RANK"
     assert state["candidates"][0]["final_rank"] == 1
+    assert state["candidates"][0]["entry_status"] == "NEXT_OPEN_WHEN_CAPACITY"
 
 
 def test_companion_tqqq_schema_separates_current_hierarchy_floor_and_allocation(tmp_path):
