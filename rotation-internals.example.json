@@ -1,0 +1,16 @@
+{
+  "schema": "v38-rotation-internals-1",
+  "groups": {
+    "Healthcare": {
+      "asof": "YYYY-MM-DD",
+      "ad_score": null,
+      "obv_score": null,
+      "breadth21_pct": null,
+      "breadth50_pct": null,
+      "internal_delta_20d": null,
+      "source": "POINT_IN_TIME_CONSTITUENT_ENGINE",
+      "exact": false
+    }
+  },
+  "note": "ad_score and obv_score are normalized 0-100 group trend scores. The 30/30/25/15 composite is display/research only until predictive validation is complete."
+}
