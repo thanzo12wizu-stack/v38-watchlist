@@ -38,7 +38,7 @@ def _finite(value) -> bool:
 
 
 def _optional_group_payload(path: Path) -> dict:
-    """Read an optional exact-data contract; malformed input fails closed."""
+    """Read an optional exact-data group contract; malformed input fails closed."""
     if not path.is_file():
         return {}
     try:
@@ -51,6 +51,17 @@ def _optional_group_payload(path: Path) -> dict:
     if not isinstance(groups, dict):
         return {}
     return {str(name): value for name, value in groups.items() if isinstance(value, dict)}
+
+
+def _optional_object_payload(path: Path) -> dict:
+    """Read an optional exact-data object contract; malformed input fails closed."""
+    if not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return raw if isinstance(raw, dict) else {}
 
 
 def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
@@ -89,6 +100,53 @@ def _structural_bio_exclusions(universe_csv: Path) -> tuple[set[str], bool]:
         return set(), False
 
 
+def _rotation_macro_snapshot(raw: dict) -> dict:
+    """Expose macro observations only when an explicit exact route is supplied."""
+    fields = (
+        "us10y_yield", "real10y_yield", "dxy", "credit_spread",
+        "vix", "fear_greed",
+    )
+    exact = bool(raw.get("exact"))
+    values = {name: (_num if False else None) for name in ()}  # keep schema local and explicit
+    out = {
+        "status": "EXACT" if exact else "DATA_REQUIRED",
+        "source": raw.get("source") if exact else None,
+        "asof": raw.get("asof") if exact else None,
+        "optional_input": "rotation-macro.json",
+        "required_fields": list(fields),
+        "role": "WHY/context only; not a normal-stock hard gate",
+    }
+    for name in fields:
+        value = raw.get(name) if exact else None
+        out[name] = float(value) if _finite(value) else None
+    return out
+
+
+def _top_group_stocks(details: dict, group_name: str, key: str, limit: int = 5) -> list[dict]:
+    rows = []
+    for ticker, row in details.items():
+        if str(row.get(key) or "").strip() != group_name:
+            continue
+        rs189 = float(row["rs189"]) if _finite(row.get("rs189")) else None
+        rs63 = float(row["rs"]) if _finite(row.get("rs")) else None
+        if rs189 is None and rs63 is None:
+            continue
+        rows.append({
+            "ticker": str(ticker).upper(),
+            "rs189": round(rs189, 1) if rs189 is not None else None,
+            "rs63": round(rs63, 1) if rs63 is not None else None,
+        })
+    rows.sort(key=lambda row: (row["rs189"] is not None, row["rs189"] or -1, row["rs63"] or -1), reverse=True)
+    return rows[:limit]
+
+
+def _attach_rotation_stock_context(rotation: dict, details: dict) -> None:
+    for row in rotation.get("sector_groups") or []:
+        row["top_stocks"] = _top_group_stocks(details, str(row.get("name") or ""), "sec")
+    for row in rotation.get("theme_groups") or []:
+        row["top_stocks"] = _top_group_stocks(details, str(row.get("name") or ""), "sth")
+
+
 def build_state(legacy_html: Path) -> dict:
     source = legacy_html.read_text(encoding="utf-8")
     calc = _embedded_json(source, "CALC")
@@ -104,6 +162,7 @@ def build_state(legacy_html: Path) -> dict:
     )
     exact_flows = _optional_group_payload(root / "rotation-flow.json")
     exact_internals = _optional_group_payload(root / "rotation-internals.json")
+    exact_macro = _optional_object_payload(root / "rotation-macro.json")
 
     valid50 = [row for row in details.values() if _finite(row.get("v50"))]
     coverage = len(valid50) / len(details) if details else 0.0
@@ -169,6 +228,8 @@ def build_state(legacy_html: Path) -> dict:
         exact_flows=exact_flows,
         exact_internals=exact_internals,
     )
+    rotation["macro"] = _rotation_macro_snapshot(exact_macro)
+    _attach_rotation_stock_context(rotation, details)
 
     return {
         "schema": "v38-live-state-1",
