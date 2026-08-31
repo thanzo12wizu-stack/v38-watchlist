@@ -214,7 +214,7 @@ def main() -> None:
     flow_wide = panel.pivot(index="date", columns="sector", values="flow20_pct_aum").sort_index()
     flow_rank = flow_wide.rank(axis=1, pct=True, method="average") * 100.0
     flow_panel = panel[["date", "sector", *[f"fwd_excess_{h}d" for h in HORIZONS]]].copy()
-    rank_long = flow_rank.stack(dropna=True).rename("flow_rank").reset_index()
+    rank_long = flow_rank.stack().dropna().rename("flow_rank").reset_index()
     flow_panel = flow_panel.merge(rank_long, on=["date", "sector"], how="left")
     exact_flow_tests = {}
     for label, mask in {
