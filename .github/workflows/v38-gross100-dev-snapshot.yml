@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/upload-artifact@v4
+      - name: Upload editable source snapshot
+        uses: actions/upload-artifact@v4
         with:
           name: v38-gross100-dev-snapshot
           path: |
