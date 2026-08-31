@@ -31,6 +31,7 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def build_stock_index(model: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """Index only stocks exported in each existing Leadership group's top-15 list."""
     groups = model.get("groups") if isinstance(model.get("groups"), list) else []
     stock_index: dict[str, dict[str, Any]] = {}
     group_rows: list[dict[str, Any]] = []
@@ -51,6 +52,7 @@ def build_stock_index(model: dict[str, Any]) -> tuple[dict[str, dict[str, Any]],
             "pioneer_score": safe_num(group.get("pioneer_score")),
             "breadth_score": safe_num(group.get("breadth_score")),
             "leader_breakouts": group.get("leader_breakouts"),
+            "exported_stock_rows": len(stocks),
         })
         for stock_rank, stock in enumerate(stocks, start=1):
             if not isinstance(stock, dict):
@@ -107,7 +109,7 @@ def compact_matrix(row: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Join current Industry ETF membership to the existing Leadership group/stock model")
+    ap = argparse.ArgumentParser(description="Join current Industry ETF membership to the existing Leadership exported group/stock context")
     ap.add_argument("--leadership", type=Path, required=True)
     ap.add_argument("--matrix", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
@@ -127,13 +129,11 @@ def main() -> None:
     for etf in INDUSTRY_ETFS:
         h = holdings[holdings["sector_etf"] == etf].copy()
         h["symbol"] = h["symbol"].astype(str).str.upper()
-        matched: list[dict[str, Any]] = []
-        unmatched = 0
+        intersected: list[dict[str, Any]] = []
         for holding_rank, hr in enumerate(h.to_dict("records"), start=1):
             symbol = str(hr.get("symbol") or "").upper()
             lead = stock_index.get(symbol)
             if not lead:
-                unmatched += 1
                 continue
             rec = {
                 "etf": etf,
@@ -141,29 +141,28 @@ def main() -> None:
                 "holding_weight_pct": safe_num(hr.get("weight_pct")),
                 **lead,
             }
-            matched.append(rec)
+            intersected.append(rec)
             context_rows.append(rec)
 
         # Preserve the existing Leadership order. No new composite score or stock rank is created here.
-        matched.sort(key=lambda x: (int(x["group_rank"]), int(x["stock_rank_within_group"]), int(x["holding_rank"])))
-        leaders = [x for x in matched if str(x.get("role")) in LEADER_ROLES]
+        intersected.sort(key=lambda x: (int(x["group_rank"]), int(x["stock_rank_within_group"]), int(x["holding_rank"])))
+        leaders = [x for x in intersected if str(x.get("role")) in LEADER_ROLES]
         emerging_or_leading = [x for x in leaders if str(x.get("group_phase")) in {"EMERGING", "LEADING"}]
         industries.append({
             "etf": etf,
             "rotation": compact_matrix(matrix.get(etf)),
             "holdings_source": diag_by_ticker.get(etf),
             "membership_rows": int(len(h)),
-            "leadership_matches": int(len(matched)),
-            "leadership_match_pct": 100.0 * len(matched) / len(h) if len(h) else None,
-            "unmatched_members": int(unmatched),
-            "existing_leadership_leaders": leaders[:15],
-            "existing_emerging_or_leading_leaders": emerging_or_leading[:15],
-            "guardrail": "Context join only. Candidate ordering preserves existing Leadership group/stock order; no Rotation stock score or V38 entry decision is added.",
+            "leadership_group_top15_intersections": int(len(intersected)),
+            "leadership_group_top15_intersection_pct": 100.0 * len(intersected) / len(h) if len(h) else None,
+            "existing_leadership_leaders_in_top15_intersection": leaders[:15],
+            "existing_emerging_or_leading_leaders_in_top15_intersection": emerging_or_leading[:15],
+            "guardrail": "Context join only. The existing Leadership model exports up to 15 stocks per group, so non-intersection is not missing-data evidence. Ordering preserves existing Leadership group/stock order; no Rotation stock score or V38 entry decision is added.",
         })
 
     coverage = model.get("coverage") if isinstance(model.get("coverage"), dict) else {}
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
         "leadership_generated_at": model.get("generated_at"),
         "leadership_market": model.get("market"),
@@ -171,6 +170,7 @@ def main() -> None:
         "industry_context": industries,
         "guardrails": [
             "Rotation does not create a new stock ranking. Existing Leadership group and stock ordering are reused.",
+            "The join is against each existing Leadership group's exported top-15 stocks, not the full 3,858-stock model; non-intersection is not a data-quality failure.",
             "Industry ETF memberships are current exact provider holdings, not historical PIT holdings.",
             "Industry Rotation states remain descriptive/WATCH context because historical PIT holdings for SOXX/IGV were not validated.",
             "Legacy Leadership entry metadata is deliberately excluded. Formal V38 eligibility, ranking, gates, and exits remain separate.",
@@ -191,8 +191,8 @@ def main() -> None:
             "internal_delta20": rot.get("matrix_internal_delta20"),
             "flow_20d_usd": rot.get("flow_20d_usd"),
             "membership_rows": item["membership_rows"],
-            "leadership_matches": item["leadership_matches"],
-            "emerging_leading_leaders": len(item["existing_emerging_or_leading_leaders"]),
+            "leadership_group_top15_intersections": item["leadership_group_top15_intersections"],
+            "emerging_leading_leaders": len(item["existing_emerging_or_leading_leaders_in_top15_intersection"]),
         })
     pd.DataFrame(summary_rows).to_csv(args.output / "industry_context_summary.csv", index=False)
 
