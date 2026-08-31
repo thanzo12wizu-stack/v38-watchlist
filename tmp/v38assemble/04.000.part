@@ -1,0 +1,68 @@
+name: V38 audited companion checks
+
+on:
+  pull_request:
+    paths:
+      - 'v38_rules.py'
+      - 'build_v38_companion.py'
+      - 'build_v38_strict_loo_live.py'
+      - 'build_v38_tqqq_live.py'
+      - 'build_v38_sleeve_live.py'
+      - 'v38-normal-sleeve-seed.json'
+      - 'command-center-v38.html'
+      - 'scripts/export_public_site.py'
+      - 'scripts/privacy_audit.py'
+      - 'tests/test_v38_*.py'
+      - 'tests/test_public_site_export.py'
+      - 'tests/test_privacy_audit.py'
+      - '.github/workflows/v38-audit-check.yml'
+      - '.github/workflows/dashboard.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Python compile
+        run: |
+          python -m py_compile \
+            v38_rules.py \
+            build_v38_companion.py \
+            build_v38_strict_loo_live.py \
+            build_v38_tqqq_live.py \
+            build_v38_sleeve_live.py \
+            scripts/export_public_site.py \
+            scripts/privacy_audit.py
+      - name: V38 unit and boundary tests
+        run: |
+          pytest -q \
+            tests/test_v38_rules.py \
+            tests/test_v38_companion.py \
+            tests/test_v38_strict_loo_live.py \
+            tests/test_v38_tqqq_live.py \
+            tests/test_v38_sleeve_live.py \
+            tests/test_public_site_export.py \
+            tests/test_privacy_audit.py
+      - name: Inline JavaScript syntax
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('command-center-v38.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S | re.I)
+          if not scripts:
+              raise SystemExit('no inline script found')
+          Path('/tmp/v38-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/v38-inline.js
