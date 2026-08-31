@@ -1,0 +1,93 @@
+name: Rotation V38 Readonly Crosscheck
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_v38_readonly_crosscheck.py
+      - .github/workflows/rotation-v38-readonly-crosscheck.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rotation-v38-readonly-crosscheck
+  cancel-in-progress: true
+
+jobs:
+  crosscheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install isolated research dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check requests openpyxl lxml html5lib
+
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_v38_readonly_crosscheck.py
+
+      - name: Build formal V38 read-only crosscheck
+        run: |
+          rm -rf leadership/research/rotation_v38_readonly_crosscheck
+          python leadership/research/rotation_v38_readonly_crosscheck.py \
+            --root . \
+            --output leadership/research/rotation_v38_readonly_crosscheck \
+            --period 15mo \
+            --batch-size 80
+
+      - name: Validate guardrails and output
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import pandas as pd
+          root=Path('leadership/research/rotation_v38_readonly_crosscheck')
+          d=json.loads((root/'rotation_v38_readonly_crosscheck.json').read_text())
+          if d.get('research_only') is not True:
+              raise SystemExit('research_only guard missing')
+          if (d.get('loo') or {}).get('status') != 'LIVE_CURRENT_TAXONOMY':
+              raise SystemExit('strict current LOO missing')
+          if (d.get('loo') or {}).get('taxonomy') != 'CURRENT_S2T_NOT_PIT':
+              raise SystemExit('taxonomy guard missing')
+          if (d.get('coverage') or {}).get('downloaded',0) < 3000:
+              raise SystemExit('universe coverage too low')
+          df=pd.read_csv(root/'rotation_v38_readonly_crosscheck.csv')
+          if set(df.etf.dropna().unique()) != {'XBI','XME','SOXX','IGV'}:
+              raise SystemExit('industry set mismatch')
+          if 'rotation_score' in df.columns:
+              raise SystemExit('unexpected Rotation ranking score')
+          if any(str(x).upper() == 'BUY' for x in df.get('v38_status', pd.Series(dtype=str)).dropna()):
+              raise SystemExit('unexpected BUY label')
+          required={'eligible','rs189','rs63','peer_theme_score','attack_score','selective_score','v38_status'}
+          if not required.issubset(df.columns):
+              raise SystemExit(f'missing output columns: {sorted(required-set(df.columns))}')
+          print(json.dumps({
+              'asof': d.get('asof'),
+              'market_mode': d.get('market_mode'),
+              'coverage': d.get('coverage'),
+              'industry_summary': d.get('industry_summary'),
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload research-only artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-v38-readonly-crosscheck
+          path: leadership/research/rotation_v38_readonly_crosscheck/
+          if-no-files-found: warn
+          retention-days: 14
