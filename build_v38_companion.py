@@ -55,8 +55,6 @@ def _revenue_value(blob: dict, ticker: str):
     record = (blob.get("records") or blob).get(ticker, {}) if isinstance(blob, dict) else {}
     if not isinstance(record, dict):
         return record
-    # The audited condition is Revenue TTM. An annual value is not silently
-    # substituted; absence therefore remains the documented fail-open case.
     for key in ("revenue_ttm", "tv_revenue_ttm"):
         if _finite(record.get(key)):
             return float(record[key])
@@ -64,7 +62,6 @@ def _revenue_value(blob: dict, ticker: str):
 
 
 def _load_universe_metadata(path: Path | None) -> dict[str, dict]:
-    """Read exact daily structural fields already produced in ``universe.csv``."""
     if path is None or not path.is_file():
         return {}
     out: dict[str, dict] = {}
@@ -85,18 +82,9 @@ def _load_universe_metadata(path: Path | None) -> dict[str, dict]:
 
 
 def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
-    """Validate and score a precomputed strict-LOO record, or fail closed.
-
-    The upstream daily route must calculate components from the full eligible
-    universe. This consumer never computes LOO after a Top50 prefilter.
-    """
     if not isinstance(live, dict) or live.get("status") != "READY":
         return None
     if not memberships:
-        # No current Theme membership is a valid, fully observed outcome once
-        # the forward-only LOO route has the exact t-20 session. Do not invent
-        # a Theme component; attack_rank_score applies neutral 50 only when it
-        # combines the final Stock70 / Theme30 score.
         if (
             int(live.get("history_sessions", 0)) >= 21
             and live.get("history_has_exact_20_session_base") is True
@@ -138,9 +126,6 @@ def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
         components[theme] = row
     selected, score = select_peer_theme(scores)
     if selected is None:
-        # A READY candidate can legitimately have no valid current membership.
-        # Neutral 50 is applied only at Final Score calculation, never invented
-        # as a fake Theme component.
         return {
             "selected": None,
             "score": None,
@@ -236,8 +221,6 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "price": row.get("px"),
             "rs189": row.get("rs189"),
             "rs63": row.get("rs"),
-            # Legacy DET has no complete multi-membership/PIT peer history.
-            # Do not mislabel its single display taxonomy as the selected LOO Theme.
             "peer_theme": selected,
             "theme_memberships": memberships,
             "membership_source": "sector_snapshot.json:s2t",
@@ -253,10 +236,6 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "candidate_excluded_from_breadth21": True if loo_ready else None,
             "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
             "missing_theme_neutral_score": 50,
-            # This watch score uses the exact adopted ATTACK formula, but it does
-            # not grant entry eligibility. It is calculated every day so STOP /
-            # DEFENSE screens can still tell the reader what to watch for a later
-            # reopening without changing WHEN (Market Mode).
             "attack_watch_score": watch_score,
             "attack_watch_rank": None,
             "attack_score": watch_score if mode.name == "ATTACK" else None,
@@ -273,9 +252,6 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             },
             "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
         })
-    # IMPORTANT: all eligible symbols reach strict LOO before any display cap.
-    # The reader-facing reopening watch rank therefore never uses an RS189 Top50
-    # prefilter. It is the adopted ATTACK 70/30 formula over the full eligible set.
     all_attack_watch_ready = bool(candidates) and all(
         row["attack_watch_score"] is not None for row in candidates
     )
@@ -292,8 +268,6 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     if mode.name == "ATTACK" and all_attack_ready:
         candidates.sort(key=lambda row: (float(row["attack_score"]), float(row["rs189"])), reverse=True)
     elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:
-        # In non-entry modes show the reopening watch order while preserving
-        # final_rank=None and the Market Mode new-entry limit of zero.
         candidates.sort(key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])), reverse=True)
     else:
         candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
@@ -371,11 +345,14 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
                    if gross_live is not None
                    else "RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE INPUT DATA REQUIRED"),
         "priority": ["RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK", "TQQQ_EXTRA"],
-        "run_id": 33339918881,
-        "artifact_id": 9740224569,
-        "workflow_commit": "02c6746e65fe688bcad68d3d76f27fef344b7cab",
+        "run_id": 33405477190,
+        "artifact_id": 9763251012,
+        "workflow_commit": "692fe4d68407138372514fe78bd316587250974a",
         "comparison_period": ["2016-01-04", "2026-03-20"],
-        "note": "80% is the protected amount under competition, not a TQQQ cap",
+        "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
+        "sleeve_live_status": tqqq_live.get("sleeve_live_status") if tqqq_ready else "DATA REQUIRED",
+        "sleeve_live_reason": tqqq_live.get("sleeve_live_reason") if tqqq_ready else "TQQQ_LIVE_REQUIRED",
+        "note": "80% is the protected amount under competition, not a TQQQ cap; final reproducible Reset recheck passed",
         "reset_desired_pct": reset_desired_pct,
         "tqqq_desired_pct": requested_pct,
         "normal_stock_desired_pct": normal_desired_pct,
@@ -429,7 +406,19 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "strict_loo_source_status": "READY" if loo_live else "DATA REQUIRED",
         },
         "candidates": candidates[:50],
-        "panic_reset": {"status": "MONITOR / NOT LIVE", "separate_sleeve": True},
+        "panic_reset": {
+            "status": ("READY / LIVE" if tqqq_ready and tqqq_live.get("sleeve_live_status") == "READY"
+                       else "DATA REQUIRED"),
+            "separate_sleeve": True,
+            "strategy": "RS63_TOP3_RISE30_SIGTOP3",
+            "slot_pct": 2.9,
+            "max_positions": 4,
+            "max_theme_positions": 2,
+            "hold_sessions": 20,
+            "headline_620_723_pf471": "NOT REPRODUCED / NOT USED",
+            "desired_pct": reset_desired_pct,
+            "note": "Strict reproducible Reset is used for the live sleeve; the old headline metrics remain excluded.",
+        },
         "gross100_allocation": gross_state,
         "rotation_intelligence": {
             "role": "WHERE_ONLY_NOT_A_TRADE_RULE",
