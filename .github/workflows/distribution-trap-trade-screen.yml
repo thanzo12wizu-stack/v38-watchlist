@@ -1,0 +1,64 @@
+name: Distribution Trap Trade Screen
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/audit_distribution_trap_trade_screen.py
+      - .github/workflows/distribution-trap-trade-screen.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Download adopted final-exit trade artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/exit
+          gh api repos/${{ github.repository }}/actions/artifacts/9714434710/zip > /tmp/exit.zip
+          unzip -q /tmp/exit.zip -d /tmp/exit
+          test -s /tmp/exit/trades_PEAK30_PART25_R3.csv
+      - name: Download strict PIT Rotation artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rot
+          gh api repos/${{ github.repository }}/actions/artifacts/9743601391/zip > /tmp/rot.zip
+          unzip -q /tmp/rot.zip -d /tmp/rot
+          test -s /tmp/rot/rotation_pit_panel_cov80.csv
+      - name: Download pre-audited PIT sector snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/pit
+          gh api repos/${{ github.repository }}/actions/artifacts/9742872318/zip > /tmp/pit.zip
+          unzip -q /tmp/pit.zip -d /tmp/pit
+          test -s /tmp/pit/monthly_wikipedia_sector_snapshots.csv
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_distribution_trap_trade_screen.py
+      - name: Run trade-level screen
+        run: |
+          python leadership/research/audit_distribution_trap_trade_screen.py \
+            --universe universe.csv \
+            --trades /tmp/exit/trades_PEAK30_PART25_R3.csv \
+            --panel /tmp/rot/rotation_pit_panel_cov80.csv \
+            --snapshots /tmp/pit/monthly_wikipedia_sector_snapshots.csv \
+            --output leadership/research/distribution_trap_trade_screen_outputs
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: distribution-trap-trade-screen
+          path: leadership/research/distribution_trap_trade_screen_outputs/
+          if-no-files-found: warn
+          retention-days: 14
