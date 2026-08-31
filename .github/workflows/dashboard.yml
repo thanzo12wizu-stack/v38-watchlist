@@ -15,6 +15,8 @@ on:
       - 'equity.csv'
       - 'build_dashboard.py'
       - 'build_v38_companion.py'
+      - 'build_v38_strict_loo_live.py'
+      - 'build_v38_tqqq_live.py'
       - 'command-center-v38.html'
       - 'v38_rules.py'
       - 'scripts/export_public_site.py'
@@ -36,7 +38,7 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       TZ: Asia/Tokyo
       # commitする生成物の唯一の定義。commitステップの復元処理と共有する。
@@ -46,6 +48,9 @@ jobs:
         command-center.html
         command-center_share.html
         v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
         mktcap.json
         trend_history.json
         fred_cache.json
@@ -79,18 +84,19 @@ jobs:
         with:
           python-version: '3.11'
 
-
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
 
       - name: Preflight tests
         run: |
-          python -m py_compile build_dashboard.py build_v38_companion.py v38_rules.py
+          python -m py_compile build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py v38_rules.py
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
             tests/test_eps_acceleration.py \
             tests/test_v38_rules.py \
-            tests/test_v38_companion.py
+            tests/test_v38_companion.py \
+            tests/test_v38_strict_loo_live.py \
+            tests/test_v38_tqqq_live.py
 
       - name: Build dashboard
         id: build
@@ -142,11 +148,30 @@ jobs:
             echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build strict LOO forward-only live state
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_strict_loo_live.py \
+            --state state.json \
+            --sector-snapshot sector_snapshot.json \
+            --history v38-strict-loo-history.json \
+            --out v38-strict-loo-live.json
+
+      - name: Build CURRENT30 and Stage56 TQQQ live state
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_tqqq_live.py \
+            --state state.json \
+            --out tqqq-panic-state.json
+
       - name: Build isolated audited V38 companion
         if: steps.build.outputs.skipped != 'true'
         run: |
           python build_v38_companion.py \
             --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
             --out v38-live-state.json
 
       - name: Report skipped stale run
@@ -176,6 +201,8 @@ jobs:
               "command-center_share.html": 2_500,
               "command-center-v38.html": 8_000,
               "v38-live-state.json": 1_000,
+              "v38-strict-loo-live.json": 100,
+              "tqqq-panic-state.json": 100,
           }
           for name, minimum in required.items():
               path = Path(name)
@@ -217,6 +244,21 @@ jobs:
               raise SystemExit(
                   f"V38 companion date mismatch: {companion.get('asof')} != {state_date}"
               )
+
+          loo = json.loads(Path("v38-strict-loo-live.json").read_text(encoding="utf-8"))
+          if loo.get("schema") != "v38-strict-loo-live-1":
+              raise SystemExit("invalid strict LOO live schema")
+          if loo.get("asof") not in (None, state_date):
+              raise SystemExit(f"strict LOO date mismatch: {loo.get('asof')} != {state_date}")
+
+          tqqq = json.loads(Path("tqqq-panic-state.json").read_text(encoding="utf-8"))
+          if tqqq.get("schema") != "v38-tqqq-panic-state-1":
+              raise SystemExit("invalid TQQQ live schema")
+          if tqqq.get("asof") != state_date:
+              raise SystemExit(f"TQQQ date mismatch: {tqqq.get('asof')} != {state_date}")
+          if tqqq.get("live_generation_status") == "READY":
+              if tqqq.get("underlying_target_pct") is None or tqqq.get("requested_target_pct") is None:
+                  raise SystemExit("READY TQQQ route is missing CURRENT30/Stage56 targets")
 
           log_dates = []
           with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
@@ -326,6 +368,8 @@ jobs:
             echo "- Gate: ${gate:-unknown}"
             echo "- Main HTML: $(wc -c < command-center.html) bytes"
             echo "- Share HTML: $(wc -c < command-center_share.html) bytes"
+            echo "- Strict LOO: $(python -c 'import json; print(json.load(open("v38-strict-loo-live.json", encoding="utf-8")).get("status", "DATA REQUIRED"))')"
+            echo "- TQQQ live: $(python -c 'import json; print(json.load(open("tqqq-panic-state.json", encoding="utf-8")).get("live_generation_status", "DATA REQUIRED"))')"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit dashboard and caches
@@ -341,7 +385,7 @@ jobs:
           # Same-session stale-source guard. Artifact/options commits are harmless;
           # generation logic and explicit dashboard inputs are not.
           git fetch --depth=1 origin main
-          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
             echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
             echo "source_drift=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
