@@ -8,7 +8,7 @@ to a constant 30% sleeve:
 - Stage51 5-minute QQQ -> RTH 4H bars -> Pine/Wilder RSI14 TOUCH30
 
 The legacy ``build_dashboard.py`` is imported read-only for the same MC57 and VIX
-sigma primitives used by the research code.  It is never modified here.
+sigma primitives used by the research code. It is never modified here.
 """
 
 from __future__ import annotations
@@ -59,7 +59,9 @@ def _plain(frame: pd.DataFrame) -> pd.DataFrame:
             out.columns = out.columns.get_level_values(0)
     out.index = pd.to_datetime(out.index)
     if out.index.tz is not None:
-        out.index = out.index.tz_convert(None)
+        # Research inputs are interpreted in their local exchange wall clock.
+        # Drop tz metadata without converting the clock to UTC.
+        out.index = out.index.tz_localize(None)
     return out.sort_index()
 
 
@@ -612,7 +614,7 @@ def stage56_trace(data: dict[str, np.ndarray], vix_close: np.ndarray, touch30: n
 
 
 def build_live(asof_text: str) -> dict[str, Any]:
-    asof = pd.Timestamp(asof_text)
+    asof = pd.Timestamp(asof_text).normalize()
     qqq = download_daily("QQQ", "2009-01-01")
     tqqq = download_daily("TQQQ", "2010-01-01")
     nq = download_daily("NQ=F", "2000-01-01")
@@ -636,6 +638,10 @@ def build_live(asof_text: str) -> dict[str, Any]:
     coverage_dates = pd.DatetimeIndex(pd.to_datetime(bars["date"]).unique()).sort_values()
     if len(coverage_dates) < 35:
         raise RuntimeError(f"QQQ_4H_HISTORY_INSUFFICIENT sessions={len(coverage_dates)}")
+    if coverage_dates[-1].normalize() != asof:
+        raise RuntimeError(
+            f"QQQ_4H_ASOF_REQUIRED requested={asof_text} latest={coverage_dates[-1].date()}"
+        )
     daily_signal = bars.groupby("date")["touch30"].max().astype(bool)
     signal = np.asarray([
         bool(daily_signal.get(pd.Timestamp(date).normalize(), False))
@@ -658,7 +664,8 @@ def build_live(asof_text: str) -> dict[str, Any]:
     active = bool(stage56["active"][i])
     held = int(stage56["held"][i]) if active else 0
     mc_value = float(data["mc"][i])
-    mc_cov_value = mc_coverage.reindex([asof]).ffill().iloc[-1] if len(mc_coverage) else np.nan
+    mc_coverage_slice = mc_coverage.loc[mc_coverage.index <= asof]
+    mc_cov_value = mc_coverage_slice.iloc[-1] if len(mc_coverage_slice) else np.nan
     sleeve_code = int(current["sleeve"][i])
     sleeve_name = {0: "NONE", 1: "RG", 2: "GB", 3: "GB_CONTINUATION"}.get(sleeve_code, "UNKNOWN")
     return {
