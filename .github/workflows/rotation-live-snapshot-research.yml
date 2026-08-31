@@ -1,0 +1,60 @@
+name: Rotation Live Snapshot Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_live_snapshot.py
+      - leadership/research/rotation_macro_why_qa.py
+      - .github/workflows/rotation-live-snapshot-research.yml
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/rotation_live_snapshot.py
+          python -m py_compile leadership/research/rotation_macro_why_qa.py
+      - name: Build research live snapshot
+        run: |
+          python leadership/research/rotation_live_snapshot.py \
+            --output leadership/research/rotation_live \
+            --history leadership/research/rotation_live/history.csv \
+            --download-start 2025-01-01 \
+            --download-end 2026-09-02 \
+            --min-source-coverage 0.80
+      - name: Persist research snapshot history on research branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add leadership/research/rotation_live/
+          if git diff --cached --quiet; then
+            echo "No snapshot changes"
+          else
+            git commit -m "research: record live rotation snapshot"
+            git push origin HEAD:research/rotation-exact-flow-internals-20260831
+          fi
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-live-snapshot-research
+          path: leadership/research/rotation_live/
+          if-no-files-found: warn
+          retention-days: 14
