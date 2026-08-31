@@ -1,0 +1,153 @@
+          if state_date != log_latest or state_date != trend_latest:
+              raise SystemExit(
+                  "market-session mismatch: "
+                  f"state={state_date} log={log_latest} trend={trend_latest}"
+              )
+
+          prior_dates = sorted(
+              {d for d in (log_dates + trend_dates) if d < state_date}
+          )
+          prevday = state.get("prevday")
+          if isinstance(prevday, dict) and prevday.get("date"):
+              prev_date = str(prevday.get("date"))
+              if not iso.fullmatch(prev_date) or prev_date >= state_date:
+                  raise SystemExit(
+                      f"invalid prevday ordering: prevday={prev_date!r} state={state_date}"
+                  )
+              if prior_dates and prev_date != prior_dates[-1]:
+                  raise SystemExit(
+                      "prevday is not the latest prior market session: "
+                      f"prevday={prev_date} expected={prior_dates[-1]}"
+                  )
+          elif prior_dates:
+              raise SystemExit(
+                  f"prevday missing; latest prior market session is {prior_dates[-1]}"
+              )
+
+          mm = re.search(r"分析基準日\s+(\d{4}-\d{2}-\d{2})", main)
+          if not mm:
+              raise SystemExit("main HTML market-session date marker missing")
+          main_date = mm.group(1)
+
+          share_text = Path("command-center_share.html").read_text(encoding="utf-8")
+          sm = re.search(
+              r"class=[\"']asof[\"'][^>]*>(\d{4}-\d{2}-\d{2})<",
+              share_text,
+          )
+          if not sm:
+              raise SystemExit("share HTML market-session date marker missing")
+          share_date = sm.group(1)
+
+          if main_date != state_date or share_date != state_date:
+              raise SystemExit(
+                  "HTML market-session mismatch: "
+                  f"state={state_date} main={main_date} share={share_date}"
+              )
+
+          manifest = json.loads(
+              Path("commit_manifest.json").read_text(encoding="utf-8")
+          )
+          failed = [
+              key
+              for key in ("html", "share", "state", "trend", "log")
+              if manifest.get(key) != "ok"
+          ]
+          if failed:
+              raise SystemExit(
+                  f"critical persistence did not complete: {failed}"
+              )
+          PY
+
+      - name: Report persistence and data date
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -s commit_manifest.json ]]; then
+            cat commit_manifest.json
+          else
+            echo '::warning::commit_manifest.json was not generated'
+          fi
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          def load(name, default):
+              path = Path(name)
+              if not path.is_file():
+                  return default
+              try:
+                  return json.loads(path.read_text(encoding="utf-8"))
+              except (OSError, ValueError):
+                  return default
+
+          state = load("state.json", {})
+          loo = load("v38-strict-loo-live.json", {})
+          history = load("v38-strict-loo-history.json", {})
+          tqqq = load("tqqq-panic-state.json", {})
+          sleeve = load("v38-sleeve-state.json", {})
+          sessions = [
+              str(row.get("asof"))
+              for row in history.get("sessions", [])
+              if isinstance(row, dict) and row.get("asof")
+          ]
+          latest_saved = max(sessions) if sessions else None
+
+          lines = [
+              "### Dashboard build",
+              f"- Data session: {state.get('date') or 'unknown'}",
+              f"- Gate: {state.get('gate') or 'unknown'}",
+              f"- Main HTML: {Path('command-center.html').stat().st_size} bytes",
+              f"- Share HTML: {Path('command-center_share.html').stat().st_size} bytes",
+              "",
+              "### Collector health",
+              f"- strict LOO status: {loo.get('status') or 'DATA REQUIRED'}",
+              f"- strict LOO reason: {loo.get('reason') or 'NONE'}",
+              f"- strict LOO history_sessions: {loo.get('history_sessions', len(sessions))}",
+              f"- strict LOO computed_snapshot_count: {loo.get('computed_snapshot_count', len(sessions))}",
+              f"- strict LOO PIT history start: {loo.get('history_start_asof') or 'NONE'}",
+              f"- strict LOO latest saved date: {latest_saved or 'NONE'}",
+              f"- strict LOO exact t-20 snapshot: {bool(loo.get('history_has_exact_20_session_base'))}",
+              f"- strict LOO asof: {loo.get('asof') or 'NONE'}",
+              f"- TQQQ live_generation_status: {tqqq.get('live_generation_status') or 'DATA REQUIRED'}",
+              f"- TQQQ reason: {tqqq.get('reason') or 'NONE'}",
+              f"- TQQQ asof: {tqqq.get('asof') or 'NONE'}",
+              f"- TQQQ source cache fetched at: {tqqq.get('source_cache_fetched_at') or 'NONE'}",
+              f"- TQQQ QQQ 5m provider: {(tqqq.get('source_providers') or {}).get('qqq_5m') or 'NONE'}",
+              f"- TQQQ MC57 source coverage: {((tqqq.get('source_providers') or {}).get('mc57') or {}).get('coverage_tickers') or 'NONE'}/57",
+              f"- V38 sleeve status: {sleeve.get('status') or 'DATA REQUIRED'}",
+              f"- V38 sleeve reason: {sleeve.get('reason') or 'NONE'}",
+              f"- Normal Stock Desired: {(sleeve.get('normal_stock') or {}).get('desired_pct')}",
+              f"- RSI Reset Desired: {(sleeve.get('rsi_reset') or {}).get('desired_pct')}",
+              f"- RSI Reset monitor count: {(sleeve.get('rsi_reset') or {}).get('monitor_count', 0)}",
+          ]
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
+
+      - name: Commit dashboard and caches
+        if: steps.build.outputs.skipped != 'true'
+        id: persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "source_drift=false" >> "$GITHUB_OUTPUT"
+
+          # Same-session stale-source guard. Artifact/options commits are harmless;
+          # generation logic and explicit dashboard inputs are not.
+          git fetch --depth=1 origin main
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py build_v38_sleeve_live.py v38-normal-sleeve-seed.json command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+            echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
+            echo "source_drift=true" >> "$GITHUB_OUTPUT"
+            echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # --- なぜrebaseをやめたか -------------------------------------------
+          # 生成物は毎回ファイル全体が書き換わるため、runが競合すると rebase は
+          # 必ず content conflict になる（command-center.html / mktcap.json /
+          # inception_vwap.json / universe.csv 等）。行単位のマージに意味がない
