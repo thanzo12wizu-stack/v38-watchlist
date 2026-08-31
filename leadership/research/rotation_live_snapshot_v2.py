@@ -11,6 +11,7 @@ import rotation_macro_direct_official_qa as direct
 import rotation_macro_why_qa as macroqa
 
 _ORIGINAL_FETCH_EXACT_FLOWS = base.fetch_exact_flows
+_ORIGINAL_BUILD_OBSERVATIONS = base.build_observations
 
 
 def series_payload(df: pd.DataFrame | None, error: str | None, source: str) -> dict[str, Any]:
@@ -28,14 +29,7 @@ def series_payload(df: pd.DataFrame | None, error: str | None, source: str) -> d
 
 
 def fetch_exact_flows_latest_valid(session: requests.Session, close: pd.DataFrame):
-    """Keep only rows with a valid 20D exact flow before base.main selects ticker tail rows.
-
-    Provider histories do not always end on the latest ETF price date. The original live
-    table deliberately aligns official flow records to the ETF trading calendar, leaving
-    trailing NaN rows when the provider's latest record is older than the price as-of.
-    Dropping only those invalid 20D rows ensures base.main selects the latest *officially
-    observed* flow date instead of a trailing calendar NaN. No value is forward-filled.
-    """
+    """Select the latest valid official 20D Flow observation; never forward-fill."""
     flows, diag = _ORIGINAL_FETCH_EXACT_FLOWS(session, close)
     valid = flows[flows["flow_20d"].notna() & flows["flow_20d_pct_aum"].notna()].copy()
     for d in diag:
@@ -87,8 +81,77 @@ def direct_macro_snapshot(session: requests.Session, ohlcv: dict[str, pd.DataFra
     }
 
 
+def classify_state_v2(row: dict[str, Any], *, validated_sector: bool) -> tuple[str, str]:
+    p = row.get("validated_price_score") if validated_sector else row.get("matrix_price_score")
+    i = row.get("validated_internal_score") if validated_sector else row.get("matrix_internal_score")
+    d = row.get("validated_internal_delta20") if validated_sector else row.get("matrix_internal_delta20")
+    f = row.get("flow_20d_pct_aum")
+    if any(x is None for x in (p, i, f)):
+        return "DATA_REQUIRED", "price/internal/flowのいずれかが不足"
+
+    # Predictive/context labels are restricted to the PIT-tested 11-Sector cross-section.
+    if validated_sector and p >= 70 and i < 50 and f <= 0:
+        return "DISTRIBUTION_WARNING", "PIT検証済み厳格条件: Price>=70・Internal<50・20D Flow<=0。Contextのみ"
+    if validated_sector and p >= 70 and d is not None and d <= -20 and f <= 0:
+        return "DISTRIBUTION_DETERIORATION_WARNING", "PIT delta型: Price>=70・Internal20D変化<=-20pt・Flow<=0。2024+ 40D支持、20D block CIは0跨ぎ。早期警戒Contextのみ"
+
+    # Purely descriptive states below do not claim future alpha.
+    if p < 45 and i < 45:
+        return "WEAK_BREAKDOWN", "価格・内部がともに弱い"
+    if i < 50 and f < 0:
+        return "INTERNAL_WEAK_FLOW_OUT", "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ"
+    if i < 50 and f > 0:
+        return "FLOW_INTERNAL_DIVERGENCE_WATCH", "ETF Flow流入に内部参加が追随していない。WATCHのみ"
+    if p >= 60 and i >= 60 and f < 0:
+        return "REDEMPTION_DIVERGENCE", "価格・内部は強いがETF Flowは流出。売り抜けと断定しない"
+    if p >= 70 and i >= 60:
+        return "CURRENT_STRENGTH", "価格・内部が同時に強い現在状態。PIT研究では将来Alphaを確認できず、買いシグナルではない"
+    if p < 60 and i >= 50 and d is not None and d >= 10 and f >= 0:
+        return "EARLY_ROTATION_WATCH", "内部改善＋Flow流入が価格に先行。PIT研究では買いシグナル不採用、WATCHのみ"
+    if p < 60 and i >= 60:
+        return "INTERNAL_LEAD_WATCH", "価格より内部参加が強い。観測用で将来Alphaは主張しない"
+    return "MIXED_HOLD", "方向不一致または閾値未達"
+
+
+def build_observations_v2(matrix: list[dict[str, Any]], macro: dict[str, Any]) -> list[dict[str, str]]:
+    obs = _ORIGINAL_BUILD_OBSERVATIONS(matrix, macro)
+
+    strict = [r for r in matrix if r.get("state") == "DISTRIBUTION_WARNING"]
+    deterioration = [r for r in matrix if r.get("state") == "DISTRIBUTION_DETERIORATION_WARNING"]
+    flow_internal = [r for r in matrix if r.get("state") == "FLOW_INTERNAL_DIVERGENCE_WATCH"]
+    weak_out = [r for r in matrix if r.get("state") == "INTERNAL_WEAK_FLOW_OUT"]
+    internal_lead = [r for r in matrix if r.get("state") == "INTERNAL_LEAD_WATCH"]
+
+    extra: list[dict[str, str]] = []
+    if strict:
+        extra.append({"type": "STRICT_DISTRIBUTION", "text": "厳格PIT分配警戒: " + " / ".join(r["ticker"] for r in strict)})
+    if deterioration:
+        extra.append({"type": "DISTRIBUTION_DETERIORATION", "text": "内部急落型の早期分配警戒（40D支持）: " + " / ".join(r["ticker"] for r in deterioration)})
+    if flow_internal:
+        extra.append({"type": "FLOW_INTERNAL_DIVERGENCE", "text": "Flow流入だが内部弱・昇格待ち: " + " / ".join(r["ticker"] for r in flow_internal)})
+    if weak_out:
+        extra.append({"type": "INTERNAL_WEAK_FLOW_OUT", "text": "内部弱＋Flow流出: " + " / ".join(r["ticker"] for r in weak_out)})
+    if internal_lead:
+        extra.append({"type": "INTERNAL_LEAD", "text": "価格より内部が先行（観測のみ）: " + " / ".join(r["ticker"] for r in internal_lead)})
+
+    rate = (macro.get("rates") or {}).get("us10y") or {}
+    if rate.get("quality") == "EXACT_OFFICIAL" and rate.get("value") is not None and rate.get("high_252") is not None:
+        value = float(rate["value"])
+        high = float(rate["high_252"])
+        sensitive = [r for r in matrix if r.get("ticker") in {"XLU", "XLRE"} and (r.get("validated_internal_score") is not None and float(r["validated_internal_score"]) < 30)]
+        if high - value <= 0.10 and sensitive:
+            extra.append({"type": "RATE_SENSITIVE_PRESSURE", "text": f"米10年 {value:.2f}% は52週高値 {high:.2f}%近辺。内部弱の金利感応: " + " / ".join(r["ticker"] for r in sensitive)})
+
+    # Preserve deterministic original observations but replace stale state-specific duplicates.
+    drop_types = {"DISTRIBUTION", "WATCH"}
+    kept = [x for x in obs if x.get("type") not in drop_types]
+    return kept + extra
+
+
 base.fetch_exact_flows = fetch_exact_flows_latest_valid
 base.macro_snapshot = direct_macro_snapshot
+base.classify_state = classify_state_v2
+base.build_observations = build_observations_v2
 
 if __name__ == "__main__":
     base.main()
