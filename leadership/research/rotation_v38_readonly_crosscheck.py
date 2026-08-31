@@ -9,6 +9,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import requests
 
 ROOT = Path(__file__).resolve().parents[2]
 LEADERSHIP = ROOT / "leadership"
@@ -76,7 +77,6 @@ def structural_bio_exclusions(path: Path, symbols: set[str]) -> tuple[set[str], 
         ind = u.loc[idx, ind_col].astype(str)
         mc = pd.to_numeric(u.loc[idx, mc_col], errors="coerce")
         rev = pd.to_numeric(u.loc[idx, rev_col], errors="coerce")
-        # Exact audited rule: missing revenue fails open.
         mask = ind.isin(BIO_EXCLUDE_INDUSTRIES) & (mc < BIO_KEEP_MCAP) & rev.notna() & (rev < BIO_REVENUE_MAX)
         return set(idx[mask]), True
     except Exception:
@@ -107,7 +107,11 @@ def strict_loo_latest(close: pd.DataFrame, snapshot: dict[str, Any]) -> tuple[di
     and 21EMA breadth. Multiple memberships use the maximum valid score.
     This is current s2t taxonomy, never historical PIT taxonomy.
     """
-    theme_members_all, stock_themes = early.extract_theme_members(snapshot)
+    theme_members_all, diagnostics = early.extract_theme_members(snapshot)
+    stock_themes: dict[str, list[str]] = {}
+    for theme, members in theme_members_all.items():
+        for sym in members:
+            stock_themes.setdefault(sym, []).append(theme)
     stock_set = set(close.columns)
     theme_members = {
         t: [s for s in members if s in stock_set]
@@ -204,6 +208,7 @@ def strict_loo_latest(close: pd.DataFrame, snapshot: dict[str, Any]) -> tuple[di
         "themes": len(themes),
         "mapped_stocks": len(stock_themes),
         "scored_stocks": sum(1 for x in out.values() if x.get("selected")),
+        "source_diagnostics": diagnostics[-3:],
         "formula": "candidate-excluded Theme63 percentile + candidate-excluded 20d rank-acceleration percentile + candidate-excluded Breadth21, equal-weighted / 3; max valid membership",
     }
 
@@ -355,12 +360,9 @@ def main() -> None:
     mkt = market_mode(close, sma50, latest)
     matrix = pd.read_csv(root / "leadership/research/rotation_live/latest_matrix.csv")
     rotation_by = matrix.set_index("ticker").to_dict("index") if "ticker" in matrix.columns else {}
-    holdings, holdings_diag = rotation_live.fetch_all_holdings(rotation_live.requests.Session())
+    holdings, holdings_diag = rotation_live.fetch_all_holdings(requests.Session())
     holdings = holdings[holdings["sector_etf"].isin(TARGET_ETFS)].copy()
     holdings["symbol"] = holdings["symbol"].astype(str).str.upper()
-    holding_lookup: dict[str, list[dict[str, Any]]] = {}
-    for row in holdings.to_dict("records"):
-        holding_lookup.setdefault(str(row["symbol"]), []).append(row)
 
     rows: list[dict[str, Any]] = []
     by_symbol = all_df.set_index("symbol").to_dict("index")
@@ -402,7 +404,6 @@ def main() -> None:
                 "execution_note": "read-only candidate context; actual entry still requires available capacity and next-open execution",
             })
     out_df = pd.DataFrame(rows)
-    # Useful presentation order only; this does not create a new score.
     out_df["_eligible_sort"] = out_df.get("eligible", False).fillna(False).astype(int)
     out_df["_mode_rank_sort"] = pd.to_numeric(out_df.get("mode_rank"), errors="coerce").fillna(1e9)
     out_df = out_df.sort_values(["etf", "_eligible_sort", "_mode_rank_sort"], ascending=[True, False, True]).drop(columns=["_eligible_sort", "_mode_rank_sort"])
@@ -412,7 +413,7 @@ def main() -> None:
     for etf in TARGET_ETFS:
         q = out_df[out_df.etf == etf]
         formal = q[q.v38_status == "FORMAL_V38_CANDIDATE_WHEN_CAPACITY"]
-        eligible_names = q[q.get("eligible", False).fillna(False).astype(bool)]
+        eligible_names = q[q["eligible"].fillna(False).astype(bool)] if "eligible" in q.columns else q.iloc[0:0]
         summary.append({
             "etf": etf,
             "rotation_state": rotation_by.get(etf, {}).get("state"),
@@ -456,6 +457,7 @@ def main() -> None:
             "formal_eligible": int(all_df.eligible.sum()),
             "structural_bio_excluded": len(bio_excluded),
             "holdings_rows": int(len(holdings)),
+            "holdings_provider_diagnostics": holdings_diag,
         },
         "industry_summary": summary,
         "guardrails": [
