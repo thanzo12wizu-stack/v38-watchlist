@@ -7,7 +7,9 @@ on:
       - research/rotation-exact-flow-internals-20260831
     paths:
       - leadership/research/rotation_live_snapshot.py
+      - leadership/research/rotation_live_snapshot_v2.py
       - leadership/research/rotation_macro_why_qa.py
+      - leadership/research/rotation_macro_direct_official_qa.py
       - .github/workflows/rotation-live-snapshot-research.yml
 
 permissions:
@@ -26,14 +28,16 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml
+        run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
       - name: Syntax check
         run: |
           python -m py_compile leadership/research/rotation_live_snapshot.py
+          python -m py_compile leadership/research/rotation_live_snapshot_v2.py
           python -m py_compile leadership/research/rotation_macro_why_qa.py
+          python -m py_compile leadership/research/rotation_macro_direct_official_qa.py
       - name: Build research live snapshot
         run: |
-          python leadership/research/rotation_live_snapshot.py \
+          python leadership/research/rotation_live_snapshot_v2.py \
             --output leadership/research/rotation_live \
             --history leadership/research/rotation_live/history.csv \
             --download-start 2025-01-01 \
@@ -48,6 +52,7 @@ jobs:
             echo "No snapshot changes"
           else
             git commit -m "research: record live rotation snapshot"
+            git pull --rebase origin research/rotation-exact-flow-internals-20260831
             git push origin HEAD:research/rotation-exact-flow-internals-20260831
           fi
       - name: Upload research outputs
