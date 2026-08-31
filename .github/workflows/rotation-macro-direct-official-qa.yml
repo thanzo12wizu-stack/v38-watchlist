@@ -1,0 +1,37 @@
+name: Rotation Macro Direct Official QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_macro_direct_official_qa.py
+      - .github/workflows/rotation-macro-direct-official-qa.yml
+
+jobs:
+  qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas requests lxml html5lib
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_macro_direct_official_qa.py
+      - name: Run direct official Macro WHY QA
+        run: |
+          python leadership/research/rotation_macro_direct_official_qa.py \
+            --year 2026 \
+            --output leadership/research/rotation_macro_direct_official_outputs
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-macro-direct-official-qa
+          path: leadership/research/rotation_macro_direct_official_outputs/
+          if-no-files-found: warn
+          retention-days: 14
