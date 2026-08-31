@@ -1,5 +1,6 @@
 name: Rotation Daily Observation Brief Research
 
+# Persisted Theme/Stock context is consumed when available; Rotation never becomes a V38 Gate or stock score.
 on:
   workflow_dispatch:
   push:
