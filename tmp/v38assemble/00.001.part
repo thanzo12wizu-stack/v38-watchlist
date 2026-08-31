@@ -1,0 +1,152 @@
+            if len(entries) >= room:
+                break
+    return {"full_exits": full_exits, "partial25": partials, "entries": entries, "entry_cap": cap}
+
+
+def _normal_mark(normal: dict[str, Any], closes: dict[str, float]) -> tuple[float, float, float]:
+    gross = 0.0
+    for p in normal["positions"]:
+        cp = closes.get(p["symbol"])
+        if not _finite(cp):
+            raise RuntimeError(f"NORMAL_CLOSE_REQUIRED {p['symbol']}")
+        p["peak_close"] = max(float(p["peak_close"]), float(cp))
+        p["close"] = float(cp)
+        mark = float(p["shares"]) * float(cp)
+        p["mark"] = mark
+        gross += mark
+    nav = float(normal["cash"]) + gross
+    if nav <= 0:
+        raise RuntimeError("NORMAL_NAV_NONPOSITIVE")
+    return nav, gross, gross / nav * 100.0
+
+
+def advance_normal(previous: dict[str, Any], companion: dict[str, Any], asof: str,
+                   op: pd.DataFrame | None = None, cl: pd.DataFrame | None = None) -> dict[str, Any]:
+    prev_asof = str(previous.get("asof") or "")
+    current = dict(previous)
+    current["positions"] = [dict(p) for p in previous.get("positions", [])]
+    current["pending"] = dict(previous.get("pending") or {"full_exits": [], "partial25": [], "entries": [], "entry_cap": 0})
+    date = pd.Timestamp(asof)
+    if prev_asof > asof:
+        raise RuntimeError("NORMAL_STATE_FROM_FUTURE")
+    if prev_asof < asof:
+        if op is None or cl is None or date not in op.index or date not in cl.index:
+            raise RuntimeError("NORMAL_CURRENT_SESSION_PRICE_REQUIRED")
+        sessions = [d for d in cl.index if pd.Timestamp(prev_asof) < d <= date]
+        if len(sessions) != 1 or sessions[0] != date:
+            raise RuntimeError(f"NORMAL_STATE_GAP sessions={len(sessions)}")
+        pos = {p["symbol"]: p for p in current["positions"]}
+        cash = float(current["cash"])
+        pending = current.get("pending", {})
+        for row in pending.get("full_exits", []):
+            sym = str(row["symbol"]); p = pos.get(sym)
+            if p is None: continue
+            px = _px(op, date, sym)
+            if px is None: raise RuntimeError(f"NORMAL_OPEN_REQUIRED {sym}")
+            cash += float(p["shares"]) * px
+            pos.pop(sym, None)
+        for row in pending.get("partial25", []):
+            sym = str(row["symbol"]); p = pos.get(sym)
+            if p is None or p.get("partial_done"): continue
+            px = _px(op, date, sym)
+            if px is None: raise RuntimeError(f"NORMAL_OPEN_REQUIRED {sym}")
+            sold = float(p["shares"]) * 0.25
+            cash += sold * px
+            p["shares"] = float(p["shares"]) - sold
+            p["partial_done"] = True
+        cap = int(pending.get("entry_cap") or 0)
+        nav_open = cash
+        for sym, p in pos.items():
+            px = _px(op, date, sym)
+            if px is None: raise RuntimeError(f"NORMAL_OPEN_REQUIRED {sym}")
+            nav_open += float(p["shares"]) * px
+        slot_cash = nav_open / NORMAL_MAX_POSITIONS
+        for sym0 in pending.get("entries", []):
+            sym = str(sym0)
+            if len(pos) >= cap or cash <= 1e-12 or sym in pos: continue
+            px = _px(op, date, sym)
+            if px is None: raise RuntimeError(f"NORMAL_ENTRY_OPEN_REQUIRED {sym}")
+            amount = min(slot_cash, cash)
+            if amount <= 1e-10: break
+            cash -= amount
+            pos[sym] = {"symbol": sym, "shares": amount / px, "entry_price": px,
+                        "entry_date": asof, "peak_close": px, "partial_done": False}
+        current["cash"] = cash
+        current["positions"] = list(pos.values())
+        current["asof"] = asof
+    close_map: dict[str, float] = {}
+    if cl is not None and date in cl.index:
+        for p in current["positions"]:
+            px = _px(cl, date, p["symbol"])
+            if px is not None: close_map[p["symbol"]] = px
+    if prev_asof == asof:
+        for p in current["positions"]:
+            if p["symbol"] not in close_map and _finite(p.get("close")):
+                close_map[p["symbol"]] = float(p["close"])
+    if len(close_map) < len(current["positions"]):
+        raise RuntimeError("NORMAL_MARK_CLOSE_INCOMPLETE")
+    nav, gross, desired = _normal_mark(current, close_map)
+    current.update({"nav": nav, "gross_value": gross, "desired_pct": desired,
+                    "position_count": len(current["positions"]), "status": "READY",
+                    "strategy": "PEAK30_PART25_R3"})
+    current["pending"] = _normal_pending(current, companion, close_map)
+    return current
+
+
+def wilder_rsi(close: pd.DataFrame, n: int = 14) -> pd.DataFrame:
+    delta = close.diff()
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+    avg_gain = gain.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
+    avg_loss = loss.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
+    rs = avg_gain / avg_loss.replace(0.0, np.nan)
+    out = 100.0 - 100.0 / (1.0 + rs)
+    return out.where(avg_loss != 0.0, 100.0)
+
+
+def _theme_snapshot(close: pd.DataFrame, asof: pd.Timestamp, s2t: dict[str, list[str]]) -> tuple[dict[str, float], dict[str, float], dict[str, list[str]], pd.Series]:
+    members = invert_memberships(s2t)
+    sub = close.loc[close.index <= asof]
+    if len(sub) < 64:
+        raise RuntimeError("THEME_RS63_HISTORY_REQUIRED")
+    stock_ret = arithmetic_returns(sub)
+    stock63 = period_return(stock_ret, 63).iloc[-1]
+    theme_daily: dict[str, pd.Series] = {}
+    ema21 = sub.ewm(span=21, adjust=False, min_periods=15).mean()
+    breadth: dict[str, float] = {}
+    for theme, syms0 in members.items():
+        syms = [s for s in syms0 if s in sub.columns]
+        if len(syms) < MIN_THEME_MEMBERS: continue
+        part = stock_ret[syms]
+        count = part.notna().sum(axis=1)
+        theme_daily[theme] = part.mean(axis=1, skipna=True).where(count >= MIN_THEME_MEMBERS)
+        valid = sub.loc[asof, syms].notna() & ema21.loc[asof, syms].notna()
+        nvalid = int(valid.sum())
+        if nvalid >= MIN_THEME_MEMBERS:
+            breadth[theme] = float((sub.loc[asof, syms][valid] > ema21.loc[asof, syms][valid]).mean() * 100.0)
+    if not theme_daily: raise RuntimeError("THEME_RETURN_CROSS_SECTION_REQUIRED")
+    theme63 = period_return(pd.DataFrame(theme_daily), 63).iloc[-1].dropna()
+    pct = (theme63.rank(pct=True, method="average") * 100.0).to_dict()
+    return {str(k): float(v) for k, v in pct.items()}, breadth, members, stock63
+
+
+def _top3(members: dict[str, list[str]], stock63: pd.Series, theme: str) -> list[str]:
+    syms = [s for s in members.get(theme, []) if s in stock63.index and _finite(stock63.get(s))]
+    return sorted(syms, key=lambda s: (-float(stock63[s]), s))[:3]
+
+
+def build_reset_trades_and_monitor(close: pd.DataFrame, open_: pd.DataFrame,
+                                   history: dict[str, Any], asof: str) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    cal = close.index[close.index <= pd.Timestamp(asof)]
+    if len(cal) < 90: raise RuntimeError("RESET_PRICE_HISTORY_REQUIRED")
+    rsi = wilder_rsi(close, 14)
+    theme_cache: dict[pd.Timestamp, tuple[dict[str, float], dict[str, float], dict[str, list[str]], pd.Series]] = {}
+
+    def snap(d: pd.Timestamp):
+        if d not in theme_cache:
+            s2t, _ = taxonomy_for_asof(history, str(d.date()))
+            theme_cache[d] = _theme_snapshot(close, d, s2t)
+        return theme_cache[d]
+
+    start_pos = max(83, len(cal) - 70)
+    activations: list[tuple[pd.Timestamp, str, str, int, float, float, float]] = []
