@@ -1,7 +1,25 @@
+import csv
 import json
 from pathlib import Path
 
 from build_v38_companion import build_state
+
+
+def write_legacy(path, calc, det):
+    path.write_text(
+        f'<script>window.CALC={json.dumps(calc)};</script>'
+        f'<script>window.DET={json.dumps(det)};</script>',
+        encoding="utf-8",
+    )
+
+
+def eligible_row(**overrides):
+    row = {
+        "px": 100, "dvol": 20, "ma5020": True, "v200": 5,
+        "v50": 5, "rs189": 90, "rs": 90, "sth": "Theme A",
+    }
+    row.update(overrides)
+    return row
 
 
 def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
@@ -31,11 +49,7 @@ def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_th
     calc = {"asof": "2026-08-28", "color": "Green"}
     det = {}
     for i in range(40):
-        det[f"T{i}"] = {
-            "px": 100, "dvol": 20, "ma5020": True, "v200": 5,
-            "v50": 5 if i < 26 else -5, "rs189": 90, "rs": 90,
-            "sth": "Theme A",
-        }
+        det[f"T{i}"] = eligible_row(v50=5 if i < 26 else -5)
     source = tmp_path / "command-center.html"
     original = (f'<script>window.CALC={json.dumps(calc)};</script>'
                 f'<script>window.DET={json.dumps(det)};</script>')
@@ -48,7 +62,7 @@ def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_th
     assert state["candidates"][0]["peer_theme_score"] is None
     assert state["ranking"]["candidate_exclusion_required_for_all_components"] is True
     assert state["ranking"]["multiple_theme_policy"] == "MAX_VALID_MEMBERSHIP_SCORE"
-    assert state["ranking"]["missing_theme_policy"] == "NEUTRAL_50"
+    assert state["ranking"]["missing_theme_policy"] == "NEUTRAL_50_AT_FINAL_SCORE_ONLY"
     assert state["candidates"][0]["peer_only_status"] == "DATA_REQUIRED"
     assert state["candidates"][0]["candidate_excluded_from_return"] is None
     assert state["candidates"][0]["peer_theme"] is None
@@ -58,15 +72,9 @@ def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
     calc = {"asof": "2026-08-28", "color": "Green"}
     det = {}
     for i in range(40):
-        det[f"T{i}"] = {
-            "px": 100, "dvol": 20, "ma5020": True, "v200": 5,
-            "v50": 5 if i < 22 else -5, "rs189": 99 - i / 10,
-            "rs": 90, "sth": "Theme A",
-        }
+        det[f"T{i}"] = eligible_row(v50=5 if i < 22 else -5, rs189=99 - i / 10)
     source = tmp_path / "legacy.html"
-    source.write_text(
-        f'<script>window.CALC={json.dumps(calc)};</script>'
-        f'<script>window.DET={json.dumps(det)};</script>', encoding="utf-8")
+    write_legacy(source, calc, det)
     state = build_state(source)
     assert state["market"]["mode"] == "SELECTIVE"
     assert state["ranking"]["mode"] == "RS189_ONLY"
@@ -76,9 +84,7 @@ def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
 def test_companion_tqqq_schema_separates_current_hierarchy_floor_and_allocation(tmp_path):
     calc = {"asof": "2026-08-28", "color": "Yellow"}
     source = tmp_path / "legacy.html"
-    source.write_text(
-        f'<script>window.CALC={json.dumps(calc)};</script>'
-        f'<script>window.DET={json.dumps({})};</script>', encoding="utf-8")
+    write_legacy(source, calc, {})
     state = build_state(source)
     assert state["normal_tqqq"]["underlying_target_pct"] is None
     assert state["panic_tqqq"]["candidate"] == "M30_TOUCH30_F80_D10"
@@ -92,9 +98,7 @@ def test_companion_coverage_guard_stops_new_entries(tmp_path):
     calc = {"asof": "2026-08-28", "color": "Green"}
     det = {f"T{i}": {"v50": 1 if i < 10 else None} for i in range(40)}
     source = tmp_path / "legacy.html"
-    source.write_text(
-        f'<script>window.CALC={json.dumps(calc)};</script>'
-        f'<script>window.DET={json.dumps(det)};</script>', encoding="utf-8")
+    write_legacy(source, calc, det)
     state = build_state(source)
     assert state["market"]["mode"] == "STOP"
     assert not state["market"]["coverage_ok"]
@@ -102,17 +106,14 @@ def test_companion_coverage_guard_stops_new_entries(tmp_path):
 
 def test_companion_structural_bio_filter_ignores_legacy_theme_label(tmp_path):
     calc = {"asof": "2026-08-28", "color": "Green"}
-    base = {"px": 100, "dvol": 20, "ma5020": True, "v200": 5,
-            "v50": 5, "rs189": 90, "rs": 90, "sth": "臨床段階・中小型バイオ"}
+    base = eligible_row(sth="臨床段階・中小型バイオ")
     det = {
         "SMALLBIO": dict(base), "SMALLPHARMA": dict(base),
         "BIGBIO": dict(base), "MISSINGREV": dict(base), "LABELONLY": dict(base),
     }
-    # Add enough ordinary rows for breadth coverage.
-    det.update({f"T{i}": dict(base, sth="Theme A") for i in range(35)})
+    det.update({f"T{i}": eligible_row() for i in range(35)})
     source = tmp_path / "legacy.html"
-    source.write_text(f'<script>window.CALC={json.dumps(calc)};</script>'
-                      f'<script>window.DET={json.dumps(det)};</script>', encoding="utf-8")
+    write_legacy(source, calc, det)
     caps = {k: {"value": v} for k, v in {
         "SMALLBIO": 2e9, "SMALLPHARMA": 3e9, "BIGBIO": 12e9,
         "MISSINGREV": 2e9, "LABELONLY": 2e9}.items()}
@@ -141,18 +142,41 @@ def test_companion_structural_bio_filter_ignores_legacy_theme_label(tmp_path):
     assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True
 
 
+def test_companion_uses_universe_csv_structural_clinical_fields(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {name: eligible_row(sth="臨床段階・中小型バイオ") for name in (
+        "SMALLBIO", "SMALLPHARMA", "BIGBIO", "MISSINGREV",
+    )}
+    det.update({f"T{i}": eligible_row() for i in range(36)})
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, det)
+    universe = tmp_path / "universe.csv"
+    with universe.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["シンボル", "時価総額", "業種", "売上高TTM"])
+        writer.writeheader()
+        writer.writerows([
+            {"シンボル": "SMALLBIO", "時価総額": 2e9, "業種": "Biotechnology", "売上高TTM": 20e6},
+            {"シンボル": "SMALLPHARMA", "時価総額": 3e9, "業種": "Pharmaceuticals: Other", "売上高TTM": 40e6},
+            {"シンボル": "BIGBIO", "時価総額": 12e9, "業種": "Biotechnology", "売上高TTM": 10e6},
+            {"シンボル": "MISSINGREV", "時価総額": 2e9, "業種": "Biotechnology", "売上高TTM": ""},
+        ])
+    state = build_state(source, universe_path=universe)
+    got = {row["ticker"]: row for row in state["candidates"]}
+    assert "SMALLBIO" not in got and "SMALLPHARMA" not in got
+    assert "BIGBIO" in got and "MISSINGREV" in got
+    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True
+    assert got["BIGBIO"]["clinical_biotech"]["metadata_source"] == "universe.csv"
+
+
 def test_attack_strict_loo_uses_s2t_memberships_and_full_universe_before_top50(tmp_path):
     calc = {"asof": "2026-08-28", "color": "Green"}
-    det = {f"T{i}": {"px": 100, "dvol": 20, "ma5020": True, "v200": 5,
-                           "v50": 5, "rs189": 90 + i / 100, "rs": 90, "sth": "DISPLAY"}
-           for i in range(60)}
+    det = {f"T{i}": eligible_row(rs189=90 + i / 100, sth="DISPLAY") for i in range(60)}
     source = tmp_path / "legacy.html"
-    source.write_text(f'<script>window.CALC={json.dumps(calc)};</script>'
-                      f'<script>window.DET={json.dumps(det)};</script>', encoding="utf-8")
+    write_legacy(source, calc, det)
     sector = {"s2t": {ticker: ["A", "B"] for ticker in det}}
-    loo = {"candidates": {}}
+    loo = {"status": "READY", "asof": "2026-08-28", "candidates": {}}
     for ticker in det:
-        loo["candidates"][ticker] = {"history_sessions": 21, "themes": {
+        loo["candidates"][ticker] = {"status": "READY", "history_sessions": 21, "themes": {
             "A": {"theme_rs63_pct": 60, "acceleration20_pct": 60, "breadth21_pct": 60,
                   "candidate_excluded_from_return": True,
                   "candidate_excluded_from_acceleration": True,
@@ -171,3 +195,79 @@ def test_attack_strict_loo_uses_s2t_memberships_and_full_universe_before_top50(t
     assert state["ranking"]["strict_loo_live_status"] == "READY"
     assert state["candidates"][0]["peer_theme"] == "B"
     assert state["candidates"][0]["theme_memberships"] == ["A", "B"]
+
+
+def test_attack_strict_loo_stale_or_data_required_route_fails_closed(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {f"T{i}": eligible_row() for i in range(40)}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, det)
+    sector = tmp_path / "sector.json"
+    sector.write_text(json.dumps({"s2t": {ticker: ["A"] for ticker in det}}), encoding="utf-8")
+    for payload in (
+        {"status": "DATA REQUIRED", "asof": "2026-08-28", "candidates": {}},
+        {"status": "READY", "asof": "2026-08-27", "candidates": {}},
+    ):
+        loo = tmp_path / "loo.json"
+        loo.write_text(json.dumps(payload), encoding="utf-8")
+        state = build_state(source, sector_snapshot_path=sector, strict_loo_path=loo)
+        assert state["ranking"]["strict_loo_live_status"] == "DATA REQUIRED"
+        assert state["ranking"]["mode"] == "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED"
+
+
+def test_tqqq_ready_route_populates_current30_stage56_and_gross100(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, {})
+    panic = tmp_path / "tqqq-panic-state.json"
+    panic.write_text(json.dumps({
+        "asof": "2026-08-28",
+        "live_generation_status": "READY",
+        "current30": {
+            "status": "READY", "underlying_target_pct": 90,
+            "risk_lock": False, "slow_lock": False, "fast_lock": False,
+            "mc_lock": False, "sleeve": "GB",
+        },
+        "underlying_target_pct": 90,
+        "requested_target_pct": 90,
+        "vix_close": 25,
+        "qqq_sma50_atr_deviation": -0.6,
+        "qqq_drawdown10": -0.03,
+        "seed_age_sessions": 4,
+        "rsi4h": 29,
+        "prior_rsi4h": 31,
+        "mc57": 40,
+        "active": True,
+        "held_sessions": 2,
+        "reset_desired_pct": 8,
+        "normal_stock_desired_pct": 50,
+    }), encoding="utf-8")
+    state = build_state(source, tqqq_panic_path=panic)
+    assert state["normal_tqqq"]["status"] == "READY"
+    assert state["normal_tqqq"]["underlying_target_pct"] == 90
+    assert state["panic_tqqq"]["status"] == "READY / ACTIVE"
+    assert state["panic_tqqq"]["requested_target_pct"] == 90
+    gross = state["gross100_allocation"]
+    assert gross["status"].endswith("LIVE ALLOCATION READY")
+    assert gross["reset_allocated_pct"] == 8
+    assert gross["tqqq_protected_pct"] == 80
+    assert gross["normal_stock_allocated_pct"] == 12
+    assert gross["tqqq_extra_pct"] == 0
+    assert gross["gross_allocated_pct"] == 100
+
+
+def test_tqqq_stale_route_is_data_required_and_not_used_for_gross(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, {})
+    panic = tmp_path / "tqqq-panic-state.json"
+    panic.write_text(json.dumps({
+        "asof": "2026-08-27", "live_generation_status": "READY",
+        "current30": {"status": "READY", "underlying_target_pct": 90},
+        "underlying_target_pct": 90, "requested_target_pct": 90,
+        "reset_desired_pct": 8, "normal_stock_desired_pct": 50,
+    }), encoding="utf-8")
+    state = build_state(source, tqqq_panic_path=panic)
+    assert state["normal_tqqq"]["underlying_target_pct"] is None
+    assert state["panic_tqqq"]["status"] == "DATA REQUIRED"
+    assert state["gross100_allocation"]["gross_allocated_pct"] is None
