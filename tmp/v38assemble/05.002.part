@@ -1,0 +1,90 @@
+    assert missing["peer_only_status"] == "LOO_READY_NO_VALID_THEME"
+    assert missing["attack_score"] == 0.70 * missing["rs189"] + 0.30 * 50
+    assert missing["final_rank"] is not None
+
+
+def test_attack_strict_loo_stale_or_data_required_route_fails_closed(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {f"T{i}": eligible_row() for i in range(40)}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, det)
+    sector = tmp_path / "sector.json"
+    sector.write_text(json.dumps({"s2t": {ticker: ["A"] for ticker in det}}), encoding="utf-8")
+    for payload in (
+        {"status": "DATA REQUIRED", "asof": "2026-08-28", "candidates": {}},
+        {"status": "READY", "asof": "2026-08-27", "candidates": {}},
+    ):
+        loo = tmp_path / "loo.json"
+        loo.write_text(json.dumps(payload), encoding="utf-8")
+        state = build_state(source, sector_snapshot_path=sector, strict_loo_path=loo)
+        assert state["ranking"]["strict_loo_live_status"] == "DATA REQUIRED"
+        assert state["ranking"]["mode"] == "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED"
+
+
+def test_tqqq_ready_route_populates_current30_stage56_and_gross100(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, {})
+    panic = tmp_path / "tqqq-panic-state.json"
+    panic.write_text(json.dumps({
+        "asof": "2026-08-28",
+        "live_generation_status": "READY",
+        "current30": {
+            "status": "READY", "underlying_target_pct": 90,
+            "risk_lock": False, "slow_lock": False, "fast_lock": False,
+            "mc_lock": False, "sleeve": "GB",
+        },
+        "underlying_target_pct": 90,
+        "requested_target_pct": 90,
+        "vix_close": 25,
+        "qqq_sma50_atr_deviation": -0.6,
+        "qqq_drawdown10": -0.03,
+        "seed_age_sessions": 4,
+        "rsi4h": 29,
+        "prior_rsi4h": 31,
+        "mc57": 40,
+        "active": True,
+        "held_sessions": 2,
+        "reset_desired_pct": 8,
+        "normal_stock_desired_pct": 50,
+    }), encoding="utf-8")
+    state = build_state(source, tqqq_panic_path=panic)
+    assert state["normal_tqqq"]["status"] == "READY"
+    assert state["normal_tqqq"]["underlying_target_pct"] == 90
+    assert state["panic_tqqq"]["status"] == "READY / ACTIVE"
+    assert state["panic_tqqq"]["requested_target_pct"] == 90
+    gross = state["gross100_allocation"]
+    assert gross["status"].endswith("LIVE ALLOCATION READY")
+    assert gross["reset_allocated_pct"] == 8
+    assert gross["tqqq_protected_pct"] == 80
+    assert gross["normal_stock_allocated_pct"] == 12
+    assert gross["tqqq_extra_pct"] == 0
+    assert gross["gross_allocated_pct"] == 100
+
+
+def test_tqqq_stale_route_is_data_required_and_not_used_for_gross(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, {})
+    panic = tmp_path / "tqqq-panic-state.json"
+    panic.write_text(json.dumps({
+        "asof": "2026-08-27", "live_generation_status": "READY",
+        "current30": {"status": "READY", "underlying_target_pct": 90},
+        "underlying_target_pct": 90, "requested_target_pct": 90,
+        "reset_desired_pct": 8, "normal_stock_desired_pct": 50,
+    }), encoding="utf-8")
+    state = build_state(source, tqqq_panic_path=panic)
+    assert state["normal_tqqq"]["underlying_target_pct"] is None
+    assert state["panic_tqqq"]["status"] == "DATA REQUIRED"
+    assert state["gross100_allocation"]["gross_allocated_pct"] is None
+
+
+def test_audited_companion_leads_with_action_and_never_labels_stop_watchlist_as_buy():
+    html = Path("command-center-v38.html").read_text(encoding="utf-8")
+    assert "TODAY'S ACTION" in html
+    assert "今日は通常株を新規で買わない" in html
+    assert "再開時にまず見る銘柄" in html
+    assert "買い推奨ではありません" in html
+    assert "今は買わない" in html
+    assert "Rotationは現時点では正式順位に加点しません" in html
+    assert "ルール解説" in html
