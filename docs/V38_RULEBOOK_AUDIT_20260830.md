@@ -36,11 +36,11 @@ RSI30 Panic Resetの「Confirmation平均6.20%・Win 72.3%・PF 4.71」は、指
 | 全株50MA Breadth | 研究で確認済み | PASS | 監査版実装済み | 57ETF Breadthを二重Gateにしない |
 | Breadth coverage guard | 研究コード確認 | PASS | 監査版実装済み | 不足時は新規だけfail closed |
 | Eligibility / Clinical Biotech | 研究で確認済み | PASS | State builder/Fixture実装済み | Price≥5、DVOL≥10M、50>200、Close>200、RS189/63≥85。除外はThemeラベルではなく Industry∈{Biotechnology, Pharmaceuticals: Other} × Market Cap<$10B × Revenue TTM<$50M。Revenue欠落はfail-open |
-| Attack Stock70 / Theme30 | 研究で確認済み | PASS（研究値） | PIT初回backfill/Producer/Consumer/Fixture実装済み、live collector実稼働未確認 | RS189 Top50は`PREVIEW ONLY`。全eligible→strict LOO→70/30→全銘柄sort→表示Top N。初回に現在日とexact t−20を一括計算し、取得成功時は待機なしで正式順位を生成 |
-| LOO Peer Theme | 研究で確認済み | PASS | PIT初回backfill/Producer/Consumer/Fixture実装済み、live collector実稼働未確認 | `sector_snapshot.json['s2t']`の複数membershipを使用。単一表示Themeは禁止。XをReturn/Acceleration/Breadth21すべてから除外。所属ThemeなしはLOO成分を捏造せずFinal計算時だけneutral 50 |
-| Theme Full3 | 研究で確認済み | PASS | PIT初回backfill/Producer実装済み、live collector実稼働未確認 | RS63 + 20d Acceleration + Breadth21の等加重 |
+| Attack Stock70 / Theme30 | 研究で確認済み | PASS（研究値） | PIT backfill/Producer/Consumer/Fixture実装済み。strict LOO source live READY | RS189 Top50は`PREVIEW ONLY`。全eligible→strict LOO→70/30→全銘柄sort→表示Top N。source READYでも全eligibleが算出可能でない場合、正式ATTACK順位はDATA REQUIREDを維持 |
+| LOO Peer Theme | 研究で確認済み | PASS | PIT backfill/Producer/Consumer/Fixture実装済み。strict LOO source live READY | `sector_snapshot.json['s2t']`の複数membershipを使用。単一表示Themeは禁止。XをReturn/Acceleration/Breadth21すべてから除外。所属ThemeなしはLOO成分を捏造せずFinal計算時だけneutral 50 |
+| Theme Full3 | 研究で確認済み | PASS | PIT backfill/Producer実装済み。strict LOO source live READY | RS63 + 20d Acceleration + Breadth21の等加重 |
 | Granular Theme | 研究で確認済み | PASS | Schema準備 | Broad Sector加点なし。min5/min10でedge低下 |
-| Selective RS189 ranking | 研究で確認認済み | PASS | 監査版実装済み | Theme加点なし |
+| Selective RS189 ranking | 研究で確認済み | PASS | 監査版実装済み | Theme加点なし |
 | 日次候補更新 | 研究で確認済み | PASS | 監査版は旧Dashboard更新時に再計算 | 隔週待ちを不採用 |
 | Rank/Theme低下売却なし | 研究で確認済み | PASS | Engine/Fixture済み | Top12外・Breadth低下・Yellowも売却理由にしない |
 | −8% initial stop | 研究で確認済み | PASS | Engine/Fixture済み | 当日終値≤Entry×0.92でSignal、次営業日寄り全売却 |
@@ -52,11 +52,11 @@ RSI30 Panic Resetの「Confirmation平均6.20%・Win 72.3%・PF 4.71」は、指
 | 10SMA/21EMA/ATR2通常Exit | 棄却 | PASS | 未実装 | 裁量Swingとは別ルール |
 | RSI30 Panic Reset | 研究候補 | NOT REPRODUCED（見出し数値） | Monitorのみ | 独立Sleeve。2.9%×最大4、Theme最大2、20営業日固定、同一reset 20営業日cooldown。通常株−8/+24/Peak30を流用しない。ナンピン・分割追加なし。MC57/NQSARはHard Gateにしない。自動売買未接続 |
 | Theme-free RS189 RSI30 | 研究で確認済み | PASS | Monitor候補 | Main12枠へ混在させない |
-| CURRENT30 hierarchy | 研究で確認済み | PASS（定義・移植） | Producer/Fixture実装済み、live collector実稼働未確認 | Stage34 hierarchy移植。常時30%固定ではなく、通常Exposure30%＋既存risk locks/hierarchy |
+| CURRENT30 hierarchy | 研究で確認済み | PASS（定義・移植） | Producer/Fixture/live collector実稼働READY | Stage34 hierarchy移植。常時30%固定ではなく、通常Exposure30%＋既存risk locks/hierarchy。2026-08-28 as-ofでlive READY確認済み |
 | Strict Crash Seed | 研究で確認済み | PASS | Engine/Schema済み | `VIX Close≥23 AND (QQQ Close−SMA50)/ATR14≤−0.5 AND QQQ 10営業日DD≤−2%`。3条件AND |
-| `M30_TOUCH30_F80_D10` Entry | 研究候補 | PASS | Engine/Schema済み | Seed day=age0。`age<=30`＋TOUCH30＋MC57≥20。RISE30ではない |
-| F80 Floor | 研究候補 | PASS | Engine/Fixture済み | `max(CURRENT30 hierarchy target, 80%)`。80.0%固定ではない |
-| D10 / MC57<20 Exit | 研究候補 | PASS | Engine/Fixture済み | Active中。いずれも次回寄り |
+| `M30_TOUCH30_F80_D10` Entry | 研究候補 | PASS | Engine/Schema/live collector実稼働READY | Seed day=age0。`age<=30`＋TOUCH30＋MC57≥20。RISE30ではない |
+| F80 Floor | 研究候補 | PASS | Engine/Fixture/live state実装済み | `max(CURRENT30 hierarchy target, 80%)`。80.0%固定ではない |
+| D10 / MC57<20 Exit | 研究候補 | PASS | Engine/Fixture/live state実装済み | Active中。いずれも次回寄り |
 | Panic overlayとNQSAR | 研究コード確認 | PASS | Engine/文言済み | Panic発動をNQSARで禁止しない。Underlying hierarchyのNQSAR使用は残る |
 | Gross≤100% / Allocation | 研究候補 | PASS（同一Allocation Simulator比較） | Engine/Fixture実装済み、LIVE INPUT DATA REQUIRED | `Reset → TQQQ80 protection → Normal Stock → TQQQ extra`。80%は競合時の保護量でcapではない。Gross≤100% |
 
@@ -194,7 +194,7 @@ strict LOO初回backfillは、Gitで確認した最初の保存snapshot（commit
 - CandidateのRS189 / RS63 / Peer Theme / Theme3要素 / Final Rank / Eligibility / Entry status。
 - RSI30 RESETを独立カード化し、2.9%×最大4・Theme最大2・20営業日固定・cooldown・通常株Exit非流用・ナンピン/分割追加なし・MC57/NQSAR非Hard Gateを明示。
 - TQQQ CURRENT30 hierarchy / Strict Seed 3条件AND / Seed age / 4H TOUCH30 / MC57 Entry Gate・Active Exit / F80 Floor / Gross100のReset・TQQQ protected/extra・Normal・Total Gross / Hold days / VIX / ATR deviation / DD10。
-- Candidateはstrict LOO履歴不足時に`RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED`と表示し、正式順位に見せない。
+- Candidateはstrict LOO source READYでも全eligibleが算出可能でなければ`RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED`と表示し、正式順位に見せない。
 - Rotation IntelligenceはWHERE onlyとして独立表示し、未取得のFund Flow/A-D/OBVをDATA REQUIREDとする。
 - 既存Dashboardは同ページ内iframeまたは別画面で参照可能。
 
@@ -211,10 +211,10 @@ strict LOO初回backfillは、Gitで確認した最初の保存snapshot（commit
 ## 既知の未解決事項
 
 1. 現在の2026 Theme taxonomyを過去へ適用したtaxonomy lookahead。
-2. Exact LOO Themeのproducer/consumerは`s2t`複数membershipと3成分すべてのX除外を実装済み。2026-06-22以後は検証済み保存snapshotから初回にexact t−20をbackfillするため21回の日次実行待ちは不要。ただし保存開始前のHistorical PIT taxonomyは復元せず、必要なt−20が保存開始前ならDATA REQUIRED。
+2. Exact LOO Themeのproducer/consumerは`s2t`複数membershipと3成分すべてのX除外を実装済み。2026-06-22以後は検証済み保存snapshotから初回にexact t−20をbackfillするため21回の日次実行待ちは不要。strict LOO source collectorは2026-08-28 as-ofでREADY確認済み。ただしformal ATTACK rankは全eligibleが算出可能な場合だけREADYとし、候補coverage不足時はDATA REQUIREDを維持する。保存開始前のHistorical PIT taxonomyは復元せず、必要なt−20が保存開始前ならDATA REQUIRED。
 3. RSI30 Panic Resetの指定見出し数値の完全一致。
 4. Gross100 Allocationは研究候補としてEngine実装済みだが、完全な未使用OOSではなく、袖Returnをallocated grossでscaleしたAllocation研究である。絶対CAGRを期待値にしない。
-5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。Stage34 CURRENT30、QQQ 5分足→RTH 4H RSI、専用先行collector、private source cache、Yahoo Chart/yfinance/FMP fallbackは実装済み。実runnerでのREADY生成と継続currentnessはworkflow runごとにhealth欄で確認する。
+5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。Stage34 CURRENT30、QQQ 5分足→RTH 4H RSI、専用先行collector、private source cache、Yahoo Chart/yfinance/FMP fallbackは実装済み。2026-08-28 as-ofでCURRENT30/Stage56 live READYを確認済み。継続currentnessはworkflow runごとにhealth欄で確認する。
 6. 既存Dashboardには旧ルール表示が残る。監査版へ本番切替するまでは混同リスクがある。
 7. Exact ETF Fund Flow、Full Internal A/D・OBV、Macro live routeはDATA REQUIRED。
 
@@ -237,11 +237,11 @@ LOOは候補銘柄自身がTheme Return/Breadth/Accelerationを押し上げる�
 | 全株50MA Breadth | Market-mode codeのvalid SMA50 denominator＋coverage guard | `33216929035` / `9703815077` | `build_v38_companion.build_state`。57ETFは追加Gateにしない |
 | LOO Theme30 | `audit_ordinary_stock_theme_leave_one_out.py` / `LEAVE_ONE_OUT_THEME30_ATTACK_ONLY` | `33240190205` / `9711172105` / `c840f907…`＋dtype `5482468…` | Attack 70/30。候補自身をReturn/Accel/Breadth21から除外 |
 | 複数Theme / 欠落 | 同script：`np.fmax`でmax、欠落時`use_ps=50.0` | 同上 | `select_peer_theme` / `attack_rank_score` / UI method欄 |
-| Full3・Weight30 | `FULL_W30`、Pair ablation `FULL_W30` | `33240520678` / `9711273297`; `33240833226` / `9711365135` | `build_v38_strict_loo_live.py` / `peer_theme_score`。初回PIT backfillで現在＋exact t−20を生成。外部データ失敗時はDATA REQUIRED |
+| Full3・Weight30 | `FULL_W30`、Pair ablation `FULL_W30` | `33240520678` / `9711273297`; `33240833226` / `9711365135` | `build_v38_strict_loo_live.py` / `peer_theme_score`。初回PIT backfillで現在＋exact t−20を生成。source collector live READY。外部データ失敗時はDATA REQUIRED |
 | Initial/Partial/Peak30 Exit | Exit sensitivity / overlays：`PEAK30`, `PART25_R3` | `33250880314` / `9714502988`; `33250923735` / `9714434710` | 終値Signal→次Open execution、Partial後Entry/Peak維持 |
 | BE8 / 8週 / 10SMA / 21EMA棄却 | Exit trail/overlay variants | `33250255780`, `33250923735` | 実装なし |
 | RSI30 Headline / Reset Risk | `RS63_TOP3_RISE30`等を再確認したが指定3数値一致なし。Entry翌営業日から20営業日評価、同一symbol重複resetは次回許可signal+21 | `33130536827` / `9670229132` | **NOT REPRODUCED**。独立Monitor Sleeve。通常株−8/+24/Peak30非適用、ナンピン/分割追加なし、MC57/NQSAR非Hard Gate |
 | Market RS189 RSI30 | RS cutoff×RSI cutoff、`P4_RS_PRIORITY_NO_GROUP_CAP`、`THEME_PRIORITY_MARKET_CAP0/1/2` | `33133427031` / `9671218139` / `22717429676301c2ec6cd8a767d04645d4153e33` | Optional Monitor。Main12枠へ混在させない |
 | Panic TQQQ | `tqqq_stage56_mandate_portfolio_audit.py` / `M30_TOUCH30_F80_D10` | `33080590798` / `9649902954` / `4e0d813863f6663e09837de437e33cb9809f6a1b` | Strict Seed 3条件AND、`tqqq_panic_entry/exit`、F80 Floor、MC57 Entry/Exit、age≤30 Day0含む |
-| CURRENT30 hierarchy | Stage56 summary `existing hierarchy target with 30% normal exposure and its risk locks` | 同上＋Stage34 `current_trace()` | `build_v38_tqqq_live.py`へStage34 hierarchyを移植。常時30%とは実装しない。専用先行collector/private cache/fallbackを接続し、as-of一致をHard validation |
+| CURRENT30 hierarchy | Stage56 summary `existing hierarchy target with 30% normal exposure and its risk locks` | 同上＋Stage34 `current_trace()` | `build_v38_tqqq_live.py`へStage34 hierarchyを移植。常時30%とは実装しない。専用先行collector/private cache/fallbackを接続し、as-of一致をHard validation。live READY確認済み |
 | Gross 100 / Allocation | `leadership/research/audit_gross100_allocation.py` / `RESET_FIRST_TQQQ_FLOOR80`（`reset_first_tqqq_floor(...,.80)`） | `33339918881` / `9740224569` / workflow `02c6746e65fe688bcad68d3d76f27fef344b7cab` / script `e338baed223dbf421b393a7b2ddf246b19eda8d3` | `gross100_allocation`。Reset→TQQQ80保護→Normal→TQQQ extra、Gross≤100% |
