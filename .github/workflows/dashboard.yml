@@ -51,6 +51,7 @@ jobs:
         v38-strict-loo-history.json
         v38-strict-loo-live.json
         tqqq-panic-state.json
+        v38-tqqq-live-source-cache.json
         mktcap.json
         trend_history.json
         fred_cache.json
@@ -97,6 +98,18 @@ jobs:
             tests/test_v38_companion.py \
             tests/test_v38_strict_loo_live.py \
             tests/test_v38_tqqq_live.py
+
+      # TQQQ uses its own small request budget. Fetch it before the legacy
+      # dashboard and strict LOO issue thousands of Yahoo requests on this runner.
+      # The cache is private build state and is never added to the public allowlist.
+      - name: Prefetch dedicated TQQQ market inputs
+        id: tqqq_prefetch
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          python build_v38_tqqq_live.py \
+            --prefetch-cache v38-tqqq-live-source-cache.json
 
       - name: Build dashboard
         id: build
@@ -197,6 +210,7 @@ jobs:
         run: |
           python build_v38_tqqq_live.py \
             --state state.json \
+            --cache v38-tqqq-live-source-cache.json \
             --out tqqq-panic-state.json
 
       - name: Build isolated audited V38 companion
@@ -437,6 +451,9 @@ jobs:
               f"- TQQQ live_generation_status: {tqqq.get('live_generation_status') or 'DATA REQUIRED'}",
               f"- TQQQ reason: {tqqq.get('reason') or 'NONE'}",
               f"- TQQQ asof: {tqqq.get('asof') or 'NONE'}",
+              f"- TQQQ source cache fetched at: {tqqq.get('source_cache_fetched_at') or 'NONE'}",
+              f"- TQQQ QQQ 5m provider: {(tqqq.get('source_providers') or {}).get('qqq_5m') or 'NONE'}",
+              f"- TQQQ MC57 source coverage: {((tqqq.get('source_providers') or {}).get('mc57') or {}).get('coverage_tickers') or 'NONE'}/57",
           ]
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as handle:
               handle.write("\n".join(lines) + "\n")

@@ -16,8 +16,15 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import numpy as np
 import pandas as pd
@@ -46,6 +53,7 @@ CURRENT_PARAMS = {
 STAGE56_LOOKBACK = 30
 STAGE56_FLOOR = 0.80
 STAGE56_MAX_DAYS = 10
+CACHE_SCHEMA = "v38-tqqq-live-source-cache-1"
 COLOR_TO_INT = {"Red": 0, "Yellow": 1, "Green": 2, "Blue": 3}
 INT_TO_COLOR = {value: key for key, value in COLOR_TO_INT.items()}
 
@@ -78,29 +86,224 @@ def download_daily(ticker: str, start: str) -> pd.DataFrame:
     return frame[required].dropna(subset=["Open", "Close"])
 
 
-def compute_mc57() -> tuple[pd.Series, pd.Series]:
-    """Same MC57 construction called by the Stage56 research dependency."""
-    raw = yf.download(
-        list(bd.MC_MARKET_TICKERS), start=bd.MC_LONG_HISTORY_START,
-        progress=False, auto_adjust=True, actions=False,
-        group_by="ticker", threads=True,
+def _get_json(url: str) -> Any:
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0 V38-TQQQ-collector/1.0"})
+    try:
+        with urlopen(request, timeout=15) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        raise RuntimeError(f"HTTP {exc.code}") from None
+    except URLError as exc:
+        raise RuntimeError(f"network error: {type(exc.reason).__name__}") from None
+
+
+def download_yahoo_chart(ticker: str, *, start: str | None = None,
+                         interval: str = "1d", range_text: str | None = None) -> pd.DataFrame:
+    """Crumb-free Yahoo chart fallback, independent from yfinance session state."""
+    params: dict[str, Any] = {
+        "interval": interval,
+        "includePrePost": "false",
+        "events": "div,splits",
+    }
+    if range_text:
+        params["range"] = range_text
+    else:
+        begin = pd.Timestamp(start or "1990-01-01", tz="UTC")
+        params["period1"] = int(begin.timestamp())
+        params["period2"] = int((pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=2)).timestamp())
+    symbol = ticker.replace("^", "%5E").replace("=", "%3D")
+    payload = _get_json(
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?{urlencode(params)}"
     )
-    macro = bd._extract(raw, list(bd.MC_MARKET_TICKERS), minbars=30)
-    missing = [ticker for ticker in bd.MC_MARKET_TICKERS if ticker not in macro]
-    for ticker in missing:
+    chart = payload.get("chart", {})
+    if chart.get("error"):
+        raise RuntimeError(f"Yahoo chart error: {chart['error']}")
+    results = chart.get("result") or []
+    if not results:
+        raise RuntimeError("Yahoo chart returned no result")
+    result = results[0]
+    timestamps = result.get("timestamp") or []
+    quotes = ((result.get("indicators") or {}).get("quote") or [{}])[0]
+    if not timestamps or not quotes:
+        raise RuntimeError("Yahoo chart returned no bars")
+    index = pd.to_datetime(timestamps, unit="s", utc=True)
+    if interval == "1d":
+        exchange_tz = str((result.get("meta") or {}).get("exchangeTimezoneName") or "America/New_York")
+        index = index.tz_convert(exchange_tz).tz_localize(None).normalize()
+    frame = pd.DataFrame(
+        {
+            "Open": quotes.get("open"), "High": quotes.get("high"),
+            "Low": quotes.get("low"), "Close": quotes.get("close"),
+            "Volume": quotes.get("volume"),
+        },
+        index=index,
+    ).apply(pd.to_numeric, errors="coerce")
+    if interval == "1d":
+        adjusted_rows = ((result.get("indicators") or {}).get("adjclose") or [{}])[0]
+        adjusted = pd.to_numeric(pd.Series(adjusted_rows.get("adjclose"), index=frame.index), errors="coerce")
+        ratio = adjusted / frame["Close"].replace(0, np.nan)
+        for column in ("Open", "High", "Low", "Close"):
+            frame[column] = frame[column] * ratio
+    return frame.dropna(subset=["Open", "Close"]).sort_index()
+
+
+def download_fmp_frame(ticker: str, *, start: str | None = None,
+                       intraday_5m: bool = False) -> pd.DataFrame:
+    api_key = os.environ.get("FMP_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("FMP_API_KEY is not configured")
+    if intraday_5m:
+        endpoint = "https://financialmodelingprep.com/stable/historical-chart/5min"
+        params = {"symbol": ticker, "apikey": api_key}
+    else:
+        endpoint = "https://financialmodelingprep.com/stable/historical-price-eod/dividend-adjusted"
+        params = {"symbol": ticker, "from": start or "1990-01-01", "apikey": api_key}
+    payload = _get_json(f"{endpoint}?{urlencode(params)}")
+    rows = payload if isinstance(payload, list) else payload.get("historical", [])
+    if not rows:
+        message = payload.get("Error Message") if isinstance(payload, dict) else None
+        raise RuntimeError(f"FMP returned no bars: {message or 'empty response'}")
+    date_key = "date"
+    frame = pd.DataFrame(rows)
+    required = {"open", "high", "low", "close"}
+    if date_key not in frame.columns or not required.issubset(frame.columns):
+        raise RuntimeError(f"FMP response missing OHLC columns: {list(frame.columns)}")
+    index = pd.DatetimeIndex(pd.to_datetime(frame[date_key]))
+    if intraday_5m:
+        if index.tz is None:
+            index = index.tz_localize("America/New_York", ambiguous="infer", nonexistent="shift_forward")
+        else:
+            index = index.tz_convert("America/New_York")
+    out = pd.DataFrame(
+        {
+            "Open": frame["open"].to_numpy(), "High": frame["high"].to_numpy(),
+            "Low": frame["low"].to_numpy(), "Close": frame["close"].to_numpy(),
+            "Volume": frame.get("volume", pd.Series(np.nan, index=frame.index)).to_numpy(),
+        },
+        index=index,
+    ).apply(pd.to_numeric, errors="coerce")
+    return out.dropna(subset=["Open", "Close"]).sort_index()
+
+
+def download_daily_resilient(ticker: str, start: str) -> tuple[pd.DataFrame, str]:
+    errors: list[str] = []
+    for provider, callback in (
+        ("YAHOO_CHART", lambda: download_yahoo_chart(ticker, start=start)),
+        ("YAHOO_YFINANCE", lambda: download_daily(ticker, start)),
+        ("FMP_DIVIDEND_ADJUSTED", lambda: download_fmp_frame(ticker, start=start)),
+    ):
         try:
-            hist = yf.Ticker(ticker).history(start=bd.MC_LONG_HISTORY_START, auto_adjust=True)
-            got = bd._extract(hist, [ticker], minbars=30).get(ticker)
-            if got is not None and len(got):
-                macro[ticker] = got
-        except Exception:
-            pass
+            frame = callback()
+            if frame is not None and not frame.empty:
+                return frame, provider
+        except Exception as exc:
+            errors.append(f"{provider}={type(exc).__name__}: {exc}")
+    raise RuntimeError(f"{ticker} daily sources exhausted: {' | '.join(errors)}")
+
+
+def _retry(label: str, callback, attempts: int = 3):
+    """Retry a small, dedicated market-data request before bulk dashboard traffic."""
+    errors: list[str] = []
+    for attempt in range(1, attempts + 1):
+        try:
+            value = callback()
+            if value is None or (hasattr(value, "empty") and value.empty):
+                raise RuntimeError("empty response")
+            return value
+        except Exception as exc:
+            errors.append(f"{type(exc).__name__}: {exc}")
+            if attempt < attempts:
+                time.sleep(2 * attempt)
+    raise RuntimeError(f"{label} failed after {attempts} attempts: {' | '.join(errors)}")
+
+
+def _frame_payload(frame: pd.DataFrame) -> dict[str, Any]:
+    clean = frame.copy()
+    clean.columns = [str(column) for column in clean.columns]
+    values = clean.astype(object).where(pd.notna(clean), None).values.tolist()
+    return {
+        "index": [pd.Timestamp(value).isoformat() for value in clean.index],
+        "columns": list(clean.columns),
+        "data": values,
+    }
+
+
+def _frame_from_payload(payload: dict[str, Any]) -> pd.DataFrame:
+    frame = pd.DataFrame(payload.get("data", []), columns=payload.get("columns", []))
+    raw_index = [str(value) for value in payload.get("index", [])]
+    has_timezone = any(
+        value.endswith("Z") or "+" in value[10:] or "-" in value[10:]
+        for value in raw_index
+    )
+    frame.index = pd.to_datetime(raw_index, utc=True) if has_timezone else pd.to_datetime(raw_index)
+    for column in frame.columns:
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    return frame.sort_index()
+
+
+def _series_payload(series: pd.Series) -> dict[str, Any]:
+    clean = pd.to_numeric(series, errors="coerce")
+    return {
+        "index": [pd.Timestamp(value).isoformat() for value in clean.index],
+        "data": [float(value) if np.isfinite(value) else None for value in clean.to_numpy(float)],
+    }
+
+
+def _series_from_payload(payload: dict[str, Any]) -> pd.Series:
+    values = pd.to_numeric(pd.Series(payload.get("data", [])), errors="coerce").to_numpy(float)
+    return pd.Series(values, index=pd.to_datetime(payload.get("index", [])), dtype=float).sort_index()
+
+
+def compute_mc57(include_meta: bool = False):
+    """Same MC57 construction called by the Stage56 research dependency."""
+    # Use the crumb-free chart endpoint directly. yfinance's shared crumb/session
+    # can be poisoned by an HTTP 429 and then stall all 57 threaded requests.
+    macro: dict[str, pd.DataFrame] = {}
+    source_by_ticker: dict[str, str] = {}
+    def fetch_one(ticker: str) -> tuple[str, pd.DataFrame | None, str | None]:
+        for provider, callback in (
+            ("YAHOO_CHART", lambda ticker=ticker: download_yahoo_chart(
+                ticker, start=bd.MC_LONG_HISTORY_START
+            )),
+            ("FMP_DIVIDEND_ADJUSTED", lambda ticker=ticker: download_fmp_frame(
+                ticker, start=bd.MC_LONG_HISTORY_START
+            )),
+        ):
+            try:
+                frame = callback()
+                if len(frame) >= 30:
+                    return ticker, frame, provider
+            except Exception:
+                continue
+        return ticker, None, None
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(fetch_one, ticker) for ticker in bd.MC_MARKET_TICKERS]
+        for future in as_completed(futures):
+            ticker, frame, provider = future.result()
+            if frame is not None and provider is not None:
+                macro[ticker] = frame
+                source_by_ticker[ticker] = provider
+    if len(macro) < 50:
+        missing = [ticker for ticker in bd.MC_MARKET_TICKERS if ticker not in macro]
+        raise RuntimeError(
+            f"MC57 source coverage too low: {len(macro)}/{len(bd.MC_MARKET_TICKERS)} "
+            f"missing={missing}"
+        )
     score, _, _, _, values = bd.mri_frame(macro, W=None)
     score = pd.to_numeric(score, errors="coerce")
     score.index = pd.to_datetime(score.index).tz_localize(None)
     coverage = pd.to_numeric(values["mc_coverage"], errors="coerce")
     coverage.index = pd.to_datetime(coverage.index).tz_localize(None)
-    return score.sort_index(), coverage.sort_index()
+    result = (score.sort_index(), coverage.sort_index())
+    if include_meta:
+        meta = {
+            "coverage_tickers": len(macro),
+            "required_tickers": len(bd.MC_MARKET_TICKERS),
+            "source_by_ticker": source_by_ticker,
+        }
+        return result[0], result[1], meta
+    return result
 
 
 def psar(high: np.ndarray, low: np.ndarray, step: float = 0.02, maximum: float = 0.08) -> np.ndarray:
@@ -560,6 +763,91 @@ def download_qqq_5m() -> pd.DataFrame:
     return raw
 
 
+def download_qqq_5m_resilient() -> tuple[pd.DataFrame, str]:
+    errors: list[str] = []
+    for provider, callback in (
+        ("YAHOO_CHART", lambda: download_yahoo_chart("QQQ", interval="5m", range_text="60d")),
+        ("YAHOO_YFINANCE", download_qqq_5m),
+        ("FMP_5MIN", lambda: download_fmp_frame("QQQ", intraday_5m=True)),
+    ):
+        try:
+            frame = callback()
+            if frame is not None and not frame.empty:
+                return frame, provider
+        except Exception as exc:
+            errors.append(f"{provider}={type(exc).__name__}: {exc}")
+    raise RuntimeError(f"QQQ 5m sources exhausted: {' | '.join(errors)}")
+
+
+def collect_live_sources() -> dict[str, Any]:
+    """Collect every Stage34/56 input on a clean request budget.
+
+    This runs before the legacy dashboard and strict-LOO bulk downloads. The
+    cache is private build state and is not in the public-site allowlist.
+    """
+    qqq_5m, qqq_5m_provider = _retry("QQQ 5m", download_qqq_5m_resilient)
+    daily_with_provider = {
+        "QQQ": _retry("QQQ daily", lambda: download_daily_resilient("QQQ", "2009-01-01")),
+        "TQQQ": _retry("TQQQ daily", lambda: download_daily_resilient("TQQQ", "2010-01-01")),
+        "NQ=F": _retry("NQ=F daily", lambda: download_daily_resilient("NQ=F", "2000-01-01")),
+        "^VIX": _retry("^VIX daily", lambda: download_daily_resilient("^VIX", "1990-01-01")),
+    }
+    daily = {ticker: value[0] for ticker, value in daily_with_provider.items()}
+    daily_providers = {ticker: value[1] for ticker, value in daily_with_provider.items()}
+    mc57, mc_coverage, mc_meta = _retry("MC57", lambda: compute_mc57(include_meta=True))
+    return {
+        "schema": CACHE_SCHEMA,
+        "fetched_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "daily": {ticker: _frame_payload(frame) for ticker, frame in daily.items()},
+        "mc57": _series_payload(mc57),
+        "mc57_coverage": _series_payload(mc_coverage),
+        "qqq_5m": _frame_payload(_plain(qqq_5m)),
+        "coverage": {
+            "daily_latest": {
+                ticker: str(pd.Timestamp(frame.index.max()).date()) for ticker, frame in daily.items()
+            },
+            "mc57_latest": str(pd.Timestamp(mc57.dropna().index.max()).date()),
+            "qqq_5m_latest": pd.Timestamp(qqq_5m.index.max()).isoformat(),
+        },
+        "providers": {
+            "daily": daily_providers,
+            "qqq_5m": qqq_5m_provider,
+            "mc57": mc_meta,
+        },
+    }
+
+
+def write_source_cache(path: str | Path, payload: dict[str, Any]) -> None:
+    target = Path(path)
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
+    temporary.replace(target)
+
+
+def load_source_cache(path: str | Path) -> dict[str, Any]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("schema") != CACHE_SCHEMA:
+        raise RuntimeError(f"TQQQ_SOURCE_CACHE_SCHEMA_INVALID: {payload.get('schema')!r}")
+    required_daily = ("QQQ", "TQQQ", "NQ=F", "^VIX")
+    missing = [ticker for ticker in required_daily if ticker not in payload.get("daily", {})]
+    if missing:
+        raise RuntimeError(f"TQQQ_SOURCE_CACHE_DAILY_MISSING: {missing}")
+    return {
+        "fetched_at": payload.get("fetched_at"),
+        "coverage": payload.get("coverage", {}),
+        "providers": payload.get("providers", {}),
+        "qqq": _frame_from_payload(payload["daily"]["QQQ"]),
+        "tqqq": _frame_from_payload(payload["daily"]["TQQQ"]),
+        "nq": _frame_from_payload(payload["daily"]["NQ=F"]),
+        "vix": _frame_from_payload(payload["daily"]["^VIX"]),
+        "mc57": _series_from_payload(payload["mc57"]),
+        "mc_coverage": _series_from_payload(payload["mc57_coverage"]),
+        "qqq_5m": _frame_from_payload(payload["qqq_5m"]),
+    }
+
+
 def stage56_trace(data: dict[str, np.ndarray], vix_close: np.ndarray, touch30: np.ndarray,
                   current: dict[str, np.ndarray]) -> dict[str, np.ndarray | int]:
     """Exact selected Stage56 M30_TOUCH30_F80_D10 overlay."""
@@ -613,13 +901,29 @@ def stage56_trace(data: dict[str, np.ndarray], vix_close: np.ndarray, touch30: n
     }
 
 
-def build_live(asof_text: str) -> dict[str, Any]:
+def build_live(asof_text: str, sources: dict[str, Any] | None = None) -> dict[str, Any]:
     asof = pd.Timestamp(asof_text).normalize()
-    qqq = download_daily("QQQ", "2009-01-01")
-    tqqq = download_daily("TQQQ", "2010-01-01")
-    nq = download_daily("NQ=F", "2000-01-01")
-    vix = download_daily("^VIX", "1990-01-01")
-    mc57, mc_coverage = compute_mc57()
+    if sources is None:
+        qqq = download_daily("QQQ", "2009-01-01")
+        tqqq = download_daily("TQQQ", "2010-01-01")
+        nq = download_daily("NQ=F", "2000-01-01")
+        vix = download_daily("^VIX", "1990-01-01")
+        mc57, mc_coverage = compute_mc57()
+        qqq_5m = download_qqq_5m()
+        source_fetched_at = None
+    else:
+        qqq = sources["qqq"]
+        tqqq = sources["tqqq"]
+        nq = sources["nq"]
+        vix = sources["vix"]
+        mc57 = sources["mc57"]
+        mc_coverage = sources["mc_coverage"]
+        qqq_5m = sources["qqq_5m"]
+        source_fetched_at = sources.get("fetched_at")
+    mc_clean = pd.to_numeric(mc57, errors="coerce").dropna()
+    if mc_clean.empty or pd.Timestamp(mc_clean.index.max()).normalize() < asof:
+        latest = str(pd.Timestamp(mc_clean.index.max()).date()) if len(mc_clean) else None
+        raise RuntimeError(f"MC57_ASOF_REQUIRED requested={asof_text} latest={latest}")
     daily, data = build_daily_inputs(qqq, tqqq, nq, vix, mc57)
     daily_dates = pd.to_datetime(daily["date"]).dt.normalize()
     matches = np.flatnonzero(daily_dates.to_numpy() == asof.to_datetime64())
@@ -631,7 +935,7 @@ def build_live(asof_text: str) -> dict[str, Any]:
     data = {key: values[:end_pos + 1].copy() for key, values in data.items()}
     current = current30_trace(data)
 
-    bars = build_4h_bars(download_qqq_5m())
+    bars = build_4h_bars(qqq_5m)
     bars = bars[pd.to_datetime(bars["date"]) <= asof].copy()
     if bars.empty:
         raise RuntimeError("QQQ_4H_RSI_DATA_REQUIRED")
@@ -673,6 +977,8 @@ def build_live(asof_text: str) -> dict[str, Any]:
         "asof": asof_text,
         "candidate": "M30_TOUCH30_F80_D10",
         "live_generation_status": "READY",
+        "source_cache_fetched_at": source_fetched_at,
+        "source_providers": sources.get("providers", {}) if sources is not None else {},
         "current30": {
             "status": "READY",
             "underlying_target_pct": underlying * 100.0,
@@ -742,7 +1048,19 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", default="state.json")
     parser.add_argument("--out", default="tqqq-panic-state.json")
+    parser.add_argument("--cache", default=None)
+    parser.add_argument("--prefetch-cache", default=None)
     args = parser.parse_args()
+    if args.prefetch_cache:
+        cache = collect_live_sources()
+        write_source_cache(args.prefetch_cache, cache)
+        coverage = cache.get("coverage", {})
+        print(
+            f"wrote {args.prefetch_cache}: {cache.get('fetched_at')} "
+            f"MC57={coverage.get('mc57_latest')} 5m={coverage.get('qqq_5m_latest')}",
+            flush=True,
+        )
+        return
     state_path = Path(args.state)
     try:
         state = json.loads(state_path.read_text(encoding="utf-8"))
@@ -752,7 +1070,8 @@ def main() -> None:
     try:
         if asof is None:
             raise RuntimeError("STATE_DATE_REQUIRED")
-        live = build_live(asof)
+        sources = load_source_cache(args.cache) if args.cache else None
+        live = build_live(asof, sources=sources)
     except Exception as exc:
         live = data_required(asof, f"{type(exc).__name__}: {exc}")
         print(f"TQQQ_LIVE_DATA_REQUIRED {type(exc).__name__}: {exc}", flush=True)

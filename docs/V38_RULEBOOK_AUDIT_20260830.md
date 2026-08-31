@@ -113,7 +113,7 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 | Public mirror push | Secret未設定なら`SKIPPED / NOT CONFIGURED`、push済み/既に同一なら個別にPASS |
 | GitHub Pages currentness | 公開URLの内容を別途確認。Workflow SUCCESSから推定しない |
 
-`tqqq-panic-state.json` は生成された場合だけoptional allowlistへ入る。Stage34 CURRENT30とQQQ 5分足→RTH 4H Wilder RSI14のproducerコード・Fixture・CI検証は実装済みだが、外部市場データを使う日次collectorの実稼働はまだ確認していない。公開可能であること、producerコードがCIを通ること、liveデータ取得が成功すること、GitHub Pagesがcurrentであることは別判定とする。
+`tqqq-panic-state.json` は生成された場合だけoptional allowlistへ入る。Stage34 CURRENT30とQQQ 5分足→RTH 4H Wilder RSI14のproducerコード・Fixture・CI検証に加え、通常Dashboardの大量取得より前にTQQQ専用入力を確保するprivate source cacheを実装した。Yahoo Chart（crumb不要）を主経路、yfinance/FMPをfallbackとし、QQQ/TQQQ/NQ/VIX日足、QQQ 5分足、57ETF MC57を独立収集する。cacheはpublic allowlistへ入れず、requested as-ofのCURRENT30・MC57・4H coverageが一致しなければ古い値をREADYとして扱わない。live実行の成功とGitHub Pages currentnessは引き続き別確認とする。
 
 Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/latest saved date/exact t−20 snapshot/asofと、TQQQのlive_generation_status/reason/asofを出す。Workflow全体がSUCCESSでも、collectorが`DATA REQUIRED`ならlive生成成功とは記録しない。
 
@@ -195,7 +195,7 @@ strict LOO初回backfillは、Gitで確認した最初の保存snapshot（commit
 2. Exact LOO Themeのproducer/consumerは`s2t`複数membershipと3成分すべてのX除外を実装済み。2026-06-22以後は検証済み保存snapshotから初回にexact t−20をbackfillするため21回の日次実行待ちは不要。ただし保存開始前のHistorical PIT taxonomyは復元せず、必要なt−20が保存開始前ならDATA REQUIRED。
 3. RSI30 Panic Resetの指定見出し数値の完全一致。
 4. Gross100 Allocationは研究候補としてEngine実装済みだが、完全な未使用OOSではなく、袖Returnをallocated grossでscaleしたAllocation研究である。絶対CAGRを期待値にしない。
-5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。Stage34 CURRENT30とQQQ 5分足→RTH 4H RSIのproducer・workflow接続は実装済みだが、外部市場データを使う日次collector実稼働と継続currentnessは未確認。
+5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。Stage34 CURRENT30、QQQ 5分足→RTH 4H RSI、専用先行collector、private source cache、Yahoo Chart/yfinance/FMP fallbackは実装済み。実runnerでのREADY生成と継続currentnessはworkflow runごとにhealth欄で確認する。
 6. 既存Dashboardには旧ルール表示が残る。監査版へ本番切替するまでは混同リスクがある。
 7. Exact ETF Fund Flow、Full Internal A/D・OBV、Macro live routeはDATA REQUIRED。
 
@@ -223,5 +223,5 @@ LOOは候補銘柄自身がTheme Return/Breadth/Accelerationを押し上げる�
 | RSI30 Headline | `RS63_TOP3_RISE30`等を再確認したが指定3数値一致なし | `33130536827` / `9670229132` | **NOT REPRODUCED**。Monitorのみ、期待数値非表示 |
 | Market RS189 RSI30 | RS cutoff×RSI cutoff、`P4_RS_PRIORITY_NO_GROUP_CAP`、`THEME_PRIORITY_MARKET_CAP0/1/2` | `33133427031` / `9671218139` / `22717429676301c2ec6cd8a767d04645d4153e33` | Optional Monitor。Main12枠へ混在させない |
 | Panic TQQQ | `tqqq_stage56_mandate_portfolio_audit.py` / `M30_TOUCH30_F80_D10` | `33080590798` / `9649902954` / `4e0d813863f6663e09837de437e33cb9809f6a1b` | `tqqq_panic_entry/exit`、F80 Floor、MC57 Entry/Exit、age≤30 Day0含む |
-| CURRENT30 hierarchy | Stage56 summary `existing hierarchy target with 30% normal exposure and its risk locks` | 同上＋Stage34 `current_trace()` | `build_v38_tqqq_live.py`へStage34 hierarchyを移植。常時30%とは実装しない。live collector実稼働は未確認 |
+| CURRENT30 hierarchy | Stage56 summary `existing hierarchy target with 30% normal exposure and its risk locks` | 同上＋Stage34 `current_trace()` | `build_v38_tqqq_live.py`へStage34 hierarchyを移植。常時30%とは実装しない。専用先行collector/private cache/fallbackを接続し、as-of一致をHard validation |
 | Gross 100 / Allocation | `leadership/research/audit_gross100_allocation.py` / `RESET_FIRST_TQQQ_FLOOR80`（`reset_first_tqqq_floor(...,.80)`） | `33339918881` / `9740224569` / workflow `02c6746e65fe688bcad68d3d76f27fef344b7cab` / script `e338baed223dbf421b393a7b2ddf246b19eda8d3` | `gross100_allocation`。Reset→TQQQ80保護→Normal→TQQQ extra、Gross≤100% |
