@@ -1,0 +1,99 @@
+            "signal_count_in_rebuild_window": int(len(trades)),
+            "rebuild_policy": "FORWARD_PIT_TAXONOMY; ACTIVE_THEME_80_15_60; RS63_TOP3_DAY0_AND_SIGNAL; RSI30_RISE; H20"}
+
+
+def _data_required(asof: str | None, reason: str, normal: dict | None = None, reset: dict | None = None) -> dict[str, Any]:
+    return {"schema": "v38-sleeve-live-1", "asof": asof, "status": "DATA REQUIRED", "reason": reason,
+            "normal_stock": normal or {"status": "DATA REQUIRED"},
+            "rsi_reset": reset or {"status": "DATA REQUIRED", "monitor": []},
+            "missing_input_policy": "DATA_REQUIRED_NOT_ZERO"}
+
+
+def _merge_desired_into_tqqq(path: Path, asof: str, normal_pct: float | None, reset_pct: float | None,
+                             sleeve_status: str, reason: str | None = None) -> None:
+    t = _load_json(path, {})
+    if str(t.get("asof") or "") != asof or t.get("live_generation_status") != "READY":
+        t["normal_stock_desired_pct"] = None; t["reset_desired_pct"] = None
+        t["sleeve_live_status"] = "DATA REQUIRED"; t["sleeve_live_reason"] = "TQQQ_ASOF_OR_READY_MISMATCH"
+    elif sleeve_status == "READY" and normal_pct is not None and reset_pct is not None:
+        t["normal_stock_desired_pct"] = float(normal_pct); t["reset_desired_pct"] = float(reset_pct)
+        t["sleeve_live_status"] = "READY"; t["sleeve_live_reason"] = None
+    else:
+        t["normal_stock_desired_pct"] = None; t["reset_desired_pct"] = None
+        t["sleeve_live_status"] = "DATA REQUIRED"; t["sleeve_live_reason"] = reason or "SLEEVE_INPUT_DATA_REQUIRED"
+    _write_json(path, t)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--companion", default="v38-live-state.json")
+    ap.add_argument("--state", default="v38-sleeve-state.json")
+    ap.add_argument("--seed", default="v38-normal-sleeve-seed.json")
+    ap.add_argument("--strict-history", default="v38-strict-loo-history.json")
+    ap.add_argument("--tqqq-state", default="tqqq-panic-state.json")
+    ap.add_argument("--out", default="v38-sleeve-state.json")
+    ap.add_argument("--batch-size", type=int, default=150)
+    args = ap.parse_args()
+
+    companion = _load_json(Path(args.companion), {})
+    asof = str(companion.get("asof") or "")
+    out = Path(args.out)
+    if not asof:
+        payload = _data_required(None, "COMPANION_ASOF_REQUIRED")
+        _write_json(out, payload)
+        _merge_desired_into_tqqq(Path(args.tqqq_state), "", None, None, "DATA REQUIRED", payload["reason"])
+        return
+    previous = _load_json(Path(args.state), {})
+    seed = _load_json(Path(args.seed), {})
+    history = _load_json(Path(args.strict_history), {})
+    normal: dict[str, Any] | None = None; reset: dict[str, Any] | None = None
+    try:
+        prior_normal = previous.get("normal_stock") if previous.get("schema") == "v38-sleeve-live-1" else None
+        if not isinstance(prior_normal, dict) or prior_normal.get("status") != "READY":
+            prior_normal = _normal_from_seed(seed)
+        symbols_normal = sorted({p["symbol"] for p in prior_normal.get("positions", [])} |
+                                set((prior_normal.get("pending") or {}).get("entries", [])))
+        op_n = cl_n = None
+        if symbols_normal:
+            start_n = str((pd.Timestamp(str(prior_normal["asof"])) - pd.Timedelta(days=8)).date())
+            end_n = str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date())
+            op_n, cl_n, _ = download_adjusted_ohlc(symbols_normal, start_n, end_n, min(args.batch_size, 100))
+            cl_n = cl_n.loc[cl_n.index <= pd.Timestamp(asof)]
+            op_n = op_n.loc[op_n.index <= pd.Timestamp(asof)]
+        normal = advance_normal(prior_normal, companion, asof, op_n, cl_n)
+
+        tax_rows = [row for row in history.get("taxonomy_snapshots", []) if isinstance(row, dict) and row.get("effective_asof") and isinstance(row.get("s2t"), dict)]
+        if not tax_rows: raise RuntimeError("RESET_PIT_TAXONOMY_HISTORY_REQUIRED")
+        earliest = min(str(row["effective_asof"]) for row in tax_rows)
+        symbols_reset = sorted({str(s) for row in tax_rows for s in row.get("s2t", {})})
+        start_r = max(pd.Timestamp(earliest) - pd.Timedelta(days=100), pd.Timestamp(asof) - pd.Timedelta(days=RESET_LOOKBACK_CALENDAR_DAYS))
+        op_r, cl_r, quality = download_adjusted_ohlc(symbols_reset, str(start_r.date()), str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date()), args.batch_size)
+        cl_r = cl_r.loc[cl_r.index <= pd.Timestamp(asof)]
+        op_r = op_r.reindex(index=cl_r.index, columns=cl_r.columns)
+        if pd.Timestamp(asof) not in cl_r.index:
+            raise RuntimeError(f"RESET_PRICE_ASOF_REQUIRED latest={cl_r.index.max() if len(cl_r) else None}")
+        reset_trades, monitor = build_reset_trades_and_monitor(cl_r, op_r, history, asof)
+        reset = simulate_reset(cl_r, op_r, reset_trades, asof)
+        reset["monitor"] = monitor
+        reset["monitor_count"] = len(monitor)
+        reset["download_quality"] = quality
+        payload = {"schema": "v38-sleeve-live-1", "asof": asof, "status": "READY",
+                   "normal_stock": normal, "rsi_reset": reset,
+                   "gross100_input_semantics": "CURRENT_MARKED_GROSS_EXPOSURE_OF_EACH_STANDALONE_AUDITED_SLEEVE",
+                   "missing_input_policy": "DATA_REQUIRED_NOT_ZERO",
+                   "gross100_recheck": {"run_id": 33405477190, "artifact_id": 9763251012,
+                                        "reset_rule": "RS63_TOP3_RISE30_SIGTOP3", "tqqq_floor_pct": 80}}
+    except Exception as exc:
+        payload = _data_required(asof, f"{type(exc).__name__}: {exc}", normal, reset)
+        print(f"SLEEVE_DATA_REQUIRED {type(exc).__name__}: {exc}", flush=True)
+    _write_json(out, payload)
+    ready = payload.get("status") == "READY"
+    _merge_desired_into_tqqq(Path(args.tqqq_state), asof,
+        payload.get("normal_stock", {}).get("desired_pct") if ready else None,
+        payload.get("rsi_reset", {}).get("desired_pct") if ready else None,
+        "READY" if ready else "DATA REQUIRED", payload.get("reason"))
+    print(f"wrote {out}: status={payload.get('status')} asof={asof} normal={payload.get('normal_stock', {}).get('desired_pct')} reset={payload.get('rsi_reset', {}).get('desired_pct')} monitor={len(payload.get('rsi_reset', {}).get('monitor', []))}", flush=True)
+
+
+if __name__ == "__main__":
+    main()
