@@ -1,0 +1,121 @@
+name: Rotation Daily Observation Brief Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_daily_observation_brief.py
+      - leadership/research/test_rotation_daily_observation_brief.py
+      - leadership/research/rotation_v38_readonly_crosscheck.py
+      - leadership/research/rotation_live/latest.json
+      - leadership/research/rotation_live/latest_matrix.csv
+      - leadership/research/rotation_live/history.csv
+      - .github/workflows/rotation-daily-observation-brief-research.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rotation-daily-observation-brief-research
+  cancel-in-progress: true
+
+jobs:
+  brief:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Tokyo
+      PYTHONPATH: leadership/research:leadership
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install isolated research dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check requests openpyxl lxml html5lib
+
+      - name: Syntax and guardrail tests
+        run: |
+          python -m py_compile leadership/research/rotation_daily_observation_brief.py
+          python -m py_compile leadership/research/rotation_v38_readonly_crosscheck.py
+          python leadership/research/test_rotation_daily_observation_brief.py -v
+
+      - name: Rebuild formal V38 read-only crosscheck
+        run: |
+          rm -rf leadership/research/rotation_v38_readonly_crosscheck
+          python leadership/research/rotation_v38_readonly_crosscheck.py \
+            --root . \
+            --output leadership/research/rotation_v38_readonly_crosscheck \
+            --period 15mo \
+            --batch-size 80
+
+      - name: Build deterministic Daily Observation Brief
+        run: |
+          rm -rf leadership/research/rotation_daily_observation_brief
+          python leadership/research/rotation_daily_observation_brief.py \
+            --rotation leadership/research/rotation_live/latest.json \
+            --history leadership/research/rotation_live/history.csv \
+            --v38 leadership/research/rotation_v38_readonly_crosscheck/rotation_v38_readonly_crosscheck.json \
+            --v38-csv leadership/research/rotation_v38_readonly_crosscheck/rotation_v38_readonly_crosscheck.csv \
+            --output leadership/research/rotation_daily_observation_brief
+
+      - name: Validate output boundaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('leadership/research/rotation_daily_observation_brief')
+          data = json.loads((root / 'daily_observation_brief.json').read_text())
+          if data.get('research_only') is not True:
+              raise SystemExit('research_only guard missing')
+          if data.get('deterministic_formatter') is not True:
+              raise SystemExit('deterministic formatter guard missing')
+          if (data.get('input_alignment') or {}).get('status') != 'OK':
+              raise SystemExit(f"input asof mismatch: {data.get('input_alignment')}")
+          action = data.get('v38_action') or {}
+          if action.get('rotation_forced_exit') is not False:
+              raise SystemExit('Rotation must never force exit')
+          mode = str(action.get('market_mode') or '')
+          if mode in {'STOP', 'DEFENSE'} and action.get('normal_entry_limit') != 0:
+              raise SystemExit(f'{mode} must have normal_entry_limit=0')
+          forbidden = {'rotation_rank', 'rotation_stock_score', 'rotation_entry', 'rotation_buy', 'buy_signal'}
+          def walk(obj, path='root'):
+              if isinstance(obj, dict):
+                  for key, value in obj.items():
+                      if str(key).lower() in forbidden:
+                          raise SystemExit(f'forbidden action/rank key at {path}.{key}')
+                      walk(value, f'{path}.{key}')
+              elif isinstance(obj, list):
+                  for i, value in enumerate(obj):
+                      walk(value, f'{path}[{i}]')
+          walk(data)
+          print(json.dumps({
+              'asof': data.get('asof'),
+              'market_mode': mode,
+              'normal_entry_limit': action.get('normal_entry_limit'),
+              'rotation_forced_exit': action.get('rotation_forced_exit'),
+              'flow': (data.get('observations') or {}).get('flow'),
+              'buckets': {k: [x.get('ticker') for x in v] for k, v in ((data.get('observations') or {}).get('rotation_buckets') or {}).items()},
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload research-only brief
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-daily-observation-brief-research
+          path: |
+            leadership/research/rotation_daily_observation_brief/
+            leadership/research/rotation_v38_readonly_crosscheck/
+          if-no-files-found: error
+          retention-days: 14
