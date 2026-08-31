@@ -83,7 +83,14 @@ _未知stateは勝手に意味付けしない_
 - ERAS | Rank 15 | RS189 99.83 | RS63 92.98 | strict LOO Theme: 6. バイオ・ヘルスケア (73.45)
 - IMMX | Rank 19 | RS189 99.10 | RS63 96.18 | strict LOO Theme: 6. バイオ・ヘルスケア (73.28)
 
-- Existing Leadership context: **DATA REQUIRED** (optional input not supplied)
+### Existing Leadership context (no new Rotation rank)
+- XLY: Leisure-Travel Booking→ABNB
+- XLE: Oil&Gas-Field Services→SLB / Oil&Gas-Refining/Mktg→VLO / Oil&Gas-Refining/Mktg→MPC / Oil&Gas-Refining/Mktg→PSX
+- XLV: Medical-Products→DXCM / Medical - Research→CRL / Medical - Research→RVTY / Computer Sftwr-Medical→VEEV
+- XLK: Comp Sftwr - Enterprise→CRM
+- XBI: Medical - Development Biotech→CADL / Medical - Development Biotech→IMMX / Medical - Development Biotech→REPL / Medical - Development Biotech→ACHV
+- XME: Energy-Coal→SXC / Energy-Coal→HCC
+- IGV: Comp Sftwr - Enterprise→RNG / Comp Sftwr - Enterprise→TEAM / Comp Sftwr - Enterprise→FIVN / Comp Sftwr - Enterprise→PATH / Comp Sftwr - Enterprise→MANH
 
 ## 5. V38 ACTION
 
