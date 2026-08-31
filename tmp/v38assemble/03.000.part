@@ -1,0 +1,208 @@
+name: Dashboard daily build
+
+on:
+  schedule:
+    # 朝一: JST 7時 = UTC 22時。UTC22時はJST翌日なので曜日はUTC月〜金。
+    # 2-6 だと月曜引け後（JST火曜朝）が抜け、JST日曜朝が空打ちになる。
+    - cron: '17 22 * * 1-5'
+    # 昼: JST 13時 = UTC 4時（同日）。朝の取得漏れ・FRED障害を再確認。
+    - cron: '17 4 * * 2-6'
+  push:
+    branches:
+      - main
+    paths:
+      - 'sar_state.txt'
+      - 'equity.csv'
+      - 'build_dashboard.py'
+      - 'build_v38_companion.py'
+      - 'build_v38_strict_loo_live.py'
+      - 'build_v38_tqqq_live.py'
+      - 'build_v38_sleeve_live.py'
+      - 'v38-normal-sleeve-seed.json'
+      - 'command-center-v38.html'
+      - 'v38_rules.py'
+      - 'scripts/export_public_site.py'
+      - 'scripts/privacy_audit.py'
+      - '.github/workflows/dashboard.yml'
+  workflow_dispatch: {}
+
+# deploy-pagesは使わず、clean Pagesリポジトリへ限定tokenで反映する。
+# GITHUB_TOKENはこのリポジトリの生成物commitにだけ使用する。
+permissions:
+  contents: write
+
+concurrency:
+  group: dashboard-build-main
+  # 既に走っている同系統runは止めず、順番に処理する。
+  # 古いas-ofの後勝ちはbuild_dashboard.py側の巻き戻りガードで防ぐ。
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Tokyo
+      # commitする生成物の唯一の定義。commitステップの復元処理と共有する。
+      # ここに挙げたファイルは「このワークフローが唯一の書き手」であり、
+      # remoteと衝突したら常にこのrunの出力を採用する（後述のconflict-free commit）。
+      V38_ARTIFACTS: >-
+        command-center.html
+        command-center_share.html
+        v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
+        v38-tqqq-live-source-cache.json
+        v38-sleeve-state.json
+        mktcap.json
+        trend_history.json
+        fred_cache.json
+        fmp_reference_cache.json
+        state.json
+        daily_log.csv
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # 生成物のcommitはrebaseせず origin/main へ載せ直す方式にしたため、
+          # 完全履歴は不要。command-center.htmlが1回11MBあり、fetch-depth:0だと
+          # checkoutだけで9分近くかかっていた。
+          fetch-depth: 1
+
+      - name: Sync latest main before build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          echo "V38_BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: Preflight tests
+        run: |
+          python -m py_compile build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py build_v38_sleeve_live.py v38_rules.py
+          pytest -q tests/test_dashboard_build_regressions.py \
+            tests/test_options_positioning_quality.py \
+            tests/test_eps_acceleration.py \
+            tests/test_v38_rules.py \
+            tests/test_v38_companion.py \
+            tests/test_v38_strict_loo_live.py \
+            tests/test_v38_tqqq_live.py \
+            tests/test_v38_sleeve_live.py
+
+      # TQQQ uses its own small request budget. Fetch it before the legacy
+      # dashboard and strict LOO issue thousands of Yahoo requests on this runner.
+      # The cache is private build state and is never added to the public allowlist.
+      - name: Prefetch dedicated TQQQ market inputs
+        id: tqqq_prefetch
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          python build_v38_tqqq_live.py \
+            --prefetch-cache v38-tqqq-live-source-cache.json
+
+      - name: Build dashboard
+        id: build
+        env:
+          V38_UNIVERSE_CSV: universe.csv
+          # ユニバースをTradingViewスクリーナーAPIから毎回生成する。
+          # 手作業のCSVエクスポートが不要になり、上場廃止・新規上場が自動で反映される。
+          # 取得失敗・件数が前回の80%未満なら既存CSVを温存する。
+          V38_UNIVERSE_AUTO: '1'
+          V38_UNIVERSE_MIN_MCAP: '200000000'
+          V38_UNIVERSE_MIN_PRICE: '1'
+          V38_SECTOR_JSON: sector_snapshot.json
+          V38_OUT_HTML: command-center.html
+          V38_MKTCAP_JSON: mktcap.json
+          V38_TREND_JSON: trend_history.json
+          V38_LOG_CSV: daily_log.csv
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          V38_FRED_CACHE: fred_cache.json
+          # Yahoo価格を主系統とし、FMP無料枠は欠損tickerの照合だけに使う。
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          V38_FMP_REFERENCE_CACHE: fmp_reference_cache.json
+          V38_FMP_REFERENCE_BUDGET: '40'
+          V38_STATE_JSON: state.json
+          V38_EQUITY_CSV: equity.csv
+          # 決算キャッシュ。未設定だとrunnerで書けないパスに落ちて毎回再取得になる。
+          V38_ER_JSON: earnings.json
+          # EPSは全ユニバースをキャッシュへ蓄積。1回120件、主要160の週次更新枠を20件確保。
+          V38_EARNINGS_FETCH_BUDGET: '120'
+          V38_EARNINGS_FETCH_SECONDS: '180'
+          V38_EARNINGS_PRIORITY_RESERVE: '20'
+          # 上場来VWAPの累積和キャッシュ。初回だけ period="max" を全銘柄ぶん取得し、
+          # 以降は差分更新なので所要はほぼゼロ。
+          V38_INCEPT_VWAP_JSON: inception_vwap.json
+          V38_INCEPT_VWAP_BUDGET: '1400'
+          # 業種分類（TradingViewスキャナー）。7日ごとに自動更新し、失敗時は前回値へ退避。
+          V38_INDUSTRY_JSON: industry_map.json
+          V38_INDUSTRY_MAX_AGE_DAYS: '7'
+          # オプションの壁。別ワークフローが吐いたものを読むだけ。無くても動く。
+          V38_OPT_JSON: options_positioning.json
+          V38_OPT_SCAN_HISTORY: options_scan_history.csv
+          V38_OPT_TARGETS: options_targets.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          python build_dashboard.py 2>&1 | tee build-dashboard.log
+          if grep -q "::warning::as-of regression:" build-dashboard.log; then
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare verified PIT taxonomy bootstrap
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("v38-strict-loo-history.json")
+          if not path.is_file():
+              raise SystemExit(1)
+          try:
+              history = json.loads(path.read_text(encoding="utf-8"))
+          except (OSError, ValueError):
+              raise SystemExit(1)
+          expected = "git:79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json"
+          expected_hash = "dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39"
+          found = any(
+              isinstance(row, dict)
+              and row.get("source") == expected
+              and row.get("effective_asof") == "2026-06-22"
+              and row.get("taxonomy_sha256") == expected_hash
+              and bool(row.get("s2t"))
+              for row in history.get("taxonomy_snapshots", [])
+          )
+          raise SystemExit(0 if found else 1)
+          PY
+          then
+            echo "Verified PIT taxonomy bootstrap already persisted"
+          else
+            git fetch --depth=1 origin 79073ffd9742102c2b6e9f72d349801a10e126db
+            git cat-file -e 79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json
+          fi
+
+      - name: Build strict LOO PIT live state with exact t-20 bootstrap
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_strict_loo_live.py \
+            --state state.json \
+            --sector-snapshot sector_snapshot.json \
