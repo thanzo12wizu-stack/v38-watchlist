@@ -15,6 +15,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: rotation-live-snapshot-research
+  cancel-in-progress: true
+
 jobs:
   snapshot:
     runs-on: ubuntu-24.04
@@ -43,18 +47,32 @@ jobs:
             --download-start 2025-01-01 \
             --download-end 2026-09-02 \
             --min-source-coverage 0.80
-      - name: Persist research snapshot history on research branch
+      - name: Persist generated snapshot without rebasing generated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add leadership/research/rotation_live/
-          if git diff --cached --quiet; then
-            echo "No snapshot changes"
-          else
+          SNAP_TMP="$(mktemp -d)/rotation_live"
+          cp -a leadership/research/rotation_live "$SNAP_TMP"
+
+          for attempt in 1 2 3; do
+            git fetch origin research/rotation-exact-flow-internals-20260831
+            git reset --hard origin/research/rotation-exact-flow-internals-20260831
+            rm -rf leadership/research/rotation_live
+            mkdir -p leadership/research
+            cp -a "$SNAP_TMP" leadership/research/rotation_live
+            git add leadership/research/rotation_live/
+            if git diff --cached --quiet; then
+              echo "No snapshot changes"
+              exit 0
+            fi
             git commit -m "research: record live rotation snapshot"
-            git pull --rebase origin research/rotation-exact-flow-internals-20260831
-            git push origin HEAD:research/rotation-exact-flow-internals-20260831
-          fi
+            if git push origin HEAD:research/rotation-exact-flow-internals-20260831; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; retrying on latest branch head"
+          done
+          echo "Failed to persist snapshot after 3 attempts" >&2
+          exit 1
       - name: Upload research outputs
         if: always()
         uses: actions/upload-artifact@v4
