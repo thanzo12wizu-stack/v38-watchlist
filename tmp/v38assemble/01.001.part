@@ -1,0 +1,140 @@
+    sleeve_live = _load_json(sleeve_live_path, {})
+    sleeve_ready = _ready_live(sleeve_live, asof, "status")
+
+    candidates = []
+    for ticker, row in details.items():
+        meta = universe_meta.get(ticker, {})
+        industry_value = meta.get("industry") or row.get("industry")
+        if not industry_value and isinstance(industries.get(ticker), list):
+            industry_value = industries[ticker][1] if len(industries[ticker]) > 1 else None
+        market_cap_value = meta.get("market_cap")
+        if not _finite(market_cap_value):
+            market_cap_value = row.get("market_cap")
+        if not _finite(market_cap_value):
+            market_cap_value = _map_value(market_caps, ticker)
+        revenue_value = meta.get("revenue_ttm")
+        if not _finite(revenue_value):
+            revenue_value = row.get("revenue_ttm")
+        if not _finite(revenue_value):
+            revenue_value = _revenue_value(revenues, ticker)
+        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)
+        eligible = (
+            _finite(row.get("px")) and float(row["px"]) >= 5
+            and _finite(row.get("dvol")) and float(row["dvol"]) >= 10
+            and bool(row.get("ma5020"))
+            and _finite(row.get("v200")) and float(row["v200"]) > 0
+            and _finite(row.get("rs189")) and float(row["rs189"]) >= 85
+            and _finite(row.get("rs")) and float(row["rs"]) >= 85
+            and not bio.excluded
+        )
+        if not eligible:
+            continue
+        memberships = [str(x) for x in s2t.get(ticker, []) if str(x).strip()]
+        loo = _strict_loo_record(ticker, memberships, loo_live)
+        loo_ready = loo is not None
+        selected = loo.get("selected") if loo_ready else None
+        selected_score = loo.get("score") if loo_ready else None
+        comp = loo.get("components") if loo_ready else None
+        watch_score = attack_rank_score(row.get("rs189"), selected_score) if loo_ready else None
+        candidates.append({
+            "ticker": ticker,
+            "price": row.get("px"),
+            "rs189": row.get("rs189"),
+            "rs63": row.get("rs"),
+            # Legacy DET has no complete multi-membership/PIT peer history.
+            # Do not mislabel its single display taxonomy as the selected LOO Theme.
+            "peer_theme": selected,
+            "theme_memberships": memberships,
+            "membership_source": "sector_snapshot.json:s2t",
+            "legacy_theme_label": row.get("sth"),
+            "peer_theme_score": selected_score,
+            "theme_rs63": comp.get("theme_rs63_pct") if comp else None,
+            "theme_acceleration": comp.get("acceleration20_pct") if comp else None,
+            "theme_breadth21": comp.get("breadth21_pct") if comp else None,
+            "peer_only_status": (loo.get("readiness") if loo_ready else "DATA_REQUIRED"),
+            "candidate_exclusion_required": True,
+            "candidate_excluded_from_return": True if loo_ready else None,
+            "candidate_excluded_from_acceleration": True if loo_ready else None,
+            "candidate_excluded_from_breadth21": True if loo_ready else None,
+            "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+            "missing_theme_neutral_score": 50,
+            # This watch score uses the exact adopted ATTACK formula, but it does
+            # not grant entry eligibility. It is calculated every day so STOP /
+            # DEFENSE screens can still tell the reader what to watch for a later
+            # reopening without changing WHEN (Market Mode).
+            "attack_watch_score": watch_score,
+            "attack_watch_rank": None,
+            "attack_score": watch_score if mode.name == "ATTACK" else None,
+            "final_rank": None,
+            "eligibility": "ELIGIBLE",
+            "clinical_biotech": {
+                "industry": industry_value,
+                "market_cap": float(market_cap_value) if _finite(market_cap_value) else None,
+                "revenue_ttm": float(revenue_value) if _finite(revenue_value) else None,
+                "excluded": bio.excluded,
+                "revenue_missing_fail_open": bio.revenue_missing_fail_open,
+                "reason": bio.reason,
+                "metadata_source": "universe.csv" if ticker in universe_meta else "fallback",
+            },
+            "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+        })
+    # IMPORTANT: all eligible symbols reach strict LOO before any display cap.
+    # The reader-facing reopening watch rank therefore never uses an RS189 Top50
+    # prefilter. It is the adopted ATTACK 70/30 formula over the full eligible set.
+    all_attack_watch_ready = bool(candidates) and all(
+        row["attack_watch_score"] is not None for row in candidates
+    )
+    if all_attack_watch_ready:
+        watch_order = sorted(
+            candidates,
+            key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])),
+            reverse=True,
+        )
+        for rank, row in enumerate(watch_order, 1):
+            row["attack_watch_rank"] = rank
+
+    all_attack_ready = mode.name == "ATTACK" and all_attack_watch_ready
+    if mode.name == "ATTACK" and all_attack_ready:
+        candidates.sort(key=lambda row: (float(row["attack_score"]), float(row["rs189"])), reverse=True)
+    elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:
+        # In non-entry modes show the reopening watch order while preserving
+        # final_rank=None and the Market Mode new-entry limit of zero.
+        candidates.sort(key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])), reverse=True)
+    else:
+        candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
+    if mode.name == "SELECTIVE":
+        for rank, row in enumerate(candidates, 1):
+            row["final_rank"] = rank
+    elif mode.name == "ATTACK" and all_attack_ready:
+        for rank, row in enumerate(candidates, 1):
+            row["final_rank"] = rank
+
+    current30 = tqqq_live.get("current30", {}) if tqqq_ready else {}
+    underlying_pct = _pct(tqqq_live.get("underlying_target_pct")) if tqqq_ready else None
+    requested_pct = _pct(tqqq_live.get("requested_target_pct")) if tqqq_ready else None
+    reset_desired_pct = _pct(tqqq_live.get("reset_desired_pct")) if tqqq_ready else None
+    normal_desired_pct = _pct(tqqq_live.get("normal_stock_desired_pct")) if tqqq_ready else None
+
+    gross_live_ready = all(
+        value is not None
+        for value in (requested_pct, reset_desired_pct, normal_desired_pct)
+    )
+    gross_live = None
+    if gross_live_ready:
+        gross_live = gross100_allocation(
+            reset_desired_pct / 100.0,
+            requested_pct / 100.0,
+            normal_desired_pct / 100.0,
+        )
+
+    normal_tqqq = {
+        "status": "READY" if tqqq_ready and current30.get("status") == "READY" else "CURRENT30 HIERARCHY DATA REQUIRED",
+        "strategy": "CURRENT30",
+        "normal_exposure_pct": 30,
+        "underlying_target_pct": underlying_pct,
+        "risk_lock": current30.get("risk_lock") if tqqq_ready else None,
+        "slow_lock": current30.get("slow_lock") if tqqq_ready else None,
+        "fast_lock": current30.get("fast_lock") if tqqq_ready else None,
+        "mc_lock": current30.get("mc_lock") if tqqq_ready else None,
+        "sleeve": current30.get("sleeve") if tqqq_ready else None,
+        "note": "30% is the normal exposure inside the Stage34 hierarchy; risk locks and hierarchy can change the target",
