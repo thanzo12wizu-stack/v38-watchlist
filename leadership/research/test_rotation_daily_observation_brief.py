@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
 
@@ -13,16 +15,22 @@ def rotation_payload(asof: str = "2026-08-28") -> dict:
         "matrix": [
             {"ticker": "XBI", "level": "INDUSTRY", "state": "CURRENT_STRENGTH", "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL", "matrix_price_score": 90, "matrix_internal_score": 80, "matrix_internal_delta20": 15, "flow_20d_usd": 500_000_000, "flow_20d_pct_aum": 2.0},
             {"ticker": "XME", "level": "INDUSTRY", "state": "EARLY_ROTATION_WATCH", "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL", "matrix_price_score": 50, "matrix_internal_score": 60, "matrix_internal_delta20": 12, "flow_20d_usd": 100_000_000, "flow_20d_pct_aum": 1.0},
-            {"ticker": "XLF", "level": "SECTOR", "state": "DISTRIBUTION_WARNING", "state_evidence": "PIT_VALIDATED_2024PLUS_SECTOR_CONTEXT", "validated_price_score": 80, "validated_internal_score": 40, "validated_internal_delta20": -20, "flow_20d_usd": -400_000_000, "flow_20d_pct_aum": -1.0},
+            {"ticker": "IGV", "level": "INDUSTRY", "state": "INTERNAL_LEAD_WATCH", "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL", "matrix_price_score": 50, "matrix_internal_score": 75, "matrix_internal_delta20": 20, "flow_20d_usd": -50_000_000, "flow_20d_pct_aum": -0.2},
+            {"ticker": "SOXX", "level": "INDUSTRY", "state": "INTERNAL_WEAK_FLOW_OUT", "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL", "matrix_price_score": 55, "matrix_internal_score": 35, "matrix_internal_delta20": -20, "flow_20d_usd": -500_000_000, "flow_20d_pct_aum": -2.0},
+            {"ticker": "XLI", "level": "SECTOR", "state": "FLOW_INTERNAL_DIVERGENCE_WATCH", "validated_price_score": 55, "validated_internal_score": 40, "validated_internal_delta20": 5, "flow_20d_usd": 200_000_000, "flow_20d_pct_aum": 0.5},
+            {"ticker": "XLF", "level": "SECTOR", "state": "DISTRIBUTION_DETERIORATION_WARNING", "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL", "validated_price_score": 80, "validated_internal_score": 60, "validated_internal_delta20": -25, "flow_20d_usd": -400_000_000, "flow_20d_pct_aum": -1.0},
+            {"ticker": "XLV", "level": "SECTOR", "state": "REDEMPTION_DIVERGENCE", "validated_price_score": 70, "validated_internal_score": 80, "validated_internal_delta20": 10, "flow_20d_usd": -100_000_000, "flow_20d_pct_aum": -0.2},
             {"ticker": "XLU", "level": "SECTOR", "state": "WEAK_BREAKDOWN", "validated_price_score": 30, "validated_internal_score": 30, "validated_internal_delta20": -10, "flow_20d_usd": -10_000_000, "flow_20d_pct_aum": -0.1},
         ],
         "macro_why": {
-            "fred": {
-                "DGS10": {"value": 4.2, "change_20obs": 0.3},
-                "DFII10": {"value": 1.8, "change_20obs": 0.1},
-                "DTWEXBGS": {"value": 120.0, "change_20obs": 1.0},
-                "BAMLC0A0CM": {"value": 0.8, "change_20obs": 0.05},
-                "BAMLH0A0HYM2": {"value": 3.1, "change_20obs": 0.2},
+            "rates": {
+                "us10y": {"quality": "EXACT_OFFICIAL", "value": 4.2, "change_20obs": 0.3},
+                "real10y": {"quality": "EXACT_OFFICIAL", "value": 1.8, "change_20obs": 0.1},
+            },
+            "broad_usd": {"quality": "EXACT_OFFICIAL", "value": 120.0, "change_20obs": 1.0},
+            "credit": {
+                "ig_oas": {"quality": "DATA_REQUIRED"},
+                "hy_oas": {"quality": "DATA_REQUIRED"},
             },
             "vix": {"value": 14.4},
             "fear_greed": {"headline": {"score": 54, "rating": "neutral"}, "split": True, "fear_components": ["breadth"], "greed_components": ["junk_bond_demand"]},
@@ -62,6 +70,20 @@ class BriefTests(unittest.TestCase):
         self.assertFalse(built["v38_action"]["rotation_forced_exit"])
         self.assertIn("Rotationによる強制売却なし", brief.render_markdown(built))
 
+    def test_v2_watch_states_map_without_becoming_mainstream(self) -> None:
+        built = brief.build_brief(rotation_payload(), v38_payload(), crosscheck_df())
+        watch = {x["ticker"] for x in built["observations"]["rotation_buckets"]["watch"]}
+        self.assertEqual(watch, {"XME", "IGV"})
+        flow_div = {x["ticker"] for x in built["observations"]["rotation_buckets"]["flow_internal_divergence"]}
+        self.assertEqual(flow_div, {"XLI"})
+
+    def test_internal_weak_flow_out_is_not_distribution(self) -> None:
+        built = brief.build_brief(rotation_payload(), v38_payload(), crosscheck_df())
+        weak = {x["ticker"] for x in built["observations"]["rotation_buckets"]["weak_flow_out"]}
+        dist = {x["ticker"] for x in built["observations"]["rotation_buckets"]["distribution"]}
+        self.assertIn("SOXX", weak)
+        self.assertNotIn("SOXX", dist)
+
     def test_eligible_under_stop_is_context_not_buy(self) -> None:
         built = brief.build_brief(rotation_payload(), v38_payload(), crosscheck_df())
         xbi = next(x for x in built["theme_stock"]["formal_v38_context"] if x["etf"] == "XBI")
@@ -86,6 +108,23 @@ class BriefTests(unittest.TestCase):
         text = " ".join(built["macro_why"]["hypotheses"])
         self.assertIn("XLU", text)
         self.assertIn("因果推定ではなくWHY候補", text)
+
+    def test_history_asof_column_is_read_as_column_not_dataframe_method(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "history.csv"
+            pd.DataFrame([
+                {"asof": "2026-08-26", "ticker": "XBI", "state": "MIXED_HOLD"},
+                {"asof": "2026-08-27", "ticker": "XBI", "state": "EARLY_ROTATION_WATCH"},
+                {"asof": "2026-08-28", "ticker": "XBI", "state": "CURRENT_STRENGTH"},
+            ]).to_csv(path, index=False)
+            events = brief.history_events(path, "2026-08-28", {"XBI"})
+            self.assertEqual(len(events), 1)
+            self.assertEqual(events[0]["from"], "EARLY_ROTATION_WATCH")
+            self.assertEqual(events[0]["to"], "CURRENT_STRENGTH")
+
+    def test_all_known_v2_states_avoid_unknown_bucket(self) -> None:
+        built = brief.build_brief(rotation_payload(), v38_payload(), crosscheck_df())
+        self.assertEqual(built["data_quality"]["unknown_upstream_states"], [])
 
 
 if __name__ == "__main__":
