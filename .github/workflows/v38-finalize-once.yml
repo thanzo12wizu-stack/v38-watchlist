@@ -1,0 +1,34 @@
+name: V38 finalize live sleeves once
+
+on:
+  push:
+    branches: [fix/v38-gross100-live-20260901]
+    paths:
+      - '.github/workflows/v38-finalize-once.yml'
+      - 'tools/v38-final.patch.*'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Apply reviewed final patch
+        run: |
+          cat tools/v38-final.patch.* | git apply --index -
+          git rm --ignore-unmatch tools/v38-final.patch.*
+          git rm --ignore-unmatch .github/workflows/v38-finalize-once.yml
+          git rm --ignore-unmatch .github/workflows/v38-gross100-dev-snapshot.yml
+          git rm --ignore-unmatch .github/workflows/v38-normal-seed-once.yml
+          git rm --ignore-unmatch tools/dev_seed_v38_normal.py
+          git status --short
+      - name: Commit finalized implementation
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Complete live V38 sleeves and RSI30 monitor'
+          git push origin HEAD:fix/v38-gross100-live-20260901
