@@ -7,6 +7,7 @@ on:
       - research/rotation-exact-flow-internals-20260831
     paths:
       - leadership/research/rotation_pit_all_states_cached_backtest.py
+      - leadership/research/rotation_pit_all_states_runner.py
       - .github/workflows/rotation-pit-all-states-research.yml
 
 jobs:
@@ -33,10 +34,10 @@ jobs:
           test -s /tmp/pit-source/monthly_wikipedia_pit_quality.csv
       - name: Syntax check
         run: |
-          python -m py_compile leadership/research/rotation_pit_all_states_cached_backtest.py
+          python -m py_compile leadership/research/rotation_pit_all_states_cached_backtest.py leadership/research/rotation_pit_all_states_runner.py
       - name: Run strict PIT state validation
         run: |
-          python leadership/research/rotation_pit_all_states_cached_backtest.py \
+          python leadership/research/rotation_pit_all_states_runner.py \
             --snapshots /tmp/pit-source/monthly_wikipedia_sector_snapshots.csv \
             --snapshot-quality /tmp/pit-source/monthly_wikipedia_pit_quality.csv \
             --analysis-start 2022-04-18 \
