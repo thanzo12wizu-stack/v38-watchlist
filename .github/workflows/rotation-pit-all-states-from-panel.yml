@@ -19,7 +19,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml
+        run: |
+          python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml
+          python -m pip install --disable-pip-version-check "git+https://github.com/arielNacamulli/pitindex.git@c3d5d4961076a59041b3e1de90fe5ea052f61bb4"
       - name: Download audited PIT panel
         env:
           GH_TOKEN: ${{ github.token }}
