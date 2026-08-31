@@ -76,21 +76,23 @@ jobs:
           d=json.loads(p.read_text())
           if d.get('research_only') is not True:
               raise SystemExit('research_only guard missing')
+          if d.get('schema') != 3:
+              raise SystemExit('unexpected schema')
           items=d.get('industry_context') or []
           if [x.get('etf') for x in items] != ['XBI','XME','SOXX','IGV']:
               raise SystemExit('industry set mismatch')
           if any((x.get('membership_rows') or 0) < 5 for x in items):
               raise SystemExit('insufficient provider holdings')
-          total=sum(int(x.get('leadership_matches') or 0) for x in items)
+          total=sum(int(x.get('leadership_group_top15_intersections') or 0) for x in items)
           if total < 10:
-              raise SystemExit(f'insufficient Leadership intersection: {total}')
+              raise SystemExit(f'insufficient exported top15 intersections: {total}')
 
-          forbidden_keys={'rotation_stock_score','rotation_rank','rotation_entry','rotation_signal'}
+          forbidden_keys={'rotation_stock_score','rotation_rank','rotation_entry','rotation_signal','leadership_entry_status','leadership_entry_quality','leadership_entry_reason'}
           def walk(obj, path='root'):
               if isinstance(obj, dict):
                   for k,v in obj.items():
                       if str(k).lower() in forbidden_keys:
-                          raise SystemExit(f'unexpected Rotation stock key at {path}.{k}')
+                          raise SystemExit(f'unexpected trading-action key at {path}.{k}')
                       walk(v, f'{path}.{k}')
               elif isinstance(obj, list):
                   for i,v in enumerate(obj):
@@ -100,13 +102,13 @@ jobs:
           print(json.dumps({
               'leadership_market_asof': (d.get('leadership_coverage') or {}).get('market_asof'),
               'leadership_confidence': (d.get('leadership_coverage') or {}).get('confidence'),
-              'total_matches': total,
+              'total_top15_intersections': total,
               'summary': [{
                   'etf': x.get('etf'),
                   'state': (x.get('rotation') or {}).get('state'),
                   'members': x.get('membership_rows'),
-                  'matches': x.get('leadership_matches'),
-                  'leaders': len(x.get('existing_emerging_or_leading_leaders') or []),
+                  'top15_intersections': x.get('leadership_group_top15_intersections'),
+                  'leaders': len(x.get('existing_emerging_or_leading_leaders_in_top15_intersection') or []),
               } for x in items],
           }, ensure_ascii=False, indent=2))
           PY
