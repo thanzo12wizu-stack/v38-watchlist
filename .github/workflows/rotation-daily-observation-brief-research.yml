@@ -15,7 +15,7 @@ on:
       - .github/workflows/rotation-daily-observation-brief-research.yml
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: rotation-daily-observation-brief-research
@@ -119,3 +119,35 @@ jobs:
             leadership/research/rotation_v38_readonly_crosscheck/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Persist deterministic brief for public viewer
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH="research/rotation-exact-flow-internals-20260831"
+          SRC="leadership/research/rotation_daily_observation_brief"
+          TMP="$(mktemp -d)/rotation_daily_observation_brief"
+          cp -a "$SRC" "$TMP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            rm -rf "$SRC"
+            mkdir -p "$(dirname "$SRC")"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then
+              echo "Brief already current"
+              exit 0
+            fi
+            git commit -m "research: record deterministic daily rotation brief"
+            if git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; retrying"
+          done
+          echo "Failed to persist brief after 3 attempts" >&2
+          exit 1
