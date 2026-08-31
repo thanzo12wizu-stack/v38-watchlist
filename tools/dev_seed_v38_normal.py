@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
+# One-time branch-only generator. The merged product keeps only the generated seed.
 
 def _px(frame, date, sym, fallback=None):
     try:
