@@ -1,0 +1,191 @@
+          # ファイルを3-way mergeさせていたのが誤り。
+          # このワークフローがこれらの唯一の書き手なので、「最新のorigin/mainに
+          # このrunの出力を載せ直す」= 常にこのrunが勝つ、に変更する。
+          # ソースコード側は触らないので、他者の変更を潰すことはない。
+          # --------------------------------------------------------------------
+
+          staging="$(mktemp -d)"
+          for file in $V38_ARTIFACTS; do
+            if [[ -f "$file" ]]; then
+              mkdir -p "$staging/$(dirname "$file")"
+              cp -a "$file" "$staging/$file"
+            fi
+          done
+
+          pushed=false
+          committed=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard FETCH_HEAD          # 生成物以外は必ず最新のremoteに合わせる
+
+            for file in $V38_ARTIFACTS; do
+              if [[ -f "$staging/$file" ]]; then
+                mkdir -p "$(dirname "$file")"
+                cp -a "$staging/$file" "$file"
+                git add -- "$file"
+              fi
+            done
+
+            if git diff --staged --quiet; then
+              echo "No dashboard changes to commit"
+              pushed=true
+              break
+            fi
+
+            git commit -m "Daily dashboard rebuild + cache refresh"
+            committed=true
+
+            if git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
+
+            echo "Push attempt ${attempt} failed; reloading latest origin/main and retrying"
+            sleep $((attempt * 3))
+          done
+
+          if [[ "$pushed" != true ]]; then
+            echo "Push failed after 3 attempts (committed=${committed})"
+            exit 1
+          fi
+
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Report skipped stale-source run
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift == 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard build"
+            echo "- Status: skipped after build"
+            echo "- Reason: generation/input source changed while this run was executing"
+            echo "- Safety: stale same-session artifacts were not persisted or published"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Audit public privacy boundary
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        run: |
+          python scripts/privacy_audit.py \
+            --root . \
+            --output /tmp/privacy-audit-status.json
+          cat /tmp/privacy-audit-status.json
+
+      - name: Export allowlisted public site
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/export_public_site.py \
+            --root . \
+            --output /tmp/v38-public-site \
+            --source-commit "${{ steps.persist.outputs.source_sha }}"
+
+      - name: Publish clean public mirror
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        id: publish
+        continue-on-error: true
+        shell: bash
+        env:
+          PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
+          PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
+            echo "::warning::Public mirror is not configured; build and privacy validation completed"
+            echo "mirror_status=SKIPPED / NOT CONFIGURED" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ ! "$PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid V38_PUBLIC_PAGES_REPOSITORY: expected owner/repository"
+            exit 1
+          fi
+
+          target=/tmp/v38-pages-repository
+          git clone \
+            --depth 1 \
+            "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" \
+            "$target"
+
+          find "$target" \
+            -mindepth 1 \
+            -maxdepth 1 \
+            ! -name .git \
+            -exec rm -rf -- {} +
+
+          cp -a /tmp/v38-public-site/. "$target/"
+          cd "$target"
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "Public site mirror already current"
+            echo "mirror_status=PASS / MIRROR ALREADY CURRENT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit \
+            -m "Publish dashboard ${{ steps.persist.outputs.source_sha }}"
+          git push origin HEAD:main
+          echo "mirror_status=PASS / MIRROR PUSHED" >> "$GITHUB_OUTPUT"
+
+      - name: Report build and delivery stages
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard stage status"
+            echo "- Build / validation: PASS"
+            echo "- main generated-state persistence: PASS"
+            echo "- Public export creation: PASS"
+            echo "- Public mirror push: ${{ steps.publish.outputs.mirror_status || 'FAILED / SEE PUBLISH STEP' }}"
+            echo "- GitHub Pages currentness: SEPARATE CHECK REQUIRED"
+            echo ""
+            echo "A successful workflow is not, by itself, proof that the public mirror or GitHub Pages is current."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report publish failure
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true' && steps.publish.outcome == 'failure'
+        shell: bash
+        env:
+          FAILURE_WEBHOOK: ${{ secrets.V38_WEBHOOK }}
+        run: |
+          set -euo pipefail
+
+          message="Dashboard build succeeded, but public mirror publish failed: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          echo "::error::$message"
+          echo "### Public publish failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ -n "${FAILURE_WEBHOOK:-}" ]]; then
+            MESSAGE="$message" python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          body = json.dumps(
+              {"content": os.environ["MESSAGE"]}
+          ).encode("utf-8")
+
+          req = urllib.request.Request(
+              os.environ["FAILURE_WEBHOOK"],
+              data=body,
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "dashboard-actions/1.0",
+              },
+          )
+
+          with urllib.request.urlopen(req, timeout=10) as response:
+              if response.status >= 300:
+                  raise SystemExit(
+                      f"webhook returned HTTP {response.status}"
+                  )
+          PY
+          fi
+
+          exit 1
