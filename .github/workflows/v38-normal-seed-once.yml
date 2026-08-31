@@ -28,6 +28,8 @@ jobs:
           mkdir -p /tmp/v38-research
           git archive 02c6746e65fe688bcad68d3d76f27fef344b7cab leadership/research | tar -x -C /tmp/v38-research
       - name: Build normal sleeve seed through current market asof
+        env:
+          PYTHONPATH: .:/tmp/v38-research/leadership/research
         run: |
           python tools/dev_seed_v38_normal.py \
             --root . \
