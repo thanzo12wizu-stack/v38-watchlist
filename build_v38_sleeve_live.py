@@ -340,12 +340,33 @@ def _theme_snapshot(close: pd.DataFrame, asof: pd.Timestamp, s2t: dict[str, list
     return {str(k): float(v) for k, v in pct.items()}, breadth, members, stock63
 
 
-def build_reset_trades(close: pd.DataFrame, open_: pd.DataFrame, history: dict[str, Any], asof: str) -> pd.DataFrame:
+def _monitor_band(rsi_value: float | None) -> str:
+    if not _finite(rsi_value):
+        return "DATA_REQUIRED"
+    value = float(rsi_value)
+    if value <= 30.0:
+        return "RSI30_OR_BELOW"
+    if value <= 35.0:
+        return "WITHIN_5PT"
+    if value <= 40.0:
+        return "WITHIN_10PT"
+    return "WATCHING"
+
+
+def build_reset_trades_and_monitor(close: pd.DataFrame, open_: pd.DataFrame,
+                                   history: dict[str, Any], asof: str) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    """Build adopted Reset signals plus a monitor restricted to valid Day0 leaders.
+
+    RSI distance bands are display-only. They never replace the adopted entry:
+    RSI14 <= 30 once, then the first RSI rise while the symbol is again Theme
+    RS63 Top3, followed by next-open execution.
+    """
     cal = close.index[close.index <= pd.Timestamp(asof)]
     if len(cal) < 90:
         raise RuntimeError("RESET_PRICE_HISTORY_REQUIRED")
     rsi = wilder_rsi(close, 14)
     theme_cache: dict[pd.Timestamp, tuple[dict[str, float], dict[str, float], dict[str, list[str]], pd.Series]] = {}
+
     def snap(d: pd.Timestamp):
         if d not in theme_cache:
             s2t, _ = taxonomy_for_asof(history, str(d.date()))
@@ -353,7 +374,7 @@ def build_reset_trades(close: pd.DataFrame, open_: pd.DataFrame, history: dict[s
         return theme_cache[d]
 
     start_pos = max(63 + 20, len(cal) - 70)
-    activations: list[tuple[pd.Timestamp, str, str, int]] = []
+    activations: list[dict[str, Any]] = []
     for i in range(start_pos, len(cal)):
         d = cal[i]
         try:
@@ -361,20 +382,39 @@ def build_reset_trades(close: pd.DataFrame, open_: pd.DataFrame, history: dict[s
             old_pct, _, _, _ = snap(cal[i - 20])
         except RuntimeError:
             continue
-        for theme, p in pct.items():
-            if p < 80.0 or p - old_pct.get(theme, p) < 15.0 or breadth.get(theme, -1.0) < 60.0:
+        for theme, theme_pct in pct.items():
+            improvement = theme_pct - old_pct.get(theme, theme_pct)
+            breadth_value = breadth.get(theme, -1.0)
+            if theme_pct < 80.0 or improvement < 15.0 or breadth_value < 60.0:
                 continue
-            syms = [s for s in members.get(theme, []) if s in stock63.index and _finite(stock63.get(s))]
-            top = sorted(syms, key=lambda s: (-float(stock63[s]), s))[:3]
+            syms = [x for x in members.get(theme, []) if x in stock63.index and _finite(stock63.get(x))]
+            top = sorted(syms, key=lambda x: (-float(stock63[x]), x))[:3]
             if len(top) < 3:
                 continue
             for rank, sym in enumerate(top, 1):
-                activations.append((d, theme, sym, rank))
+                activations.append({
+                    "day0_date": d, "theme": theme, "symbol": sym,
+                    "rank_priority": rank,
+                    "theme_rs_pct_day0": float(theme_pct),
+                    "theme_rank_improvement20_day0": float(improvement),
+                    "theme_breadth21_day0": float(breadth_value),
+                })
 
     records: list[dict[str, Any]] = []
+    monitor: list[dict[str, Any]] = []
     posmap = {d: i for i, d in enumerate(cal)}
+    current_i = len(cal) - 1
+    current_d = cal[-1]
     cooldown_until: dict[str, int] = defaultdict(lambda: -1)
-    for day0, theme, sym, rank0 in sorted(activations, key=lambda x: (x[0], x[1], x[3], x[2])):
+    try:
+        _, _, current_members, current_stock63 = snap(current_d)
+    except RuntimeError:
+        current_members, current_stock63 = {}, pd.Series(dtype=float)
+
+    for act in sorted(activations, key=lambda x: (x["day0_date"], x["theme"], x["rank_priority"], x["symbol"])):
+        day0 = pd.Timestamp(act["day0_date"])
+        theme = str(act["theme"])
+        sym = str(act["symbol"])
         ep = posmap[day0]
         if ep <= cooldown_until[sym]:
             continue
@@ -387,31 +427,86 @@ def build_reset_trades(close: pd.DataFrame, open_: pd.DataFrame, history: dict[s
             if _finite(rr.iloc[j]) and float(rr.iloc[j]) <= 30.0:
                 touch = j
                 break
-        if touch is None:
-            continue
         signal = None
-        for j in range(touch + 1, last + 1):
+        for j in range((touch + 1) if touch is not None else last + 1, last + 1):
             if _finite(rr.iloc[j]) and _finite(rr.iloc[j - 1]) and float(rr.iloc[j]) > float(rr.iloc[j - 1]):
                 try:
                     _, _, members_sig, stock63_sig = snap(cal[j])
                 except RuntimeError:
                     continue
-                syms = [s for s in members_sig.get(theme, []) if s in stock63_sig.index and _finite(stock63_sig.get(s))]
-                top_sig = sorted(syms, key=lambda s: (-float(stock63_sig[s]), s))[:3]
+                syms = [x for x in members_sig.get(theme, []) if x in stock63_sig.index and _finite(stock63_sig.get(x))]
+                top_sig = sorted(syms, key=lambda x: (-float(stock63_sig[x]), x))[:3]
                 if sym in top_sig:
                     signal = j
                     break
-        if signal is None or signal + 1 >= len(cal):
-            continue
-        entry = signal + 1
-        cooldown_until[sym] = signal + RESET_COOLDOWN
-        records.append({
-            "day0_date": day0, "theme": theme, "symbol": sym,
-            "rank_priority": rank0, "signal_date": cal[signal],
-            "entry_date": cal[entry], "rsi_signal": float(rr.iloc[signal]),
-        })
-    return pd.DataFrame(records)
+        if signal is not None and signal + 1 < len(cal):
+            entry = signal + 1
+            cooldown_until[sym] = signal + RESET_COOLDOWN
+            records.append({
+                "day0_date": day0, "theme": theme, "symbol": sym,
+                "rank_priority": int(act["rank_priority"]), "signal_date": cal[signal],
+                "entry_date": cal[entry], "rsi_signal": float(rr.iloc[signal]),
+            })
 
+        if current_i > ep + RESET_SEARCH:
+            continue
+        current_rsi = float(rr.iloc[current_i]) if _finite(rr.iloc[current_i]) else None
+        current_syms = [x for x in current_members.get(theme, []) if x in current_stock63.index and _finite(current_stock63.get(x))]
+        current_top = sorted(current_syms, key=lambda x: (-float(current_stock63[x]), x))[:3]
+        current_top3 = sym in current_top
+        if signal == current_i:
+            status = "SIGNAL_TODAY_NEXT_OPEN"
+        elif signal is not None:
+            status = "SIGNAL_OCCURRED"
+        elif touch is not None:
+            status = "RSI30_TOUCHED_WAIT_RISE"
+        elif _finite(current_rsi) and float(current_rsi) <= 35.0:
+            status = "APPROACHING_RSI30"
+        elif _finite(current_rsi) and float(current_rsi) <= 40.0:
+            status = "NEAR_RSI30"
+        else:
+            status = "WATCHING"
+        monitor.append({
+            "symbol": sym, "theme": theme, "status": status,
+            "monitor_band": _monitor_band(current_rsi),
+            "current_rsi14": current_rsi,
+            "distance_to_30": max(float(current_rsi) - 30.0, 0.0) if _finite(current_rsi) else None,
+            "day0_date": str(day0.date()), "activation_age_sessions": current_i - ep,
+            "signal_window_days_left": max(0, ep + RESET_SEARCH - current_i),
+            "theme_rs_pct_day0": float(act["theme_rs_pct_day0"]),
+            "theme_rank_improvement20_day0": float(act["theme_rank_improvement20_day0"]),
+            "theme_breadth21_day0": float(act["theme_breadth21_day0"]),
+            "day0_rs63_rank": int(act["rank_priority"]),
+            "touched_rsi30": touch is not None,
+            "touch_date": str(cal[touch].date()) if touch is not None else None,
+            "signal_date": str(cal[signal].date()) if signal is not None else None,
+            "signal_top3_confirmed": signal is not None,
+            "current_theme_rs63_top3": bool(current_top3),
+            "display_band_is_trade_rule": False,
+        })
+
+    priority = {"SIGNAL_TODAY_NEXT_OPEN": 0, "RSI30_TOUCHED_WAIT_RISE": 1,
+                "APPROACHING_RSI30": 2, "NEAR_RSI30": 3, "WATCHING": 4,
+                "SIGNAL_OCCURRED": 5}
+    best: dict[str, dict[str, Any]] = {}
+    best_score: dict[str, tuple] = {}
+    for row in monitor:
+        score = (priority.get(row["status"], 99),
+                 row["distance_to_30"] if row["distance_to_30"] is not None else 999.0,
+                 -row["signal_window_days_left"], row["theme"])
+        if row["symbol"] not in best or score < best_score[row["symbol"]]:
+            best[row["symbol"]] = row
+            best_score[row["symbol"]] = score
+    monitor_out = list(best.values())
+    monitor_out.sort(key=lambda row: (priority.get(row["status"], 99),
+                                      row["distance_to_30"] if row["distance_to_30"] is not None else 999.0,
+                                      -row["signal_window_days_left"], row["symbol"]))
+    return pd.DataFrame(records), monitor_out
+
+
+def build_reset_trades(close: pd.DataFrame, open_: pd.DataFrame, history: dict[str, Any], asof: str) -> pd.DataFrame:
+    trades, _ = build_reset_trades_and_monitor(close, open_, history, asof)
+    return trades
 
 def simulate_reset(close: pd.DataFrame, open_: pd.DataFrame, trades: pd.DataFrame, asof: str) -> dict[str, Any]:
     cal = close.index[close.index <= pd.Timestamp(asof)]
@@ -559,8 +654,28 @@ def main() -> None:
         op_r = op_r.reindex(index=cl_r.index, columns=cl_r.columns)
         if pd.Timestamp(asof) not in cl_r.index:
             raise RuntimeError(f"RESET_PRICE_ASOF_REQUIRED latest={cl_r.index.max() if len(cl_r) else None}")
-        reset_trades = build_reset_trades(cl_r, op_r, history, asof)
+        reset_trades, reset_monitor = build_reset_trades_and_monitor(cl_r, op_r, history, asof)
         reset = simulate_reset(cl_r, op_r, reset_trades, asof)
+        active_reset = {str(p.get("symbol")) for p in reset.get("positions", [])}
+        for row in reset_monitor:
+            if row.get("symbol") in active_reset:
+                row["status"] = "ACTIVE_POSITION"
+        monitor_priority = {"ACTIVE_POSITION": 0, "SIGNAL_TODAY_NEXT_OPEN": 1,
+                            "RSI30_TOUCHED_WAIT_RISE": 2, "APPROACHING_RSI30": 3,
+                            "NEAR_RSI30": 4, "WATCHING": 5, "SIGNAL_OCCURRED": 6}
+        reset_monitor.sort(key=lambda row: (monitor_priority.get(row.get("status"), 99),
+                                            row.get("distance_to_30") if row.get("distance_to_30") is not None else 999.0,
+                                            row.get("symbol") or ""))
+        reset["monitor"] = reset_monitor[:100]
+        reset["monitor_summary"] = {
+            "active_positions": sum(row.get("status") == "ACTIVE_POSITION" for row in reset_monitor),
+            "signal_today": sum(row.get("status") == "SIGNAL_TODAY_NEXT_OPEN" for row in reset_monitor),
+            "touched_wait_rise": sum(row.get("status") == "RSI30_TOUCHED_WAIT_RISE" for row in reset_monitor),
+            "within_5pt": sum(row.get("monitor_band") in {"RSI30_OR_BELOW", "WITHIN_5PT"} for row in reset_monitor),
+            "within_10pt": sum(row.get("monitor_band") in {"RSI30_OR_BELOW", "WITHIN_5PT", "WITHIN_10PT"} for row in reset_monitor),
+            "watch_count": len(reset_monitor),
+        }
+        reset["monitor_note"] = "Display bands only; trading signal remains RSI14<=30 then first rise with Theme RS63 Top3 confirmation."
         reset["download_quality"] = quality
         payload = {
             "schema": "v38-sleeve-live-1", "asof": asof, "status": "READY",

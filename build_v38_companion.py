@@ -155,7 +155,8 @@ def _pct(value):
 def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
                 market_cap_path: Path | None = None, industry_path: Path | None = None,
                 revenue_path: Path | None = None, universe_path: Path | None = None,
-                strict_loo_path: Path | None = None, tqqq_panic_path: Path | None = None) -> dict:
+                strict_loo_path: Path | None = None, tqqq_panic_path: Path | None = None,
+                sleeve_state_path: Path | None = None) -> dict:
     source = legacy_html.read_text(encoding="utf-8")
     calc = _embedded_json(source, "CALC")
     details = _embedded_json(source, "DET")
@@ -180,6 +181,10 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         loo_live = {}
     tqqq_live = _load_json(tqqq_panic_path, {})
     tqqq_ready = _ready_live(tqqq_live, asof, "live_generation_status")
+    sleeve_live = _load_json(sleeve_state_path, {})
+    sleeve_ready = _ready_live(sleeve_live, asof, "status")
+    normal_sleeve = sleeve_live.get("normal_stock", {}) if sleeve_ready else {}
+    reset_sleeve = sleeve_live.get("rsi_reset", {}) if sleeve_ready else {}
 
     candidates = []
     for ticker, row in details.items():
@@ -284,9 +289,9 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     reset_desired_pct = _pct(tqqq_live.get("reset_desired_pct")) if tqqq_ready else None
     normal_desired_pct = _pct(tqqq_live.get("normal_stock_desired_pct")) if tqqq_ready else None
 
-    gross_live_ready = all(
-        value is not None
-        for value in (requested_pct, reset_desired_pct, normal_desired_pct)
+    gross_live_ready = (
+        tqqq_ready and tqqq_live.get("sleeve_live_status") == "READY" and sleeve_ready
+        and all(value is not None for value in (requested_pct, reset_desired_pct, normal_desired_pct))
     )
     gross_live = None
     if gross_live_ready:
@@ -319,7 +324,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "entry_requires_mc57_gte": 20,
         "active_exit_mc57_lt": 20,
         "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
-        "allocation_priority": "GROSS100 RESEARCH CANDIDATE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
+        "allocation_priority": "GROSS100 LIVE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
         "required_route": "tqqq-panic-state.json",
         "asof_match_required": True,
         "vix_close": tqqq_live.get("vix_close") if tqqq_ready else None,
@@ -341,9 +346,8 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     }
 
     gross_state = {
-        "status": ("RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE ALLOCATION READY"
-                   if gross_live is not None
-                   else "RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE INPUT DATA REQUIRED"),
+        "status": ("LIVE ALLOCATION READY" if gross_live is not None else "LIVE INPUT DATA REQUIRED"),
+        "adoption_status": "ADOPTED_AFTER_FINAL_RESET_RECHECK",
         "priority": ["RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK", "TQQQ_EXTRA"],
         "run_id": 33405477190,
         "artifact_id": 9763251012,
@@ -352,7 +356,9 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
         "sleeve_live_status": tqqq_live.get("sleeve_live_status") if tqqq_ready else "DATA REQUIRED",
         "sleeve_live_reason": tqqq_live.get("sleeve_live_reason") if tqqq_ready else "TQQQ_LIVE_REQUIRED",
-        "note": "80% is the protected amount under competition, not a TQQQ cap; final reproducible Reset recheck passed",
+        "normal_position_count": normal_sleeve.get("position_count") if sleeve_ready else None,
+        "reset_position_count": reset_sleeve.get("position_count") if sleeve_ready else None,
+        "note": "Reset -> protect TQQQ to 80% under competition -> Normal Stock -> TQQQ extra; final reproducible Reset recheck passed",
         "reset_desired_pct": reset_desired_pct,
         "tqqq_desired_pct": requested_pct,
         "normal_stock_desired_pct": normal_desired_pct,
@@ -407,17 +413,25 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         },
         "candidates": candidates[:50],
         "panic_reset": {
-            "status": ("READY / LIVE" if tqqq_ready and tqqq_live.get("sleeve_live_status") == "READY"
-                       else "DATA REQUIRED"),
-            "separate_sleeve": True,
-            "strategy": "RS63_TOP3_RISE30_SIGTOP3",
-            "slot_pct": 2.9,
-            "max_positions": 4,
-            "max_theme_positions": 2,
-            "hold_sessions": 20,
-            "headline_620_723_pf471": "NOT REPRODUCED / NOT USED",
-            "desired_pct": reset_desired_pct,
-            "note": "Strict reproducible Reset is used for the live sleeve; the old headline metrics remain excluded.",
+            "status": ("READY / LIVE" if sleeve_ready and reset_sleeve.get("status") == "READY" else "DATA REQUIRED"),
+            "separate_sleeve": True, "strategy": "RS63_TOP3_RISE30_SIGTOP3",
+            "slot_pct": 2.9, "max_positions": 4, "max_theme_positions": 2, "hold_sessions": 20,
+            "headline_620_723_pf471": "NOT REPRODUCED / NOT USED", "desired_pct": reset_desired_pct,
+            "position_count": reset_sleeve.get("position_count") if sleeve_ready else None,
+            "positions": reset_sleeve.get("positions", []) if sleeve_ready else [],
+            "monitor": reset_sleeve.get("monitor", []) if sleeve_ready else [],
+            "monitor_summary": reset_sleeve.get("monitor_summary", {}) if sleeve_ready else {},
+            "monitor_note": reset_sleeve.get("monitor_note") if sleeve_ready else None,
+            "rebuild_policy": reset_sleeve.get("rebuild_policy") if sleeve_ready else None,
+            "download_quality": reset_sleeve.get("download_quality") if sleeve_ready else None,
+            "note": "Strict reproducible Reset is live. RSI30 proximity bands are monitor-only and do not change the entry rule; old headline metrics remain excluded.",
+        },
+        "normal_stock_sleeve": {
+            "status": normal_sleeve.get("status") if sleeve_ready else "DATA REQUIRED",
+            "strategy": normal_sleeve.get("strategy") if sleeve_ready else "PEAK30_PART25_R3",
+            "desired_pct": normal_desired_pct, "position_count": normal_sleeve.get("position_count") if sleeve_ready else None,
+            "positions": normal_sleeve.get("positions", []) if sleeve_ready else [],
+            "pending": normal_sleeve.get("pending", {}) if sleeve_ready else {},
         },
         "gross100_allocation": gross_state,
         "rotation_intelligence": {
@@ -444,13 +458,14 @@ def main() -> None:
     parser.add_argument("--universe", default="universe.csv")
     parser.add_argument("--strict-loo", default="v38-strict-loo-live.json")
     parser.add_argument("--tqqq-panic", default="tqqq-panic-state.json")
+    parser.add_argument("--sleeve-state", default="v38-sleeve-state.json")
     args = parser.parse_args()
     state = build_state(
         Path(args.legacy), sector_snapshot_path=Path(args.sector_snapshot),
         market_cap_path=Path(args.market_cap), industry_path=Path(args.industry),
         revenue_path=Path(args.revenue) if args.revenue else None,
         universe_path=Path(args.universe), strict_loo_path=Path(args.strict_loo),
-        tqqq_panic_path=Path(args.tqqq_panic),
+        tqqq_panic_path=Path(args.tqqq_panic), sleeve_state_path=Path(args.sleeve_state),
     )
     Path(args.out).write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {args.out}: {state['market']['mode']} / {len(state['candidates'])} candidates")
