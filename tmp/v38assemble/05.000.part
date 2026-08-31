@@ -1,0 +1,175 @@
+import csv
+import json
+import os
+import subprocess
+import textwrap
+from pathlib import Path
+
+from build_v38_companion import build_state
+
+
+def write_legacy(path, calc, det):
+    path.write_text(
+        f'<script>window.CALC={json.dumps(calc)};</script>'
+        f'<script>window.DET={json.dumps(det)};</script>',
+        encoding="utf-8",
+    )
+
+
+def eligible_row(**overrides):
+    row = {
+        "px": 100, "dvol": 20, "ma5020": True, "v200": 5,
+        "v50": 5, "rs189": 90, "rs": 90, "sth": "Theme A",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
+    html = Path("command-center-v38.html").read_text(encoding="utf-8")
+    assert "通常個別株の新規保有可能総数は最大4" in html
+    assert "すべて当日終値で判定し、注文は次営業日寄りで執行" in html
+    assert "M30_TOUCH30_F80_D10" in html
+    for element_id in ("mcEntry", "seedAge", "underlyingTarget", "requestedTarget",
+                       "resetAllocation", "tqqqParts", "normalAllocation", "executableTarget"):
+        assert f'id="{element_id}"' in html
+    assert 'src="command-center.html"' in html
+    assert 'data-tab="resetwatch"' in html
+    assert 'id="resetMonitorRows"' in html
+    assert "Activation（Theme RS≥80、20日改善≥15pt" in html
+
+
+def test_workflow_reports_build_export_mirror_and_pages_as_separate_stages():
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    assert "Prepare verified PIT taxonomy bootstrap" in workflow
+    assert "79073ffd9742102c2b6e9f72d349801a10e126db" in workflow
+    assert "Build strict LOO PIT live state with exact t-20 bootstrap" in workflow
+    for phrase in (
+        "Build / validation: PASS",
+        "main generated-state persistence: PASS",
+        "Public export creation: PASS",
+        "SKIPPED / NOT CONFIGURED",
+        "GitHub Pages currentness: SEPARATE CHECK REQUIRED",
+    ):
+        assert phrase in workflow
+
+
+def test_workflow_collector_health_summary_executes(tmp_path):
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    section = workflow.split("      - name: Report persistence and data date", 1)[1]
+    run_block = section.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    script = textwrap.dedent(run_block)
+
+    fixtures = {
+        "commit_manifest.json": {},
+        "state.json": {"date": "2026-08-28", "gate": "Green"},
+        "v38-strict-loo-live.json": {
+            "status": "READY",
+            "asof": "2026-08-28",
+            "history_sessions": 21,
+            "history_has_exact_20_session_base": True,
+        },
+        "v38-strict-loo-history.json": {
+            "sessions": [{"asof": "2026-08-27"}, {"asof": "2026-08-28"}],
+        },
+        "tqqq-panic-state.json": {
+            "live_generation_status": "DATA REQUIRED",
+            "reason": "TEST_ROUTE_UNAVAILABLE",
+            "asof": "2026-08-28",
+        },
+    }
+    for name, payload in fixtures.items():
+        (tmp_path / name).write_text(json.dumps(payload), encoding="utf-8")
+    (tmp_path / "command-center.html").write_text("legacy", encoding="utf-8")
+    (tmp_path / "command-center_share.html").write_text("share", encoding="utf-8")
+    summary = tmp_path / "summary.md"
+    env = dict(os.environ, GITHUB_STEP_SUMMARY=str(summary))
+
+    subprocess.run(["bash", "-c", script], cwd=tmp_path, env=env, check=True)
+    rendered = summary.read_text(encoding="utf-8")
+    assert "strict LOO status: READY" in rendered
+    assert "strict LOO history_sessions: 21" in rendered
+    assert "strict LOO latest saved date: 2026-08-28" in rendered
+    assert "strict LOO exact t-20 snapshot: True" in rendered
+    assert "TQQQ live_generation_status: DATA REQUIRED" in rendered
+    assert "TQQQ reason: TEST_ROUTE_UNAVAILABLE" in rendered
+    for phrase in (
+        "strict LOO status",
+        "strict LOO reason",
+        "strict LOO history_sessions",
+        "strict LOO computed_snapshot_count",
+        "strict LOO PIT history start",
+        "strict LOO latest saved date",
+        "strict LOO exact t-20 snapshot",
+        "TQQQ live_generation_status",
+        "TQQQ reason",
+        "TQQQ asof",
+    ):
+        assert phrase in workflow
+
+
+def test_workflow_verified_pit_bootstrap_guard_executes_without_fetch_when_persisted(tmp_path):
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    section = workflow.split("      - name: Prepare verified PIT taxonomy bootstrap", 1)[1]
+    run_block = section.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    script = textwrap.dedent(run_block)
+    history = {
+        "taxonomy_snapshots": [{
+            "effective_asof": "2026-06-22",
+            "source": "git:79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json",
+            "taxonomy_sha256": "dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39",
+            "s2t": {"AAA": ["Theme"]},
+        }]
+    }
+    (tmp_path / "v38-strict-loo-history.json").write_text(json.dumps(history), encoding="utf-8")
+    completed = subprocess.run(
+        ["bash", "-c", script], cwd=tmp_path, text=True,
+        capture_output=True, check=True,
+    )
+    assert "already persisted" in completed.stdout
+
+
+def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_theme(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {}
+    for i in range(40):
+        det[f"T{i}"] = eligible_row(v50=5 if i < 26 else -5)
+    source = tmp_path / "command-center.html"
+    original = (f'<script>window.CALC={json.dumps(calc)};</script>'
+                f'<script>window.DET={json.dumps(det)};</script>')
+    source.write_text(original, encoding="utf-8")
+    state = build_state(source)
+    assert source.read_text(encoding="utf-8") == original
+    assert state["market"]["mode"] == "ATTACK"
+    assert state["market"]["breadth50"] == 65
+    assert state["ranking"]["mode"] == "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED"
+    assert state["candidates"][0]["peer_theme_score"] is None
+    assert state["ranking"]["candidate_exclusion_required_for_all_components"] is True
+    assert state["ranking"]["multiple_theme_policy"] == "MAX_VALID_MEMBERSHIP_SCORE"
+    assert state["ranking"]["missing_theme_policy"] == "NEUTRAL_50_AT_FINAL_SCORE_ONLY"
+    assert state["candidates"][0]["peer_only_status"] == "DATA_REQUIRED"
+    assert state["candidates"][0]["candidate_excluded_from_return"] is None
+    assert state["candidates"][0]["peer_theme"] is None
+
+
+def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {}
+    for i in range(40):
+        det[f"T{i}"] = eligible_row(v50=5 if i < 22 else -5, rs189=99 - i / 10)
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, det)
+    state = build_state(source)
+    assert state["market"]["mode"] == "SELECTIVE"
+    assert state["ranking"]["mode"] == "RS189_ONLY"
+    assert state["candidates"][0]["final_rank"] == 1
+
+
+def test_companion_tqqq_schema_separates_current_hierarchy_floor_and_allocation(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, {})
+    state = build_state(source)
+    assert state["normal_tqqq"]["underlying_target_pct"] is None
+    assert state["panic_tqqq"]["candidate"] == "M30_TOUCH30_F80_D10"
+    assert state["panic_tqqq"]["floor_pct_when_active"] == 80
