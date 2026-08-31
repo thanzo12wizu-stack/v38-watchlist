@@ -1,12 +1,17 @@
 import math
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from build_v38_tqqq_live import (
+    CACHE_SCHEMA,
+    _frame_payload,
+    load_source_cache,
     build_4h_bars,
     current30_trace,
     stage56_trace,
+    write_source_cache,
     wilder_rsi,
 )
 
@@ -115,3 +120,50 @@ def test_4h_bar_split_matches_stage51_rth_slots():
     assert list(bars["slot"]) == [0, 1]
     assert bars.iloc[0]["n"] == 48
     assert bars.iloc[1]["n"] == 30
+
+
+def test_private_source_cache_roundtrip_preserves_daily_and_intraday_timezone(tmp_path):
+    daily_index = pd.date_range("2026-08-27", periods=2, freq="B")
+    daily = pd.DataFrame(
+        {
+            "Open": [100.0, 101.0], "High": [102.0, 103.0],
+            "Low": [99.0, 100.0], "Close": [101.0, 102.0],
+            "Volume": [1_000.0, 1_100.0],
+        },
+        index=daily_index,
+    )
+    intraday_index = pd.date_range(
+        "2026-08-28 09:30", periods=8, freq="5min", tz="America/New_York"
+    )
+    intraday = daily.iloc[[0] * 8].copy()
+    intraday.index = intraday_index
+    series = pd.Series([50.0, 51.0], index=daily_index)
+    payload = {
+        "schema": CACHE_SCHEMA,
+        "fetched_at": "2026-08-31T00:00:00+00:00",
+        "daily": {ticker: _frame_payload(daily) for ticker in ("QQQ", "TQQQ", "NQ=F", "^VIX")},
+        "mc57": {"index": [value.isoformat() for value in daily_index], "data": [50.0, 51.0]},
+        "mc57_coverage": {"index": [value.isoformat() for value in daily_index], "data": [100.0, 100.0]},
+        "qqq_5m": _frame_payload(intraday),
+        "coverage": {},
+    }
+    path = tmp_path / "cache.json"
+    write_source_cache(path, payload)
+    loaded = load_source_cache(path)
+    assert loaded["qqq"].index.tz is None
+    assert str(loaded["qqq_5m"].index.tz) == "UTC"
+    assert loaded["qqq_5m"].iloc[-1]["Close"] == 101.0
+    assert loaded["mc57"].iloc[-1] == series.iloc[-1]
+
+
+def test_dashboard_prefetches_tqqq_before_bulk_build_and_consumes_private_cache():
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    prefetch = workflow.index("Prefetch dedicated TQQQ market inputs")
+    bulk = workflow.index("- name: Build dashboard")
+    producer = workflow.index("- name: Build CURRENT30 and Stage56 TQQQ live state")
+    assert prefetch < bulk < producer
+    assert "--prefetch-cache v38-tqqq-live-source-cache.json" in workflow
+    assert "--cache v38-tqqq-live-source-cache.json" in workflow
+    assert "v38-tqqq-live-source-cache.json" not in Path(
+        "scripts/export_public_site.py"
+    ).read_text(encoding="utf-8")
