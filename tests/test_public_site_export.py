@@ -56,6 +56,29 @@ def test_export_preserves_optional_leadership_under_public_subpath(tmp_path: Pat
     assert leadership_file["source_path"] == "leadership/dist/index.html"
 
 
+def test_export_includes_optional_tqqq_state_only_when_generated(tmp_path: Path):
+    source = tmp_path / "source"
+    output = tmp_path / "public"
+    source.mkdir()
+    _source(source)
+    payload = '{"candidate":"M30_TOUCH30_F80_D10"}'
+    (source / "tqqq-panic-state.json").write_text(payload, encoding="utf-8")
+
+    manifest = export_public_site(source, output)
+
+    assert "tqqq-panic-state.json" in manifest["allowlist"]
+    assert (output / "tqqq-panic-state.json").read_text(encoding="utf-8") == payload
+
+
+def test_export_does_not_require_tqqq_state_when_live_route_is_absent(tmp_path: Path):
+    source = tmp_path / "source"
+    output = tmp_path / "public"
+    source.mkdir()
+    _source(source)
+    manifest = export_public_site(source, output)
+    assert "tqqq-panic-state.json" not in manifest["allowlist"]
+
+
 def test_export_ignores_non_allowlisted_files(tmp_path: Path):
     source = tmp_path / "source"
     output = tmp_path / "public"

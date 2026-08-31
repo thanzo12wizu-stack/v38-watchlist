@@ -15,6 +15,8 @@ on:
       - 'equity.csv'
       - 'build_dashboard.py'
       - 'build_v38_companion.py'
+      - 'build_v38_strict_loo_live.py'
+      - 'build_v38_tqqq_live.py'
       - 'command-center-v38.html'
       - 'v38_rules.py'
       - 'scripts/export_public_site.py'
@@ -36,7 +38,7 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       TZ: Asia/Tokyo
       # commitする生成物の唯一の定義。commitステップの復元処理と共有する。
@@ -46,6 +48,9 @@ jobs:
         command-center.html
         command-center_share.html
         v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
         mktcap.json
         trend_history.json
         fred_cache.json
@@ -79,18 +84,19 @@ jobs:
         with:
           python-version: '3.11'
 
-
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
 
       - name: Preflight tests
         run: |
-          python -m py_compile build_dashboard.py build_v38_companion.py v38_rules.py
+          python -m py_compile build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py v38_rules.py
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
             tests/test_eps_acceleration.py \
             tests/test_v38_rules.py \
-            tests/test_v38_companion.py
+            tests/test_v38_companion.py \
+            tests/test_v38_strict_loo_live.py \
+            tests/test_v38_tqqq_live.py
 
       - name: Build dashboard
         id: build
@@ -142,11 +148,65 @@ jobs:
             echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Prepare verified PIT taxonomy bootstrap
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("v38-strict-loo-history.json")
+          if not path.is_file():
+              raise SystemExit(1)
+          try:
+              history = json.loads(path.read_text(encoding="utf-8"))
+          except (OSError, ValueError):
+              raise SystemExit(1)
+          expected = "git:79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json"
+          expected_hash = "dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39"
+          found = any(
+              isinstance(row, dict)
+              and row.get("source") == expected
+              and row.get("effective_asof") == "2026-06-22"
+              and row.get("taxonomy_sha256") == expected_hash
+              and bool(row.get("s2t"))
+              for row in history.get("taxonomy_snapshots", [])
+          )
+          raise SystemExit(0 if found else 1)
+          PY
+          then
+            echo "Verified PIT taxonomy bootstrap already persisted"
+          else
+            git fetch --depth=1 origin 79073ffd9742102c2b6e9f72d349801a10e126db
+            git cat-file -e 79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json
+          fi
+
+      - name: Build strict LOO PIT live state with exact t-20 bootstrap
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_strict_loo_live.py \
+            --state state.json \
+            --sector-snapshot sector_snapshot.json \
+            --history v38-strict-loo-history.json \
+            --out v38-strict-loo-live.json
+
+      - name: Build CURRENT30 and Stage56 TQQQ live state
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_tqqq_live.py \
+            --state state.json \
+            --out tqqq-panic-state.json
+
       - name: Build isolated audited V38 companion
         if: steps.build.outputs.skipped != 'true'
         run: |
           python build_v38_companion.py \
             --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
             --out v38-live-state.json
 
       - name: Report skipped stale run
@@ -176,6 +236,8 @@ jobs:
               "command-center_share.html": 2_500,
               "command-center-v38.html": 8_000,
               "v38-live-state.json": 1_000,
+              "v38-strict-loo-live.json": 100,
+              "tqqq-panic-state.json": 100,
           }
           for name, minimum in required.items():
               path = Path(name)
@@ -217,6 +279,21 @@ jobs:
               raise SystemExit(
                   f"V38 companion date mismatch: {companion.get('asof')} != {state_date}"
               )
+
+          loo = json.loads(Path("v38-strict-loo-live.json").read_text(encoding="utf-8"))
+          if loo.get("schema") != "v38-strict-loo-live-1":
+              raise SystemExit("invalid strict LOO live schema")
+          if loo.get("asof") not in (None, state_date):
+              raise SystemExit(f"strict LOO date mismatch: {loo.get('asof')} != {state_date}")
+
+          tqqq = json.loads(Path("tqqq-panic-state.json").read_text(encoding="utf-8"))
+          if tqqq.get("schema") != "v38-tqqq-panic-state-1":
+              raise SystemExit("invalid TQQQ live schema")
+          if tqqq.get("asof") != state_date:
+              raise SystemExit(f"TQQQ date mismatch: {tqqq.get('asof')} != {state_date}")
+          if tqqq.get("live_generation_status") == "READY":
+              if tqqq.get("underlying_target_pct") is None or tqqq.get("requested_target_pct") is None:
+                  raise SystemExit("READY TQQQ route is missing CURRENT30/Stage56 targets")
 
           log_dates = []
           with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
@@ -316,17 +393,54 @@ jobs:
             echo '::warning::commit_manifest.json was not generated'
           fi
 
-          read -r asof gate < <(
-            python -c 'import json; s=json.load(open("state.json", encoding="utf-8")); print(s.get("date", ""), s.get("gate", ""))'
-          )
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-          {
-            echo "### Dashboard build"
-            echo "- Data session: ${asof:-unknown}"
-            echo "- Gate: ${gate:-unknown}"
-            echo "- Main HTML: $(wc -c < command-center.html) bytes"
-            echo "- Share HTML: $(wc -c < command-center_share.html) bytes"
-          } >> "$GITHUB_STEP_SUMMARY"
+          def load(name, default):
+              path = Path(name)
+              if not path.is_file():
+                  return default
+              try:
+                  return json.loads(path.read_text(encoding="utf-8"))
+              except (OSError, ValueError):
+                  return default
+
+          state = load("state.json", {})
+          loo = load("v38-strict-loo-live.json", {})
+          history = load("v38-strict-loo-history.json", {})
+          tqqq = load("tqqq-panic-state.json", {})
+          sessions = [
+              str(row.get("asof"))
+              for row in history.get("sessions", [])
+              if isinstance(row, dict) and row.get("asof")
+          ]
+          latest_saved = max(sessions) if sessions else None
+
+          lines = [
+              "### Dashboard build",
+              f"- Data session: {state.get('date') or 'unknown'}",
+              f"- Gate: {state.get('gate') or 'unknown'}",
+              f"- Main HTML: {Path('command-center.html').stat().st_size} bytes",
+              f"- Share HTML: {Path('command-center_share.html').stat().st_size} bytes",
+              "",
+              "### Collector health",
+              f"- strict LOO status: {loo.get('status') or 'DATA REQUIRED'}",
+              f"- strict LOO reason: {loo.get('reason') or 'NONE'}",
+              f"- strict LOO history_sessions: {loo.get('history_sessions', len(sessions))}",
+              f"- strict LOO computed_snapshot_count: {loo.get('computed_snapshot_count', len(sessions))}",
+              f"- strict LOO PIT history start: {loo.get('history_start_asof') or 'NONE'}",
+              f"- strict LOO latest saved date: {latest_saved or 'NONE'}",
+              f"- strict LOO exact t-20 snapshot: {bool(loo.get('history_has_exact_20_session_base'))}",
+              f"- strict LOO asof: {loo.get('asof') or 'NONE'}",
+              f"- TQQQ live_generation_status: {tqqq.get('live_generation_status') or 'DATA REQUIRED'}",
+              f"- TQQQ reason: {tqqq.get('reason') or 'NONE'}",
+              f"- TQQQ asof: {tqqq.get('asof') or 'NONE'}",
+          ]
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
 
       - name: Commit dashboard and caches
         if: steps.build.outputs.skipped != 'true'
@@ -341,7 +455,7 @@ jobs:
           # Same-session stale-source guard. Artifact/options commits are harmless;
           # generation logic and explicit dashboard inputs are not.
           git fetch --depth=1 origin main
-          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
             echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
             echo "source_drift=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
@@ -447,6 +561,7 @@ jobs:
 
           if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
             echo "::warning::Public mirror is not configured; build and privacy validation completed"
+            echo "mirror_status=SKIPPED / NOT CONFIGURED" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -477,12 +592,29 @@ jobs:
 
           if git diff --staged --quiet; then
             echo "Public site mirror already current"
+            echo "mirror_status=PASS / MIRROR ALREADY CURRENT" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git commit \
             -m "Publish dashboard ${{ steps.persist.outputs.source_sha }}"
           git push origin HEAD:main
+          echo "mirror_status=PASS / MIRROR PUSHED" >> "$GITHUB_OUTPUT"
+
+      - name: Report build and delivery stages
+        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard stage status"
+            echo "- Build / validation: PASS"
+            echo "- main generated-state persistence: PASS"
+            echo "- Public export creation: PASS"
+            echo "- Public mirror push: ${{ steps.publish.outputs.mirror_status || 'FAILED / SEE PUBLISH STEP' }}"
+            echo "- GitHub Pages currentness: SEPARATE CHECK REQUIRED"
+            echo ""
+            echo "A successful workflow is not, by itself, proof that the public mirror or GitHub Pages is current."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report publish failure
         if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true' && steps.publish.outcome == 'failure'
