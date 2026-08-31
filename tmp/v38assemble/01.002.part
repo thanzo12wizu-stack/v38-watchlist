@@ -1,0 +1,117 @@
+    }
+
+    panic_tqqq = {
+        "status": ("READY / ACTIVE" if tqqq_ready and bool(tqqq_live.get("active"))
+                   else "READY / INACTIVE" if tqqq_ready else "DATA REQUIRED"),
+        "candidate": "M30_TOUCH30_F80_D10",
+        "floor_pct_when_active": 80,
+        "floor_semantics": "max(underlying CURRENT30 hierarchy target, 80%)",
+        "seed_age_rule": "age <= 30; seed day = 0",
+        "entry_requires_mc57_gte": 20,
+        "active_exit_mc57_lt": 20,
+        "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
+        "allocation_priority": "GROSS100 RESEARCH CANDIDATE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
+        "required_route": "tqqq-panic-state.json",
+        "asof_match_required": True,
+        "vix_close": tqqq_live.get("vix_close") if tqqq_ready else None,
+        "qqq_sma50_atr_deviation": tqqq_live.get("qqq_sma50_atr_deviation") if tqqq_ready else None,
+        "qqq_drawdown10": tqqq_live.get("qqq_drawdown10") if tqqq_ready else None,
+        "seed_age_sessions": tqqq_live.get("seed_age_sessions") if tqqq_ready else None,
+        "rsi4h": tqqq_live.get("rsi4h") if tqqq_ready else None,
+        "prior_rsi4h": tqqq_live.get("prior_rsi4h") if tqqq_ready else None,
+        "touch30_today": tqqq_live.get("touch30_today") if tqqq_ready else None,
+        "mc57": tqqq_live.get("mc57") if tqqq_ready else None,
+        "active": bool(tqqq_live.get("active")) if tqqq_ready else False,
+        "held_sessions": tqqq_live.get("held_sessions") if tqqq_ready else None,
+        "underlying_target_pct": underlying_pct,
+        "requested_target_pct": requested_pct,
+        "fields": ["vix_close", "qqq_sma50_atr_deviation", "qqq_drawdown10",
+                   "seed_age_sessions", "rsi4h", "prior_rsi4h", "mc57",
+                   "active", "held_sessions", "underlying_target_pct",
+                   "reset_desired_pct", "normal_stock_desired_pct"],
+    }
+
+    gross_state = {
+        "status": ("RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE ALLOCATION READY"
+                   if gross_live is not None
+                   else "RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE INPUT DATA REQUIRED"),
+        "priority": ["RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK", "TQQQ_EXTRA"],
+        "run_id": 33405477190,
+        "artifact_id": 9763251012,
+        "workflow_commit": "692fe4d68407138372514fe78bd316587250974a",
+        "comparison_period": ["2016-01-04", "2026-03-20"],
+        "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
+        "sleeve_live_status": "READY" if sleeve_ready else "DATA REQUIRED",
+        "sleeve_live_reason": None if sleeve_ready else sleeve_live.get("reason") or tqqq_live.get("sleeve_live_reason"),
+        "note": "80% is the protected amount under competition, not a TQQQ cap; final reproducible Reset recheck passed",
+        "reset_desired_pct": reset_desired_pct,
+        "tqqq_desired_pct": requested_pct,
+        "normal_stock_desired_pct": normal_desired_pct,
+        "reset_allocated_pct": (gross_live.reset_allocated * 100 if gross_live else None),
+        "tqqq_protected_pct": (gross_live.tqqq_protected * 100 if gross_live else None),
+        "normal_stock_allocated_pct": (gross_live.normal_stock_allocated * 100 if gross_live else None),
+        "tqqq_extra_pct": (gross_live.tqqq_extra * 100 if gross_live else None),
+        "tqqq_allocated_pct": (gross_live.tqqq_allocated * 100 if gross_live else None),
+        "gross_allocated_pct": (gross_live.gross_allocated * 100 if gross_live else None),
+    }
+
+    return {
+        "schema": "v38-live-state-1",
+        "source": str(legacy_html.name),
+        "asof": asof,
+        "market": {
+            "nqsar": calc.get("color"),
+            "breadth50": round(breadth50, 2) if breadth50 is not None else None,
+            "breadth_valid": len(valid50),
+            "breadth_universe": len(details),
+            "coverage": round(coverage, 4),
+            "coverage_ok": coverage_ok,
+            "mode": mode.name,
+            "reason": mode.reason,
+            "new_entry_limit": mode.new_entry_limit,
+            "force_exit_next_open": mode.force_exit_next_open,
+        },
+        "normal_tqqq": normal_tqqq,
+        "panic_tqqq": panic_tqqq,
+        "ranking": {
+            "mode": ("RS189_ONLY" if mode.name == "SELECTIVE" else
+                     "ATTACK_FINAL_RANK" if mode.name == "ATTACK" and all_attack_ready else
+                     "WATCH_RANK_READY / ENTRY_BLOCKED_BY_MODE" if mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready else
+                     "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED"),
+            "note": ("Selective: Stock RS189 only" if mode.name == "SELECTIVE"
+                     else "Formal ATTACK rank uses the adopted 70/30 strict-LOO formula." if mode.name == "ATTACK" and all_attack_ready
+                     else "Reopening watch rank only. It uses the adopted ATTACK 70/30 formula across the full eligible universe, but current Market Mode still blocks entry." if mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready
+                     else "RS189 PREVIEW ONLY. Formal Attack/watch rank requires READY strict LOO history for every eligible symbol; LOO is computed before the display Top50 cap."),
+            "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
+            "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
+            "candidate_exclusion_required_for_all_components": True,
+            "multiple_theme_policy": "MAX_VALID_MEMBERSHIP_SCORE",
+            "missing_theme_policy": "NEUTRAL_50_AT_FINAL_SCORE_ONLY",
+            "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
+            "history_min_sessions": 21,
+            "full_eligible_count": len(candidates),
+            "display_limit_applied_after_full_sort": 50,
+            "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
+            "attack_watch_semantics": "WATCH_ONLY_OUTSIDE_ATTACK; NEVER_OVERRIDES_MARKET_MODE",
+            "strict_loo_live_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
+            "strict_loo_source_status": "READY" if loo_live else "DATA REQUIRED",
+        },
+        "candidates": candidates[:50],
+        "panic_reset": {
+            "status": "READY / LIVE" if sleeve_ready else "DATA REQUIRED",
+            "separate_sleeve": True,
+            "strategy": "RS63_TOP3_RISE30_SIGTOP3",
+            "slot_pct": 2.9,
+            "max_positions": 4,
+            "max_theme_positions": 2,
+            "hold_sessions": 20,
+            "headline_620_723_pf471": "NOT REPRODUCED / NOT USED",
+            "desired_pct": (sleeve_live.get("rsi_reset") or {}).get("desired_pct") if sleeve_ready else None,
+            "positions": (sleeve_live.get("rsi_reset") or {}).get("positions", []) if sleeve_ready else [],
+            "monitor": (sleeve_live.get("rsi_reset") or {}).get("monitor", []) if sleeve_ready else [],
+            "monitor_count": (sleeve_live.get("rsi_reset") or {}).get("monitor_count", 0) if sleeve_ready else 0,
+            "note": "Monitor contains only adopted Reset activation windows; old headline metrics remain excluded.",
+        },
+        "normal_stock_sleeve": {
+            "status": "READY / LIVE" if sleeve_ready else "DATA REQUIRED",
+            "strategy": "PEAK30_PART25_R3",
