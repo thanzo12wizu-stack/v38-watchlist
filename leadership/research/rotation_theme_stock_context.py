@@ -58,7 +58,6 @@ def build_stock_index(model: dict[str, Any]) -> tuple[dict[str, dict[str, Any]],
             symbol = str(stock.get("symbol") or "").strip().upper()
             if not symbol or symbol in stock_index:
                 continue
-            entry = stock.get("entry") if isinstance(stock.get("entry"), dict) else {}
             breakout = stock.get("breakout") if isinstance(stock.get("breakout"), dict) else {}
             stock_index[symbol] = {
                 "symbol": symbol,
@@ -79,9 +78,6 @@ def build_stock_index(model: dict[str, Any]) -> tuple[dict[str, dict[str, Any]],
                 "acceleration": safe_num(stock.get("acceleration")),
                 "slow_acceleration": safe_num(stock.get("slow_acceleration")),
                 "breakout_status": breakout.get("status"),
-                "leadership_entry_status": entry.get("status"),
-                "leadership_entry_quality": safe_num(entry.get("quality")),
-                "leadership_entry_reason": entry.get("reason"),
             }
     return stock_index, group_rows
 
@@ -162,12 +158,12 @@ def main() -> None:
             "unmatched_members": int(unmatched),
             "existing_leadership_leaders": leaders[:15],
             "existing_emerging_or_leading_leaders": emerging_or_leading[:15],
-            "guardrail": "Context join only. Candidate ordering preserves existing Leadership group/stock order; no Rotation stock score is added.",
+            "guardrail": "Context join only. Candidate ordering preserves existing Leadership group/stock order; no Rotation stock score or V38 entry decision is added.",
         })
 
     coverage = model.get("coverage") if isinstance(model.get("coverage"), dict) else {}
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "leadership_generated_at": model.get("generated_at"),
         "leadership_market": model.get("market"),
@@ -177,7 +173,7 @@ def main() -> None:
             "Rotation does not create a new stock ranking. Existing Leadership group and stock ordering are reused.",
             "Industry ETF memberships are current exact provider holdings, not historical PIT holdings.",
             "Industry Rotation states remain descriptive/WATCH context because historical PIT holdings for SOXX/IGV were not validated.",
-            "Leadership entry fields are copied only as existing model metadata; this join does not alter V38 eligibility, ranking, gates, or exits.",
+            "Legacy Leadership entry metadata is deliberately excluded. Formal V38 eligibility, ranking, gates, and exits remain separate.",
         ],
     }
     (args.output / "rotation_theme_stock_context.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
