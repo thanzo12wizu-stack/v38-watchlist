@@ -1,0 +1,140 @@
+    for i in range(start_pos, len(cal)):
+        d = cal[i]
+        try:
+            pct, breadth, members, stock63 = snap(d)
+            old_pct, _, _, _ = snap(cal[i - 20])
+        except RuntimeError:
+            continue
+        for theme, p in pct.items():
+            accel = float(p) - float(old_pct.get(theme, p))
+            b = float(breadth.get(theme, -1.0))
+            if p < 80.0 or accel < 15.0 or b < 60.0: continue
+            top = _top3(members, stock63, theme)
+            if len(top) < 3: continue
+            for rank, sym in enumerate(top, 1):
+                activations.append((d, theme, sym, rank, float(p), accel, b))
+
+    records: list[dict[str, Any]] = []
+    monitor_latest: dict[tuple[str, str], dict[str, Any]] = {}
+    posmap = {d: i for i, d in enumerate(cal)}
+    cooldown_until: dict[str, int] = defaultdict(lambda: -1)
+    for day0, theme, sym, rank0, theme_pct0, accel0, breadth0 in sorted(activations, key=lambda x: (x[0], x[1], x[3], x[2])):
+        ep = posmap[day0]
+        if ep <= cooldown_until[sym]: continue
+        rr = rsi[sym] if sym in rsi.columns else None
+        if rr is None: continue
+        deadline = min(len(cal) - 1, ep + RESET_SEARCH)
+        touch: int | None = None
+        for j in range(ep, deadline + 1):
+            if _finite(rr.iloc[j]) and float(rr.iloc[j]) <= 30.0:
+                touch = j; break
+        signal: int | None = None
+        if touch is not None:
+            for j in range(touch + 1, deadline + 1):
+                if not (_finite(rr.iloc[j]) and _finite(rr.iloc[j - 1]) and float(rr.iloc[j]) > float(rr.iloc[j - 1])):
+                    continue
+                try:
+                    _, _, members_sig, stock63_sig = snap(cal[j])
+                except RuntimeError:
+                    continue
+                if sym in _top3(members_sig, stock63_sig, theme):
+                    signal = j; break
+        if signal is not None and signal + 1 < len(cal):
+            entry = signal + 1
+            cooldown_until[sym] = signal + RESET_COOLDOWN
+            records.append({"day0_date": day0, "theme": theme, "symbol": sym,
+                            "rank_priority": rank0, "signal_date": cal[signal],
+                            "entry_date": cal[entry], "rsi_signal": float(rr.iloc[signal])})
+
+        # Monitor only active reset windows that have not expired as of current session.
+        current_i = len(cal) - 1
+        if ep <= current_i <= ep + RESET_SEARCH:
+            current_rsi = float(rr.iloc[current_i]) if _finite(rr.iloc[current_i]) else None
+            prior_rsi = float(rr.iloc[current_i - 1]) if current_i > 0 and _finite(rr.iloc[current_i - 1]) else None
+            try:
+                _, _, members_now, stock63_now = snap(cal[current_i])
+                top_now = _top3(members_now, stock63_now, theme)
+            except RuntimeError:
+                top_now = []
+            touched = touch is not None and touch <= current_i
+            signaled = signal is not None and signal <= current_i
+            if signaled:
+                stage = "SIGNAL / NEXT OPEN" if signal == current_i else "SIGNAL済み"
+            elif touched:
+                stage = "RSI30 TOUCH済み / 反発待ち"
+            elif current_rsi is not None and current_rsi <= 35:
+                stage = "RSI30接近"
+            else:
+                stage = "監視中"
+            row = {
+                "symbol": sym, "theme": theme, "day0_date": str(day0.date()),
+                "day0_rank63": rank0, "theme_rs_pct_day0": theme_pct0,
+                "theme_accel20_day0": accel0, "theme_breadth21_day0": breadth0,
+                "rsi14": current_rsi, "prior_rsi14": prior_rsi,
+                "distance_to_30": (max(0.0, current_rsi - 30.0) if current_rsi is not None else None),
+                "touched30": touched, "touch_date": str(cal[touch].date()) if touch is not None and touch <= current_i else None,
+                "rsi_rising_today": bool(current_rsi is not None and prior_rsi is not None and current_rsi > prior_rsi),
+                "signal_top3_today": sym in top_now, "signal_date": str(cal[signal].date()) if signaled else None,
+                "days_since_day0": current_i - ep, "days_remaining": max(0, ep + RESET_SEARCH - current_i),
+                "stage": stage,
+            }
+            key = (sym, theme)
+            old = monitor_latest.get(key)
+            if old is None or row["day0_date"] > old["day0_date"]:
+                monitor_latest[key] = row
+
+    monitor = list(monitor_latest.values())
+    stage_order = {"SIGNAL / NEXT OPEN": 0, "RSI30 TOUCH済み / 反発待ち": 1, "RSI30接近": 2, "監視中": 3, "SIGNAL済み": 4}
+    monitor.sort(key=lambda x: (stage_order.get(str(x["stage"]), 9),
+                                x["distance_to_30"] if x["distance_to_30"] is not None else 999.0,
+                                -float(x["theme_rs_pct_day0"]), x["symbol"]))
+    return pd.DataFrame(records), monitor[:RESET_MONITOR_MAX]
+
+
+def simulate_reset(close: pd.DataFrame, open_: pd.DataFrame, trades: pd.DataFrame, asof: str) -> dict[str, Any]:
+    cal = close.index[close.index <= pd.Timestamp(asof)]
+    cash = 1.0
+    lots: list[dict[str, Any]] = []
+    accepted = 0
+    by_entry = {pd.Timestamp(d): g for d, g in trades.groupby("entry_date", observed=True)} if not trades.empty else {}
+    for i, d in enumerate(cal):
+        keep = []
+        for lot in lots:
+            px = _px(open_, d, lot["symbol"])
+            if i >= lot["exit_i"] and px is not None:
+                cash += lot["shares"] * px * (1.0 - RESET_COST)
+            else:
+                keep.append(lot)
+        lots = keep
+        if d in by_entry:
+            day = by_entry[d].sort_values(["rank_priority", "rsi_signal", "symbol"])
+            for r in day.itertuples(index=False):
+                if len(lots) >= RESET_MAX_POSITIONS: continue
+                if sum(q["theme"] == r.theme for q in lots) >= RESET_MAX_THEME_POSITIONS: continue
+                if any(q["symbol"] == r.symbol for q in lots): continue
+                px = _px(open_, d, r.symbol)
+                if px is None: continue
+                mark = cash
+                for q in lots:
+                    qpx = _px(open_, d, q["symbol"])
+                    if qpx is not None: mark += q["shares"] * qpx
+                amount = RESET_SLOT * mark
+                if cash < amount * (1.0 + RESET_COST): continue
+                cash -= amount * (1.0 + RESET_COST)
+                lots.append({"symbol": r.symbol, "theme": r.theme, "shares": amount / px,
+                             "entry_date": str(pd.Timestamp(d).date()),
+                             "exit_i": i + RESET_HOLD})
+                accepted += 1
+    d = cal[-1]
+    gross = 0.0; out_lots = []
+    for lot in lots:
+        cp = _px(close, d, lot["symbol"])
+        if cp is None: raise RuntimeError(f"RESET_CLOSE_REQUIRED {lot['symbol']}")
+        mark = lot["shares"] * cp; gross += mark
+        out_lots.append({**lot, "close": cp, "mark": mark, "held_sessions": max(0, len(cal) - 1 - (lot["exit_i"] - RESET_HOLD)),
+                         "remaining_sessions": max(0, lot["exit_i"] - (len(cal) - 1))})
+    nav = cash + gross
+    if nav <= 0: raise RuntimeError("RESET_NAV_NONPOSITIVE")
+    return {"status": "READY", "strategy": "RS63_TOP3_RISE30_SIGTOP3", "asof": str(d.date()),
+            "cash": cash, "nav": nav, "gross_value": gross, "desired_pct": gross / nav * 100.0,
+            "position_count": len(lots), "positions": out_lots, "accepted_in_rebuild_window": accepted,
