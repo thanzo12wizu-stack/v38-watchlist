@@ -9,14 +9,15 @@ DATA REQUIRED rather than substituting an approximate production rule.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import re
 from pathlib import Path
 
 from v38_rules import (
-    attack_rank_score, clinical_biotech_exclusion, market_mode,
-    peer_theme_score, select_peer_theme,
+    attack_rank_score, clinical_biotech_exclusion, gross100_allocation,
+    market_mode, peer_theme_score, select_peer_theme,
 )
 
 
@@ -62,15 +63,40 @@ def _revenue_value(blob: dict, ticker: str):
     return None
 
 
+def _load_universe_metadata(path: Path | None) -> dict[str, dict]:
+    """Read exact daily structural fields already produced in ``universe.csv``."""
+    if path is None or not path.is_file():
+        return {}
+    out: dict[str, dict] = {}
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            for row in csv.DictReader(handle):
+                ticker = str(row.get("シンボル") or row.get("symbol") or row.get("Symbol") or "").strip().upper()
+                if not ticker:
+                    continue
+                out[ticker] = {
+                    "industry": row.get("業種") or row.get("industry") or row.get("Industry"),
+                    "market_cap": row.get("時価総額") or row.get("market_cap") or row.get("Market Cap"),
+                    "revenue_ttm": row.get("売上高TTM") or row.get("revenue_ttm") or row.get("Revenue TTM"),
+                }
+    except OSError:
+        return {}
+    return out
+
+
 def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
     """Validate and score a precomputed strict-LOO record, or fail closed.
 
     The upstream daily route must calculate components from the full eligible
     universe. This consumer never computes LOO after a Top50 prefilter.
     """
-    records = live.get("candidates") if isinstance(live, dict) else None
+    if not isinstance(live, dict) or live.get("status") != "READY":
+        return None
+    records = live.get("candidates")
     record = records.get(ticker) if isinstance(records, dict) else None
-    if not isinstance(record, dict) or int(record.get("history_sessions", 0)) < 21:
+    if not isinstance(record, dict) or record.get("status") != "READY":
+        return None
+    if int(record.get("history_sessions", 0)) < 21:
         return None
     theme_rows = record.get("themes")
     if not isinstance(theme_rows, dict):
@@ -96,16 +122,33 @@ def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
         components[theme] = row
     selected, score = select_peer_theme(scores)
     if selected is None:
+        # A READY candidate can legitimately have no valid current membership.
+        # Neutral 50 is applied only at Final Score calculation, never invented
+        # as a fake Theme component.
         return {"selected": None, "score": None, "components": None}
     return {"selected": selected, "score": score, "components": components[selected]}
 
 
+def _ready_live(blob: dict, asof: str | None, status_key: str, ready_value: str = "READY") -> bool:
+    return (
+        isinstance(blob, dict)
+        and blob.get(status_key) == ready_value
+        and str(blob.get("asof") or "") == str(asof or "")
+    )
+
+
+def _pct(value):
+    return float(value) if _finite(value) else None
+
+
 def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
                 market_cap_path: Path | None = None, industry_path: Path | None = None,
-                revenue_path: Path | None = None, strict_loo_path: Path | None = None) -> dict:
+                revenue_path: Path | None = None, universe_path: Path | None = None,
+                strict_loo_path: Path | None = None, tqqq_panic_path: Path | None = None) -> dict:
     source = legacy_html.read_text(encoding="utf-8")
     calc = _embedded_json(source, "CALC")
     details = _embedded_json(source, "DET")
+    asof = calc.get("asof")
 
     valid50 = [row for row in details.values() if _finite(row.get("v50"))]
     coverage = len(valid50) / len(details) if details else 0.0
@@ -120,17 +163,27 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     industry_blob = _load_json(industry_path, {})
     industries = industry_blob.get("map", industry_blob) if isinstance(industry_blob, dict) else {}
     revenues = _load_json(revenue_path, {})
+    universe_meta = _load_universe_metadata(universe_path)
     loo_live = _load_json(strict_loo_path, {})
+    if not _ready_live(loo_live, asof, "status"):
+        loo_live = {}
+    tqqq_live = _load_json(tqqq_panic_path, {})
+    tqqq_ready = _ready_live(tqqq_live, asof, "live_generation_status")
 
     candidates = []
     for ticker, row in details.items():
-        industry_value = row.get("industry")
+        meta = universe_meta.get(ticker, {})
+        industry_value = meta.get("industry") or row.get("industry")
         if not industry_value and isinstance(industries.get(ticker), list):
             industry_value = industries[ticker][1] if len(industries[ticker]) > 1 else None
-        market_cap_value = row.get("market_cap")
+        market_cap_value = meta.get("market_cap")
+        if not _finite(market_cap_value):
+            market_cap_value = row.get("market_cap")
         if not _finite(market_cap_value):
             market_cap_value = _map_value(market_caps, ticker)
-        revenue_value = row.get("revenue_ttm")
+        revenue_value = meta.get("revenue_ttm")
+        if not _finite(revenue_value):
+            revenue_value = row.get("revenue_ttm")
         if not _finite(revenue_value):
             revenue_value = _revenue_value(revenues, ticker)
         bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)
@@ -179,11 +232,12 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "eligibility": "ELIGIBLE",
             "clinical_biotech": {
                 "industry": industry_value,
-                "market_cap": market_cap_value,
-                "revenue_ttm": revenue_value,
+                "market_cap": float(market_cap_value) if _finite(market_cap_value) else None,
+                "revenue_ttm": float(revenue_value) if _finite(revenue_value) else None,
                 "excluded": bio.excluded,
                 "revenue_missing_fail_open": bio.revenue_missing_fail_open,
                 "reason": bio.reason,
+                "metadata_source": "universe.csv" if ticker in universe_meta else "fallback",
             },
             "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
         })
@@ -201,10 +255,93 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         for rank, row in enumerate(candidates, 1):
             row["final_rank"] = rank
 
+    current30 = tqqq_live.get("current30", {}) if tqqq_ready else {}
+    underlying_pct = _pct(tqqq_live.get("underlying_target_pct")) if tqqq_ready else None
+    requested_pct = _pct(tqqq_live.get("requested_target_pct")) if tqqq_ready else None
+    reset_desired_pct = _pct(tqqq_live.get("reset_desired_pct")) if tqqq_ready else None
+    normal_desired_pct = _pct(tqqq_live.get("normal_stock_desired_pct")) if tqqq_ready else None
+
+    gross_live_ready = all(
+        value is not None
+        for value in (requested_pct, reset_desired_pct, normal_desired_pct)
+    )
+    gross_live = None
+    if gross_live_ready:
+        gross_live = gross100_allocation(
+            reset_desired_pct / 100.0,
+            requested_pct / 100.0,
+            normal_desired_pct / 100.0,
+        )
+
+    normal_tqqq = {
+        "status": "READY" if tqqq_ready and current30.get("status") == "READY" else "CURRENT30 HIERARCHY DATA REQUIRED",
+        "strategy": "CURRENT30",
+        "normal_exposure_pct": 30,
+        "underlying_target_pct": underlying_pct,
+        "risk_lock": current30.get("risk_lock") if tqqq_ready else None,
+        "slow_lock": current30.get("slow_lock") if tqqq_ready else None,
+        "fast_lock": current30.get("fast_lock") if tqqq_ready else None,
+        "mc_lock": current30.get("mc_lock") if tqqq_ready else None,
+        "sleeve": current30.get("sleeve") if tqqq_ready else None,
+        "note": "30% is the normal exposure inside the Stage34 hierarchy; risk locks and hierarchy can change the target",
+    }
+
+    panic_tqqq = {
+        "status": ("READY / ACTIVE" if tqqq_ready and bool(tqqq_live.get("active"))
+                   else "READY / INACTIVE" if tqqq_ready else "DATA REQUIRED"),
+        "candidate": "M30_TOUCH30_F80_D10",
+        "floor_pct_when_active": 80,
+        "floor_semantics": "max(underlying CURRENT30 hierarchy target, 80%)",
+        "seed_age_rule": "age <= 30; seed day = 0",
+        "entry_requires_mc57_gte": 20,
+        "active_exit_mc57_lt": 20,
+        "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
+        "allocation_priority": "GROSS100 RESEARCH CANDIDATE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
+        "required_route": "tqqq-panic-state.json",
+        "asof_match_required": True,
+        "vix_close": tqqq_live.get("vix_close") if tqqq_ready else None,
+        "qqq_sma50_atr_deviation": tqqq_live.get("qqq_sma50_atr_deviation") if tqqq_ready else None,
+        "qqq_drawdown10": tqqq_live.get("qqq_drawdown10") if tqqq_ready else None,
+        "seed_age_sessions": tqqq_live.get("seed_age_sessions") if tqqq_ready else None,
+        "rsi4h": tqqq_live.get("rsi4h") if tqqq_ready else None,
+        "prior_rsi4h": tqqq_live.get("prior_rsi4h") if tqqq_ready else None,
+        "touch30_today": tqqq_live.get("touch30_today") if tqqq_ready else None,
+        "mc57": tqqq_live.get("mc57") if tqqq_ready else None,
+        "active": bool(tqqq_live.get("active")) if tqqq_ready else False,
+        "held_sessions": tqqq_live.get("held_sessions") if tqqq_ready else None,
+        "underlying_target_pct": underlying_pct,
+        "requested_target_pct": requested_pct,
+        "fields": ["vix_close", "qqq_sma50_atr_deviation", "qqq_drawdown10",
+                   "seed_age_sessions", "rsi4h", "prior_rsi4h", "mc57",
+                   "active", "held_sessions", "underlying_target_pct",
+                   "reset_desired_pct", "normal_stock_desired_pct"],
+    }
+
+    gross_state = {
+        "status": ("RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE ALLOCATION READY"
+                   if gross_live is not None
+                   else "RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE INPUT DATA REQUIRED"),
+        "priority": ["RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK", "TQQQ_EXTRA"],
+        "run_id": 33339918881,
+        "artifact_id": 9740224569,
+        "workflow_commit": "02c6746e65fe688bcad68d3d76f27fef344b7cab",
+        "comparison_period": ["2016-01-04", "2026-03-20"],
+        "note": "80% is the protected amount under competition, not a TQQQ cap",
+        "reset_desired_pct": reset_desired_pct,
+        "tqqq_desired_pct": requested_pct,
+        "normal_stock_desired_pct": normal_desired_pct,
+        "reset_allocated_pct": (gross_live.reset_allocated * 100 if gross_live else None),
+        "tqqq_protected_pct": (gross_live.tqqq_protected * 100 if gross_live else None),
+        "normal_stock_allocated_pct": (gross_live.normal_stock_allocated * 100 if gross_live else None),
+        "tqqq_extra_pct": (gross_live.tqqq_extra * 100 if gross_live else None),
+        "tqqq_allocated_pct": (gross_live.tqqq_allocated * 100 if gross_live else None),
+        "gross_allocated_pct": (gross_live.gross_allocated * 100 if gross_live else None),
+    }
+
     return {
         "schema": "v38-live-state-1",
         "source": str(legacy_html.name),
-        "asof": calc.get("asof"),
+        "asof": asof,
         "market": {
             "nqsar": calc.get("color"),
             "breadth50": round(breadth50, 2) if breadth50 is not None else None,
@@ -217,62 +354,36 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "new_entry_limit": mode.new_entry_limit,
             "force_exit_next_open": mode.force_exit_next_open,
         },
-        "normal_tqqq": {
-            "status": "CURRENT30 HIERARCHY DATA REQUIRED",
-            "strategy": "CURRENT30",
-            "normal_exposure_pct": 30,
-            "underlying_target_pct": None,
-            "note": "30% is the normal exposure inside the existing hierarchy; risk locks and hierarchy can change the target",
-        },
-        "panic_tqqq": {
-            "status": "DATA REQUIRED",
-            "candidate": "M30_TOUCH30_F80_D10",
-            "floor_pct_when_active": 80,
-            "floor_semantics": "max(underlying CURRENT30 hierarchy target, 80%)",
-            "seed_age_rule": "age <= 30; seed day = 0",
-            "entry_requires_mc57_gte": 20,
-            "active_exit_mc57_lt": 20,
-            "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
-            "allocation_priority": "GROSS100 RESEARCH CANDIDATE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
-            "required_route": "tqqq-panic-state.json",
-            "fields": ["vix_close", "qqq_sma50_atr_deviation", "qqq_drawdown10",
-                       "seed_age_sessions", "rsi4h", "prior_rsi4h", "mc57",
-                       "active", "held_sessions", "underlying_target_pct",
-                       "reset_desired_pct", "normal_stock_desired_pct"],
-        },
+        "normal_tqqq": normal_tqqq,
+        "panic_tqqq": panic_tqqq,
         "ranking": {
             "mode": ("RS189_ONLY" if mode.name == "SELECTIVE" else
                      "ATTACK_FINAL_RANK" if mode.name == "ATTACK" and all_attack_ready else
                      "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED"),
             "note": ("Selective: Stock RS189 only" if mode.name == "SELECTIVE"
-                     else "RS189 PREVIEW ONLY. Formal Attack rank requires 21 sessions of strict LOO history for every eligible symbol; LOO is computed before the display Top50 cap."),
+                     else "RS189 PREVIEW ONLY. Formal Attack rank requires READY strict LOO history for every eligible symbol; LOO is computed before the display Top50 cap."),
             "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
             "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
             "candidate_exclusion_required_for_all_components": True,
             "multiple_theme_policy": "MAX_VALID_MEMBERSHIP_SCORE",
-            "missing_theme_policy": "NEUTRAL_50",
+            "missing_theme_policy": "NEUTRAL_50_AT_FINAL_SCORE_ONLY",
             "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
             "history_min_sessions": 21,
             "full_eligible_count": len(candidates),
             "display_limit_applied_after_full_sort": 50,
             "strict_loo_live_status": "READY" if all_attack_ready else "DATA REQUIRED",
+            "strict_loo_source_status": "READY" if loo_live else "DATA REQUIRED",
         },
         "candidates": candidates[:50],
         "panic_reset": {"status": "MONITOR / NOT LIVE", "separate_sleeve": True},
-        "gross100_allocation": {
-            "status": "RESEARCH CANDIDATE / ENGINE IMPLEMENTED / LIVE INPUT DATA REQUIRED",
-            "priority": ["RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK", "TQQQ_EXTRA"],
-            "run_id": 33339918881,
-            "artifact_id": 9740224569,
-            "workflow_commit": "02c6746e65fe688bcad68d3d76f27fef344b7cab",
-            "comparison_period": ["2016-01-04", "2026-03-20"],
-            "note": "80% is the protected amount under competition, not a TQQQ cap",
-        },
+        "gross100_allocation": gross_state,
         "rotation_intelligence": {
             "role": "WHERE_ONLY_NOT_A_TRADE_RULE",
             "exact_etf_fund_flow": "DATA REQUIRED",
             "internal_advance_decline": "DATA REQUIRED",
             "internal_obv": "DATA REQUIRED",
+            "macro_live": "DATA REQUIRED",
+            "transition_history": "DATA REQUIRED",
             "volume_is_not_fund_flow": True,
         },
         "gross_limit_pct": 100,
@@ -286,13 +397,17 @@ def main() -> None:
     parser.add_argument("--sector-snapshot", default="sector_snapshot.json")
     parser.add_argument("--market-cap", default="mktcap.json")
     parser.add_argument("--industry", default="industry_map.json")
-    parser.add_argument("--revenue", default="bio_revenue_audit.json")
-    parser.add_argument("--strict-loo", default="strict-loo-live.json")
+    parser.add_argument("--revenue", default=None)
+    parser.add_argument("--universe", default="universe.csv")
+    parser.add_argument("--strict-loo", default="v38-strict-loo-live.json")
+    parser.add_argument("--tqqq-panic", default="tqqq-panic-state.json")
     args = parser.parse_args()
     state = build_state(
         Path(args.legacy), sector_snapshot_path=Path(args.sector_snapshot),
         market_cap_path=Path(args.market_cap), industry_path=Path(args.industry),
-        revenue_path=Path(args.revenue), strict_loo_path=Path(args.strict_loo),
+        revenue_path=Path(args.revenue) if args.revenue else None,
+        universe_path=Path(args.universe), strict_loo_path=Path(args.strict_loo),
+        tqqq_panic_path=Path(args.tqqq_panic),
     )
     Path(args.out).write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {args.out}: {state['market']['mode']} / {len(state['candidates'])} candidates")
