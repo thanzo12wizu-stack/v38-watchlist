@@ -358,19 +358,52 @@ jobs:
             echo '::warning::commit_manifest.json was not generated'
           fi
 
-          read -r asof gate < <(
-            python -c 'import json; s=json.load(open("state.json", encoding="utf-8")); print(s.get("date", ""), s.get("gate", ""))'
-          )
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-          {
-            echo "### Dashboard build"
-            echo "- Data session: ${asof:-unknown}"
-            echo "- Gate: ${gate:-unknown}"
-            echo "- Main HTML: $(wc -c < command-center.html) bytes"
-            echo "- Share HTML: $(wc -c < command-center_share.html) bytes"
-            echo "- Strict LOO: $(python -c 'import json; print(json.load(open("v38-strict-loo-live.json", encoding="utf-8")).get("status", "DATA REQUIRED"))')"
-            echo "- TQQQ live: $(python -c 'import json; print(json.load(open("tqqq-panic-state.json", encoding="utf-8")).get("live_generation_status", "DATA REQUIRED"))')"
-          } >> "$GITHUB_STEP_SUMMARY"
+          def load(name, default):
+              path = Path(name)
+              if not path.is_file():
+                  return default
+              try:
+                  return json.loads(path.read_text(encoding="utf-8"))
+              except (OSError, ValueError):
+                  return default
+
+          state = load("state.json", {})
+          loo = load("v38-strict-loo-live.json", {})
+          history = load("v38-strict-loo-history.json", {})
+          tqqq = load("tqqq-panic-state.json", {})
+          sessions = [
+              str(row.get("asof"))
+              for row in history.get("sessions", [])
+              if isinstance(row, dict) and row.get("asof")
+          ]
+          latest_saved = max(sessions) if sessions else None
+
+          lines = [
+              "### Dashboard build",
+              f"- Data session: {state.get('date') or 'unknown'}",
+              f"- Gate: {state.get('gate') or 'unknown'}",
+              f"- Main HTML: {Path('command-center.html').stat().st_size} bytes",
+              f"- Share HTML: {Path('command-center_share.html').stat().st_size} bytes",
+              "",
+              "### Collector health",
+              f"- strict LOO status: {loo.get('status') or 'DATA REQUIRED'}",
+              f"- strict LOO reason: {loo.get('reason') or 'NONE'}",
+              f"- strict LOO history_sessions: {loo.get('history_sessions', len(sessions))}",
+              f"- strict LOO latest saved date: {latest_saved or 'NONE'}",
+              f"- strict LOO exact t-20 snapshot: {bool(loo.get('history_has_exact_20_session_base'))}",
+              f"- strict LOO asof: {loo.get('asof') or 'NONE'}",
+              f"- TQQQ live_generation_status: {tqqq.get('live_generation_status') or 'DATA REQUIRED'}",
+              f"- TQQQ reason: {tqqq.get('reason') or 'NONE'}",
+              f"- TQQQ asof: {tqqq.get('asof') or 'NONE'}",
+          ]
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
 
       - name: Commit dashboard and caches
         if: steps.build.outputs.skipped != 'true'

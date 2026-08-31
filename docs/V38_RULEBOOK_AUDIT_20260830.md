@@ -33,9 +33,9 @@ RSI30 Panic Resetの「Confirmation平均6.20%・Win 72.3%・PF 4.71」は、指
 | 全株50MA Breadth | 研究で確認済み | PASS | 監査版実装済み | 57ETF Breadthを二重Gateにしない |
 | Breadth coverage guard | 研究コード確認 | PASS | 監査版実装済み | 不足時は新規だけfail closed |
 | Eligibility / Clinical Biotech | 研究で確認済み | PASS | State builder/Fixture実装済み | Price≥5、DVOL≥10M、50>200、Close>200、RS189/63≥85。除外はThemeラベルではなく Industry∈{Biotechnology, Pharmaceuticals: Other} × Market Cap<$10B × Revenue TTM<$50M。Revenue欠落はfail-open |
-| Attack Stock70 / Theme30 | 研究で確認済み | PASS（研究値） | Engine/Schema済み、LIVE DATA REQUIRED | RS189 Top50は`PREVIEW ONLY`。全eligible→strict LOO→70/30→全銘柄sort→表示Top N。20日履歴不足時は正式順位を出さない |
-| LOO Peer Theme | 研究で確認済み | PASS | Engine/Schema済み、LIVE DATA REQUIRED | `sector_snapshot.json['s2t']`の複数membershipを使用。単一表示Themeは禁止。XをReturn/Acceleration/Breadth21すべてから除外 |
-| Theme Full3 | 研究で確認済み | PASS | LIVE DATA REQUIRED | RS63 + 20d Acceleration + Breadth21の等加重 |
+| Attack Stock70 / Theme30 | 研究で確認済み | PASS（研究値） | Producer/Consumer/Fixture実装済み、21営業日蓄積待ち | RS189 Top50は`PREVIEW ONLY`。全eligible→strict LOO→70/30→全銘柄sort→表示Top N。exact t−20履歴不足時は正式順位を出さない |
+| LOO Peer Theme | 研究で確認済み | PASS | Producer/Consumer/Fixture実装済み、live collector実稼働未確認 | `sector_snapshot.json['s2t']`の複数membershipを使用。単一表示Themeは禁止。XをReturn/Acceleration/Breadth21すべてから除外。所属ThemeなしはLOO成分を捏造せずFinal計算時だけneutral 50 |
+| Theme Full3 | 研究で確認済み | PASS | Producer実装済み、21営業日蓄積待ち | RS63 + 20d Acceleration + Breadth21の等加重 |
 | Granular Theme | 研究で確認済み | PASS | Schema準備 | Broad Sector加点なし。min5/min10でedge低下 |
 | Selective RS189 ranking | 研究で確認済み | PASS | 監査版実装済み | Theme加点なし |
 | 日次候補更新 | 研究で確認済み | PASS | 監査版は旧Dashboard更新時に再計算 | 隔週待ちを不採用 |
@@ -49,7 +49,7 @@ RSI30 Panic Resetの「Confirmation平均6.20%・Win 72.3%・PF 4.71」は、指
 | 10SMA/21EMA/ATR2通常Exit | 棄却 | PASS | 未実装 | 裁量Swingとは別ルール |
 | RSI30 Panic Reset | 研究候補 | NOT REPRODUCED（見出し数値） | Monitorのみ | 自動売買未接続 |
 | Theme-free RS189 RSI30 | 研究で確認済み | PASS | Monitor候補 | Main12枠へ混在させない |
-| CURRENT30 hierarchy | 研究で確認済み | PASS（定義） | LIVE DATA REQUIRED | 常時30%固定ではない。通常Exposure30%＋既存risk locks/hierarchy |
+| CURRENT30 hierarchy | 研究で確認済み | PASS（定義・移植） | Producer/Fixture実装済み、live collector実稼働未確認 | Stage34 hierarchy移植。常時30%固定ではなく、通常Exposure30%＋既存risk locks/hierarchy |
 | Strict Crash Seed | 研究で確認済み | PASS | Engine/Schema済み | VIX≥23、ATR乖離≤−0.5、10d DD≤−2% |
 | `M30_TOUCH30_F80_D10` Entry | 研究候補 | PASS | Engine/Schema済み | `age<=30`（Seed day=0）＋TOUCH30＋MC57≥20。RISE30ではない |
 | F80 Floor | 研究候補 | PASS | Engine/Fixture済み | `max(CURRENT30 hierarchy target, 80%)`。80.0%固定ではない |
@@ -113,7 +113,9 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 | Public mirror push | Secret未設定なら`SKIPPED / NOT CONFIGURED`、push済み/既に同一なら個別にPASS |
 | GitHub Pages currentness | 公開URLの内容を別途確認。Workflow SUCCESSから推定しない |
 
-`tqqq-panic-state.json` は生成された場合だけoptional allowlistへ入る。公開可能であることは、Stage34 CURRENT30やQQQ 5分足→4H RSIのlive生成が完成したことを意味しない。
+`tqqq-panic-state.json` は生成された場合だけoptional allowlistへ入る。Stage34 CURRENT30とQQQ 5分足→RTH 4H Wilder RSI14のproducerコード・Fixture・CI検証は実装済みだが、外部市場データを使う日次collectorの実稼働はまだ確認していない。公開可能であること、producerコードがCIを通ること、liveデータ取得が成功すること、GitHub Pagesがcurrentであることは別判定とする。
+
+Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/latest saved date/exact t−20 snapshot/asofと、TQQQのlive_generation_status/reason/asofを出す。Workflow全体がSUCCESSでも、collectorが`DATA REQUIRED`ならlive生成成功とは記録しない。
 
 ## 追加検証
 
@@ -128,6 +130,7 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 7. Clinical Biotechの小型Biotechnology、小型Pharmaceuticals: Other、大型Biotech、Revenue欠落fail-open Fixture。
 8. strict LOOが`s2t`の複数membershipを使い、全eligibleをTop50より前に計算するFixture。
 9. optional `tqqq-panic-state.json` public export allowlist Fixture。
+10. `s2t`にticker自体がないeligible銘柄を、exact t−20履歴READY時だけ`LOO_READY_NO_VALID_THEME`としてFinal計算でneutral 50にするFixture。
 
 ## 最新ルールブック
 
@@ -148,6 +151,8 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 |---|---|
 | `v38_rules.py` | 監査済み状態遷移、構造的Clinical Biotech判定、Gross100 allocatorを独立実装 |
 | `build_v38_companion.py` | 既存HTMLをread-only入力にし、全株Breadth・Mode・構造Eligibility・strict LOO入力検証を生成 |
+| `build_v38_strict_loo_live.py` | `s2t`複数membershipからforward-only strict LOO snapshot/historyを日次生成。exact t−20不足時はDATA REQUIRED |
+| `build_v38_tqqq_live.py` | Stage34 CURRENT30 hierarchyとQQQ 5分足→RTH 4H Wilder RSI14、Stage56 overlay stateを生成 |
 | `v38-live-state.json` | 現在の監査版state |
 | `command-center-v38.html` | 既存デザイン系統の別ページ。Mode、Capacity、Position、Candidate、TQQQ、RSI Resetを分離表示 |
 | `tqqq-panic-state.example.json` | exact 4H routeの入力schema |
@@ -173,7 +178,7 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 
 ## テスト結果
 
-- V38 / Companion / Public Export Unit・Fixture: 50 PASS。root全testでは92 PASS / 2 FAIL。
+- V38 / Companion / Public Export Unit・Fixture: 71 PASS。root全testでは110 PASS / 2 FAIL。
 - 全test実行では既存のworkflow inventory 2件がFAIL（one-off workflow残存 / artifact@v4）。今回差分以前からの既知不整合で、対象外workflowを勝手に削除していない。
 - Python compile: PASS。
 - HTML required IDs: PASS。
@@ -184,10 +189,10 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 ## 既知の未解決事項
 
 1. 現在の2026 Theme taxonomyを過去へ適用したtaxonomy lookahead。
-2. Exact LOO ThemeのEngine/Schemaは`s2t`複数membershipと3成分すべてのX除外を要求する。継続20日rank historyが未蓄積の間はDATA REQUIRED表示。
+2. Exact LOO Themeのproducer/consumerは`s2t`複数membershipと3成分すべてのX除外を実装済み。継続21営業日分のforward-only snapshotが未蓄積の間はDATA REQUIRED表示。Historical PIT taxonomyは復元しない。
 3. RSI30 Panic Resetの指定見出し数値の完全一致。
 4. Gross100 Allocationは研究候補としてEngine実装済みだが、完全な未使用OOSではなく、袖Returnをallocated grossでscaleしたAllocation研究である。絶対CAGRを期待値にしない。
-5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。ただしStage34 CURRENT30とQQQ 5分足→4H RSIの定期生成・配信経路は未完成。
+5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。Stage34 CURRENT30とQQQ 5分足→RTH 4H RSIのproducer・workflow接続は実装済みだが、外部市場データを使う日次collector実稼働と継続currentnessは未確認。
 6. 既存Dashboardには旧ルール表示が残る。監査版へ本番切替するまでは混同リスクがある。
 7. Exact ETF Fund Flow、Full Internal A/D・OBV、Macro live routeはDATA REQUIRED。
 
@@ -209,11 +214,11 @@ LOOは候補銘柄自身がTheme Return/Breadth/Accelerationを押し上げる�
 | 全株50MA Breadth | Market-mode codeのvalid SMA50 denominator＋coverage guard | `33216929035` / `9703815077` | `build_v38_companion.build_state`。57ETFは追加Gateにしない |
 | LOO Theme30 | `audit_ordinary_stock_theme_leave_one_out.py` / `LEAVE_ONE_OUT_THEME30_ATTACK_ONLY` | `33240190205` / `9711172105` / `c840f907…`＋dtype `5482468…` | Attack 70/30。候補自身をReturn/Accel/Breadth21から除外 |
 | 複数Theme / 欠落 | 同script：`np.fmax`でmax、欠落時`use_ps=50.0` | 同上 | `select_peer_theme` / `attack_rank_score` / UI method欄 |
-| Full3・Weight30 | `FULL_W30`、Pair ablation `FULL_W30` | `33240520678` / `9711273297`; `33240833226` / `9711365135` | `peer_theme_score`、Candidate schema。Live値はDATA REQUIRED |
+| Full3・Weight30 | `FULL_W30`、Pair ablation `FULL_W30` | `33240520678` / `9711273297`; `33240833226` / `9711365135` | `build_v38_strict_loo_live.py` / `peer_theme_score`。21営業日蓄積完了までLive値はDATA REQUIRED |
 | Initial/Partial/Peak30 Exit | Exit sensitivity / overlays：`PEAK30`, `PART25_R3` | `33250880314` / `9714502988`; `33250923735` / `9714434710` | 終値Signal→次Open execution、Partial後Entry/Peak維持 |
 | BE8 / 8週 / 10SMA / 21EMA棄却 | Exit trail/overlay variants | `33250255780`, `33250923735` | 実装なし |
 | RSI30 Headline | `RS63_TOP3_RISE30`等を再確認したが指定3数値一致なし | `33130536827` / `9670229132` | **NOT REPRODUCED**。Monitorのみ、期待数値非表示 |
 | Market RS189 RSI30 | RS cutoff×RSI cutoff、`P4_RS_PRIORITY_NO_GROUP_CAP`、`THEME_PRIORITY_MARKET_CAP0/1/2` | `33133427031` / `9671218139` / `22717429676301c2ec6cd8a767d04645d4153e33` | Optional Monitor。Main12枠へ混在させない |
 | Panic TQQQ | `tqqq_stage56_mandate_portfolio_audit.py` / `M30_TOUCH30_F80_D10` | `33080590798` / `9649902954` / `4e0d813863f6663e09837de437e33cb9809f6a1b` | `tqqq_panic_entry/exit`、F80 Floor、MC57 Entry/Exit、age≤30 Day0含む |
-| CURRENT30 hierarchy | Stage56 summary `existing hierarchy target with 30% normal exposure and its risk locks` | 同上＋Stage34 `current_trace()` | 常時30%とは実装しない。Underlying targetはLIVE DATA REQUIRED |
+| CURRENT30 hierarchy | Stage56 summary `existing hierarchy target with 30% normal exposure and its risk locks` | 同上＋Stage34 `current_trace()` | `build_v38_tqqq_live.py`へStage34 hierarchyを移植。常時30%とは実装しない。live collector実稼働は未確認 |
 | Gross 100 / Allocation | `leadership/research/audit_gross100_allocation.py` / `RESET_FIRST_TQQQ_FLOOR80`（`reset_first_tqqq_floor(...,.80)`） | `33339918881` / `9740224569` / workflow `02c6746e65fe688bcad68d3d76f27fef344b7cab` / script `e338baed223dbf421b393a7b2ddf246b19eda8d3` | `gross100_allocation`。Reset→TQQQ80保護→Normal→TQQQ extra、Gross≤100% |

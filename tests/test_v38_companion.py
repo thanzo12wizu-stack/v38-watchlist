@@ -1,5 +1,8 @@
 import csv
 import json
+import os
+import subprocess
+import textwrap
 from pathlib import Path
 
 from build_v38_companion import build_state
@@ -41,6 +44,58 @@ def test_workflow_reports_build_export_mirror_and_pages_as_separate_stages():
         "Public export creation: PASS",
         "SKIPPED / NOT CONFIGURED",
         "GitHub Pages currentness: SEPARATE CHECK REQUIRED",
+    ):
+        assert phrase in workflow
+
+
+def test_workflow_collector_health_summary_executes(tmp_path):
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    section = workflow.split("      - name: Report persistence and data date", 1)[1]
+    run_block = section.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    script = textwrap.dedent(run_block)
+
+    fixtures = {
+        "commit_manifest.json": {},
+        "state.json": {"date": "2026-08-28", "gate": "Green"},
+        "v38-strict-loo-live.json": {
+            "status": "READY",
+            "asof": "2026-08-28",
+            "history_sessions": 21,
+            "history_has_exact_20_session_base": True,
+        },
+        "v38-strict-loo-history.json": {
+            "sessions": [{"asof": "2026-08-27"}, {"asof": "2026-08-28"}],
+        },
+        "tqqq-panic-state.json": {
+            "live_generation_status": "DATA REQUIRED",
+            "reason": "TEST_ROUTE_UNAVAILABLE",
+            "asof": "2026-08-28",
+        },
+    }
+    for name, payload in fixtures.items():
+        (tmp_path / name).write_text(json.dumps(payload), encoding="utf-8")
+    (tmp_path / "command-center.html").write_text("legacy", encoding="utf-8")
+    (tmp_path / "command-center_share.html").write_text("share", encoding="utf-8")
+    summary = tmp_path / "summary.md"
+    env = dict(os.environ, GITHUB_STEP_SUMMARY=str(summary))
+
+    subprocess.run(["bash", "-c", script], cwd=tmp_path, env=env, check=True)
+    rendered = summary.read_text(encoding="utf-8")
+    assert "strict LOO status: READY" in rendered
+    assert "strict LOO history_sessions: 21" in rendered
+    assert "strict LOO latest saved date: 2026-08-28" in rendered
+    assert "strict LOO exact t-20 snapshot: True" in rendered
+    assert "TQQQ live_generation_status: DATA REQUIRED" in rendered
+    assert "TQQQ reason: TEST_ROUTE_UNAVAILABLE" in rendered
+    for phrase in (
+        "strict LOO status",
+        "strict LOO reason",
+        "strict LOO history_sessions",
+        "strict LOO latest saved date",
+        "strict LOO exact t-20 snapshot",
+        "TQQQ live_generation_status",
+        "TQQQ reason",
+        "TQQQ asof",
     ):
         assert phrase in workflow
 
@@ -195,6 +250,54 @@ def test_attack_strict_loo_uses_s2t_memberships_and_full_universe_before_top50(t
     assert state["ranking"]["strict_loo_live_status"] == "READY"
     assert state["candidates"][0]["peer_theme"] == "B"
     assert state["candidates"][0]["theme_memberships"] == ["A", "B"]
+
+
+def test_attack_eligible_ticker_absent_from_s2t_uses_neutral50_only_at_final_score(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Green"}
+    det = {f"T{i}": eligible_row(rs189=90 + i / 100) for i in range(40)}
+    missing_ticker = "T39"
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, det)
+
+    memberships = {ticker: ["A"] for ticker in det if ticker != missing_ticker}
+    loo = {
+        "status": "READY",
+        "asof": "2026-08-28",
+        "history_sessions": 21,
+        "history_has_exact_20_session_base": True,
+        "candidates": {},
+    }
+    for ticker in memberships:
+        loo["candidates"][ticker] = {
+            "status": "READY",
+            "history_sessions": 21,
+            "themes": {
+                "A": {
+                    "theme_rs63_pct": 60,
+                    "acceleration20_pct": 60,
+                    "breadth21_pct": 60,
+                    "candidate_excluded_from_return": True,
+                    "candidate_excluded_from_acceleration": True,
+                    "candidate_excluded_from_breadth21": True,
+                }
+            },
+        }
+
+    sector_path, loo_path = tmp_path / "sector.json", tmp_path / "loo.json"
+    sector_path.write_text(json.dumps({"s2t": memberships}), encoding="utf-8")
+    loo_path.write_text(json.dumps(loo), encoding="utf-8")
+    state = build_state(source, sector_snapshot_path=sector_path, strict_loo_path=loo_path)
+
+    rows = {row["ticker"]: row for row in state["candidates"]}
+    missing = rows[missing_ticker]
+    assert state["ranking"]["strict_loo_live_status"] == "READY"
+    assert state["ranking"]["mode"] == "ATTACK_FINAL_RANK"
+    assert missing["theme_memberships"] == []
+    assert missing["peer_theme"] is None
+    assert missing["peer_theme_score"] is None
+    assert missing["peer_only_status"] == "LOO_READY_NO_VALID_THEME"
+    assert missing["attack_score"] == 0.70 * missing["rs189"] + 0.30 * 50
+    assert missing["final_rank"] is not None
 
 
 def test_attack_strict_loo_stale_or_data_required_route_fails_closed(tmp_path):

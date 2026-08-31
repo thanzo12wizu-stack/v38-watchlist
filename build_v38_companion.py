@@ -92,6 +92,22 @@ def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
     """
     if not isinstance(live, dict) or live.get("status") != "READY":
         return None
+    if not memberships:
+        # No current Theme membership is a valid, fully observed outcome once
+        # the forward-only LOO route has the exact t-20 session. Do not invent
+        # a Theme component; attack_rank_score applies neutral 50 only when it
+        # combines the final Stock70 / Theme30 score.
+        if (
+            int(live.get("history_sessions", 0)) >= 21
+            and live.get("history_has_exact_20_session_base") is True
+        ):
+            return {
+                "selected": None,
+                "score": None,
+                "components": None,
+                "readiness": "LOO_READY_NO_VALID_THEME",
+            }
+        return None
     records = live.get("candidates")
     record = records.get(ticker) if isinstance(records, dict) else None
     if not isinstance(record, dict) or record.get("status") != "READY":
@@ -125,8 +141,18 @@ def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
         # A READY candidate can legitimately have no valid current membership.
         # Neutral 50 is applied only at Final Score calculation, never invented
         # as a fake Theme component.
-        return {"selected": None, "score": None, "components": None}
-    return {"selected": selected, "score": score, "components": components[selected]}
+        return {
+            "selected": None,
+            "score": None,
+            "components": None,
+            "readiness": "LOO_READY_NO_VALID_THEME",
+        }
+    return {
+        "selected": selected,
+        "score": score,
+        "components": components[selected],
+        "readiness": "STRICT_LOO",
+    }
 
 
 def _ready_live(blob: dict, asof: str | None, status_key: str, ready_value: str = "READY") -> bool:
@@ -219,7 +245,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "theme_rs63": comp.get("theme_rs63_pct") if comp else None,
             "theme_acceleration": comp.get("acceleration20_pct") if comp else None,
             "theme_breadth21": comp.get("breadth21_pct") if comp else None,
-            "peer_only_status": "STRICT_LOO" if loo_ready else "DATA_REQUIRED",
+            "peer_only_status": (loo.get("readiness") if loo_ready else "DATA_REQUIRED"),
             "candidate_exclusion_required": True,
             "candidate_excluded_from_return": True if loo_ready else None,
             "candidate_excluded_from_acceleration": True if loo_ready else None,
