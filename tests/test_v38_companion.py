@@ -38,6 +38,9 @@ def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
 
 def test_workflow_reports_build_export_mirror_and_pages_as_separate_stages():
     workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    assert "Prepare verified PIT taxonomy bootstrap" in workflow
+    assert "79073ffd9742102c2b6e9f72d349801a10e126db" in workflow
+    assert "Build strict LOO PIT live state with exact t-20 bootstrap" in workflow
     for phrase in (
         "Build / validation: PASS",
         "main generated-state persistence: PASS",
@@ -91,6 +94,8 @@ def test_workflow_collector_health_summary_executes(tmp_path):
         "strict LOO status",
         "strict LOO reason",
         "strict LOO history_sessions",
+        "strict LOO computed_snapshot_count",
+        "strict LOO PIT history start",
         "strict LOO latest saved date",
         "strict LOO exact t-20 snapshot",
         "TQQQ live_generation_status",
@@ -98,6 +103,27 @@ def test_workflow_collector_health_summary_executes(tmp_path):
         "TQQQ asof",
     ):
         assert phrase in workflow
+
+
+def test_workflow_verified_pit_bootstrap_guard_executes_without_fetch_when_persisted(tmp_path):
+    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    section = workflow.split("      - name: Prepare verified PIT taxonomy bootstrap", 1)[1]
+    run_block = section.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    script = textwrap.dedent(run_block)
+    history = {
+        "taxonomy_snapshots": [{
+            "effective_asof": "2026-06-22",
+            "source": "git:79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json",
+            "taxonomy_sha256": "dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39",
+            "s2t": {"AAA": ["Theme"]},
+        }]
+    }
+    (tmp_path / "v38-strict-loo-history.json").write_text(json.dumps(history), encoding="utf-8")
+    completed = subprocess.run(
+        ["bash", "-c", script], cwd=tmp_path, text=True,
+        capture_output=True, check=True,
+    )
+    assert "already persisted" in completed.stdout
 
 
 def test_companion_reads_legacy_without_rewriting_and_fails_closed_for_attack_theme(tmp_path):

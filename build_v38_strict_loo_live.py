@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Build forward-only strict Leave-One-Out Peer Theme live state.
 
-This is intentionally a live/PIT accumulator, not a historical taxonomy backfill.
-For each completed market session it uses that session's ``sector_snapshot.json:s2t``
-membership, computes candidate-excluded Theme RS63 and Breadth21 exactly as the
-audited research, and persists the peer RS percentile needed 20 trading sessions
-later.  Rank acceleration is emitted only when the snapshot for the exact market
-session 20 sessions earlier exists.  Missing history therefore stays DATA REQUIRED
-instead of using today's taxonomy as a historical approximation.
+This is a live/PIT accumulator with a bounded bootstrap from the first verified
+Git-saved taxonomy. It never applies a taxonomy before its saved effective date.
+On the first run it computes the current and exact t-20 session snapshots in one
+pass, so rank acceleration can be READY immediately when both taxonomy coverage
+and market data are available. Missing PIT coverage stays DATA REQUIRED.
 
 Research definition source:
 - Run 33240190205 / Artifact 9711172105
@@ -21,6 +19,7 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -34,6 +33,12 @@ RS_WINDOW = 63
 RS_MIN_PERIODS = int(math.ceil(RS_WINDOW * 0.8))
 HISTORY_KEEP_SESSIONS = 45
 TICKER_RE = re.compile(r"^[A-Z][A-Z0-9.\-/]{0,9}$")
+PIT_BOOTSTRAP_COMMIT = "79073ffd9742102c2b6e9f72d349801a10e126db"
+PIT_BOOTSTRAP_EFFECTIVE_ASOF = "2026-06-22"
+PIT_BOOTSTRAP_PATH = "sector_snapshot.json"
+PIT_BOOTSTRAP_BLOB_SHA = "18ce2ed94b72cc2f7c6e0c2954f2d975b566a7ad"
+PIT_BOOTSTRAP_TAXONOMY_SHA256 = "dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39"
+PIT_BOOTSTRAP_SOURCE = f"git:{PIT_BOOTSTRAP_COMMIT}:{PIT_BOOTSTRAP_PATH}"
 
 
 def _finite(value: Any) -> bool:
@@ -100,6 +105,83 @@ def extract_s2t(snapshot: Any) -> dict[str, list[str]]:
         if themes:
             out[symbol] = themes
     return out
+
+
+def taxonomy_sha256(s2t: dict[str, list[str]]) -> str:
+    payload = json.dumps(s2t, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def load_verified_git_taxonomy(commit: str = PIT_BOOTSTRAP_COMMIT,
+                               path: str = PIT_BOOTSTRAP_PATH) -> dict[str, list[str]]:
+    """Load exactly the audited first saved taxonomy, never an approximate substitute."""
+    blob = subprocess.run(
+        ["git", "rev-parse", f"{commit}:{path}"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    if commit == PIT_BOOTSTRAP_COMMIT and path == PIT_BOOTSTRAP_PATH:
+        if blob != PIT_BOOTSTRAP_BLOB_SHA:
+            raise RuntimeError(f"PIT_BOOTSTRAP_BLOB_MISMATCH {blob}")
+    raw = subprocess.run(
+        ["git", "show", f"{commit}:{path}"],
+        check=True, capture_output=True, text=True,
+    ).stdout
+    s2t = extract_s2t(json.loads(raw))
+    if not s2t:
+        raise RuntimeError("PIT_BOOTSTRAP_S2T_REQUIRED")
+    if commit == PIT_BOOTSTRAP_COMMIT and path == PIT_BOOTSTRAP_PATH:
+        digest = taxonomy_sha256(s2t)
+        if digest != PIT_BOOTSTRAP_TAXONOMY_SHA256:
+            raise RuntimeError(f"PIT_BOOTSTRAP_TAXONOMY_MISMATCH {digest}")
+    return s2t
+
+
+def register_taxonomy_snapshot(history: dict[str, Any], effective_asof: str,
+                               s2t: dict[str, list[str]], source: str) -> dict[str, Any]:
+    """Persist only changed PIT memberships and retain the earliest known effective date."""
+    out = dict(history)
+    rows = [dict(row) for row in out.get("taxonomy_snapshots", [])
+            if isinstance(row, dict) and row.get("effective_asof") and isinstance(row.get("s2t"), dict)]
+    digest = taxonomy_sha256(s2t)
+    matching = next((row for row in rows if row.get("taxonomy_sha256") == digest), None)
+    if matching is not None:
+        if effective_asof < str(matching["effective_asof"]):
+            matching["effective_asof"] = effective_asof
+            matching["source"] = source
+        matching["last_seen_asof"] = max(str(matching.get("last_seen_asof") or effective_asof), effective_asof)
+    else:
+        rows.append({
+            "effective_asof": effective_asof,
+            "last_seen_asof": effective_asof,
+            "taxonomy_sha256": digest,
+            "source": source,
+            "s2t": s2t,
+        })
+    rows.sort(key=lambda row: str(row["effective_asof"]))
+    out["taxonomy_snapshots"] = rows
+    return out
+
+
+def has_verified_bootstrap(history: dict[str, Any]) -> bool:
+    return any(
+        isinstance(row, dict)
+        and row.get("source") == PIT_BOOTSTRAP_SOURCE
+        and row.get("effective_asof") == PIT_BOOTSTRAP_EFFECTIVE_ASOF
+        and row.get("taxonomy_sha256") == PIT_BOOTSTRAP_TAXONOMY_SHA256
+        and isinstance(row.get("s2t"), dict)
+        and bool(row["s2t"])
+        for row in history.get("taxonomy_snapshots", [])
+    )
+
+
+def taxonomy_for_asof(history: dict[str, Any], asof: str) -> tuple[dict[str, list[str]], dict[str, Any]]:
+    eligible = [row for row in history.get("taxonomy_snapshots", [])
+                if isinstance(row, dict) and str(row.get("effective_asof") or "") <= asof
+                and isinstance(row.get("s2t"), dict)]
+    if not eligible:
+        raise RuntimeError(f"PIT_TAXONOMY_REQUIRED asof={asof}")
+    row = max(eligible, key=lambda item: str(item["effective_asof"]))
+    return row["s2t"], row
 
 
 def invert_memberships(s2t: dict[str, list[str]]) -> dict[str, list[str]]:
@@ -284,10 +366,9 @@ def compute_session_snapshot(close: pd.DataFrame, s2t: dict[str, list[str]], aso
         if number % 25 == 0 or number == len(theme_members):
             print(f"LOO_THEME {number}/{len(theme_members)} pairs={sum(len(x) for x in pair_rs.values())}", flush=True)
 
-    taxonomy_payload = json.dumps(s2t, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
         "asof": str(asof.date()),
-        "taxonomy_sha256": hashlib.sha256(taxonomy_payload.encode("utf-8")).hexdigest(),
+        "taxonomy_sha256": taxonomy_sha256(s2t),
         "normal_theme_rs63_pct": normal_pct,
         "peer_theme_rs63_pct": dict(pair_rs),
         "peer_breadth21_pct": dict(pair_breadth),
@@ -297,12 +378,60 @@ def compute_session_snapshot(close: pd.DataFrame, s2t: dict[str, list[str]], aso
 
 
 def _upsert_history(history: dict[str, Any], session: dict[str, Any]) -> dict[str, Any]:
+    out = dict(history)
     sessions = [row for row in history.get("sessions", []) if isinstance(row, dict) and row.get("asof")]
     sessions = [row for row in sessions if row.get("asof") != session["asof"]]
     sessions.append(session)
     sessions.sort(key=lambda row: str(row["asof"]))
     sessions = sessions[-HISTORY_KEEP_SESSIONS:]
-    return {"schema": "v38-strict-loo-history-1", "sessions": sessions}
+    out.update({"schema": "v38-strict-loo-history-1", "sessions": sessions})
+    return out
+
+
+def backfill_required_snapshots(history: dict[str, Any], close: pd.DataFrame,
+                                asof: pd.Timestamp) -> tuple[dict[str, Any], dict[str, Any], str]:
+    """Compute current and exact t-20 snapshots from their PIT taxonomies.
+
+    Intermediate sessions are represented by verified PIT coverage metadata;
+    only the two endpoints required by the audited acceleration formula are
+    expensive to compute and persist.
+    """
+    close = close.loc[close.index <= asof]
+    market_sessions = list(close.index.unique())
+    if asof not in market_sessions:
+        raise RuntimeError(f"PRICE_ASOF_REQUIRED latest={close.index.max() if len(close) else None}")
+    current_pos = market_sessions.index(asof)
+    if current_pos < 20:
+        raise RuntimeError("TWENTY_SESSION_PRICE_HISTORY_REQUIRED")
+    base_asof = market_sessions[current_pos - 20]
+    required = (base_asof, asof)
+    by_date = {str(row.get("asof")): row for row in history.get("sessions", [])
+               if isinstance(row, dict) and row.get("asof")}
+    out = history
+    generated: dict[str, dict[str, Any]] = {}
+    for target in required:
+        target_text = str(target.date())
+        taxonomy, taxonomy_row = taxonomy_for_asof(out, target_text)
+        existing = by_date.get(target_text)
+        if existing is not None and existing.get("taxonomy_sha256") == taxonomy_row.get("taxonomy_sha256"):
+            session = existing
+        else:
+            session = compute_session_snapshot(close, taxonomy, target)
+            session["taxonomy_effective_asof"] = taxonomy_row["effective_asof"]
+            session["taxonomy_source"] = taxonomy_row.get("source")
+            out = _upsert_history(out, session)
+            by_date[target_text] = session
+        generated[target_text] = session
+
+    earliest_effective = min(str(row["effective_asof"]) for row in out.get("taxonomy_snapshots", []))
+    covered = [session for session in market_sessions
+               if earliest_effective <= str(session.date()) <= str(asof.date())]
+    out["covered_market_sessions"] = len(covered)
+    out["coverage_start_asof"] = str(covered[0].date()) if covered else None
+    out["coverage_end_asof"] = str(asof.date())
+    out["computed_snapshot_count"] = len(out.get("sessions", []))
+    out["bootstrap_policy"] = "VERIFIED_GIT_SNAPSHOT_EFFECTIVE_DATE_ONLY"
+    return out, generated[str(asof.date())], str(base_asof.date())
 
 
 def build_live(history: dict[str, Any], s2t: dict[str, list[str]], current: dict[str, Any],
@@ -313,6 +442,7 @@ def build_live(history: dict[str, Any], s2t: dict[str, list[str]], current: dict
     current_normal = current.get("normal_theme_rs63_pct", {})
     current_peer = current.get("peer_theme_rs63_pct", {})
     current_breadth = current.get("peer_breadth21_pct", {})
+    history_sessions = int(history.get("covered_market_sessions") or len(sessions))
 
     normal_delta: dict[str, float] = {}
     if old:
@@ -348,7 +478,7 @@ def build_live(history: dict[str, Any], s2t: dict[str, list[str]], current: dict
         history_ready = old is not None
         candidates[symbol] = {
             "status": "READY" if history_ready else "DATA REQUIRED",
-            "history_sessions": len(sessions),
+            "history_sessions": history_sessions,
             "expected_acceleration_base_asof": expected_base_asof,
             "themes": themes,
             "no_valid_theme": bool(history_ready and not themes),
@@ -358,11 +488,14 @@ def build_live(history: dict[str, Any], s2t: dict[str, list[str]], current: dict
         "schema": "v38-strict-loo-live-1",
         "asof": current.get("asof"),
         "status": "READY" if old is not None else "DATA REQUIRED",
-        "history_sessions": len(sessions),
+        "history_sessions": history_sessions,
+        "computed_snapshot_count": len(sessions),
+        "history_start_asof": history.get("coverage_start_asof"),
+        "history_end_asof": history.get("coverage_end_asof"),
         "expected_acceleration_base_asof": expected_base_asof,
         "history_has_exact_20_session_base": old is not None,
         "membership_source": "sector_snapshot.json:s2t",
-        "pit_policy": "FORWARD_ONLY_SAVED_SNAPSHOTS; NO_CURRENT_TAXONOMY_BACKFILL",
+        "pit_policy": "SAVED_PIT_TAXONOMY_FROM_EFFECTIVE_DATE; NO_PRE_SNAPSHOT_BACKFILL",
         "candidate_exclusion": ["Theme Return", "Theme Rank Acceleration", "Theme Breadth21"],
         "coverage": {
             "theme_count": current.get("theme_count"),
@@ -381,7 +514,7 @@ def _data_required_live(asof: str | None, reason: str) -> dict[str, Any]:
         "reason": reason,
         "history_has_exact_20_session_base": False,
         "membership_source": "sector_snapshot.json:s2t",
-        "pit_policy": "FORWARD_ONLY_SAVED_SNAPSHOTS; NO_CURRENT_TAXONOMY_BACKFILL",
+        "pit_policy": "SAVED_PIT_TAXONOMY_FROM_EFFECTIVE_DATE; NO_PRE_SNAPSHOT_BACKFILL",
         "candidates": {},
     }
 
@@ -408,7 +541,24 @@ def main() -> None:
         out_path.write_text(json.dumps(_data_required_live(asof_text, "S2T_MEMBERSHIP_REQUIRED"), indent=2) + "\n")
         return
 
-    symbols = sorted({symbol for symbol in s2t})
+    history_path = Path(args.history)
+    history = _load_json(history_path, {"schema": "v38-strict-loo-history-1", "sessions": []})
+    try:
+        if not has_verified_bootstrap(history):
+            bootstrap_s2t = load_verified_git_taxonomy()
+            history = register_taxonomy_snapshot(
+                history, PIT_BOOTSTRAP_EFFECTIVE_ASOF, bootstrap_s2t,
+                PIT_BOOTSTRAP_SOURCE,
+            )
+        history = register_taxonomy_snapshot(history, asof_text, s2t, "daily:sector_snapshot.json")
+    except Exception as exc:
+        live = _data_required_live(asof_text, f"{type(exc).__name__}: {exc}")
+        out_path.write_text(json.dumps(live, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"LOO_LIVE_DATA_REQUIRED {type(exc).__name__}: {exc}", flush=True)
+        return
+
+    symbols = sorted({symbol for row in history.get("taxonomy_snapshots", [])
+                      for symbol in row.get("s2t", {})})
     start = str((asof - pd.Timedelta(days=170)).date())
     end = str((asof + pd.Timedelta(days=1)).date())
     try:
@@ -416,16 +566,12 @@ def main() -> None:
         close = close.loc[close.index <= asof]
         if asof not in close.index:
             raise RuntimeError(f"PRICE_ASOF_REQUIRED latest={close.index.max() if len(close) else None}")
-        market_sessions = list(close.index.unique())
-        current_pos = market_sessions.index(asof)
-        expected_base = market_sessions[current_pos - 20] if current_pos >= 20 else None
-        current = compute_session_snapshot(close, s2t, asof)
+        history, current, expected_base_asof = backfill_required_snapshots(history, close, asof)
         current["download_quality"] = quality
-        history_path = Path(args.history)
-        history = _load_json(history_path, {"schema": "v38-strict-loo-history-1", "sessions": []})
         history = _upsert_history(history, current)
+        history["computed_snapshot_count"] = len(history.get("sessions", []))
         history_path.write_text(json.dumps(history, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-        live = build_live(history, s2t, current, str(expected_base.date()) if expected_base is not None else None)
+        live = build_live(history, s2t, current, expected_base_asof)
     except Exception as exc:
         live = _data_required_live(asof_text, f"{type(exc).__name__}: {exc}")
         print(f"LOO_LIVE_DATA_REQUIRED {type(exc).__name__}: {exc}", flush=True)

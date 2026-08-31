@@ -33,9 +33,9 @@ RSI30 Panic Resetの「Confirmation平均6.20%・Win 72.3%・PF 4.71」は、指
 | 全株50MA Breadth | 研究で確認済み | PASS | 監査版実装済み | 57ETF Breadthを二重Gateにしない |
 | Breadth coverage guard | 研究コード確認 | PASS | 監査版実装済み | 不足時は新規だけfail closed |
 | Eligibility / Clinical Biotech | 研究で確認済み | PASS | State builder/Fixture実装済み | Price≥5、DVOL≥10M、50>200、Close>200、RS189/63≥85。除外はThemeラベルではなく Industry∈{Biotechnology, Pharmaceuticals: Other} × Market Cap<$10B × Revenue TTM<$50M。Revenue欠落はfail-open |
-| Attack Stock70 / Theme30 | 研究で確認済み | PASS（研究値） | Producer/Consumer/Fixture実装済み、21営業日蓄積待ち | RS189 Top50は`PREVIEW ONLY`。全eligible→strict LOO→70/30→全銘柄sort→表示Top N。exact t−20履歴不足時は正式順位を出さない |
-| LOO Peer Theme | 研究で確認済み | PASS | Producer/Consumer/Fixture実装済み、live collector実稼働未確認 | `sector_snapshot.json['s2t']`の複数membershipを使用。単一表示Themeは禁止。XをReturn/Acceleration/Breadth21すべてから除外。所属ThemeなしはLOO成分を捏造せずFinal計算時だけneutral 50 |
-| Theme Full3 | 研究で確認済み | PASS | Producer実装済み、21営業日蓄積待ち | RS63 + 20d Acceleration + Breadth21の等加重 |
+| Attack Stock70 / Theme30 | 研究で確認済み | PASS（研究値） | PIT初回backfill/Producer/Consumer/Fixture実装済み、live collector実稼働未確認 | RS189 Top50は`PREVIEW ONLY`。全eligible→strict LOO→70/30→全銘柄sort→表示Top N。初回に現在日とexact t−20を一括計算し、取得成功時は待機なしで正式順位を生成 |
+| LOO Peer Theme | 研究で確認済み | PASS | PIT初回backfill/Producer/Consumer/Fixture実装済み、live collector実稼働未確認 | `sector_snapshot.json['s2t']`の複数membershipを使用。単一表示Themeは禁止。XをReturn/Acceleration/Breadth21すべてから除外。所属ThemeなしはLOO成分を捏造せずFinal計算時だけneutral 50 |
+| Theme Full3 | 研究で確認済み | PASS | PIT初回backfill/Producer実装済み、live collector実稼働未確認 | RS63 + 20d Acceleration + Breadth21の等加重 |
 | Granular Theme | 研究で確認済み | PASS | Schema準備 | Broad Sector加点なし。min5/min10でedge低下 |
 | Selective RS189 ranking | 研究で確認済み | PASS | 監査版実装済み | Theme加点なし |
 | 日次候補更新 | 研究で確認済み | PASS | 監査版は旧Dashboard更新時に再計算 | 隔週待ちを不採用 |
@@ -117,6 +117,8 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 
 Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/latest saved date/exact t−20 snapshot/asofと、TQQQのlive_generation_status/reason/asofを出す。Workflow全体がSUCCESSでも、collectorが`DATA REQUIRED`ならlive生成成功とは記録しない。
 
+strict LOO初回backfillは、Gitで確認した最初の保存snapshot（commit `79073ffd9742102c2b6e9f72d349801a10e126db`、blob `18ce2ed94b72cc2f7c6e0c2954f2d975b566a7ad`、米国市場日`2026-06-22`引け後）をeffective startとする。現在の`sector_snapshot.json`は同一blobである。初回collectorは、現在日と正確なt−20営業日の高コストLOO snapshotを一括計算し、その間のPIT coverage session数を保存する。Accelerationはこの2 endpointだけで厳密に計算できるため、21回の日次実行を待たない。保存開始前へ現在taxonomyを遡及適用しない。外部価格取得が失敗した場合は初日もDATA REQUIREDであり、近似へfallbackしない。
+
 ## 追加検証
 
 既存成果物で十分な箇所は再バックテストせず、次だけ追加した。
@@ -131,6 +133,7 @@ Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/late
 8. strict LOOが`s2t`の複数membershipを使い、全eligibleをTop50より前に計算するFixture。
 9. optional `tqqq-panic-state.json` public export allowlist Fixture。
 10. `s2t`にticker自体がないeligible銘柄を、exact t−20履歴READY時だけ`LOO_READY_NO_VALID_THEME`としてFinal計算でneutral 50にするFixture。
+11. 最初の保存taxonomy以後について、初回実行で現在日とexact t−20を一括生成してREADYになるFixture。t−20が最初の保存日より前ならDATA REQUIREDとする境界Fixture。
 
 ## 最新ルールブック
 
@@ -151,7 +154,7 @@ Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/late
 |---|---|
 | `v38_rules.py` | 監査済み状態遷移、構造的Clinical Biotech判定、Gross100 allocatorを独立実装 |
 | `build_v38_companion.py` | 既存HTMLをread-only入力にし、全株Breadth・Mode・構造Eligibility・strict LOO入力検証を生成 |
-| `build_v38_strict_loo_live.py` | `s2t`複数membershipからforward-only strict LOO snapshot/historyを日次生成。exact t−20不足時はDATA REQUIRED |
+| `build_v38_strict_loo_live.py` | Gitで検証済みの最初の`s2t` snapshotからPIT timelineを開始し、初回に現在日＋exact t−20を一括生成。その後は日次snapshot/historyを継続保存。保存開始前やexact t−20不足時はDATA REQUIRED |
 | `build_v38_tqqq_live.py` | Stage34 CURRENT30 hierarchyとQQQ 5分足→RTH 4H Wilder RSI14、Stage56 overlay stateを生成 |
 | `v38-live-state.json` | 現在の監査版state |
 | `command-center-v38.html` | 既存デザイン系統の別ページ。Mode、Capacity、Position、Candidate、TQQQ、RSI Resetを分離表示 |
@@ -178,7 +181,7 @@ Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/late
 
 ## テスト結果
 
-- V38 / Companion / Public Export Unit・Fixture: 71 PASS。root全testでは110 PASS / 2 FAIL。
+- V38 / Companion / Public Export Unit・Fixture: 77 PASS。root全testでは115 PASS / 2 FAIL。
 - 全test実行では既存のworkflow inventory 2件がFAIL（one-off workflow残存 / artifact@v4）。今回差分以前からの既知不整合で、対象外workflowを勝手に削除していない。
 - Python compile: PASS。
 - HTML required IDs: PASS。
@@ -189,7 +192,7 @@ Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/late
 ## 既知の未解決事項
 
 1. 現在の2026 Theme taxonomyを過去へ適用したtaxonomy lookahead。
-2. Exact LOO Themeのproducer/consumerは`s2t`複数membershipと3成分すべてのX除外を実装済み。継続21営業日分のforward-only snapshotが未蓄積の間はDATA REQUIRED表示。Historical PIT taxonomyは復元しない。
+2. Exact LOO Themeのproducer/consumerは`s2t`複数membershipと3成分すべてのX除外を実装済み。2026-06-22以後は検証済み保存snapshotから初回にexact t−20をbackfillするため21回の日次実行待ちは不要。ただし保存開始前のHistorical PIT taxonomyは復元せず、必要なt−20が保存開始前ならDATA REQUIRED。
 3. RSI30 Panic Resetの指定見出し数値の完全一致。
 4. Gross100 Allocationは研究候補としてEngine実装済みだが、完全な未使用OOSではなく、袖Returnをallocated grossでscaleしたAllocation研究である。絶対CAGRを期待値にしない。
 5. TQQQ exact 4H data file `tqqq-panic-state.json` は公開allowlist済み。Stage34 CURRENT30とQQQ 5分足→RTH 4H RSIのproducer・workflow接続は実装済みだが、外部市場データを使う日次collector実稼働と継続currentnessは未確認。
@@ -214,7 +217,7 @@ LOOは候補銘柄自身がTheme Return/Breadth/Accelerationを押し上げる�
 | 全株50MA Breadth | Market-mode codeのvalid SMA50 denominator＋coverage guard | `33216929035` / `9703815077` | `build_v38_companion.build_state`。57ETFは追加Gateにしない |
 | LOO Theme30 | `audit_ordinary_stock_theme_leave_one_out.py` / `LEAVE_ONE_OUT_THEME30_ATTACK_ONLY` | `33240190205` / `9711172105` / `c840f907…`＋dtype `5482468…` | Attack 70/30。候補自身をReturn/Accel/Breadth21から除外 |
 | 複数Theme / 欠落 | 同script：`np.fmax`でmax、欠落時`use_ps=50.0` | 同上 | `select_peer_theme` / `attack_rank_score` / UI method欄 |
-| Full3・Weight30 | `FULL_W30`、Pair ablation `FULL_W30` | `33240520678` / `9711273297`; `33240833226` / `9711365135` | `build_v38_strict_loo_live.py` / `peer_theme_score`。21営業日蓄積完了までLive値はDATA REQUIRED |
+| Full3・Weight30 | `FULL_W30`、Pair ablation `FULL_W30` | `33240520678` / `9711273297`; `33240833226` / `9711365135` | `build_v38_strict_loo_live.py` / `peer_theme_score`。初回PIT backfillで現在＋exact t−20を生成。外部データ失敗時はDATA REQUIRED |
 | Initial/Partial/Peak30 Exit | Exit sensitivity / overlays：`PEAK30`, `PART25_R3` | `33250880314` / `9714502988`; `33250923735` / `9714434710` | 終値Signal→次Open execution、Partial後Entry/Peak維持 |
 | BE8 / 8週 / 10SMA / 21EMA棄却 | Exit trail/overlay variants | `33250255780`, `33250923735` | 実装なし |
 | RSI30 Headline | `RS63_TOP3_RISE30`等を再確認したが指定3数値一致なし | `33130536827` / `9670229132` | **NOT REPRODUCED**。Monitorのみ、期待数値非表示 |

@@ -148,7 +148,42 @@ jobs:
             echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build strict LOO forward-only live state
+      - name: Prepare verified PIT taxonomy bootstrap
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("v38-strict-loo-history.json")
+          if not path.is_file():
+              raise SystemExit(1)
+          try:
+              history = json.loads(path.read_text(encoding="utf-8"))
+          except (OSError, ValueError):
+              raise SystemExit(1)
+          expected = "git:79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json"
+          expected_hash = "dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39"
+          found = any(
+              isinstance(row, dict)
+              and row.get("source") == expected
+              and row.get("effective_asof") == "2026-06-22"
+              and row.get("taxonomy_sha256") == expected_hash
+              and bool(row.get("s2t"))
+              for row in history.get("taxonomy_snapshots", [])
+          )
+          raise SystemExit(0 if found else 1)
+          PY
+          then
+            echo "Verified PIT taxonomy bootstrap already persisted"
+          else
+            git fetch --depth=1 origin 79073ffd9742102c2b6e9f72d349801a10e126db
+            git cat-file -e 79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json
+          fi
+
+      - name: Build strict LOO PIT live state with exact t-20 bootstrap
         if: steps.build.outputs.skipped != 'true'
         run: |
           python build_v38_strict_loo_live.py \
@@ -394,6 +429,8 @@ jobs:
               f"- strict LOO status: {loo.get('status') or 'DATA REQUIRED'}",
               f"- strict LOO reason: {loo.get('reason') or 'NONE'}",
               f"- strict LOO history_sessions: {loo.get('history_sessions', len(sessions))}",
+              f"- strict LOO computed_snapshot_count: {loo.get('computed_snapshot_count', len(sessions))}",
+              f"- strict LOO PIT history start: {loo.get('history_start_asof') or 'NONE'}",
               f"- strict LOO latest saved date: {latest_saved or 'NONE'}",
               f"- strict LOO exact t-20 snapshot: {bool(loo.get('history_has_exact_20_session_base'))}",
               f"- strict LOO asof: {loo.get('asof') or 'NONE'}",
