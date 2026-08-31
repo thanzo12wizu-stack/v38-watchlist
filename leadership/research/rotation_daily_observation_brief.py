@@ -8,15 +8,32 @@ from typing import Any
 
 import pandas as pd
 
-STATE_BUCKETS = {
-    "CURRENT_STRENGTH": "MAINSTREAM_CURRENT_STRENGTH",
-    "EARLY_ROTATION_WATCH": "WATCH_ONLY",
-    "DISTRIBUTION_WARNING": "DISTRIBUTION_WARNING",
-    "REDEMPTION_DIVERGENCE": "HOLD_DIVERGENCE",
-    "WEAK_BREAKDOWN": "BREAKDOWN",
-    "MIXED_HOLD": "HOLD_MIXED",
-    "DATA_REQUIRED": "DATA_REQUIRED",
+# Exact upstream Rotation V2 states. The formatter never invents a new signal.
+STATE_TO_BUCKET = {
+    "CURRENT_STRENGTH": "mainstream",
+    "EARLY_ROTATION_WATCH": "watch",
+    "INTERNAL_LEAD_WATCH": "watch",
+    "FLOW_INTERNAL_DIVERGENCE_WATCH": "flow_internal_divergence",
+    "INTERNAL_WEAK_FLOW_OUT": "weak_flow_out",
+    "DISTRIBUTION_WARNING": "distribution",
+    "DISTRIBUTION_DETERIORATION_WARNING": "distribution",
+    "REDEMPTION_DIVERGENCE": "divergence",
+    "WEAK_BREAKDOWN": "breakdown",
+    "MIXED_HOLD": "mixed",
+    "DATA_REQUIRED": "data_required",
 }
+BUCKETS = (
+    "mainstream",
+    "watch",
+    "flow_internal_divergence",
+    "weak_flow_out",
+    "distribution",
+    "divergence",
+    "breakdown",
+    "mixed",
+    "data_required",
+    "unknown",
+)
 RATE_SENSITIVE = ("XLU", "XLRE")
 
 
@@ -86,29 +103,17 @@ def input_alignment(rotation: dict[str, Any], v38: dict[str, Any]) -> dict[str, 
 
 
 def rotation_buckets(matrix: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
-    out: dict[str, list[dict[str, Any]]] = {
-        "mainstream": [], "watch": [], "distribution": [], "divergence": [],
-        "breakdown": [], "mixed": [], "data_required": [],
-    }
-    target = {
-        "CURRENT_STRENGTH": "mainstream",
-        "EARLY_ROTATION_WATCH": "watch",
-        "DISTRIBUTION_WARNING": "distribution",
-        "REDEMPTION_DIVERGENCE": "divergence",
-        "WEAK_BREAKDOWN": "breakdown",
-        "MIXED_HOLD": "mixed",
-        "DATA_REQUIRED": "data_required",
-    }
+    out = {name: [] for name in BUCKETS}
     for raw in matrix:
         if not isinstance(raw, dict):
             continue
         state = str(raw.get("state") or "DATA_REQUIRED")
+        bucket = STATE_TO_BUCKET.get(state, "unknown")
         p, i, d = state_metric_source(raw)
         row = {
             "ticker": raw.get("ticker"),
             "level": raw.get("level"),
             "state": state,
-            "bucket": STATE_BUCKETS.get(state, "DATA_REQUIRED"),
             "state_evidence": raw.get("state_evidence"),
             "state_reason": raw.get("state_reason"),
             "price_score": p,
@@ -120,7 +125,7 @@ def rotation_buckets(matrix: list[dict[str, Any]]) -> dict[str, list[dict[str, A
             "flow_20d_pct_aum": num(raw.get("flow_20d_pct_aum")),
             "weekly_rsi14": num(raw.get("weekly_rsi14")),
         }
-        out[target.get(state, "data_required")].append(row)
+        out[bucket].append(row)
     for rows in out.values():
         rows.sort(key=lambda x: str(x.get("ticker") or ""))
     return out
@@ -137,29 +142,49 @@ def flow_observations(matrix: list[dict[str, Any]], n: int = 4) -> dict[str, lis
     return {"leaders": compact(leaders), "laggards": compact(laggards)}
 
 
+def _append_series_fact(facts: list[str], missing: list[str], label: str, row: Any) -> None:
+    row = row if isinstance(row, dict) else {}
+    value = num(row.get("value"))
+    if value is None:
+        missing.append(label)
+        return
+    text = f"{label} {value:.2f}"
+    change = num(row.get("change_20obs"))
+    if change is not None:
+        text += f"（20観測変化 {change:+.2f}）"
+    facts.append(text)
+
+
 def macro_facts_and_hypotheses(rotation: dict[str, Any], matrix: list[dict[str, Any]]) -> tuple[list[str], list[str], list[str]]:
     macro = rotation.get("macro_why") if isinstance(rotation.get("macro_why"), dict) else {}
-    fred = macro.get("fred") if isinstance(macro.get("fred"), dict) else {}
     facts: list[str] = []
     hypotheses: list[str] = []
     missing: list[str] = []
-    labels = {
-        "DGS10": "米10年金利",
-        "DFII10": "米10年実質金利",
-        "DTWEXBGS": "FRB Broad Dollar Index",
-        "BAMLC0A0CM": "米投資適格社債スプレッド",
-        "BAMLH0A0HYM2": "米ハイイールド社債スプレッド",
-    }
-    for key, label in labels.items():
-        row = fred.get(key) if isinstance(fred.get(key), dict) else {}
-        value, change = num(row.get("value")), num(row.get("change_20obs"))
-        if value is None:
-            missing.append(label)
-            continue
-        text = f"{label} {value:.2f}"
-        if change is not None:
-            text += f"（20観測変化 {change:+.2f}）"
-        facts.append(text)
+
+    # Rotation V2 official-direct contract.
+    rates = macro.get("rates") if isinstance(macro.get("rates"), dict) else {}
+    _append_series_fact(facts, missing, "米10年金利", rates.get("us10y"))
+    _append_series_fact(facts, missing, "米10年実質金利", rates.get("real10y"))
+    _append_series_fact(facts, missing, "FRB Broad Dollar Index", macro.get("broad_usd"))
+
+    credit = macro.get("credit") if isinstance(macro.get("credit"), dict) else {}
+    _append_series_fact(facts, missing, "米投資適格社債スプレッド", credit.get("ig_oas"))
+    _append_series_fact(facts, missing, "米ハイイールド社債スプレッド", credit.get("hy_oas"))
+
+    # Backward-compatible FRED contract, if present instead of V2 direct fields.
+    fred = macro.get("fred") if isinstance(macro.get("fred"), dict) else {}
+    if not rates and fred:
+        facts.clear()
+        missing.clear()
+        labels = {
+            "DGS10": "米10年金利",
+            "DFII10": "米10年実質金利",
+            "DTWEXBGS": "FRB Broad Dollar Index",
+            "BAMLC0A0CM": "米投資適格社債スプレッド",
+            "BAMLH0A0HYM2": "米ハイイールド社債スプレッド",
+        }
+        for key, label in labels.items():
+            _append_series_fact(facts, missing, label, fred.get(key))
 
     vix = macro.get("vix") if isinstance(macro.get("vix"), dict) else {}
     if finite(vix.get("value")):
@@ -172,30 +197,30 @@ def macro_facts_and_hypotheses(rotation: dict[str, Any], matrix: list[dict[str, 
     if headline and finite(headline.get("score")):
         rating = str(headline.get("rating") or "").strip()
         facts.append(f"Fear & Greed {float(headline['score']):.0f}" + (f" / {rating}" if rating else ""))
-    elif fg.get("quality") == "DATA_REQUIRED":
-        missing.append("Fear & Greed components")
+    else:
+        missing.append("Fear & Greed headline/components")
     if fg.get("split"):
         fears = ", ".join(map(str, fg.get("fear_components") or [])) or "none"
         greeds = ", ".join(map(str, fg.get("greed_components") or [])) or "none"
         hypotheses.append(f"Fear & Greed内部は分裂（Fear={fears} / Greed={greeds}）。Headline単独では市場内部を代表しない。")
 
     dxy = macro.get("dxy") if isinstance(macro.get("dxy"), dict) else {}
-    if dxy.get("quality") == "DATA_REQUIRED":
+    if dxy.get("quality") == "DATA_REQUIRED" or not finite(dxy.get("value")):
         missing.append("DXY（FRB Broad DollarをDXYへ代用しない）")
 
-    dgs10 = fred.get("DGS10") if isinstance(fred.get("DGS10"), dict) else {}
-    rate_change = num(dgs10.get("change_20obs"))
+    # Directional consistency only. Never a causal model or trading gate.
+    rate_row = rates.get("us10y") if rates else fred.get("DGS10")
+    rate_change = num(rate_row.get("change_20obs")) if isinstance(rate_row, dict) else None
     by_ticker = {str(r.get("ticker")): r for r in matrix if isinstance(r, dict)}
-    weak_rate_sensitive = []
+    weak_rate_sensitive: list[str] = []
     for ticker in RATE_SENSITIVE:
         row = by_ticker.get(ticker, {})
         _p, _i, delta = state_metric_source(row) if row else (None, None, None)
-        if row and (str(row.get("state")) in {"WEAK_BREAKDOWN", "DISTRIBUTION_WARNING"} or (delta is not None and delta < 0)):
+        state = str(row.get("state") or "")
+        if row and (state in {"WEAK_BREAKDOWN", "INTERNAL_WEAK_FLOW_OUT", "DISTRIBUTION_WARNING", "DISTRIBUTION_DETERIORATION_WARNING"} or (delta is not None and delta < 0)):
             weak_rate_sensitive.append(ticker)
     if rate_change is not None and rate_change > 0 and weak_rate_sensitive:
-        hypotheses.append(
-            f"米10年金利の20観測上昇と {'/'.join(weak_rate_sensitive)} の内部悪化は方向として整合する。因果推定ではなくWHY候補。"
-        )
+        hypotheses.append(f"米10年金利の20観測上昇と {'/'.join(weak_rate_sensitive)} の内部悪化は方向として整合する。因果推定ではなくWHY候補。")
 
     return facts, hypotheses, sorted(set(missing))
 
@@ -207,27 +232,23 @@ def history_events(path: Path | None, asof: str, tickers: set[str]) -> list[dict
         df = pd.read_csv(path)
     except Exception:
         return []
-    required = {"asof", "ticker", "state"}
-    if not required.issubset(df.columns):
+    if not {"asof", "ticker", "state"}.issubset(df.columns):
         return []
     df["asof"] = pd.to_datetime(df["asof"], errors="coerce")
     df = df.dropna(subset=["asof"]).sort_values(["ticker", "asof"])
     end = pd.Timestamp(asof)
     events: list[dict[str, Any]] = []
     for ticker, g in df[df["ticker"].astype(str).isin(tickers)].groupby("ticker", observed=True):
-        g = g[g.asof <= end].copy()
+        g = g[g["asof"] <= end].copy()
         if len(g) < 2:
             continue
-        states = g["state"].astype(str)
-        changed = states.ne(states.shift(1))
-        idxs = list(g.index[changed])
-        if len(idxs) <= 1:
+        state = g["state"].astype(str)
+        changed_pos = [i for i, flag in enumerate(state.ne(state.shift(1)).tolist()) if flag]
+        if len(changed_pos) <= 1:
             continue
-        row = g.loc[idxs[-1]]
-        prev_pos = g.index.get_loc(idxs[-1]) - 1
-        if prev_pos < 0:
-            continue
-        previous = g.iloc[prev_pos]
+        pos = changed_pos[-1]
+        row = g.iloc[pos]
+        previous = g.iloc[pos - 1]
         events.append({
             "ticker": str(ticker),
             "date": str(pd.Timestamp(row["asof"]).date()),
@@ -255,7 +276,7 @@ def formal_context(df: pd.DataFrame, limit_per_etf: int = 5) -> list[dict[str, A
     z["_attack_rank"] = pd.to_numeric(z.get("attack_rank"), errors="coerce")
     z["_selective_rank"] = pd.to_numeric(z.get("selective_rank"), errors="coerce")
     z["_rank"] = z["_attack_rank"].fillna(z["_selective_rank"]).fillna(1e9)
-    out = []
+    out: list[dict[str, Any]] = []
     for etf, g in z.sort_values(["etf", "_rank", "symbol"]).groupby("etf", observed=True):
         stocks = []
         for r in g.head(limit_per_etf).to_dict("records"):
@@ -290,8 +311,12 @@ def theme_context(path: Path | None) -> dict[str, Any] | None:
         compact.append({
             "etf": item.get("etf"),
             "leaders": [{
-                "symbol": x.get("symbol"), "group": x.get("group"), "phase": x.get("group_phase"),
-                "role": x.get("role"), "rs189": num(x.get("rs189")), "rs63": num(x.get("rs63")),
+                "symbol": x.get("symbol"),
+                "group": x.get("group"),
+                "phase": x.get("group_phase"),
+                "role": x.get("role"),
+                "rs189": num(x.get("rs189")),
+                "rs63": num(x.get("rs63")),
             } for x in leaders[:5] if isinstance(x, dict)],
         })
     return {"status": "AVAILABLE", "items": compact}
@@ -302,8 +327,11 @@ def v38_action(v38: dict[str, Any], aligned: bool, formal: list[dict[str, Any]])
     mode = str(market.get("mode") or "DATA_REQUIRED").upper()
     if not aligned:
         return {
-            "status": "DATA_REQUIRED", "market_mode": mode, "normal_entry_limit": None,
-            "normal_entry": "DATA REQUIRED: RotationとV38のasof不一致", "rotation_forced_exit": False,
+            "status": "DATA_REQUIRED",
+            "market_mode": mode,
+            "normal_entry_limit": None,
+            "normal_entry": "DATA REQUIRED: RotationとV38のasof不一致",
+            "rotation_forced_exit": False,
             "formal_eligible_context": formal,
         }
     limit = market.get("new_entry_limit")
@@ -319,13 +347,20 @@ def v38_action(v38: dict[str, Any], aligned: bool, formal: list[dict[str, Any]])
         text = "NORMAL ENTRY = 0。既存positionの扱いは正式V38 Redルールに従う。Rotationから追加Exitは出さない。"
     else:
         return {
-            "status": "DATA_REQUIRED", "market_mode": mode, "normal_entry_limit": None,
-            "normal_entry": "DATA REQUIRED: Market Mode不明", "rotation_forced_exit": False,
+            "status": "DATA_REQUIRED",
+            "market_mode": mode,
+            "normal_entry_limit": None,
+            "normal_entry": "DATA REQUIRED: Market Mode不明",
+            "rotation_forced_exit": False,
             "formal_eligible_context": formal,
         }
     return {
-        "status": "FORMAL_V38_CONTEXT", "market_mode": mode, "normal_entry_limit": limit,
-        "normal_entry": text, "rotation_forced_exit": False, "formal_eligible_context": formal,
+        "status": "FORMAL_V38_CONTEXT",
+        "market_mode": mode,
+        "normal_entry_limit": limit,
+        "normal_entry": text,
+        "rotation_forced_exit": False,
+        "formal_eligible_context": formal,
     }
 
 
@@ -347,16 +382,9 @@ def build_brief(
     tickers = {str(r.get("ticker")) for r in matrix if isinstance(r, dict) and r.get("ticker")}
     events = history_events(history_path, str(rotation.get("asof") or ""), tickers) if alignment["rotation_asof"] else []
     tctx = theme_context(theme_context_path)
-    quality = {
-        "alignment": alignment,
-        "macro_missing": macro_missing,
-        "industry_internal_history": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
-        "industry_pit_status": "DESCRIPTIVE_WATCH_ONLY",
-        "loo_taxonomy": (v38.get("loo") or {}).get("taxonomy") if isinstance(v38.get("loo"), dict) else None,
-        "theme_context": "AVAILABLE" if tctx else "DATA_REQUIRED",
-    }
+    unknown_states = sorted({str(x.get("state")) for x in buckets["unknown"]})
     return {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "deterministic_formatter": True,
         "asof": alignment["rotation_asof"] if alignment["same_asof"] else None,
@@ -378,12 +406,21 @@ def build_brief(
             "leadership_context": tctx or {"status": "DATA_REQUIRED"},
         },
         "v38_action": action,
-        "data_quality": quality,
+        "data_quality": {
+            "alignment": alignment,
+            "macro_missing": macro_missing,
+            "industry_internal_history": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
+            "industry_pit_status": "DESCRIPTIVE_WATCH_ONLY",
+            "loo_taxonomy": (v38.get("loo") or {}).get("taxonomy") if isinstance(v38.get("loo"), dict) else None,
+            "theme_context": "AVAILABLE" if tctx else "DATA_REQUIRED",
+            "unknown_upstream_states": unknown_states,
+        },
         "guardrails": [
             "No LLM or free-text model computes a signal; all labels come from upstream numeric state.",
             "Rotation contributes zero points to V38 ranking and is not a Gate.",
             "Industry ETF Rotation states are descriptive/WATCH only until PIT membership history is validated.",
-            "DISTRIBUTION_WARNING is a warning/context state and never forces a V38 exit.",
+            "INTERNAL_WEAK_FLOW_OUT is not relabeled Distribution; it remains a separate diagnostic state.",
+            "DISTRIBUTION_WARNING and DISTRIBUTION_DETERIORATION_WARNING are warning/context states and never force a V38 exit.",
             "Formal eligible context is not BUY; entry still requires formal Market Mode, capacity, and next-open execution.",
             "Missing inputs remain DATA REQUIRED; no proxy is silently substituted.",
         ],
@@ -427,13 +464,18 @@ def render_markdown(brief: dict[str, Any]) -> str:
     if flow["laggards"]:
         lines.append("- 20D Flow laggards: " + " / ".join(f"{x['ticker']} {fmt_money(x['flow_20d_usd'])}" for x in flow["laggards"]))
     lines.append("")
+
     sections = [
-        ("本流候補 / Current Strength", "mainstream", "descriptive current strength; future Alpha is not claimed"),
-        ("保留 / Early Rotation WATCH", "watch", "WATCH ONLY; not a buy signal"),
-        ("分配警戒", "distribution", "warning only; no forced sell"),
-        ("Divergence / Flow流出でも内部強", "divergence", "do not classify as distribution from Flow alone"),
-        ("崩れ", "breakdown", "price and internal weak"),
-        ("Mixed / Hold", "mixed", "direction disagreement or threshold not met"),
+        ("本流候補 / Current Strength", "mainstream", "現在の価格・内部の同時強さ。将来Alphaや買いを意味しない"),
+        ("保留 / Early & Internal Lead WATCH", "watch", "WATCH ONLY; price confirmation or broader alignment待ち"),
+        ("Flow流入・内部未追随", "flow_internal_divergence", "WATCH ONLY; Flowだけで昇格しない"),
+        ("内部弱＋Flow流出", "weak_flow_out", "弱化診断。Distributionとは断定しない"),
+        ("分配警戒", "distribution", "PIT検証条件に基づく警戒Context。Rotationによる強制売却なし"),
+        ("Redemption Divergence", "divergence", "Flow流出だけでDistributionと誤分類しない"),
+        ("崩れ", "breakdown", "PriceとInternalがともに弱い"),
+        ("Mixed / Hold", "mixed", "方向不一致または閾値未達"),
+        ("DATA REQUIRED", "data_required", "上流入力不足"),
+        ("Unknown upstream state", "unknown", "未知stateは勝手に意味付けしない"),
     ]
     for title, key, note in sections:
         rows = buckets[key]
@@ -454,6 +496,7 @@ def render_markdown(brief: dict[str, Any]) -> str:
         lines.append("- 仮説: 数値stateから追加で言える機械的整合性なし。")
     if brief["macro_why"]["missing"]:
         lines.append("- DATA REQUIRED: " + " / ".join(brief["macro_why"]["missing"]))
+
     lines += ["", "## 4. Theme → Stock — Formal V38 context", ""]
     formal = brief["theme_stock"]["formal_v38_context"]
     if not formal:
@@ -481,13 +524,17 @@ def render_markdown(brief: dict[str, Any]) -> str:
         lines += ["- Existing Leadership context: **DATA REQUIRED** (optional input not supplied)", ""]
 
     lines += ["## 5. V38 ACTION", "", f"- **{action.get('normal_entry')}**"]
-    watch_names = [x["ticker"] for x in buckets["watch"]]
+    watch_names = [x["ticker"] for x in buckets["watch"] + buckets["flow_internal_divergence"]]
+    weak_names = [x["ticker"] for x in buckets["weak_flow_out"]]
     dist_names = [x["ticker"] for x in buckets["distribution"]]
     if watch_names:
         lines.append("- WATCH ONLY: " + " / ".join(watch_names))
+    if weak_names:
+        lines.append("- WEAK/FLOW-OUT WATCH: " + " / ".join(weak_names) + " — Distributionとは断定しない")
     if dist_names:
         lines.append("- DISTRIBUTION WATCH: " + " / ".join(dist_names) + " — Rotationによる強制売却なし")
     lines.append("- Formal eligible names above are context only; **BUY label is not generated**.")
+
     lines += ["", "## 6. State transitions / Data quality", ""]
     events = obs["state_transitions"]
     if events:
@@ -498,6 +545,8 @@ def render_markdown(brief: dict[str, Any]) -> str:
     lines.append(f"- Input alignment: **{alignment['status']}** (Rotation={alignment['rotation_asof']} / V38={alignment['v38_asof']})")
     lines.append(f"- Industry internal trend history: {brief['data_quality']['industry_internal_history']}")
     lines.append(f"- strict LOO taxonomy: {brief['data_quality'].get('loo_taxonomy') or 'DATA REQUIRED'}")
+    if brief["data_quality"]["unknown_upstream_states"]:
+        lines.append("- Unknown upstream states: " + " / ".join(brief["data_quality"]["unknown_upstream_states"]))
     lines += ["", "### Guardrails"]
     lines.extend(f"- {x}" for x in brief["guardrails"])
     return "\n".join(lines).rstrip() + "\n"
@@ -532,6 +581,7 @@ def main() -> None:
         "market_mode": brief["v38_action"].get("market_mode"),
         "normal_entry_limit": brief["v38_action"].get("normal_entry_limit"),
         "rotation_forced_exit": brief["v38_action"].get("rotation_forced_exit"),
+        "unknown_states": brief["data_quality"].get("unknown_upstream_states"),
         "formal_context_etfs": [x["etf"] for x in brief["theme_stock"]["formal_v38_context"]],
     }, ensure_ascii=False, indent=2))
 
