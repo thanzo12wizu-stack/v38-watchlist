@@ -1,0 +1,45 @@
+            "desired_pct": (sleeve_live.get("normal_stock") or {}).get("desired_pct") if sleeve_ready else None,
+            "position_count": (sleeve_live.get("normal_stock") or {}).get("position_count") if sleeve_ready else None,
+            "pending": (sleeve_live.get("normal_stock") or {}).get("pending") if sleeve_ready else None,
+        },
+        "gross100_allocation": gross_state,
+        "rotation_intelligence": {
+            "role": "WHERE_ONLY_NOT_A_TRADE_RULE",
+            "exact_etf_fund_flow": "DATA REQUIRED",
+            "internal_advance_decline": "DATA REQUIRED",
+            "internal_obv": "DATA REQUIRED",
+            "macro_live": "DATA REQUIRED",
+            "transition_history": "DATA REQUIRED",
+            "volume_is_not_fund_flow": True,
+        },
+        "gross_limit_pct": 100,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--legacy", default="command-center.html")
+    parser.add_argument("--out", default="v38-live-state.json")
+    parser.add_argument("--sector-snapshot", default="sector_snapshot.json")
+    parser.add_argument("--market-cap", default="mktcap.json")
+    parser.add_argument("--industry", default="industry_map.json")
+    parser.add_argument("--revenue", default=None)
+    parser.add_argument("--universe", default="universe.csv")
+    parser.add_argument("--strict-loo", default="v38-strict-loo-live.json")
+    parser.add_argument("--tqqq-panic", default="tqqq-panic-state.json")
+    parser.add_argument("--sleeve-live", default=None)
+    args = parser.parse_args()
+    state = build_state(
+        Path(args.legacy), sector_snapshot_path=Path(args.sector_snapshot),
+        market_cap_path=Path(args.market_cap), industry_path=Path(args.industry),
+        revenue_path=Path(args.revenue) if args.revenue else None,
+        universe_path=Path(args.universe), strict_loo_path=Path(args.strict_loo),
+        tqqq_panic_path=Path(args.tqqq_panic),
+        sleeve_live_path=Path(args.sleeve_live) if args.sleeve_live else None,
+    )
+    Path(args.out).write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {args.out}: {state['market']['mode']} / {len(state['candidates'])} candidates")
+
+
+if __name__ == "__main__":
+    main()
