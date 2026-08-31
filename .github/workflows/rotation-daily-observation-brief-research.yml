@@ -12,6 +12,7 @@ on:
       - leadership/research/rotation_live/latest.json
       - leadership/research/rotation_live/latest_matrix.csv
       - leadership/research/rotation_live/history.csv
+      - leadership/research/rotation_theme_stock_context/rotation_theme_stock_context.json
       - .github/workflows/rotation-daily-observation-brief-research.yml
 
 permissions:
@@ -59,21 +60,28 @@ jobs:
             --batch-size 80
 
       - name: Build deterministic Daily Observation Brief
+        shell: bash
         run: |
+          set -euo pipefail
           rm -rf leadership/research/rotation_daily_observation_brief
-          python leadership/research/rotation_daily_observation_brief.py \
-            --rotation leadership/research/rotation_live/latest.json \
-            --history leadership/research/rotation_live/history.csv \
-            --v38 leadership/research/rotation_v38_readonly_crosscheck/rotation_v38_readonly_crosscheck.json \
-            --v38-csv leadership/research/rotation_v38_readonly_crosscheck/rotation_v38_readonly_crosscheck.csv \
+          args=(
+            --rotation leadership/research/rotation_live/latest.json
+            --history leadership/research/rotation_live/history.csv
+            --v38 leadership/research/rotation_v38_readonly_crosscheck/rotation_v38_readonly_crosscheck.json
+            --v38-csv leadership/research/rotation_v38_readonly_crosscheck/rotation_v38_readonly_crosscheck.csv
             --output leadership/research/rotation_daily_observation_brief
+          )
+          THEME_CONTEXT="leadership/research/rotation_theme_stock_context/rotation_theme_stock_context.json"
+          if [[ -f "$THEME_CONTEXT" ]]; then
+            args+=(--theme-context "$THEME_CONTEXT")
+          fi
+          python leadership/research/rotation_daily_observation_brief.py "${args[@]}"
 
       - name: Validate output boundaries
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
           root = Path('leadership/research/rotation_daily_observation_brief')
           data = json.loads((root / 'daily_observation_brief.json').read_text())
           if data.get('research_only') is not True:
@@ -104,6 +112,7 @@ jobs:
               'market_mode': mode,
               'normal_entry_limit': action.get('normal_entry_limit'),
               'rotation_forced_exit': action.get('rotation_forced_exit'),
+              'theme_context': ((data.get('theme_stock') or {}).get('leadership_context') or {}).get('status'),
               'flow': (data.get('observations') or {}).get('flow'),
               'buckets': {k: [x.get('ticker') for x in v] for k, v in ((data.get('observations') or {}).get('rotation_buckets') or {}).items()},
           }, ensure_ascii=False, indent=2))
@@ -131,7 +140,6 @@ jobs:
           cp -a "$SRC" "$TMP"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           for attempt in 1 2 3; do
             git fetch origin "$BRANCH"
             git reset --hard "origin/$BRANCH"
