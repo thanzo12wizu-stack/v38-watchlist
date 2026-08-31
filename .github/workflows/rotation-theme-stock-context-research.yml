@@ -84,8 +84,19 @@ jobs:
           total=sum(int(x.get('leadership_matches') or 0) for x in items)
           if total < 10:
               raise SystemExit(f'insufficient Leadership intersection: {total}')
-          if any('Rotation stock score' in json.dumps(x, ensure_ascii=False) for x in items):
-              raise SystemExit('unexpected Rotation stock score')
+
+          forbidden_keys={'rotation_stock_score','rotation_rank','rotation_entry','rotation_signal'}
+          def walk(obj, path='root'):
+              if isinstance(obj, dict):
+                  for k,v in obj.items():
+                      if str(k).lower() in forbidden_keys:
+                          raise SystemExit(f'unexpected Rotation stock key at {path}.{k}')
+                      walk(v, f'{path}.{k}')
+              elif isinstance(obj, list):
+                  for i,v in enumerate(obj):
+                      walk(v, f'{path}[{i}]')
+          walk(items)
+
           print(json.dumps({
               'leadership_market_asof': (d.get('leadership_coverage') or {}).get('market_asof'),
               'leadership_confidence': (d.get('leadership_coverage') or {}).get('confidence'),
@@ -101,6 +112,7 @@ jobs:
           PY
 
       - name: Upload research-only context
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rotation-theme-stock-context-research
