@@ -1,0 +1,32 @@
+name: V38 Gross100 dev snapshot
+
+on:
+  push:
+    branches: [fix/v38-gross100-live-20260901]
+    paths:
+      - '.github/workflows/v38-gross100-dev-snapshot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v38-gross100-dev-snapshot
+          path: |
+            build_v38_companion.py
+            build_v38_strict_loo_live.py
+            build_v38_tqqq_live.py
+            v38_rules.py
+            command-center-v38.html
+            .github/workflows/dashboard.yml
+            .github/workflows/v38-audit-check.yml
+            tests/test_v38_audit.py
+            tests/test_v38_rules.py
+            docs/V38_RULEBOOK_AUDIT_20260830.md
+            scripts/export_public_site.py
+          retention-days: 1
