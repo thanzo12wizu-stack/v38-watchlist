@@ -1,0 +1,74 @@
+name: V38 sleeve live smoke once
+
+on:
+  push:
+    branches: [fix/v38-gross100-live-20260901]
+    paths:
+      - 'build_v38_sleeve_live.py'
+      - 'build_v38_companion.py'
+      - 'v38-normal-sleeve-seed.json'
+      - '.github/workflows/v38-sleeve-live-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Compile and unit tests
+        run: |
+          python -m py_compile build_v38_sleeve_live.py build_v38_companion.py
+          pytest -q tests/test_v38_sleeve_live.py tests/test_v38_companion.py
+      - name: Build live sleeve snapshot
+        run: |
+          cp tqqq-panic-state.json /tmp/tqqq-panic-state.json
+          python build_v38_sleeve_live.py \
+            --companion v38-live-state.json \
+            --state /tmp/no-prior-sleeve.json \
+            --seed v38-normal-sleeve-seed.json \
+            --strict-history v38-strict-loo-history.json \
+            --tqqq-state /tmp/tqqq-panic-state.json \
+            --out /tmp/v38-sleeve-state.json
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic /tmp/tqqq-panic-state.json \
+            --sleeve-state /tmp/v38-sleeve-state.json \
+            --out /tmp/v38-live-state.json
+          python - <<'PY2'
+          import json
+          from pathlib import Path
+          sleeve=json.loads(Path('/tmp/v38-sleeve-state.json').read_text())
+          live=json.loads(Path('/tmp/v38-live-state.json').read_text())
+          assert sleeve['status']=='READY', sleeve
+          assert live['gross100_allocation']['status']=='LIVE ALLOCATION READY', live['gross100_allocation']
+          assert live['panic_reset']['status']=='READY / LIVE', live['panic_reset']
+          print(json.dumps({
+            'asof':live['asof'],
+            'normal_desired':live['gross100_allocation']['normal_stock_desired_pct'],
+            'reset_desired':live['gross100_allocation']['reset_desired_pct'],
+            'tqqq_desired':live['gross100_allocation']['tqqq_desired_pct'],
+            'normal_final':live['gross100_allocation']['normal_stock_allocated_pct'],
+            'reset_final':live['gross100_allocation']['reset_allocated_pct'],
+            'tqqq_final':live['gross100_allocation']['tqqq_allocated_pct'],
+            'gross':live['gross100_allocation']['gross_allocated_pct'],
+            'reset_monitor':live['panic_reset'].get('monitor_summary',{}),
+            'nearest':(live['panic_reset'].get('monitor') or [])[:10],
+          }, ensure_ascii=False, indent=2))
+          PY2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v38-sleeve-live-smoke
+          path: |
+            /tmp/v38-sleeve-state.json
+            /tmp/v38-live-state.json
+            /tmp/tqqq-panic-state.json
+          retention-days: 2
