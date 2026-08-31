@@ -1,0 +1,581 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "deterministic_formatter": true,
+  "asof": "2026-08-28",
+  "input_alignment": {
+    "status": "OK",
+    "rotation_asof": "2026-08-28",
+    "v38_asof": "2026-08-28",
+    "same_asof": true
+  },
+  "market_when": {
+    "mode": "STOP",
+    "nqsar": "Yellow",
+    "nqsar_asof": "2026-08-28",
+    "breadth50": 54.24042272126817,
+    "breadth_valid": 3785,
+    "breadth_observed": 3823,
+    "new_entry_limit": 0,
+    "selective_existing_positions_not_force_trimmed": true
+  },
+  "observations": {
+    "flow": {
+      "leaders": [
+        {
+          "ticker": "XBI",
+          "flow_20d_usd": 981784860.05,
+          "state": "CURRENT_STRENGTH"
+        },
+        {
+          "ticker": "XLI",
+          "flow_20d_usd": 381071875.3000001,
+          "state": "FLOW_INTERNAL_DIVERGENCE_WATCH"
+        },
+        {
+          "ticker": "XME",
+          "flow_20d_usd": 334186232.55,
+          "state": "EARLY_ROTATION_WATCH"
+        },
+        {
+          "ticker": "XLY",
+          "flow_20d_usd": 173513804.94999987,
+          "state": "WEAK_BREAKDOWN"
+        }
+      ],
+      "laggards": [
+        {
+          "ticker": "SOXX",
+          "flow_20d_usd": -3632206747.6499996,
+          "state": "INTERNAL_WEAK_FLOW_OUT"
+        },
+        {
+          "ticker": "XLF",
+          "flow_20d_usd": -3261237732.25,
+          "state": "DISTRIBUTION_DETERIORATION_WARNING"
+        },
+        {
+          "ticker": "XLK",
+          "flow_20d_usd": -1090681590.7500005,
+          "state": "MIXED_HOLD"
+        },
+        {
+          "ticker": "XLP",
+          "flow_20d_usd": -362043940.45000005,
+          "state": "INTERNAL_WEAK_FLOW_OUT"
+        }
+      ]
+    },
+    "rotation_buckets": {
+      "mainstream": [
+        {
+          "ticker": "XBI",
+          "level": "INDUSTRY",
+          "state": "CURRENT_STRENGTH",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格・内部が同時に強い現在状態。PIT研究では将来Alphaを確認できず、買いシグナルではない",
+          "price_score": 93.33333333333334,
+          "internal_score": 80.0,
+          "internal_delta20": 53.33333333333333,
+          "flow_1d_usd": -71496242.1,
+          "flow_5d_usd": 267911692.07499996,
+          "flow_20d_usd": 981784860.05,
+          "flow_20d_pct_aum": 8.182391682323386,
+          "weekly_rsi14": 66.19226764694136
+        },
+        {
+          "ticker": "XLB",
+          "level": "SECTOR",
+          "state": "CURRENT_STRENGTH",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格・内部が同時に強い現在状態。PIT研究では将来Alphaを確認できず、買いシグナルではない",
+          "price_score": 77.27272727272728,
+          "internal_score": 81.81818181818183,
+          "internal_delta20": 45.45454545454546,
+          "flow_1d_usd": 13313565.75,
+          "flow_5d_usd": -10805180.34999998,
+          "flow_20d_usd": 91517677.89999995,
+          "flow_20d_pct_aum": 1.038073522308357,
+          "weekly_rsi14": 60.65754723286025
+        }
+      ],
+      "watch": [
+        {
+          "ticker": "IGV",
+          "level": "INDUSTRY",
+          "state": "INTERNAL_LEAD_WATCH",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格より内部参加が強い。観測用で将来Alphaは主張しない",
+          "price_score": 50.0,
+          "internal_score": 86.66666666666667,
+          "internal_delta20": 0.0,
+          "flow_1d_usd": 651055711.6,
+          "flow_5d_usd": 358671292.7,
+          "flow_20d_usd": 80050331.19999981,
+          "flow_20d_pct_aum": 0.5188512088726316,
+          "weekly_rsi14": 64.61397629192368
+        },
+        {
+          "ticker": "XLC",
+          "level": "SECTOR",
+          "state": "INTERNAL_LEAD_WATCH",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格より内部参加が強い。観測用で将来Alphaは主張しない",
+          "price_score": 27.272727272727273,
+          "internal_score": 81.81818181818183,
+          "internal_delta20": 63.63636363636364,
+          "flow_1d_usd": 0.0,
+          "flow_5d_usd": -151453931.69999987,
+          "flow_20d_usd": -131875998.65000024,
+          "flow_20d_pct_aum": -0.5910351583282368,
+          "weekly_rsi14": 51.855579948579106
+        },
+        {
+          "ticker": "XME",
+          "level": "INDUSTRY",
+          "state": "EARLY_ROTATION_WATCH",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "内部改善＋Flow流入が価格に先行。PIT研究では買いシグナル不採用、WATCHのみ",
+          "price_score": 43.33333333333333,
+          "internal_score": 93.33333333333333,
+          "internal_delta20": 73.33333333333333,
+          "flow_1d_usd": 12297721.2,
+          "flow_5d_usd": 129960661.59999995,
+          "flow_20d_usd": 334186232.55,
+          "flow_20d_pct_aum": 6.619852583674246,
+          "weekly_rsi14": 57.25245818417836
+        }
+      ],
+      "flow_internal_divergence": [
+        {
+          "ticker": "XLI",
+          "level": "SECTOR",
+          "state": "FLOW_INTERNAL_DIVERGENCE_WATCH",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "ETF Flow流入に内部参加が追随していない。WATCHのみ",
+          "price_score": 63.63636363636364,
+          "internal_score": 27.27272727272727,
+          "internal_delta20": -27.27272727272727,
+          "flow_1d_usd": -366641190.04999995,
+          "flow_5d_usd": -284485346.45000017,
+          "flow_20d_usd": 381071875.3000001,
+          "flow_20d_pct_aum": 1.1587625654028655,
+          "weekly_rsi14": 52.79679308491637
+        }
+      ],
+      "weak_flow_out": [
+        {
+          "ticker": "SOXX",
+          "level": "INDUSTRY",
+          "state": "INTERNAL_WEAK_FLOW_OUT",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ",
+          "price_score": 53.333333333333336,
+          "internal_score": 26.666666666666668,
+          "internal_delta20": 13.333333333333334,
+          "flow_1d_usd": -152531494.5,
+          "flow_5d_usd": 887883906.4499996,
+          "flow_20d_usd": -3632206747.6499996,
+          "flow_20d_pct_aum": -8.71201145406088,
+          "weekly_rsi14": 53.24857829985849
+        },
+        {
+          "ticker": "XLP",
+          "level": "SECTOR",
+          "state": "INTERNAL_WEAK_FLOW_OUT",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ",
+          "price_score": 59.090909090909086,
+          "internal_score": 45.45454545454545,
+          "internal_delta20": 0.0,
+          "flow_1d_usd": 29788700.55,
+          "flow_5d_usd": -274810497.84999985,
+          "flow_20d_usd": -362043940.45000005,
+          "flow_20d_pct_aum": -2.4894726055685257,
+          "weekly_rsi14": 56.25556999549107
+        },
+        {
+          "ticker": "XLRE",
+          "level": "SECTOR",
+          "state": "INTERNAL_WEAK_FLOW_OUT",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ",
+          "price_score": 45.45454545454545,
+          "internal_score": 18.181818181818183,
+          "internal_delta20": -18.181818181818183,
+          "flow_1d_usd": 13393836.3,
+          "flow_5d_usd": -4514746.800000038,
+          "flow_20d_usd": -127003371.45000003,
+          "flow_20d_pct_aum": -1.5115130274416948,
+          "weekly_rsi14": 53.37858921716475
+        }
+      ],
+      "distribution": [
+        {
+          "ticker": "XLE",
+          "level": "SECTOR",
+          "state": "DISTRIBUTION_DETERIORATION_WARNING",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "PIT delta型: Price>=70・Internal20D変化<=-20pt・Flow<=0。2024+ 40D支持、20D block CIは0跨ぎ。早期警戒Contextのみ",
+          "price_score": 90.9090909090909,
+          "internal_score": 72.72727272727273,
+          "internal_delta20": -27.272727272727266,
+          "flow_1d_usd": 326941093.5,
+          "flow_5d_usd": -415429810.2,
+          "flow_20d_usd": -297119105.2999998,
+          "flow_20d_pct_aum": -0.7331743478251085,
+          "weekly_rsi14": 63.13655940681396
+        },
+        {
+          "ticker": "XLF",
+          "level": "SECTOR",
+          "state": "DISTRIBUTION_DETERIORATION_WARNING",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "PIT delta型: Price>=70・Internal20D変化<=-20pt・Flow<=0。2024+ 40D支持、20D block CIは0跨ぎ。早期警戒Contextのみ",
+          "price_score": 77.27272727272727,
+          "internal_score": 63.63636363636363,
+          "internal_delta20": -27.272727272727273,
+          "flow_1d_usd": -497967580.2,
+          "flow_5d_usd": -1191262996.749999,
+          "flow_20d_usd": -3261237732.25,
+          "flow_20d_pct_aum": -5.900424225916177,
+          "weekly_rsi14": 69.95355041531744
+        }
+      ],
+      "divergence": [
+        {
+          "ticker": "XLV",
+          "level": "SECTOR",
+          "state": "REDEMPTION_DIVERGENCE",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格・内部は強いがETF Flowは流出。売り抜けと断定しない",
+          "price_score": 68.18181818181819,
+          "internal_score": 90.9090909090909,
+          "internal_delta20": 18.181818181818173,
+          "flow_1d_usd": 60069869.65,
+          "flow_5d_usd": -444981998.40000004,
+          "flow_20d_usd": -95164879.24999985,
+          "flow_20d_pct_aum": -0.2155714374743437,
+          "weekly_rsi14": 67.84423904045393
+        }
+      ],
+      "breakdown": [
+        {
+          "ticker": "XLU",
+          "level": "SECTOR",
+          "state": "WEAK_BREAKDOWN",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格・内部がともに弱い",
+          "price_score": 9.090909090909092,
+          "internal_score": 9.090909090909092,
+          "internal_delta20": 0.0,
+          "flow_1d_usd": 0.0,
+          "flow_5d_usd": 90705063.10000002,
+          "flow_20d_usd": -45482081.85000017,
+          "flow_20d_pct_aum": -0.2042813546995044,
+          "weekly_rsi14": 42.05273464185497
+        },
+        {
+          "ticker": "XLY",
+          "level": "SECTOR",
+          "state": "WEAK_BREAKDOWN",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "価格・内部がともに弱い",
+          "price_score": 22.727272727272727,
+          "internal_score": 36.36363636363637,
+          "internal_delta20": -18.181818181818173,
+          "flow_1d_usd": 0.0,
+          "flow_5d_usd": -206122586.74999982,
+          "flow_20d_usd": 173513804.94999987,
+          "flow_20d_pct_aum": 0.7667176529818569,
+          "weekly_rsi14": 51.20875575980593
+        }
+      ],
+      "mixed": [
+        {
+          "ticker": "XLK",
+          "level": "SECTOR",
+          "state": "MIXED_HOLD",
+          "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL",
+          "state_reason": "方向不一致または閾値未達",
+          "price_score": 59.090909090909086,
+          "internal_score": 54.54545454545454,
+          "internal_delta20": 27.27272727272727,
+          "flow_1d_usd": -113226921.6,
+          "flow_5d_usd": -38462150.24999927,
+          "flow_20d_usd": -1090681590.7500005,
+          "flow_20d_pct_aum": -0.8863612872959437,
+          "weekly_rsi14": 61.07148257449786
+        }
+      ],
+      "data_required": [],
+      "unknown": []
+    },
+    "state_transitions": []
+  },
+  "macro_why": {
+    "facts": [
+      "米10年金利 4.73（20観測変化 -0.02）",
+      "米10年実質金利 2.42（20観測変化 -0.05）",
+      "FRB Broad Dollar Index 118.06（20観測変化 -2.65）",
+      "VIX 14.43",
+      "Fear & Greed 54 / neutral"
+    ],
+    "hypotheses": [
+      "Fear & Greed内部は分裂（Fear=market_momentum_sp500, stock_price_strength, safe_haven_demand / Greed=stock_price_breadth, put_call_options, junk_bond_demand）。Headline単独では市場内部を代表しない。"
+    ],
+    "missing": [
+      "DXY（FRB Broad DollarをDXYへ代用しない）",
+      "米ハイイールド社債スプレッド",
+      "米投資適格社債スプレッド"
+    ],
+    "rule": "WHY/context only; no causal claim and no V38 Gate/Exit effect"
+  },
+  "theme_stock": {
+    "formal_v38_context": [
+      {
+        "etf": "IGV",
+        "eligible_count": 4,
+        "stocks": [
+          {
+            "symbol": "RNG",
+            "attack_rank": 9,
+            "selective_rank": 27,
+            "rs189": 97.60479041916167,
+            "rs63": 97.2689075630252,
+            "peer_theme": "コラボレーションSaaS",
+            "peer_theme_score": 81.1218437552957,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "FIVN",
+            "attack_rank": 106,
+            "selective_rank": 100,
+            "rs189": 90.37639007698888,
+            "rs63": 92.64705882352942,
+            "peer_theme": "AIエンタープライズSaaS",
+            "peer_theme_score": 62.18696454461579,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "PANW",
+            "attack_rank": 122,
+            "selective_rank": 57,
+            "rs189": 94.56800684345596,
+            "rs63": 88.99159663865545,
+            "peer_theme": "8. デジタルインフラ・先進テック",
+            "peer_theme_score": 40.65770396731251,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "ZETA",
+            "attack_rank": 126,
+            "selective_rank": 106,
+            "rs189": 89.13601368691188,
+            "rs63": 90.21008403361344,
+            "peer_theme": "AIデータ基盤/データクラウド",
+            "peer_theme_score": 42.85560228620727,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          }
+        ]
+      },
+      {
+        "etf": "XBI",
+        "eligible_count": 17,
+        "stocks": [
+          {
+            "symbol": "MRNA",
+            "attack_rank": 1,
+            "selective_rank": 4,
+            "rs189": 99.74337040205305,
+            "rs63": 99.91596638655464,
+            "peer_theme": "mRNA/ワクチン",
+            "peer_theme_score": 85.5674179517596,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "TWST",
+            "attack_rank": 2,
+            "selective_rank": 6,
+            "rs189": 99.61505560307955,
+            "rs63": 99.53781512605042,
+            "peer_theme": "ゲノミクス/シーケンシング",
+            "peer_theme_score": 83.86714116251483,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "SLS",
+            "attack_rank": 13,
+            "selective_rank": 2,
+            "rs189": 99.95722840034216,
+            "rs63": 93.19327731092436,
+            "peer_theme": "6. バイオ・ヘルスケア",
+            "peer_theme_score": 73.394615242965,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "ERAS",
+            "attack_rank": 15,
+            "selective_rank": 3,
+            "rs189": 99.8289136013687,
+            "rs63": 92.98319327731092,
+            "peer_theme": "6. バイオ・ヘルスケア",
+            "peer_theme_score": 73.45478371468582,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "IMMX",
+            "attack_rank": 19,
+            "selective_rank": 11,
+            "rs189": 99.10179640718565,
+            "rs63": 96.17647058823528,
+            "peer_theme": "6. バイオ・ヘルスケア",
+            "peer_theme_score": 73.27599128092467,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          }
+        ]
+      }
+    ],
+    "leadership_context": {
+      "status": "DATA_REQUIRED"
+    }
+  },
+  "v38_action": {
+    "status": "FORMAL_V38_CONTEXT",
+    "market_mode": "STOP",
+    "normal_entry_limit": 0,
+    "normal_entry": "NORMAL ENTRY = 0。Rotation/Themeが強くても通常個別株の新規Entryはしない。",
+    "rotation_forced_exit": false,
+    "formal_eligible_context": [
+      {
+        "etf": "IGV",
+        "eligible_count": 4,
+        "stocks": [
+          {
+            "symbol": "RNG",
+            "attack_rank": 9,
+            "selective_rank": 27,
+            "rs189": 97.60479041916167,
+            "rs63": 97.2689075630252,
+            "peer_theme": "コラボレーションSaaS",
+            "peer_theme_score": 81.1218437552957,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "FIVN",
+            "attack_rank": 106,
+            "selective_rank": 100,
+            "rs189": 90.37639007698888,
+            "rs63": 92.64705882352942,
+            "peer_theme": "AIエンタープライズSaaS",
+            "peer_theme_score": 62.18696454461579,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "PANW",
+            "attack_rank": 122,
+            "selective_rank": 57,
+            "rs189": 94.56800684345596,
+            "rs63": 88.99159663865545,
+            "peer_theme": "8. デジタルインフラ・先進テック",
+            "peer_theme_score": 40.65770396731251,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "ZETA",
+            "attack_rank": 126,
+            "selective_rank": 106,
+            "rs189": 89.13601368691188,
+            "rs63": 90.21008403361344,
+            "peer_theme": "AIデータ基盤/データクラウド",
+            "peer_theme_score": 42.85560228620727,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          }
+        ]
+      },
+      {
+        "etf": "XBI",
+        "eligible_count": 17,
+        "stocks": [
+          {
+            "symbol": "MRNA",
+            "attack_rank": 1,
+            "selective_rank": 4,
+            "rs189": 99.74337040205305,
+            "rs63": 99.91596638655464,
+            "peer_theme": "mRNA/ワクチン",
+            "peer_theme_score": 85.5674179517596,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "TWST",
+            "attack_rank": 2,
+            "selective_rank": 6,
+            "rs189": 99.61505560307955,
+            "rs63": 99.53781512605042,
+            "peer_theme": "ゲノミクス/シーケンシング",
+            "peer_theme_score": 83.86714116251483,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "SLS",
+            "attack_rank": 13,
+            "selective_rank": 2,
+            "rs189": 99.95722840034216,
+            "rs63": 93.19327731092436,
+            "peer_theme": "6. バイオ・ヘルスケア",
+            "peer_theme_score": 73.394615242965,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "ERAS",
+            "attack_rank": 15,
+            "selective_rank": 3,
+            "rs189": 99.8289136013687,
+            "rs63": 92.98319327731092,
+            "peer_theme": "6. バイオ・ヘルスケア",
+            "peer_theme_score": 73.45478371468582,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          },
+          {
+            "symbol": "IMMX",
+            "attack_rank": 19,
+            "selective_rank": 11,
+            "rs189": 99.10179640718565,
+            "rs63": 96.17647058823528,
+            "peer_theme": "6. バイオ・ヘルスケア",
+            "peer_theme_score": 73.27599128092467,
+            "v38_status": "V38_ELIGIBLE_BUT_MARKET_STOPPED"
+          }
+        ]
+      }
+    ]
+  },
+  "data_quality": {
+    "alignment": {
+      "status": "OK",
+      "rotation_asof": "2026-08-28",
+      "v38_asof": "2026-08-28",
+      "same_asof": true
+    },
+    "macro_missing": [
+      "DXY（FRB Broad DollarをDXYへ代用しない）",
+      "米ハイイールド社債スプレッド",
+      "米投資適格社債スプレッド"
+    ],
+    "industry_internal_history": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
+    "industry_pit_status": "DESCRIPTIVE_WATCH_ONLY",
+    "loo_taxonomy": "CURRENT_S2T_NOT_PIT",
+    "theme_context": "DATA_REQUIRED",
+    "unknown_upstream_states": []
+  },
+  "guardrails": [
+    "No LLM or free-text model computes a signal; all labels come from upstream numeric state.",
+    "Rotation contributes zero points to V38 ranking and is not a Gate.",
+    "Industry ETF Rotation states are descriptive/WATCH only until PIT membership history is validated.",
+    "INTERNAL_WEAK_FLOW_OUT is not relabeled Distribution; it remains a separate diagnostic state.",
+    "DISTRIBUTION_WARNING and DISTRIBUTION_DETERIORATION_WARNING are warning/context states and never force a V38 exit.",
+    "Formal eligible context is not BUY; entry still requires formal Market Mode, capacity, and next-open execution.",
+    "Missing inputs remain DATA REQUIRED; no proxy is silently substituted."
+  ]
+}
