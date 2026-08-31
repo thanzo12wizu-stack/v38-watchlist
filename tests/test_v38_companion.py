@@ -400,3 +400,14 @@ def test_tqqq_stale_route_is_data_required_and_not_used_for_gross(tmp_path):
     assert state["normal_tqqq"]["underlying_target_pct"] is None
     assert state["panic_tqqq"]["status"] == "DATA REQUIRED"
     assert state["gross100_allocation"]["gross_allocated_pct"] is None
+
+
+def test_audited_companion_leads_with_action_and_never_labels_stop_watchlist_as_buy():
+    html = Path("command-center-v38.html").read_text(encoding="utf-8")
+    assert "TODAY'S ACTION" in html
+    assert "今日は新規で買わない" in html
+    assert "今、買ってよい候補" in html
+    assert "買付候補なし" in html
+    assert "WATCH ONLY / 新規不可" in html
+    assert "strict LOO 70/30順位が揃うまで" in html
+    assert "DATA REQUIRED・判断しない" in html
