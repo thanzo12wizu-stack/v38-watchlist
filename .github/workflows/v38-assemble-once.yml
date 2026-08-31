@@ -1,0 +1,65 @@
+name: V38 assemble final once
+
+on:
+  push:
+    branches: [feat/v38-live-sleeves-rsi30-monitor-20260901]
+    paths:
+      - '.github/workflows/v38-assemble-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feat/v38-live-sleeves-rsi30-monitor-20260901
+          fetch-depth: 1
+      - name: Assemble exact final files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tmp/v38assemble/00.*.part > build_v38_sleeve_live.py
+          cat tmp/v38assemble/01.*.part > build_v38_companion.py
+          cat tmp/v38assemble/02.*.part > command-center-v38.html
+          cat tmp/v38assemble/03.*.part > .github/workflows/dashboard.yml
+          cat tmp/v38assemble/04.*.part > .github/workflows/v38-audit-check.yml
+          cat tmp/v38assemble/05.*.part > tests/test_v38_companion.py
+          cat tmp/v38assemble/06.*.part > tests/test_v38_sleeve_live.py
+          cat tmp/v38assemble/07.*.part > v38-normal-sleeve-seed.json
+
+          python -m py_compile build_v38_sleeve_live.py build_v38_companion.py
+          python -m json.tool v38-normal-sleeve-seed.json >/dev/null
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('command-center-v38.html').read_text(encoding='utf-8')
+          assert 'data-tab="resetwatch"' in html
+          assert 'RS63_TOP3_RISE30_SIGTOP3' in html
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S | re.I)
+          if not scripts:
+              raise SystemExit('no inline script')
+          Path('/tmp/v38-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/v38-inline.js
+
+          grep -q '"exit_i": i + RESET_HOLD' build_v38_sleeve_live.py
+          ! grep -q 'exit_i.*min(i + RESET_HOLD' build_v38_sleeve_live.py
+          grep -q '33405477190' build_v38_companion.py
+          grep -q 'v38-sleeve-state.json' .github/workflows/dashboard.yml
+          grep -q 'tests/test_v38_sleeve_live.py' .github/workflows/v38-audit-check.yml
+
+      - name: Replace staging with final eight-file change set
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r tmp/v38assemble .github/workflows/v38-assemble-once.yml
+          git add build_v38_sleeve_live.py build_v38_companion.py command-center-v38.html \
+            .github/workflows/dashboard.yml .github/workflows/v38-audit-check.yml \
+            tests/test_v38_companion.py tests/test_v38_sleeve_live.py v38-normal-sleeve-seed.json
+          git commit -m 'Complete V38 live sleeves and RSI30 monitor'
+          git push origin HEAD:feat/v38-live-sleeves-rsi30-monitor-20260901
