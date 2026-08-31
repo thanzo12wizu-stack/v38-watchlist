@@ -10,7 +10,7 @@ import requests
 
 import rotation_live_snapshot as rotation
 
-INDUSTRY_ETFS = ["XBI", "XME", "SOXX", "IGV"]
+CONTEXT_ETFS = rotation.MATRIX_ETFS
 PHASES = {"EMERGING", "LEADING", "MATURE", "LOSING"}
 LEADER_ROLES = {"PIONEER", "LEADER"}
 
@@ -109,7 +109,7 @@ def compact_matrix(row: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Join current Industry ETF membership to the existing Leadership exported group/stock context")
+    ap = argparse.ArgumentParser(description="Join current Sector/Industry ETF membership to existing Leadership exported group/stock context")
     ap.add_argument("--leadership", type=Path, required=True)
     ap.add_argument("--matrix", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
@@ -125,8 +125,8 @@ def main() -> None:
     diag_by_ticker = {str(x.get("ticker")): x for x in holdings_diag if isinstance(x, dict)}
 
     context_rows: list[dict[str, Any]] = []
-    industries: list[dict[str, Any]] = []
-    for etf in INDUSTRY_ETFS:
+    contexts: list[dict[str, Any]] = []
+    for etf in CONTEXT_ETFS:
         h = holdings[holdings["sector_etf"] == etf].copy()
         h["symbol"] = h["symbol"].astype(str).str.upper()
         intersected: list[dict[str, Any]] = []
@@ -144,11 +144,11 @@ def main() -> None:
             intersected.append(rec)
             context_rows.append(rec)
 
-        # Preserve the existing Leadership order. No new composite score or stock rank is created here.
+        # Preserve existing Leadership order. No new composite score or stock rank is created here.
         intersected.sort(key=lambda x: (int(x["group_rank"]), int(x["stock_rank_within_group"]), int(x["holding_rank"])))
         leaders = [x for x in intersected if str(x.get("role")) in LEADER_ROLES]
         emerging_or_leading = [x for x in leaders if str(x.get("group_phase")) in {"EMERGING", "LEADING"}]
-        industries.append({
+        contexts.append({
             "etf": etf,
             "rotation": compact_matrix(matrix.get(etf)),
             "holdings_source": diag_by_ticker.get(etf),
@@ -162,16 +162,18 @@ def main() -> None:
 
     coverage = model.get("coverage") if isinstance(model.get("coverage"), dict) else {}
     report = {
-        "schema": 3,
+        "schema": 4,
         "research_only": True,
+        "context_scope": "SECTOR_AND_INDUSTRY_ETFS",
         "leadership_generated_at": model.get("generated_at"),
         "leadership_market": model.get("market"),
         "leadership_coverage": coverage,
-        "industry_context": industries,
+        # Keep the key for backward compatibility with the Daily Brief formatter.
+        "industry_context": contexts,
         "guardrails": [
             "Rotation does not create a new stock ranking. Existing Leadership group and stock ordering are reused.",
             "The join is against each existing Leadership group's exported top-15 stocks, not the full 3,858-stock model; non-intersection is not a data-quality failure.",
-            "Industry ETF memberships are current exact provider holdings, not historical PIT holdings.",
+            "Sector/Industry ETF memberships are current exact provider holdings, not historical PIT holdings.",
             "Industry Rotation states remain descriptive/WATCH context because historical PIT holdings for SOXX/IGV were not validated.",
             "Legacy Leadership entry metadata is deliberately excluded. Formal V38 eligibility, ranking, gates, and exits remain separate.",
         ],
@@ -181,7 +183,7 @@ def main() -> None:
     pd.DataFrame(group_rows).to_csv(args.output / "leadership_groups.csv", index=False)
 
     summary_rows = []
-    for item in industries:
+    for item in contexts:
         rot = item["rotation"]
         summary_rows.append({
             "etf": item["etf"],
@@ -199,7 +201,7 @@ def main() -> None:
     print(json.dumps({
         "leadership_asof": coverage.get("market_asof"),
         "leadership_confidence": coverage.get("confidence"),
-        "industries": summary_rows,
+        "contexts": summary_rows,
     }, ensure_ascii=False, indent=2), flush=True)
 
 
