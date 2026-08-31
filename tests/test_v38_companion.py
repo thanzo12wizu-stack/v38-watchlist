@@ -171,8 +171,8 @@ def test_companion_tqqq_schema_separates_current_hierarchy_floor_and_allocation(
     assert state["panic_tqqq"]["candidate"] == "M30_TOUCH30_F80_D10"
     assert state["panic_tqqq"]["floor_pct_when_active"] == 80
     assert state["panic_tqqq"]["entry_requires_mc57_gte"] == 20
-    assert state["panic_tqqq"]["allocation_priority"].startswith("GROSS100 RESEARCH CANDIDATE")
-    assert state["gross100_allocation"]["run_id"] == 33339918881
+    assert state["panic_tqqq"]["allocation_priority"].startswith("GROSS100 LIVE")
+    assert state["gross100_allocation"]["run_id"] == 33405477190
 
 
 def test_companion_coverage_guard_stops_new_entries(tmp_path):
@@ -370,8 +370,19 @@ def test_tqqq_ready_route_populates_current30_stage56_and_gross100(tmp_path):
         "held_sessions": 2,
         "reset_desired_pct": 8,
         "normal_stock_desired_pct": 50,
+        "sleeve_live_status": "READY",
+        "sleeve_live_reason": None,
     }), encoding="utf-8")
-    state = build_state(source, tqqq_panic_path=panic)
+    sleeve = tmp_path / "v38-sleeve-state.json"
+    sleeve.write_text(json.dumps({
+        "schema": "v38-sleeve-live-1", "asof": "2026-08-28", "status": "READY",
+        "normal_stock": {"status": "READY", "strategy": "PEAK30_PART25_R3", "desired_pct": 50, "position_count": 6, "positions": [], "pending": {}},
+        "rsi_reset": {"status": "READY", "strategy": "RS63_TOP3_RISE30_SIGTOP3", "desired_pct": 8,
+                      "position_count": 1, "positions": [{"symbol": "AAA"}],
+                      "monitor": [{"symbol": "AAA", "status": "ACTIVE_POSITION", "current_rsi14": 32.0}],
+                      "monitor_summary": {"active_positions": 1, "watch_count": 1}},
+    }), encoding="utf-8")
+    state = build_state(source, tqqq_panic_path=panic, sleeve_state_path=sleeve)
     assert state["normal_tqqq"]["status"] == "READY"
     assert state["normal_tqqq"]["underlying_target_pct"] == 90
     assert state["panic_tqqq"]["status"] == "READY / ACTIVE"
@@ -383,6 +394,10 @@ def test_tqqq_ready_route_populates_current30_stage56_and_gross100(tmp_path):
     assert gross["normal_stock_allocated_pct"] == 12
     assert gross["tqqq_extra_pct"] == 0
     assert gross["gross_allocated_pct"] == 100
+    assert gross["adoption_status"] == "ADOPTED_AFTER_FINAL_RESET_RECHECK"
+    assert state["panic_reset"]["status"] == "READY / LIVE"
+    assert state["panic_reset"]["monitor"][0]["symbol"] == "AAA"
+    assert state["normal_stock_sleeve"]["position_count"] == 6
 
 
 def test_tqqq_stale_route_is_data_required_and_not_used_for_gross(tmp_path):
@@ -411,3 +426,7 @@ def test_audited_companion_leads_with_action_and_never_labels_stop_watchlist_as_
     assert "今は買わない" in html
     assert "Rotationは現時点では正式順位に加点しません" in html
     assert "ルール解説" in html
+    assert "RSI30接近" in html
+    assert "今日の最終配分" in html
+    assert "RS63_TOP3_RISE30_SIGTOP3" in html
+    assert "表示帯は売買ルールではない" in html

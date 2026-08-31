@@ -17,6 +17,8 @@ on:
       - 'build_v38_companion.py'
       - 'build_v38_strict_loo_live.py'
       - 'build_v38_tqqq_live.py'
+      - 'build_v38_sleeve_live.py'
+      - 'v38-normal-sleeve-seed.json'
       - 'command-center-v38.html'
       - 'v38_rules.py'
       - 'scripts/export_public_site.py'
@@ -48,6 +50,7 @@ jobs:
         command-center.html
         command-center_share.html
         v38-live-state.json
+        v38-sleeve-state.json
         v38-strict-loo-history.json
         v38-strict-loo-live.json
         tqqq-panic-state.json
@@ -90,14 +93,15 @@ jobs:
 
       - name: Preflight tests
         run: |
-          python -m py_compile build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py v38_rules.py
+          python -m py_compile build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py build_v38_sleeve_live.py v38_rules.py
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
             tests/test_eps_acceleration.py \
             tests/test_v38_rules.py \
             tests/test_v38_companion.py \
             tests/test_v38_strict_loo_live.py \
-            tests/test_v38_tqqq_live.py
+            tests/test_v38_tqqq_live.py \
+            tests/test_v38_sleeve_live.py
 
       # TQQQ uses its own small request budget. Fetch it before the legacy
       # dashboard and strict LOO issue thousands of Yahoo requests on this runner.
@@ -213,7 +217,7 @@ jobs:
             --cache v38-tqqq-live-source-cache.json \
             --out tqqq-panic-state.json
 
-      - name: Build isolated audited V38 companion
+      - name: Build provisional audited V38 companion
         if: steps.build.outputs.skipped != 'true'
         run: |
           python build_v38_companion.py \
@@ -221,6 +225,28 @@ jobs:
             --universe universe.csv \
             --strict-loo v38-strict-loo-live.json \
             --tqqq-panic tqqq-panic-state.json \
+            --out v38-live-state.json
+
+      - name: Build Normal Stock and RSI Reset live sleeves
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_sleeve_live.py \
+            --companion v38-live-state.json \
+            --state v38-sleeve-state.json \
+            --seed v38-normal-sleeve-seed.json \
+            --strict-history v38-strict-loo-history.json \
+            --tqqq-state tqqq-panic-state.json \
+            --out v38-sleeve-state.json
+
+      - name: Rebuild audited V38 companion with live allocation inputs
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
+            --sleeve-state v38-sleeve-state.json \
             --out v38-live-state.json
 
       - name: Report skipped stale run
@@ -250,6 +276,7 @@ jobs:
               "command-center_share.html": 2_500,
               "command-center-v38.html": 8_000,
               "v38-live-state.json": 1_000,
+              "v38-sleeve-state.json": 200,
               "v38-strict-loo-live.json": 100,
               "tqqq-panic-state.json": 100,
           }
@@ -308,6 +335,20 @@ jobs:
           if tqqq.get("live_generation_status") == "READY":
               if tqqq.get("underlying_target_pct") is None or tqqq.get("requested_target_pct") is None:
                   raise SystemExit("READY TQQQ route is missing CURRENT30/Stage56 targets")
+
+          sleeve = json.loads(Path("v38-sleeve-state.json").read_text(encoding="utf-8"))
+          if sleeve.get("schema") != "v38-sleeve-live-1":
+              raise SystemExit("invalid V38 sleeve live schema")
+          if sleeve.get("asof") != state_date:
+              raise SystemExit(f"V38 sleeve date mismatch: {sleeve.get('asof')} != {state_date}")
+          if sleeve.get("status") == "READY":
+              for key in ("normal_stock", "rsi_reset"):
+                  if (sleeve.get(key) or {}).get("desired_pct") is None:
+                      raise SystemExit(f"READY sleeve is missing desired_pct: {key}")
+              if tqqq.get("sleeve_live_status") != "READY":
+                  raise SystemExit("READY sleeves were not merged into TQQQ state")
+              if tqqq.get("normal_stock_desired_pct") is None or tqqq.get("reset_desired_pct") is None:
+                  raise SystemExit("merged Gross100 sleeve inputs are missing")
 
           log_dates = []
           with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
@@ -425,6 +466,7 @@ jobs:
           loo = load("v38-strict-loo-live.json", {})
           history = load("v38-strict-loo-history.json", {})
           tqqq = load("tqqq-panic-state.json", {})
+          sleeve = load("v38-sleeve-state.json", {})
           sessions = [
               str(row.get("asof"))
               for row in history.get("sessions", [])
@@ -454,6 +496,11 @@ jobs:
               f"- TQQQ source cache fetched at: {tqqq.get('source_cache_fetched_at') or 'NONE'}",
               f"- TQQQ QQQ 5m provider: {(tqqq.get('source_providers') or {}).get('qqq_5m') or 'NONE'}",
               f"- TQQQ MC57 source coverage: {((tqqq.get('source_providers') or {}).get('mc57') or {}).get('coverage_tickers') or 'NONE'}/57",
+              f"- V38 sleeve status: {sleeve.get('status') or 'DATA REQUIRED'}",
+              f"- V38 sleeve reason: {sleeve.get('reason') or 'NONE'}",
+              f"- Normal Stock desired: {(sleeve.get('normal_stock') or {}).get('desired_pct')}",
+              f"- RSI Reset desired: {(sleeve.get('rsi_reset') or {}).get('desired_pct')}",
+              f"- RSI Reset monitor count: {((sleeve.get('rsi_reset') or {}).get('monitor_summary') or {}).get('watch_count') or 0}",
           ]
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as handle:
               handle.write("\n".join(lines) + "\n")
@@ -472,7 +519,7 @@ jobs:
           # Same-session stale-source guard. Artifact/options commits are harmless;
           # generation logic and explicit dashboard inputs are not.
           git fetch --depth=1 origin main
-          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
+          if [[ -n "${V38_BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_BUILD_SOURCE_SHA" origin/main -- build_dashboard.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py build_v38_sleeve_live.py v38-normal-sleeve-seed.json command-center-v38.html v38_rules.py .github/workflows/dashboard.yml requirements.txt scripts/export_public_site.py scripts/privacy_audit.py sar_state.txt equity.csv; then
             echo "::warning::source drift after build; skip persistence/public publish for stale same-session run"
             echo "source_drift=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$V38_BUILD_SOURCE_SHA" >> "$GITHUB_OUTPUT"
