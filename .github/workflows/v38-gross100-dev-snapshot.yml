@@ -28,6 +28,9 @@ jobs:
             .github/workflows/v38-audit-check.yml
             tests/test_v38_audit.py
             tests/test_v38_rules.py
+            tests/test_v38_companion.py
+            tests/test_v38_strict_loo_live.py
+            tests/test_v38_tqqq_live.py
             docs/V38_RULEBOOK_AUDIT_20260830.md
             scripts/export_public_site.py
           retention-days: 1
