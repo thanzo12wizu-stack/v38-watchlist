@@ -10,6 +10,8 @@ import rotation_live_snapshot as base
 import rotation_macro_direct_official_qa as direct
 import rotation_macro_why_qa as macroqa
 
+_ORIGINAL_FETCH_EXACT_FLOWS = base.fetch_exact_flows
+
 
 def series_payload(df: pd.DataFrame | None, error: str | None, source: str) -> dict[str, Any]:
     if df is None or error is not None or df.empty:
@@ -23,6 +25,25 @@ def series_payload(df: pd.DataFrame | None, error: str | None, source: str) -> d
         "high_252": float(df.value.tail(252).max()),
         "low_252": float(df.value.tail(252).min()),
     }
+
+
+def fetch_exact_flows_latest_valid(session: requests.Session, close: pd.DataFrame):
+    """Keep only rows with a valid 20D exact flow before base.main selects ticker tail rows.
+
+    Provider histories do not always end on the latest ETF price date. The original live
+    table deliberately aligns official flow records to the ETF trading calendar, leaving
+    trailing NaN rows when the provider's latest record is older than the price as-of.
+    Dropping only those invalid 20D rows ensures base.main selects the latest *officially
+    observed* flow date instead of a trailing calendar NaN. No value is forward-filled.
+    """
+    flows, diag = _ORIGINAL_FETCH_EXACT_FLOWS(session, close)
+    valid = flows[flows["flow_20d"].notna() & flows["flow_20d_pct_aum"].notna()].copy()
+    for d in diag:
+        ticker = d.get("ticker")
+        x = valid[valid["ticker"] == ticker]
+        d["live_latest_valid_flow_date"] = None if x.empty else str(pd.Timestamp(x["date"].max()).date())
+        d["live_selection_policy"] = "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
+    return valid, diag
 
 
 def direct_macro_snapshot(session: requests.Session, ohlcv: dict[str, pd.DataFrame]) -> dict[str, Any]:
@@ -66,6 +87,7 @@ def direct_macro_snapshot(session: requests.Session, ohlcv: dict[str, pd.DataFra
     }
 
 
+base.fetch_exact_flows = fetch_exact_flows_latest_valid
 base.macro_snapshot = direct_macro_snapshot
 
 if __name__ == "__main__":
