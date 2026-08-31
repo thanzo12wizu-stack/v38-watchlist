@@ -117,6 +117,19 @@ Gross100 allocation audit（2016-01-04～2026-03-20、2,568営業日）では、
 
 Dashboard workflow summaryにはstrict LOOのstatus/reason/history_sessions/latest saved date/exact t−20 snapshot/asofと、TQQQのlive_generation_status/reason/asofを出す。Workflow全体がSUCCESSでも、collectorが`DATA REQUIRED`ならlive生成成功とは記録しない。
 
+### TQQQ live collector実稼働確認（2026-08-31）
+
+- 実装merge: PR `#141` / `9ea05e57dd79c8c7e9fc8bcad78dad6a05650e41`。
+- Dashboard Run: `33379823471`、全step SUCCESS。専用prefetchは通常Dashboard buildより前にSUCCESS。
+- 生成物commit: `f0bf7c2d60c88a88f131674e9908229ad416e7c0`。
+- private source cache取得時刻: `2026-08-31T09:53:28Z`。
+- `tqqq-panic-state.json`: as-of `2026-08-28`、`READY`。
+- 取得経路: QQQ/TQQQ/NQ/VIX日足、QQQ 5分足、MC57の57ETFすべて`YAHOO_CHART`。MC57 coverage `57/57`。
+- 実値: CURRENT30 target `30%`、Stage56 requested `30%`、MC57 `56.438985`、QQQ 4H RSI14 `52.393192`、TOUCH30 `false`、Panic active `false`。
+- Public mirror: `tqqq-panic-state.json` HTTP 200、上記as-of/status/target/MC57/4H RSIと一致。`v38-live-state.json`も`normal_tqqq=READY`、`panic_tqqq=READY / INACTIVE`。
+
+この確認は「今回のlive routeが実データでREADYを生成し公開まで到達した」証拠であり、将来の各runの成功を保証するものではない。各runではas-of、provider、57ETF coverage、4H coverageを再検証する。
+
 strict LOO初回backfillは、Gitで確認した最初の保存snapshot（commit `79073ffd9742102c2b6e9f72d349801a10e126db`、blob `18ce2ed94b72cc2f7c6e0c2954f2d975b566a7ad`、米国市場日`2026-06-22`引け後）をeffective startとする。現在の`sector_snapshot.json`は同一blobである。初回collectorは、現在日と正確なt−20営業日の高コストLOO snapshotを一括計算し、その間のPIT coverage session数を保存する。Accelerationはこの2 endpointだけで厳密に計算できるため、21回の日次実行を待たない。保存開始前へ現在taxonomyを遡及適用しない。外部価格取得が失敗した場合は初日もDATA REQUIREDであり、近似へfallbackしない。
 
 ## 追加検証
