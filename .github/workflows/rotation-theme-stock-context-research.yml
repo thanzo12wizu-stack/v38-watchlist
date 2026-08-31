@@ -7,10 +7,11 @@ on:
       - research/rotation-exact-flow-internals-20260831
     paths:
       - leadership/research/rotation_theme_stock_context.py
+      - leadership/research/rotation_live/latest_matrix.csv
       - .github/workflows/rotation-theme-stock-context-research.yml
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: rotation-theme-stock-context-research
@@ -86,7 +87,6 @@ jobs:
           total=sum(int(x.get('leadership_group_top15_intersections') or 0) for x in items)
           if total < 10:
               raise SystemExit(f'insufficient exported top15 intersections: {total}')
-
           forbidden_keys={'rotation_stock_score','rotation_rank','rotation_entry','rotation_signal','leadership_entry_status','leadership_entry_quality','leadership_entry_reason'}
           def walk(obj, path='root'):
               if isinstance(obj, dict):
@@ -98,7 +98,6 @@ jobs:
                   for i,v in enumerate(obj):
                       walk(v, f'{path}[{i}]')
           walk(items)
-
           print(json.dumps({
               'leadership_market_asof': (d.get('leadership_coverage') or {}).get('market_asof'),
               'leadership_confidence': (d.get('leadership_coverage') or {}).get('confidence'),
@@ -121,3 +120,34 @@ jobs:
           path: leadership/research/rotation_theme_stock_context/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Persist current Theme → Stock context
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH="research/rotation-exact-flow-internals-20260831"
+          SRC="leadership/research/rotation_theme_stock_context"
+          TMP="$(mktemp -d)/rotation_theme_stock_context"
+          cp -a "$SRC" "$TMP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            rm -rf "$SRC"
+            mkdir -p "$(dirname "$SRC")"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then
+              echo "Theme/stock context already current"
+              exit 0
+            fi
+            git commit -m "research: record current Rotation theme stock context"
+            if git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; retrying"
+          done
+          echo "Failed to persist Theme/Stock context after 3 attempts" >&2
+          exit 1
