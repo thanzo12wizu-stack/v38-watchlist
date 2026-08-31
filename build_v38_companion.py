@@ -230,6 +230,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         selected = loo.get("selected") if loo_ready else None
         selected_score = loo.get("score") if loo_ready else None
         comp = loo.get("components") if loo_ready else None
+        watch_score = attack_rank_score(row.get("rs189"), selected_score) if loo_ready else None
         candidates.append({
             "ticker": ticker,
             "price": row.get("px"),
@@ -252,8 +253,13 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "candidate_excluded_from_breadth21": True if loo_ready else None,
             "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
             "missing_theme_neutral_score": 50,
-            "attack_score": (attack_rank_score(row.get("rs189"), selected_score)
-                             if mode.name == "ATTACK" and loo_ready else None),
+            # This watch score uses the exact adopted ATTACK formula, but it does
+            # not grant entry eligibility. It is calculated every day so STOP /
+            # DEFENSE screens can still tell the reader what to watch for a later
+            # reopening without changing WHEN (Market Mode).
+            "attack_watch_score": watch_score,
+            "attack_watch_rank": None,
+            "attack_score": watch_score if mode.name == "ATTACK" else None,
             "final_rank": None,
             "eligibility": "ELIGIBLE",
             "clinical_biotech": {
@@ -268,10 +274,27 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
         })
     # IMPORTANT: all eligible symbols reach strict LOO before any display cap.
-    # Top50 is presentation-only and is applied after the full-universe sort.
-    all_attack_ready = bool(candidates) and all(row["attack_score"] is not None for row in candidates)
+    # The reader-facing reopening watch rank therefore never uses an RS189 Top50
+    # prefilter. It is the adopted ATTACK 70/30 formula over the full eligible set.
+    all_attack_watch_ready = bool(candidates) and all(
+        row["attack_watch_score"] is not None for row in candidates
+    )
+    if all_attack_watch_ready:
+        watch_order = sorted(
+            candidates,
+            key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])),
+            reverse=True,
+        )
+        for rank, row in enumerate(watch_order, 1):
+            row["attack_watch_rank"] = rank
+
+    all_attack_ready = mode.name == "ATTACK" and all_attack_watch_ready
     if mode.name == "ATTACK" and all_attack_ready:
         candidates.sort(key=lambda row: (float(row["attack_score"]), float(row["rs189"])), reverse=True)
+    elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:
+        # In non-entry modes show the reopening watch order while preserving
+        # final_rank=None and the Market Mode new-entry limit of zero.
+        candidates.sort(key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])), reverse=True)
     else:
         candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
     if mode.name == "SELECTIVE":
@@ -385,9 +408,12 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "ranking": {
             "mode": ("RS189_ONLY" if mode.name == "SELECTIVE" else
                      "ATTACK_FINAL_RANK" if mode.name == "ATTACK" and all_attack_ready else
+                     "WATCH_RANK_READY / ENTRY_BLOCKED_BY_MODE" if mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready else
                      "RS189 PREVIEW ONLY / ATTACK FINAL RANK DATA REQUIRED"),
             "note": ("Selective: Stock RS189 only" if mode.name == "SELECTIVE"
-                     else "RS189 PREVIEW ONLY. Formal Attack rank requires READY strict LOO history for every eligible symbol; LOO is computed before the display Top50 cap."),
+                     else "Formal ATTACK rank uses the adopted 70/30 strict-LOO formula." if mode.name == "ATTACK" and all_attack_ready
+                     else "Reopening watch rank only. It uses the adopted ATTACK 70/30 formula across the full eligible universe, but current Market Mode still blocks entry." if mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready
+                     else "RS189 PREVIEW ONLY. Formal Attack/watch rank requires READY strict LOO history for every eligible symbol; LOO is computed before the display Top50 cap."),
             "attack_formula": "0.70 * Stock RS189 + 0.30 * selected LOO Peer Theme Score",
             "peer_theme_formula": "(Theme RS63 pct + 20d Rank Acceleration pct + peer Breadth21) / 3",
             "candidate_exclusion_required_for_all_components": True,
@@ -397,7 +423,9 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "history_min_sessions": 21,
             "full_eligible_count": len(candidates),
             "display_limit_applied_after_full_sort": 50,
-            "strict_loo_live_status": "READY" if all_attack_ready else "DATA REQUIRED",
+            "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
+            "attack_watch_semantics": "WATCH_ONLY_OUTSIDE_ATTACK; NEVER_OVERRIDES_MARKET_MODE",
+            "strict_loo_live_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
             "strict_loo_source_status": "READY" if loo_live else "DATA REQUIRED",
         },
         "candidates": candidates[:50],
