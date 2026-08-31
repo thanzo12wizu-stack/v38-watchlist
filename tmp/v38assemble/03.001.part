@@ -1,0 +1,170 @@
+            --history v38-strict-loo-history.json \
+            --out v38-strict-loo-live.json
+
+      - name: Build CURRENT30 and Stage56 TQQQ live state
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_tqqq_live.py \
+            --state state.json \
+            --cache v38-tqqq-live-source-cache.json \
+            --out tqqq-panic-state.json
+
+      - name: Build preliminary audited V38 companion for sleeve decisions
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
+            --out v38-live-state.json
+
+      - name: Build Normal Stock and RSI Reset live sleeves
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_sleeve_live.py \
+            --companion v38-live-state.json \
+            --state v38-sleeve-state.json \
+            --seed v38-normal-sleeve-seed.json \
+            --strict-history v38-strict-loo-history.json \
+            --tqqq-state tqqq-panic-state.json \
+            --out v38-sleeve-state.json
+
+      - name: Build final audited V38 companion with Gross100
+        if: steps.build.outputs.skipped != 'true'
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
+            --sleeve-live v38-sleeve-state.json \
+            --out v38-live-state.json
+
+      - name: Report skipped stale run
+        if: steps.build.outputs.skipped == 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Dashboard build"
+            echo "- Status: skipped"
+            echo "- Reason: as-of regression guard kept the newer persisted session intact"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "As-of regression guard fired; validation, persistence and public publish are intentionally skipped."
+
+      - name: Validate generated files
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv
+          import json
+          import re
+          from pathlib import Path
+
+          required = {
+              "command-center.html": 200_000,
+              "command-center_share.html": 2_500,
+              "command-center-v38.html": 8_000,
+              "v38-live-state.json": 1_000,
+              "v38-strict-loo-live.json": 100,
+              "tqqq-panic-state.json": 100,
+              "v38-sleeve-state.json": 100,
+          }
+          for name, minimum in required.items():
+              path = Path(name)
+              if not path.is_file():
+                  raise SystemExit(f"missing generated file: {name}")
+              size = path.stat().st_size
+              if size < minimum:
+                  raise SystemExit(
+                      f"generated file too small: {name}={size} bytes < {minimum}"
+                  )
+              text = path.read_text(encoding="utf-8", errors="strict")
+              if name.endswith(".html") and "<!doctype html>" not in text.lower():
+                  raise SystemExit(f"doctype missing: {name}")
+
+          main = Path("command-center.html").read_text(encoding="utf-8")
+          if "Command Center" not in main:
+              raise SystemExit("Command Center marker missing from main HTML")
+
+          state = json.loads(
+              Path("state.json").read_text(encoding="utf-8")
+          )
+          if not state.get("date"):
+              raise SystemExit(
+                  "state.json has no completed market-session date"
+              )
+
+          # Date consistency is a hard publication invariant.
+          iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+          state_date = str(state.get("date") or "")
+          if not iso.fullmatch(state_date):
+              raise SystemExit(f"invalid state market-session date: {state_date!r}")
+
+          companion = json.loads(
+              Path("v38-live-state.json").read_text(encoding="utf-8")
+          )
+          if companion.get("schema") != "v38-live-state-1":
+              raise SystemExit("invalid V38 companion schema")
+          if companion.get("asof") != state_date:
+              raise SystemExit(
+                  f"V38 companion date mismatch: {companion.get('asof')} != {state_date}"
+              )
+
+          loo = json.loads(Path("v38-strict-loo-live.json").read_text(encoding="utf-8"))
+          if loo.get("schema") != "v38-strict-loo-live-1":
+              raise SystemExit("invalid strict LOO live schema")
+          if loo.get("asof") not in (None, state_date):
+              raise SystemExit(f"strict LOO date mismatch: {loo.get('asof')} != {state_date}")
+
+          sleeve = json.loads(Path("v38-sleeve-state.json").read_text(encoding="utf-8"))
+          if sleeve.get("schema") != "v38-sleeve-live-1":
+              raise SystemExit("invalid V38 sleeve live schema")
+          if sleeve.get("asof") != state_date:
+              raise SystemExit(f"V38 sleeve date mismatch: {sleeve.get('asof')} != {state_date}")
+          if sleeve.get("status") == "READY":
+              normal = sleeve.get("normal_stock") or {}
+              reset = sleeve.get("rsi_reset") or {}
+              if normal.get("desired_pct") is None or reset.get("desired_pct") is None:
+                  raise SystemExit("READY V38 sleeve route is missing desired exposures")
+              if not isinstance(reset.get("monitor", []), list):
+                  raise SystemExit("READY Reset route has invalid monitor")
+
+          tqqq = json.loads(Path("tqqq-panic-state.json").read_text(encoding="utf-8"))
+          if tqqq.get("schema") != "v38-tqqq-panic-state-1":
+              raise SystemExit("invalid TQQQ live schema")
+          if tqqq.get("asof") != state_date:
+              raise SystemExit(f"TQQQ date mismatch: {tqqq.get('asof')} != {state_date}")
+          if tqqq.get("live_generation_status") == "READY":
+              if tqqq.get("underlying_target_pct") is None or tqqq.get("requested_target_pct") is None:
+                  raise SystemExit("READY TQQQ route is missing CURRENT30/Stage56 targets")
+
+          log_dates = []
+          with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
+              for row in csv.DictReader(fh):
+                  d = str(row.get("date") or "")
+                  if iso.fullmatch(d):
+                      log_dates.append(d)
+          if not log_dates:
+              raise SystemExit("daily_log.csv has no valid market-session dates")
+          log_latest = max(log_dates)
+
+          trend_raw = json.loads(
+              Path("trend_history.json").read_text(encoding="utf-8")
+          )
+          trend_dates = []
+          if isinstance(trend_raw, list):
+              for item in trend_raw:
+                  d = ""
+                  if isinstance(item, (list, tuple)) and item:
+                      d = str(item[0] or "")
+                  elif isinstance(item, dict):
+                      d = str(item.get("date") or "")
+                  if iso.fullmatch(d):
+                      trend_dates.append(d)
+          if not trend_dates:
+              raise SystemExit("trend_history.json has no valid market-session dates")
+          trend_latest = max(trend_dates)
+
