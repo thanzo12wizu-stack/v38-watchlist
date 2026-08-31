@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Build the isolated V38 audited companion state.
+
+The legacy ``command-center.html`` is read-only input and is never rewritten.
+The generated companion deliberately reports unavailable research inputs as
+DATA REQUIRED rather than substituting an approximate production rule.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import math
+import re
+from pathlib import Path
+
+from v38_rules import (
+    attack_rank_score, clinical_biotech_exclusion, gross100_allocation,
+    market_mode, peer_theme_score, select_peer_theme,
+)
+
+
+def _embedded_json(source: str, name: str):
+    match = re.search(rf"window\.{re.escape(name)}=(.*?);</script>", source, re.S)
+    if not match:
+        raise ValueError(f"window.{name} was not found")
+    return json.loads(match.group(1))
+
+
+def _finite(value) -> bool:
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _load_json(path: Path | None, default):
+    if path is None or not path.is_file():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def _map_value(blob: dict, ticker: str):
+    value = blob.get(ticker)
+    if isinstance(value, dict):
+        return value.get("value")
+    return value
+
+
+def _revenue_value(blob: dict, ticker: str):
+    record = (blob.get("records") or blob).get(ticker, {}) if isinstance(blob, dict) else {}
+    if not isinstance(record, dict):
+        return record
+    # The audited condition is Revenue TTM. An annual value is not silently
+    # substituted; absence therefore remains the documented fail-open case.
+    for key in ("revenue_ttm", "tv_revenue_ttm"):
+        if _finite(record.get(key)):
+            return float(record[key])
+    return None
+
+
+def _load_universe_metadata(path: Path | None) -> dict[str, dict]:
+    """Read exact daily structural fields already produced in ``universe.csv``."""
+    if path is None or not path.is_file():
+        return {}
+    out: dict[str, dict] = {}
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            for row in csv.DictReader(handle):
+                ticker = str(row.get("シンボル") or row.get("symbol") or row.get("Symbol") or "").strip().upper()
+                if not ticker:
+                    continue
+                out[ticker] = {
+                    "industry": row.get("業種") or row.get("industry") or row.get("Industry"),
+                    "market_cap": row.get("時価総額") or row.get("market_cap") or row.get("Market Cap"),
+                    "revenue_ttm": row.get("売上高TTM") or row.get("revenue_ttm") or row.get("Revenue TTM"),
+                }
+    except OSError:
+        return {}
+    return out
+
+
+def _strict_loo_record(ticker: str, memberships: list[str], live: dict):
+    """Validate and score a precomputed strict-LOO record, or fail closed.
+
+    The upstream daily route must calculate components from the full eligible
+    universe. This consumer never computes LOO after a Top50 prefilter.
+    """
+    if not isinstance(live, dict) or live.get("status") != "READY":
+        return None
+    if not memberships:
+        # No current Theme membership is a valid, fully observed outcome once
+        # the forward-only LOO route has the exact t-20 session. Do not invent
+        # a Theme component; attack_rank_score applies neutral 50 only when it
+        # combines the final Stock70 / Theme30 score.
+        if (
+            int(live.get("history_sessions", 0)) >= 21
+            and live.get("history_has_exact_20_session_base") is True
+        ):
+            return {
+                "selected": None,
+                "score": None,
+                "components": None,
+                "readiness": "LOO_READY_NO_VALID_THEME",
+            }
+        return None
+    records = live.get("candidates")
+    record = records.get(ticker) if isinstance(records, dict) else None
+    if not isinstance(record, dict) or record.get("status") != "READY":
+        return None
+    if int(record.get("history_sessions", 0)) < 21:
+        return None
+    theme_rows = record.get("themes")
+    if not isinstance(theme_rows, dict):
+        return None
+    scores = {}
+    components = {}
+    for theme in memberships:
+        row = theme_rows.get(theme)
+        if not isinstance(row, dict):
+            continue
+        if not all(row.get(key) is True for key in (
+            "candidate_excluded_from_return",
+            "candidate_excluded_from_acceleration",
+            "candidate_excluded_from_breadth21",
+        )):
+            continue
+        try:
+            score = peer_theme_score(row["theme_rs63_pct"], row["acceleration20_pct"],
+                                     row["breadth21_pct"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        scores[theme] = score
+        components[theme] = row
+    selected, score = select_peer_theme(scores)
+    if selected is None:
+        # A READY candidate can legitimately have no valid current membership.
+        # Neutral 50 is applied only at Final Score calculation, never invented
+        # as a fake Theme component.
+        return {
+            "selected": None,
+            "score": None,
+            "components": None,
+            "readiness": "LOO_READY_NO_VALID_THEME",
+        }
+    return {
+        "selected": selected,
+        "score": score,
+        "components": components[selected],
+        "readiness": "STRICT_LOO",
+    }
+
+
+def _ready_live(blob: dict, asof: str | None, status_key: str, ready_value: str = "READY") -> bool:
+    return (
+        isinstance(blob, dict)
+        and blob.get(status_key) == ready_value
+        and str(blob.get("asof") or "") == str(asof or "")
+    )
+
+
+def _pct(value):
+    return float(value) if _finite(value) else None
+
+
+def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
+                market_cap_path: Path | None = None, industry_path: Path | None = None,
+                revenue_path: Path | None = None, universe_path: Path | None = None,
+                strict_loo_path: Path | None = None, tqqq_panic_path: Path | None = None,
+                sleeve_live_path: Path | None = None) -> dict:
+    source = legacy_html.read_text(encoding="utf-8")
+    calc = _embedded_json(source, "CALC")
+    details = _embedded_json(source, "DET")
+    asof = calc.get("asof")
+
+    valid50 = [row for row in details.values() if _finite(row.get("v50"))]
+    coverage = len(valid50) / len(details) if details else 0.0
+    coverage_ok = len(valid50) >= 30 and coverage >= 0.45
+    breadth50 = (100 * sum(float(row["v50"]) > 0 for row in valid50) / len(valid50)
+                 if valid50 else None)
+    mode = market_mode(calc.get("color"), breadth50, coverage_ok)
+
+    snapshot = _load_json(sector_snapshot_path, {})
+    s2t = snapshot.get("s2t", {}) if isinstance(snapshot, dict) else {}
+    market_caps = _load_json(market_cap_path, {})
+    industry_blob = _load_json(industry_path, {})
+    industries = industry_blob.get("map", industry_blob) if isinstance(industry_blob, dict) else {}
+    revenues = _load_json(revenue_path, {})
+    universe_meta = _load_universe_metadata(universe_path)
+    loo_live = _load_json(strict_loo_path, {})
+    if not _ready_live(loo_live, asof, "status"):
+        loo_live = {}
+    tqqq_live = _load_json(tqqq_panic_path, {})
+    tqqq_ready = _ready_live(tqqq_live, asof, "live_generation_status")
