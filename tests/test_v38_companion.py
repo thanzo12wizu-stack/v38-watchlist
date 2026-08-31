@@ -34,6 +34,9 @@ def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
                        "resetAllocation", "tqqqParts", "normalAllocation", "executableTarget"):
         assert f'id="{element_id}"' in html
     assert 'src="command-center.html"' in html
+    assert 'data-tab="resetwatch"' in html
+    assert 'id="resetMonitorRows"' in html
+    assert "Activation（Theme RS≥80、20日改善≥15pt" in html
 
 
 def test_workflow_reports_build_export_mirror_and_pages_as_separate_stages():
@@ -172,7 +175,8 @@ def test_companion_tqqq_schema_separates_current_hierarchy_floor_and_allocation(
     assert state["panic_tqqq"]["floor_pct_when_active"] == 80
     assert state["panic_tqqq"]["entry_requires_mc57_gte"] == 20
     assert state["panic_tqqq"]["allocation_priority"].startswith("GROSS100 RESEARCH CANDIDATE")
-    assert state["gross100_allocation"]["run_id"] == 33339918881
+    assert state["gross100_allocation"]["run_id"] == 33405477190
+    assert state["gross100_allocation"]["reset_rule"] == "RS63_TOP3_RISE30_SIGTOP3"
 
 
 def test_companion_coverage_guard_stops_new_entries(tmp_path):
