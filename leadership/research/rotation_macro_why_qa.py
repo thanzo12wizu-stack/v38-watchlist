@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 import pandas as pd
 import requests
@@ -25,6 +26,7 @@ COMPONENTS = [
     "safe_haven_demand",
     "junk_bond_demand",
 ]
+HISTORY_KEY = {"fear_and_greed": "fear_and_greed_historical"}
 
 
 def fetch_json(session: requests.Session, url: str) -> tuple[Any | None, str | None]:
@@ -36,10 +38,16 @@ def fetch_json(session: requests.Session, url: str) -> tuple[Any | None, str | N
         return None, f"{type(exc).__name__}: {exc}"
 
 
-def fetch_fred(session: requests.Session, series: str) -> tuple[pd.DataFrame | None, str | None]:
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
+def fetch_fred(
+    session: requests.Session,
+    series: str,
+    start: str = "2022-01-01",
+    end: str = "2026-09-02",
+) -> tuple[pd.DataFrame | None, str | None]:
+    query = urlencode({"id": series, "cosd": start, "coed": end})
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?{query}"
     try:
-        r = session.get(url, headers={"User-Agent": UA}, timeout=30)
+        r = session.get(url, headers={"User-Agent": UA}, timeout=20)
         r.raise_for_status()
         df = pd.read_csv(io.StringIO(r.text))
         if df.empty or series not in df.columns:
@@ -68,18 +76,18 @@ def normalize_cnn_history(payload: Any) -> pd.DataFrame:
     if not isinstance(payload, dict):
         return pd.DataFrame()
     for component in COMPONENTS:
-        block = payload.get(component)
+        source_key = HISTORY_KEY.get(component, component)
+        block = payload.get(source_key)
         if not isinstance(block, dict):
             continue
         for pt in block.get("data") or []:
             ts, val, rating = point_xy(pt)
-            rows.append({"component": component, "timestamp_raw": ts, "score": val, "rating": rating})
+            rows.append({"component": component, "source_key": source_key, "timestamp_raw": ts, "score": val, "rating": rating})
     out = pd.DataFrame(rows)
     if out.empty:
         return out
     out["score"] = pd.to_numeric(out["score"], errors="coerce")
     numts = pd.to_numeric(out["timestamp_raw"], errors="coerce")
-    # CNN uses epoch milliseconds in the graph series.
     out["date"] = pd.to_datetime(numts, unit="ms", errors="coerce", utc=True).dt.tz_convert(None).dt.normalize()
     text_mask = out["date"].isna() & out["timestamp_raw"].notna()
     if text_mask.any():
@@ -107,6 +115,8 @@ def current_cnn_table(payload: Any) -> pd.DataFrame:
 def main() -> None:
     ap = argparse.ArgumentParser(description="QA stable Macro WHY data inputs for Rotation Intelligence")
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--start", default="2022-01-01")
+    ap.add_argument("--end", default="2026-09-02")
     args = ap.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     session = requests.Session()
@@ -114,7 +124,7 @@ def main() -> None:
     fred_frames = []
     fred_diag = []
     for series in FRED_SERIES:
-        df, err = fetch_fred(session, series)
+        df, err = fetch_fred(session, series, args.start, args.end)
         if df is not None:
             fred_frames.append(df)
             valid = df.dropna(subset=[series])
@@ -139,7 +149,7 @@ def main() -> None:
     price_diag = None
     price_summary = []
     try:
-        ohlcv, price_diag = pl.download_ohlcv(["^VIX", "DX-Y.NYB"], "2022-01-01", "2026-09-02", 10)
+        ohlcv, price_diag = pl.download_ohlcv(["^VIX", "DX-Y.NYB"], args.start, args.end, 10)
         close = ohlcv["close"]
         for ticker in ["^VIX", "DX-Y.NYB"]:
             x = close[ticker].dropna() if ticker in close.columns else pd.Series(dtype=float)
@@ -164,13 +174,15 @@ def main() -> None:
     if not hist_table.empty:
         hist_table.to_csv(args.output / "cnn_fear_greed_component_history_2024plus.csv", index=False, date_format="%Y-%m-%d")
     current_keys = set(cnn_current.keys()) if isinstance(cnn_current, dict) else set()
+    expected_history_keys = {HISTORY_KEY.get(c, c) for c in COMPONENTS}
     history_keys = set(cnn_history.keys()) if isinstance(cnn_history, dict) else set()
     current_ok = set(COMPONENTS).issubset(current_keys) and len(current_table) == len(COMPONENTS)
-    history_ok = set(COMPONENTS).issubset(history_keys) and hist_table["component"].nunique() == len(COMPONENTS) and len(hist_table) > 1000
+    history_ok = expected_history_keys.issubset(history_keys) and hist_table["component"].nunique() == len(COMPONENTS) and len(hist_table) > 1000
 
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
+        "window": {"start": args.start, "end": args.end},
         "fred": {
             "quality": "EXACT_OFFICIAL_FRED" if fred_ok else "PARTIAL_OR_DATA_REQUIRED",
             "series": fred_diag,
@@ -201,7 +213,7 @@ def main() -> None:
             "real10y": {"source": "FRED", "series": "DFII10", "role": "WHY"},
             "broad_usd": {"source": "FRED", "series": "DTWEXBGS", "role": "WHY", "not_dxy": True},
             "ig_oas": {"source": "FRED", "series": "BAMLC0A0CM", "role": "WHY"},
-            "hy_oas": {"source": "FRED", "series": "BAMLH0A0HYM2", "role": "WHY", "history_limit_note": "FRED/ICE series has a three-year observation limit from Apr 2026."},
+            "hy_oas": {"source": "FRED", "series": "BAMLH0A0HYM2", "role": "WHY", "history_limit_note": "FRED/ICE series may expose a limited observation window; current WHY use remains valid when latest observations are available."},
             "vix": {"source": "market price", "ticker": "^VIX", "role": "WHY/context"},
             "dxy": {"source": "market price", "ticker": "DX-Y.NYB", "role": "WHY", "quality": "DATA_REQUIRED" if not dxy_ok else "MARKET_PRICE_SERIES"},
             "fear_greed": {"source": "CNN", "role": "WHY", "components": COMPONENTS},
@@ -215,13 +227,13 @@ def main() -> None:
         f"- FRED core: {report['fred']['quality']}",
         f"- VIX: {report['market_prices']['vix_quality']}",
         f"- DXY ticker: {report['market_prices']['dxy_quality']}",
-        f"- CNN current 7 components + headline: {report['fear_greed']['current_quality']}",
-        f"- CNN component history: {report['fear_greed']['history_quality']} ({report['fear_greed']['history_rows']} rows)",
+        f"- CNN current headline + 7 components: {report['fear_greed']['current_quality']}",
+        f"- CNN headline + component history: {report['fear_greed']['history_quality']} ({report['fear_greed']['history_rows']} rows)",
         "",
         "Macro WHY remains explanatory context only; never a trading Gate.",
     ]
     (args.output / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print("DONE MACRO WHY QA v2", flush=True)
+    print("DONE MACRO WHY QA v3", flush=True)
 
 
 if __name__ == "__main__":
