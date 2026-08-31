@@ -1,0 +1,109 @@
+name: Rotation Theme Stock Context Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme_stock_context.py
+      - .github/workflows/rotation-theme-stock-context-research.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rotation-theme-stock-context-research
+  cancel-in-progress: true
+
+jobs:
+  context:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install isolated research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance requests openpyxl lxml html5lib
+
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/rotation_theme_stock_context.py
+          python -m py_compile leadership/build_market_snapshot.py
+          python -m py_compile leadership/build_leadership_exact.py
+
+      - name: Build independent Leadership market snapshot
+        run: |
+          python leadership/build_market_snapshot.py \
+            --universe universe.csv \
+            --output leadership/market_snapshot.json \
+            --benchmark QQQ \
+            --period 15mo \
+            --batch-size 80 \
+            --max-symbols 0
+
+      - name: Build existing Leadership model in temp only
+        run: |
+          rm -rf /tmp/rotation-leadership-model
+          mkdir -p /tmp/rotation-leadership-model
+          python leadership/build_leadership_exact.py \
+            --root . \
+            --output /tmp/rotation-leadership-model
+
+      - name: Join Industry ETF membership to existing Leadership model
+        run: |
+          rm -rf leadership/research/rotation_theme_stock_context
+          python leadership/research/rotation_theme_stock_context.py \
+            --leadership /tmp/rotation-leadership-model/leadership.json \
+            --matrix leadership/research/rotation_live/latest_matrix.csv \
+            --output leadership/research/rotation_theme_stock_context
+
+      - name: Validate research context output
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('leadership/research/rotation_theme_stock_context/rotation_theme_stock_context.json')
+          d=json.loads(p.read_text())
+          if d.get('research_only') is not True:
+              raise SystemExit('research_only guard missing')
+          items=d.get('industry_context') or []
+          if [x.get('etf') for x in items] != ['XBI','XME','SOXX','IGV']:
+              raise SystemExit('industry set mismatch')
+          if any((x.get('membership_rows') or 0) < 5 for x in items):
+              raise SystemExit('insufficient provider holdings')
+          total=sum(int(x.get('leadership_matches') or 0) for x in items)
+          if total < 10:
+              raise SystemExit(f'insufficient Leadership intersection: {total}')
+          if any('Rotation stock score' in json.dumps(x, ensure_ascii=False) for x in items):
+              raise SystemExit('unexpected Rotation stock score')
+          print(json.dumps({
+              'leadership_market_asof': (d.get('leadership_coverage') or {}).get('market_asof'),
+              'leadership_confidence': (d.get('leadership_coverage') or {}).get('confidence'),
+              'total_matches': total,
+              'summary': [{
+                  'etf': x.get('etf'),
+                  'state': (x.get('rotation') or {}).get('state'),
+                  'members': x.get('membership_rows'),
+                  'matches': x.get('leadership_matches'),
+                  'leaders': len(x.get('existing_emerging_or_leading_leaders') or []),
+              } for x in items],
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload research-only context
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme-stock-context-research
+          path: leadership/research/rotation_theme_stock_context/
+          if-no-files-found: error
+          retention-days: 14
