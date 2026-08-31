@@ -8,23 +8,23 @@
       "ticker": "XLC",
       "level": "SECTOR",
       "close": 112.98999786376953,
-      "weekly_rsi14": 51.855580052915016,
+      "weekly_rsi14": 51.85557986186277,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -0.1678763393655469,
       "rs63_vs_spy": -0.040430535098914144,
-      "rs189_vs_spy": -0.14520975619964172,
+      "rs189_vs_spy": -0.1452096892028384,
       "matrix_price_score": 26.666666666666668,
-      "matrix_internal_score": 80.0,
-      "matrix_internal_delta20": 46.66666666666667,
+      "matrix_internal_score": 73.33333333333333,
+      "matrix_internal_delta20": 40.0,
       "validated_price_score": 27.272727272727273,
       "validated_internal_score": 81.81818181818183,
       "validated_internal_delta20": 63.63636363636364,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 0.0,
+      "flow_5d_usd": -151453931.69999987,
+      "flow_20d_usd": -131875998.65000024,
+      "flow_20d_pct_aum": -0.5910351583282368,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -38,8 +38,8 @@
       "obv_positive20_rank": 81.81818181818183,
       "updown_volume20": 1.4079362776579731,
       "updown_volume20_rank": 90.9090909090909,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "INTERNAL_LEAD_WATCH",
+      "state_reason": "価格より内部参加が強い。観測用で将来Alphaは主張しない",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -47,7 +47,7 @@
       "ticker": "XLY",
       "level": "SECTOR",
       "close": 117.20999908447266,
-      "weekly_rsi14": 51.20875565632308,
+      "weekly_rsi14": 51.20875542375055,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -2.2109139933126687,
@@ -59,11 +59,11 @@
       "validated_price_score": 22.727272727272727,
       "validated_internal_score": 36.36363636363637,
       "validated_internal_delta20": -18.181818181818173,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 0.0,
+      "flow_5d_usd": -206122586.74999982,
+      "flow_20d_usd": 173513804.94999987,
+      "flow_20d_pct_aum": 0.7667176529818569,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -77,8 +77,8 @@
       "obv_positive20_rank": 27.27272727272727,
       "updown_volume20": 0.8919769221270113,
       "updown_volume20_rank": 27.27272727272727,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "WEAK_BREAKDOWN",
+      "state_reason": "価格・内部がともに弱い",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -86,7 +86,7 @@
       "ticker": "XLP",
       "level": "SECTOR",
       "close": 85.44999694824219,
-      "weekly_rsi14": 56.25556830984148,
+      "weekly_rsi14": 56.25556977839659,
       "above_21ema": false,
       "above_50ma": true,
       "distance_20d_high_pct": -2.287021234756259,
@@ -98,11 +98,11 @@
       "validated_price_score": 59.090909090909086,
       "validated_internal_score": 45.45454545454545,
       "validated_internal_delta20": 0.0,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 29788700.55,
+      "flow_5d_usd": -274810497.84999985,
+      "flow_20d_usd": -362043940.45000005,
+      "flow_20d_pct_aum": -2.4894726055685257,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -116,8 +116,8 @@
       "obv_positive20_rank": 45.45454545454545,
       "updown_volume20": 1.117307005888187,
       "updown_volume20_rank": 45.45454545454545,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "INTERNAL_WEAK_FLOW_OUT",
+      "state_reason": "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -125,7 +125,7 @@
       "ticker": "XLE",
       "level": "SECTOR",
       "close": 62.68000030517578,
-      "weekly_rsi14": 63.13655868156528,
+      "weekly_rsi14": 63.136558695121316,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -1.678430893841909,
@@ -137,11 +137,11 @@
       "validated_price_score": 90.9090909090909,
       "validated_internal_score": 72.72727272727273,
       "validated_internal_delta20": -27.272727272727266,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 326941093.5,
+      "flow_5d_usd": -415429810.2,
+      "flow_20d_usd": -297119105.2999998,
+      "flow_20d_pct_aum": -0.7331743478251085,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -155,8 +155,8 @@
       "obv_positive20_rank": 72.72727272727273,
       "updown_volume20": 1.1533522286834095,
       "updown_volume20_rank": 54.54545454545454,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "DISTRIBUTION_DETERIORATION_WARNING",
+      "state_reason": "PIT delta型: Price>=70・Internal20D変化<=-20pt・Flow<=0。2024+ 40D支持、20D block CIは0跨ぎ。早期警戒Contextのみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -164,23 +164,23 @@
       "ticker": "XLF",
       "level": "SECTOR",
       "close": 58.099998474121094,
-      "weekly_rsi14": 69.95354996732945,
+      "weekly_rsi14": 69.95355116989295,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -0.3601490211353586,
       "rs63_vs_spy": 0.11071825954637449,
-      "rs189_vs_spy": -0.03067406726413502,
+      "rs189_vs_spy": -0.030674148253029276,
       "matrix_price_score": 70.0,
       "matrix_internal_score": 53.333333333333336,
       "matrix_internal_delta20": -39.99999999999999,
       "validated_price_score": 77.27272727272727,
       "validated_internal_score": 63.63636363636363,
       "validated_internal_delta20": -27.272727272727273,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": -497967580.2,
+      "flow_5d_usd": -1191262996.749999,
+      "flow_20d_usd": -3261237732.25,
+      "flow_20d_pct_aum": -5.900424225916177,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -194,8 +194,8 @@
       "obv_positive20_rank": 63.63636363636363,
       "updown_volume20": 1.2195023897071842,
       "updown_volume20_rank": 63.63636363636363,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "DISTRIBUTION_DETERIORATION_WARNING",
+      "state_reason": "PIT delta型: Price>=70・Internal20D変化<=-20pt・Flow<=0。2024+ 40D支持、20D block CIは0跨ぎ。早期警戒Contextのみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -203,7 +203,7 @@
       "ticker": "XLV",
       "level": "SECTOR",
       "close": 171.16000366210938,
-      "weekly_rsi14": 67.84423783353719,
+      "weekly_rsi14": 67.84423864435857,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -2.5728535986528356,
@@ -215,11 +215,11 @@
       "validated_price_score": 68.18181818181819,
       "validated_internal_score": 90.9090909090909,
       "validated_internal_delta20": 18.181818181818173,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 60069869.65,
+      "flow_5d_usd": -444981998.40000004,
+      "flow_20d_usd": -95164879.24999985,
+      "flow_20d_pct_aum": -0.2155714374743437,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -233,8 +233,8 @@
       "obv_positive20_rank": 100.0,
       "updown_volume20": 1.480944578683687,
       "updown_volume20_rank": 100.0,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "REDEMPTION_DIVERGENCE",
+      "state_reason": "価格・内部は強いがETF Flowは流出。売り抜けと断定しない",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -242,7 +242,7 @@
       "ticker": "XLI",
       "level": "SECTOR",
       "close": 177.13999938964844,
-      "weekly_rsi14": 52.79679279470712,
+      "weekly_rsi14": 52.796792667133474,
       "above_21ema": false,
       "above_50ma": false,
       "distance_20d_high_pct": -5.023856840467644,
@@ -254,11 +254,11 @@
       "validated_price_score": 63.63636363636364,
       "validated_internal_score": 27.27272727272727,
       "validated_internal_delta20": -27.27272727272727,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": -366641190.04999995,
+      "flow_5d_usd": -284485346.45000017,
+      "flow_20d_usd": 381071875.3000001,
+      "flow_20d_pct_aum": 1.1587625654028655,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -272,8 +272,8 @@
       "obv_positive20_rank": 36.36363636363637,
       "updown_volume20": 1.1050770727546992,
       "updown_volume20_rank": 36.36363636363637,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "FLOW_INTERNAL_DIVERGENCE_WATCH",
+      "state_reason": "ETF Flow流入に内部参加が追随していない。WATCHのみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -281,7 +281,7 @@
       "ticker": "XLB",
       "level": "SECTOR",
       "close": 53.18000030517578,
-      "weekly_rsi14": 60.65754716245062,
+      "weekly_rsi14": 60.657547112217074,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -0.9129828218497171,
@@ -293,11 +293,11 @@
       "validated_price_score": 77.27272727272728,
       "validated_internal_score": 81.81818181818183,
       "validated_internal_delta20": 45.45454545454546,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 13313565.75,
+      "flow_5d_usd": -10805180.34999998,
+      "flow_20d_usd": 91517677.89999995,
+      "flow_20d_pct_aum": 1.038073522308357,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -311,8 +311,8 @@
       "obv_positive20_rank": 90.9090909090909,
       "updown_volume20": 1.2931356183900011,
       "updown_volume20_rank": 81.81818181818183,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "CURRENT_STRENGTH",
+      "state_reason": "価格・内部が同時に強い現在状態。PIT研究では将来Alphaを確認できず、買いシグナルではない",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -320,7 +320,7 @@
       "ticker": "XLRE",
       "level": "SECTOR",
       "close": 44.47999954223633,
-      "weekly_rsi14": 53.378588597598124,
+      "weekly_rsi14": 53.37858794251403,
       "above_21ema": false,
       "above_50ma": false,
       "distance_20d_high_pct": -1.9400376020153987,
@@ -332,11 +332,11 @@
       "validated_price_score": 45.45454545454545,
       "validated_internal_score": 18.181818181818183,
       "validated_internal_delta20": -18.181818181818183,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 13393836.3,
+      "flow_5d_usd": -4514746.800000038,
+      "flow_20d_usd": -127003371.45000003,
+      "flow_20d_pct_aum": -1.5115130274416948,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -350,8 +350,8 @@
       "obv_positive20_rank": 18.181818181818183,
       "updown_volume20": 0.8427472549360548,
       "updown_volume20_rank": 18.181818181818183,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "INTERNAL_WEAK_FLOW_OUT",
+      "state_reason": "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -359,7 +359,7 @@
       "ticker": "XLK",
       "level": "SECTOR",
       "close": 185.69000244140625,
-      "weekly_rsi14": 61.07148209847497,
+      "weekly_rsi14": 61.07148267818846,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -2.662893388522103,
@@ -371,11 +371,11 @@
       "validated_price_score": 59.090909090909086,
       "validated_internal_score": 54.54545454545454,
       "validated_internal_delta20": 27.27272727272727,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": -113226921.6,
+      "flow_5d_usd": -38462150.24999927,
+      "flow_20d_usd": -1090681590.7500005,
+      "flow_20d_pct_aum": -0.8863612872959437,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -389,8 +389,8 @@
       "obv_positive20_rank": 54.54545454545454,
       "updown_volume20": 1.238166416308194,
       "updown_volume20_rank": 72.72727272727273,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "MIXED_HOLD",
+      "state_reason": "方向不一致または閾値未達",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -398,23 +398,23 @@
       "ticker": "XLU",
       "level": "SECTOR",
       "close": 42.72999954223633,
-      "weekly_rsi14": 42.05273450783317,
+      "weekly_rsi14": 42.05273468135476,
       "above_21ema": false,
       "above_50ma": false,
       "distance_20d_high_pct": -3.67448387215501,
       "rs63_vs_spy": -0.05153636423370744,
-      "rs189_vs_spy": -0.17169041903686,
+      "rs189_vs_spy": -0.1716903351048139,
       "matrix_price_score": 13.333333333333334,
       "matrix_internal_score": 6.666666666666667,
       "matrix_internal_delta20": -13.333333333333332,
       "validated_price_score": 9.090909090909092,
       "validated_internal_score": 9.090909090909092,
       "validated_internal_delta20": 0.0,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 0.0,
+      "flow_5d_usd": 90705063.10000002,
+      "flow_20d_usd": -45482081.85000017,
+      "flow_20d_pct_aum": -0.2042813546995044,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -428,8 +428,8 @@
       "obv_positive20_rank": 9.090909090909092,
       "updown_volume20": 0.7891186951683354,
       "updown_volume20_rank": 9.090909090909092,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "WEAK_BREAKDOWN",
+      "state_reason": "価格・内部がともに弱い",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -437,7 +437,7 @@
       "ticker": "XBI",
       "level": "INDUSTRY",
       "close": 162.3800048828125,
-      "weekly_rsi14": 66.19226760147818,
+      "weekly_rsi14": 66.19226768677677,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -4.228839893772552,
@@ -449,11 +449,11 @@
       "validated_price_score": null,
       "validated_internal_score": null,
       "validated_internal_delta20": null,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": -71496242.1,
+      "flow_5d_usd": 267911692.07499996,
+      "flow_20d_usd": 981784860.05,
+      "flow_20d_pct_aum": 8.182391682323386,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
@@ -467,8 +467,8 @@
       "obv_positive20_rank": 93.33333333333333,
       "updown_volume20": 1.5231804463690977,
       "updown_volume20_rank": 93.33333333333333,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "CURRENT_STRENGTH",
+      "state_reason": "価格・内部が同時に強い現在状態。PIT研究では将来Alphaを確認できず、買いシグナルではない",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -476,38 +476,38 @@
       "ticker": "XME",
       "level": "INDUSTRY",
       "close": 118.73999786376953,
-      "weekly_rsi14": 57.252458046683024,
+      "weekly_rsi14": 57.25245793901284,
       "above_21ema": true,
       "above_50ma": true,
       "distance_20d_high_pct": -3.4634163709190813,
       "rs63_vs_spy": -0.0706574631482868,
-      "rs189_vs_spy": 0.10728568485041712,
+      "rs189_vs_spy": 0.10728578501981056,
       "matrix_price_score": 43.33333333333333,
       "matrix_internal_score": 93.33333333333333,
       "matrix_internal_delta20": 73.33333333333333,
       "validated_price_score": null,
       "validated_internal_score": null,
       "validated_internal_delta20": null,
-      "flow_1d_usd": null,
-      "flow_5d_usd": null,
-      "flow_20d_usd": null,
-      "flow_20d_pct_aum": null,
-      "flow_asof": "2026-08-28",
+      "flow_1d_usd": 12297721.2,
+      "flow_5d_usd": 129960661.59999995,
+      "flow_20d_usd": 334186232.55,
+      "flow_20d_pct_aum": 6.619852583674246,
+      "flow_asof": "2026-08-27",
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
-      "breadth21": 58.97435897435898,
+      "breadth21": 57.89473684210527,
       "breadth21_rank": 60.0,
-      "breadth50": 66.66666666666666,
-      "breadth50_rank": 66.66666666666666,
-      "ad20_score": 57.37179487179487,
+      "breadth50": 65.78947368421053,
+      "breadth50_rank": 63.33333333333333,
+      "ad20_score": 57.36842105263158,
       "ad20_score_rank": 93.33333333333333,
-      "obv_positive20": 79.48717948717949,
+      "obv_positive20": 78.94736842105263,
       "obv_positive20_rank": 100.0,
-      "updown_volume20": 1.6105885793802805,
+      "updown_volume20": 1.6089853241401928,
       "updown_volume20_rank": 100.0,
-      "state": "DATA_REQUIRED",
-      "state_reason": "price/internal/flowのいずれかが不足",
+      "state": "EARLY_ROTATION_WATCH",
+      "state_reason": "内部改善＋Flow流入が価格に先行。PIT研究では買いシグナル不採用、WATCHのみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -515,7 +515,7 @@
       "ticker": "SOXX",
       "level": "INDUSTRY",
       "close": 508.6199951171875,
-      "weekly_rsi14": 53.248578287732954,
+      "weekly_rsi14": 53.24857816430998,
       "above_21ema": false,
       "above_50ma": false,
       "distance_20d_high_pct": -9.032050443736239,
@@ -545,8 +545,8 @@
       "obv_positive20_rank": 26.666666666666668,
       "updown_volume20": 1.0353403485987516,
       "updown_volume20_rank": 26.666666666666668,
-      "state": "MIXED_HOLD",
-      "state_reason": "方向不一致または閾値未達",
+      "state": "INTERNAL_WEAK_FLOW_OUT",
+      "state_reason": "内部弱＋ETF Flow流出。Industryでは未PIT検証の診断表示のみ",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     },
     {
@@ -574,18 +574,18 @@
       "flow_quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
       "internal_membership_quality": "EXACT_CURRENT_MEMBERSHIP",
       "internal_trend_history_quality": "CURRENT_HOLDINGS_BACKCAST_PROXY_UNTIL_LIVE_HISTORY_MATURES",
-      "breadth21": 80.0,
+      "breadth21": 79.24528301886792,
       "breadth21_rank": 100.0,
-      "breadth50": 79.04761904761905,
+      "breadth50": 78.30188679245283,
       "breadth50_rank": 93.33333333333333,
-      "ad20_score": 55.4047619047619,
+      "ad20_score": 55.400943396226424,
       "ad20_score_rank": 86.66666666666667,
-      "obv_positive20": 73.33333333333333,
+      "obv_positive20": 73.58490566037736,
       "obv_positive20_rank": 80.0,
-      "updown_volume20": 1.4065539555451445,
-      "updown_volume20_rank": 73.33333333333333,
-      "state": "MIXED_HOLD",
-      "state_reason": "方向不一致または閾値未達",
+      "updown_volume20": 1.4089792752074826,
+      "updown_volume20_rank": 80.0,
+      "state": "INTERNAL_LEAD_WATCH",
+      "state_reason": "価格より内部参加が強い。観測用で将来Alphaは主張しない",
       "state_evidence": "DESCRIPTIVE_NOT_TRADING_SIGNAL"
     }
   ],
@@ -703,15 +703,39 @@
   "observations": [
     {
       "type": "FLOW_LEADERS",
-      "text": "20D Flow流入上位: IGV +80M / SOXX -3632M"
+      "text": "20D Flow流入上位: XBI +982M / XLI +381M / XME +334M / XLY +174M"
     },
     {
       "type": "FLOW_LAGGARDS",
-      "text": "20D Flow流出上位: SOXX -3632M / IGV +80M"
+      "text": "20D Flow流出上位: SOXX -3632M / XLF -3261M / XLK -1091M / XLP -362M"
+    },
+    {
+      "type": "REDEMPTION_DIVERGENCE",
+      "text": "Flow流出でも内部強: XLV"
     },
     {
       "type": "FEAR_GREED_SPLIT",
       "text": "Fear & Greed内部は分裂: Fear=market_momentum_sp500,stock_price_strength,safe_haven_demand / Greed=stock_price_breadth,put_call_options,junk_bond_demand"
+    },
+    {
+      "type": "DISTRIBUTION_DETERIORATION",
+      "text": "内部急落型の早期分配警戒（40D支持）: XLE / XLF"
+    },
+    {
+      "type": "FLOW_INTERNAL_DIVERGENCE",
+      "text": "Flow流入だが内部弱・昇格待ち: XLI"
+    },
+    {
+      "type": "INTERNAL_WEAK_FLOW_OUT",
+      "text": "内部弱＋Flow流出: XLP / XLRE / SOXX"
+    },
+    {
+      "type": "INTERNAL_LEAD",
+      "text": "価格より内部が先行（観測のみ）: XLC / IGV"
+    },
+    {
+      "type": "RATE_SENSITIVE_PRESSURE",
+      "text": "米10年 4.73% は52週高値 4.75%近辺。内部弱の金利感応: XLRE / XLU"
     }
   ],
   "source_quality": {
@@ -906,8 +930,8 @@
       {
         "ticker": "XME",
         "source_members": 40,
-        "downloaded_members": 39,
-        "source_member_coverage": 0.975
+        "downloaded_members": 38,
+        "source_member_coverage": 0.95
       },
       {
         "ticker": "SOXX",
@@ -918,8 +942,8 @@
       {
         "ticker": "IGV",
         "source_members": 106,
-        "downloaded_members": 105,
-        "source_member_coverage": 0.9905660377358491
+        "downloaded_members": 106,
+        "source_member_coverage": 1.0
       }
     ],
     "validated_sector_internal": [
@@ -1004,7 +1028,9 @@
         "median_tna_identity_rel_error": 3.4414863099623705e-09,
         "max_tna_identity_rel_error": 1.2072646226588543e-08,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLY",
@@ -1021,7 +1047,9 @@
         "median_tna_identity_rel_error": 2.7165264382647544e-09,
         "max_tna_identity_rel_error": 0.29869809272098286,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLP",
@@ -1036,7 +1064,9 @@
         "median_tna_identity_rel_error": 4.826504273779913e-09,
         "max_tna_identity_rel_error": 0.10696171619407248,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLE",
@@ -1053,7 +1083,9 @@
         "median_tna_identity_rel_error": 3.729678519983752e-09,
         "max_tna_identity_rel_error": 0.02118564181643248,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLF",
@@ -1068,7 +1100,9 @@
         "median_tna_identity_rel_error": 9.0119589920372e-09,
         "max_tna_identity_rel_error": 0.47447034221264783,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLV",
@@ -1083,7 +1117,9 @@
         "median_tna_identity_rel_error": 3.1713856822852448e-09,
         "max_tna_identity_rel_error": 0.387207980698871,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLI",
@@ -1098,7 +1134,9 @@
         "median_tna_identity_rel_error": 3.769515548545246e-09,
         "max_tna_identity_rel_error": 0.3807168741742851,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLB",
@@ -1115,7 +1153,9 @@
         "median_tna_identity_rel_error": 4.725291354116901e-09,
         "max_tna_identity_rel_error": 0.4674369010744514,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLRE",
@@ -1130,7 +1170,9 @@
         "median_tna_identity_rel_error": 6.459210043847998e-09,
         "max_tna_identity_rel_error": 2.0506952880625308e-07,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLK",
@@ -1147,7 +1189,9 @@
         "median_tna_identity_rel_error": 3.732279534761424e-09,
         "max_tna_identity_rel_error": 0.09890417564011826,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XLU",
@@ -1164,7 +1208,9 @@
         "median_tna_identity_rel_error": 4.9659683420105986e-09,
         "max_tna_identity_rel_error": 0.39799910904261393,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XBI",
@@ -1181,7 +1227,9 @@
         "median_tna_identity_rel_error": 2.8462064993625903e-09,
         "max_tna_identity_rel_error": 0.05000000044882208,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "XME",
@@ -1196,7 +1244,9 @@
         "median_tna_identity_rel_error": 5.4330876898402075e-09,
         "max_tna_identity_rel_error": 0.14184166611560955,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-27",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "SOXX",
@@ -1211,7 +1261,9 @@
         "median_tna_identity_rel_error": null,
         "max_tna_identity_rel_error": null,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-28",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       },
       {
         "ticker": "IGV",
@@ -1226,7 +1278,9 @@
         "median_tna_identity_rel_error": null,
         "max_tna_identity_rel_error": null,
         "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
-        "normalized_to_actual_etf_trading_days": true
+        "normalized_to_actual_etf_trading_days": true,
+        "live_latest_valid_flow_date": "2026-08-28",
+        "live_selection_policy": "LATEST_VALID_OFFICIAL_20D_FLOW_NO_FORWARD_FILL"
       }
     ]
   },

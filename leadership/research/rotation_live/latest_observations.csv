@@ -1,4 +1,10 @@
 type,text
-FLOW_LEADERS,20D Flow流入上位: IGV +80M / SOXX -3632M
-FLOW_LAGGARDS,20D Flow流出上位: SOXX -3632M / IGV +80M
+FLOW_LEADERS,20D Flow流入上位: XBI +982M / XLI +381M / XME +334M / XLY +174M
+FLOW_LAGGARDS,20D Flow流出上位: SOXX -3632M / XLF -3261M / XLK -1091M / XLP -362M
+REDEMPTION_DIVERGENCE,Flow流出でも内部強: XLV
 FEAR_GREED_SPLIT,"Fear & Greed内部は分裂: Fear=market_momentum_sp500,stock_price_strength,safe_haven_demand / Greed=stock_price_breadth,put_call_options,junk_bond_demand"
+DISTRIBUTION_DETERIORATION,内部急落型の早期分配警戒（40D支持）: XLE / XLF
+FLOW_INTERNAL_DIVERGENCE,Flow流入だが内部弱・昇格待ち: XLI
+INTERNAL_WEAK_FLOW_OUT,内部弱＋Flow流出: XLP / XLRE / SOXX
+INTERNAL_LEAD,価格より内部が先行（観測のみ）: XLC / IGV
+RATE_SENSITIVE_PRESSURE,米10年 4.73% は52週高値 4.75%近辺。内部弱の金利感応: XLRE / XLU
