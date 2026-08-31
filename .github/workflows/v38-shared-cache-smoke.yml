@@ -1,0 +1,112 @@
+name: V38 shared cache live smoke
+
+on:
+  push:
+    branches: [fix/v38-sleeve-price-cache-20260901]
+    paths:
+      - '.github/workflows/v38-shared-cache-smoke.yml'
+      - 'sitecustomize.py'
+      - 'tests/test_v38_shared_price_cache.py'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      TZ: Asia/Tokyo
+      V38_SHARED_PRICE_CACHE: /tmp/v38-shared-price-cache.pkl
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/v38-sleeve-price-cache-20260901
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Unit test cache shim
+        run: pytest -q tests/test_v38_shared_price_cache.py
+      - name: Prepare isolated live copies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp v38-strict-loo-history.json /tmp/v38-strict-loo-history.json
+          cp tqqq-panic-state.json /tmp/tqqq-panic-state.json
+          rm -f "$V38_SHARED_PRICE_CACHE" /tmp/v38-sleeve-state.json
+      - name: Rebuild strict LOO and write shared OHLC cache
+        run: |
+          python build_v38_strict_loo_live.py \
+            --state state.json \
+            --sector-snapshot sector_snapshot.json \
+            --history /tmp/v38-strict-loo-history.json \
+            --out /tmp/v38-strict-loo-live.json
+          test -s "$V38_SHARED_PRICE_CACHE"
+          python - <<'PY'
+          import os, pandas as pd
+          p = pd.read_pickle(os.environ['V38_SHARED_PRICE_CACHE'])
+          assert p.get('schema') == 'v38-shared-price-cache-1'
+          assert p['close'].shape[0] >= 90
+          assert p['close'].shape[1] >= 1000
+          assert p['open'].notna().sum().sum() > 0
+          print('CACHE', p['close'].shape, 'OPEN_NONNULL', int(p['open'].notna().sum().sum()))
+          PY
+      - name: Build provisional companion
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo /tmp/v38-strict-loo-live.json \
+            --tqqq-panic /tmp/tqqq-panic-state.json \
+            --out /tmp/v38-live-provisional.json
+      - name: Build sleeves from shared cache without second Yahoo download
+        run: |
+          python build_v38_sleeve_live.py \
+            --companion /tmp/v38-live-provisional.json \
+            --state /tmp/v38-sleeve-state.json \
+            --seed v38-normal-sleeve-seed.json \
+            --strict-history /tmp/v38-strict-loo-history.json \
+            --tqqq-state /tmp/tqqq-panic-state.json \
+            --out /tmp/v38-sleeve-state.json
+      - name: Rebuild final companion and require live Gross100
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo /tmp/v38-strict-loo-live.json \
+            --tqqq-panic /tmp/tqqq-panic-state.json \
+            --sleeve-state /tmp/v38-sleeve-state.json \
+            --out /tmp/v38-live-final.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          sleeve = json.loads(Path('/tmp/v38-sleeve-state.json').read_text())
+          final = json.loads(Path('/tmp/v38-live-final.json').read_text())
+          assert sleeve['status'] == 'READY', sleeve
+          assert sleeve['normal_stock']['desired_pct'] is not None
+          assert sleeve['rsi_reset']['desired_pct'] is not None
+          assert final['gross100_allocation']['status'] == 'LIVE ALLOCATION READY', final['gross100_allocation']
+          gross = float(final['gross100_allocation']['gross_allocated_pct'])
+          assert gross <= 100.000001
+          assert final['panic_reset']['status'] == 'READY / LIVE'
+          assert len(final['panic_reset'].get('monitor') or []) > 0
+          print('NORMAL_DESIRED', sleeve['normal_stock']['desired_pct'])
+          print('RESET_DESIRED', sleeve['rsi_reset']['desired_pct'])
+          print('NORMAL_ALLOC', final['gross100_allocation']['normal_stock_allocated_pct'])
+          print('RESET_ALLOC', final['gross100_allocation']['reset_allocated_pct'])
+          print('TQQQ_ALLOC', final['gross100_allocation']['tqqq_allocated_pct'])
+          print('GROSS', gross)
+          print('RESET_MONITOR', sleeve['rsi_reset'].get('monitor_summary'))
+          PY
+      - name: Upload smoke outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: v38-shared-cache-live-smoke
+          path: |
+            /tmp/v38-sleeve-state.json
+            /tmp/v38-live-final.json
+            /tmp/tqqq-panic-state.json
+          retention-days: 2
