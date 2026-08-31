@@ -1,0 +1,54 @@
+name: Rotation PIT All States Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_pit_all_states_cached_backtest.py
+      - .github/workflows/rotation-pit-all-states-research.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install pinned research dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml
+          python -m pip install --disable-pip-version-check "git+https://github.com/arielNacamulli/pitindex.git@c3d5d4961076a59041b3e1de90fe5ea052f61bb4"
+      - name: Download pre-audited PIT sector snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/pit-source
+          gh api repos/${{ github.repository }}/actions/artifacts/9742872318/zip > /tmp/pit-source.zip
+          unzip -q /tmp/pit-source.zip -d /tmp/pit-source
+          test -s /tmp/pit-source/monthly_wikipedia_sector_snapshots.csv
+          test -s /tmp/pit-source/monthly_wikipedia_pit_quality.csv
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/rotation_pit_all_states_cached_backtest.py
+      - name: Run strict PIT state validation
+        run: |
+          python leadership/research/rotation_pit_all_states_cached_backtest.py \
+            --snapshots /tmp/pit-source/monthly_wikipedia_sector_snapshots.csv \
+            --snapshot-quality /tmp/pit-source/monthly_wikipedia_pit_quality.csv \
+            --analysis-start 2022-04-18 \
+            --analysis-end 2026-08-17 \
+            --price-download-start 2021-01-01 \
+            --min-coverage 0.80 \
+            --output leadership/research/rotation_pit_all_states_outputs
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-pit-all-states-research
+          path: leadership/research/rotation_pit_all_states_outputs/
+          if-no-files-found: warn
+          retention-days: 14
