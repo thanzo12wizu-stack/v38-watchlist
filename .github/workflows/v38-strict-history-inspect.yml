@@ -1,0 +1,44 @@
+name: V38 strict history inspect
+
+on:
+  push:
+    branches: [fix/v38-sleeve-price-cache-20260901]
+    paths:
+      - '.github/workflows/v38-strict-history-inspect.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/v38-sleeve-price-cache-20260901
+      - name: Summarize strict history
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('v38-strict-loo-history.json').read_text())
+          sessions=d.get('sessions',[])
+          print('SESSION_COUNT',len(sessions))
+          print('SESSION_DATES',[x.get('asof') for x in sessions])
+          for row in sessions[-3:]:
+              print('SESSION',row.get('asof'),'KEYS',sorted(row.keys()))
+              for k,v in row.items():
+                  if isinstance(v,dict):
+                      print(' ',k,'DICT',len(v),'SAMPLE',list(v.items())[:2])
+                  elif isinstance(v,list):
+                      print(' ',k,'LIST',len(v),'SAMPLE',v[:2])
+                  else:
+                      print(' ',k,repr(v))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v38-strict-history-inspect
+          path: |
+            v38-strict-loo-history.json
+            v38-strict-loo-live.json
+          retention-days: 1
