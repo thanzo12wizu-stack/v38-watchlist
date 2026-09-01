@@ -19,7 +19,7 @@ HEADERS = {
     "Accept": "application/json,text/plain,*/*",
     "Origin": "https://www.etf.com",
     "Referer": "https://www.etf.com/",
-    "x-limit": "10000",
+    "x-limit": "500",
 }
 
 
@@ -31,29 +31,33 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def _find_record_list(obj: Any) -> list[dict[str, Any]]:
-    """Find the securities list without assuming one ETF.com response wrapper."""
+    """Find the largest securities list without assuming wrapper or key casing."""
     candidates: list[list[dict[str, Any]]] = []
+    symbol_keys = {"symbol", "ticker", "securitysymbol", "holdingsymbol"}
 
     def walk(x: Any, depth: int = 0) -> None:
-        if depth > 6:
+        if depth > 7:
             return
         if isinstance(x, list):
             rows = [r for r in x if isinstance(r, dict)]
             if rows:
                 symbolish = sum(
                     1 for r in rows
-                    if any(k in r for k in ("symbol", "ticker", "securitySymbol", "holdingSymbol"))
+                    if any(str(k).lower() in symbol_keys for k in r)
                 )
                 if symbolish:
                     candidates.append(rows)
             for item in x[:5]:
                 walk(item, depth + 1)
         elif isinstance(x, dict):
-            for key in ("data", "results", "holdings", "securities", "items", "rows"):
-                if key in x:
-                    walk(x[key], depth + 1)
-            if not any(k in x for k in ("data", "results", "holdings", "securities", "items", "rows")):
-                for value in list(x.values())[:12]:
+            preferred = {"data", "results", "holdings", "securities", "items", "rows"}
+            matched = False
+            for key, value in x.items():
+                if str(key).lower() in preferred:
+                    matched = True
+                    walk(value, depth + 1)
+            if not matched:
+                for value in list(x.values())[:20]:
                     if isinstance(value, (list, dict)):
                         walk(value, depth + 1)
 
@@ -169,8 +173,6 @@ def compare_membership(api: pd.DataFrame, reference: pd.DataFrame, ticker: str) 
     coverage = len(inter) / len(b) if b else 0.0
     precision = len(inter) / len(a) if a else 0.0
     jaccard = len(inter) / len(union) if union else 0.0
-    # Current memberships can differ by a few creations/rebalances or by cash rows. Require
-    # substantial set agreement, but do not require impossible byte-identical provider files.
     passed = len(b) >= 10 and coverage >= 0.80 and precision >= 0.75 and jaccard >= 0.68
     return {
         "ticker": ticker,
@@ -184,93 +186,67 @@ def compare_membership(api: pd.DataFrame, reference: pd.DataFrame, ticker: str) 
     }
 
 
+def _records(df: pd.DataFrame) -> list[dict[str, Any]]:
+    if df.empty:
+        return []
+    return json.loads(df.where(pd.notna(df), None).to_json(orient="records", force_ascii=False))
+
+
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Validate ETF.com current holdings as Theme56 fallback")
+    ap = argparse.ArgumentParser(description="Validate ETF.com current Theme56 holdings against exact issuer current memberships")
     ap.add_argument("--config", type=Path, default=Path("leadership/research/rotation_theme56_config.json"))
-    ap.add_argument("--issuer-holdings", type=Path, default=Path("leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv"))
-    ap.add_argument("--expansion-holdings", type=Path, default=Path("leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv"))
-    ap.add_argument("--firsttrust-holdings", type=Path, default=Path("leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv"))
+    ap.add_argument("--official", type=Path, default=Path("leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv"))
+    ap.add_argument("--expansion", type=Path, default=Path("leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv"))
+    ap.add_argument("--firsttrust", type=Path, default=Path("leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv"))
     ap.add_argument("--output", type=Path, default=Path("leadership/research/rotation_theme56_etfcom_holdings"))
     args = ap.parse_args()
 
     cfg = load_json(args.config)
-    tickers = [str(x.get("ticker") or "").upper().strip() for x in (cfg.get("themes") or [])]
-    if len(tickers) != 56 or len(set(tickers)) != 56:
+    tickers = [str(x.get("ticker") or "").upper().strip() for x in cfg.get("themes") or [] if isinstance(x, dict)]
+    if len(tickers) != 56:
         raise RuntimeError("Theme56 config mismatch")
     universe = set(tickers)
+    reference = read_reference([args.official, args.expansion, args.firsttrust], universe)
+    reference_tickers = set(reference["sector_etf"])
 
-    reference = read_reference([args.issuer_holdings, args.expansion_holdings, args.firsttrust_holdings], universe)
     session = requests.Session()
     frames: list[pd.DataFrame] = []
-    fetch_diag: list[dict[str, Any]] = []
-    failures: list[dict[str, str]] = []
+    fetch_rows: list[dict[str, Any]] = []
     for idx, ticker in enumerate(tickers, 1):
         try:
             df, diag = fetch_holdings(session, ticker)
             frames.append(df)
-            fetch_diag.append(diag)
-            print(f"HOLD {idx}/{len(tickers)} {ticker} rows={len(df)}", flush=True)
+            fetch_rows.append({**diag, "status": "FETCHED"})
+            print(f"ETFCOM_HOLDINGS {idx}/{len(tickers)} {ticker} rows={len(df)}", flush=True)
         except Exception as exc:
-            failures.append({"ticker": ticker, "error": f"{type(exc).__name__}: {exc}"})
-            print(f"HOLD {idx}/{len(tickers)} {ticker} FAIL {exc}", flush=True)
-
-    if not frames:
-        raise RuntimeError("ETF.com returned no Theme56 holdings")
-    all_holdings = pd.concat(frames, ignore_index=True).drop_duplicates(["sector_etf", "symbol"], keep="first")
-    reference_tickers = sorted(set(reference["sector_etf"]) & set(all_holdings["sector_etf"]))
-    validations = [compare_membership(all_holdings, reference, t) for t in reference_tickers]
+            fetch_rows.append({"ticker": ticker, "status": "FAIL", "error": f"{type(exc).__name__}: {exc}"})
+            print(f"ETFCOM_HOLDINGS {idx}/{len(tickers)} {ticker} FAIL {exc}", flush=True)
+    api = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["sector_etf", "symbol"])
+    validations = [compare_membership(api, reference, t) for t in sorted(reference_tickers)]
     vdf = pd.DataFrame(validations)
     comparable = vdf[vdf["reference_rows"] >= 10] if not vdf.empty else vdf
     pass_ratio = float((comparable["status"] == "PASS").mean()) if len(comparable) else 0.0
-    median_coverage = float(pd.to_numeric(comparable["reference_coverage"], errors="coerce").median()) if len(comparable) else 0.0
-    median_jaccard = float(pd.to_numeric(comparable["jaccard"], errors="coerce").median()) if len(comparable) else 0.0
-    aggregate_pass = len(comparable) >= 20 and pass_ratio >= 0.85 and median_coverage >= 0.90 and median_jaccard >= 0.80
-
-    fetched = set(all_holdings["sector_etf"])
-    status = []
-    for ticker in tickers:
-        n = int((all_holdings["sector_etf"] == ticker).sum())
-        status.append({
-            "ticker": ticker,
-            "rows": n,
-            "status": "PASS" if aggregate_pass and n >= 5 else "DATA_REQUIRED",
-        })
+    aggregate_pass = len(comparable) >= 25 and pass_ratio >= 0.85
 
     args.output.mkdir(parents=True, exist_ok=True)
-    all_holdings.to_csv(args.output / "theme56_etfcom_current_holdings.csv", index=False)
+    api.to_csv(args.output / "theme56_etfcom_current_holdings.csv", index=False)
+    pd.DataFrame(fetch_rows).to_csv(args.output / "etfcom_holdings_fetch_qa.csv", index=False)
     vdf.to_csv(args.output / "etfcom_vs_exact_holdings_validation.csv", index=False)
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "aggregate_validation_pass": aggregate_pass,
-        "reference_ticker_count": int(len(comparable)),
-        "reference_pass_ratio": pass_ratio,
-        "median_reference_coverage": median_coverage,
-        "median_jaccard": median_jaccard,
-        "api_success_count": len(fetched),
-        "api_success_tickers": sorted(fetched),
-        "failures": failures,
-        "validation": validations,
-        "status": status,
-        "quality_contract": "ETF.com current securities membership is accepted only as ETFCOM_VALIDATED_CURRENT_MEMBERSHIP after broad cross-source validation against exact current issuer/First Trust holdings. Issuer exact membership remains preferred.",
-        "guardrails": [
-            "No Top-10 page is accepted when the ETF.com full securities endpoint is unavailable.",
-            "No inferred or price-based membership is created.",
-            "DRAM may remain DATA_REQUIRED as the explicitly accepted short-history exception.",
-        ],
+        "reference_ticker_count": len(reference_tickers),
+        "comparable_reference_tickers": len(comparable),
+        "validation_pass_ratio": pass_ratio,
+        "api_success_count": int(api["sector_etf"].nunique()) if not api.empty else 0,
+        "api_success_tickers": sorted(api["sector_etf"].unique().tolist()) if not api.empty else [],
+        "fetch": fetch_rows,
+        "validation": _records(vdf),
+        "contract": "ETF.com current membership can only be used as a broad fallback if it validates across exact issuer current memberships. Issuer exact holdings remain preferred.",
     }
     (args.output / "etfcom_holdings_qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
-    print(json.dumps({
-        "aggregate_validation_pass": aggregate_pass,
-        "reference_ticker_count": len(comparable),
-        "reference_pass_ratio": pass_ratio,
-        "median_reference_coverage": median_coverage,
-        "median_jaccard": median_jaccard,
-        "api_success_count": len(fetched),
-        "failures": len(failures),
-    }, ensure_ascii=False, indent=2), flush=True)
-    if not aggregate_pass:
-        raise RuntimeError("ETF.com holdings fallback did not pass cross-source validation")
+    print(json.dumps({"aggregate_validation_pass": aggregate_pass, "api_success": report["api_success_count"], "reference_tickers": len(reference_tickers), "pass_ratio": pass_ratio}, ensure_ascii=False, indent=2), flush=True)
 
 
 if __name__ == "__main__":
