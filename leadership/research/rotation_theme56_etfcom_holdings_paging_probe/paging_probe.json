@@ -1,0 +1,1853 @@
+{
+  "schema": 1,
+  "tickers": {
+    "CIBR": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 33,
+            "dict_rows": 33,
+            "symbolish_rows": 33
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 33,
+            "dict_rows": 33,
+            "symbolish_rows": 33
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "GRID": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 103,
+            "dict_rows": 103,
+            "symbolish_rows": 103
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 103,
+            "dict_rows": 103,
+            "symbolish_rows": 103
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "WCLD": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 66,
+            "dict_rows": 66,
+            "symbolish_rows": 66
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 66,
+            "dict_rows": 66,
+            "symbolish_rows": 66
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "PHO": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 39,
+            "dict_rows": 39,
+            "symbolish_rows": 39
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 39,
+            "dict_rows": 39,
+            "symbolish_rows": 39
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "TAN": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 37,
+            "dict_rows": 37,
+            "symbolish_rows": 37
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 37,
+            "dict_rows": 37,
+            "symbolish_rows": 37
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "PKB": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 31,
+            "dict_rows": 31,
+            "symbolish_rows": 31
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 31,
+            "dict_rows": 31,
+            "symbolish_rows": 31
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "PEJ": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 31,
+            "dict_rows": 31,
+            "symbolish_rows": 31
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 31,
+            "dict_rows": 31,
+            "symbolish_rows": 31
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "BLOK": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 54,
+            "dict_rows": 54,
+            "symbolish_rows": 54
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 54,
+            "dict_rows": 54,
+            "symbolish_rows": 54
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "IBUY": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 77,
+            "dict_rows": 77,
+            "symbolish_rows": 77
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 77,
+            "dict_rows": 77,
+            "symbolish_rows": 77
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "BOAT": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 49,
+            "dict_rows": 49,
+            "symbolish_rows": 49
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 49,
+            "dict_rows": 49,
+            "symbolish_rows": 49
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "WGMI": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 20,
+            "dict_rows": 20,
+            "symbolish_rows": 20
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 20,
+            "dict_rows": 20,
+            "symbolish_rows": 20
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ],
+    "JETS": [
+      {
+        "variant": "base",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "pageSize500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "size500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "offset_limit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 52,
+            "dict_rows": 52,
+            "symbolish_rows": 52
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "xlimit_offset",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 52,
+            "dict_rows": 52,
+            "symbolish_rows": 52
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      },
+      {
+        "variant": "page1_limit500",
+        "status_code": 200,
+        "lists": [
+          {
+            "path": "$[0].data",
+            "length": 10,
+            "dict_rows": 10,
+            "symbolish_rows": 10
+          },
+          {
+            "path": "$",
+            "length": 1,
+            "dict_rows": 1,
+            "symbolish_rows": 1
+          }
+        ],
+        "paging_scalars": []
+      }
+    ]
+  }
+}
