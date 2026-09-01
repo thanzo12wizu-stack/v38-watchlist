@@ -1,0 +1,60 @@
+# Research-only follow-up. Does not modify dashboard/main outputs.
+name: TQQQ Selective Fill Lock Guard
+
+on:
+  push:
+    branches:
+      - research/tqqq-attack-fill-20260901
+    paths:
+      - leadership/research/audit_tqqq_selective_fill_lock_guard.py
+      - .github/workflows/tqqq-selective-fill-lock-guard.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_tqqq_attack_fill.py
+          python -m py_compile leadership/research/audit_tqqq_selective_fill_lock_guard.py
+      - name: Download frozen inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p inputs/components inputs/tqqq inputs/prior
+          gh run download 33338433195 -R "$GITHUB_REPOSITORY" -n gross100-component-series -D inputs/components
+          gh run download 33080590798 -R "$GITHUB_REPOSITORY" -n tqqq-stage56-mandate-fx-tax -D inputs/tqqq
+          gh run download 33482553048 -R "$GITHUB_REPOSITORY" -n tqqq-attack-cash-fill-audit -D inputs/prior
+          test -f inputs/components/ordinary_PEAK30_PART25_R3_daily.csv.gz
+          test -f inputs/components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
+          test -f inputs/tqqq/tqqq_stage56_daily.csv.gz
+          test -f inputs/prior/daily_base.csv.gz
+          test -f inputs/prior/daily_attack_selective_fill.csv.gz
+      - name: Run three lock-guard variants
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_tqqq_selective_fill_lock_guard.py \
+            --components-dir inputs/components \
+            --tqqq-daily inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --prior-audit-dir inputs/prior \
+            --output leadership/research/out/tqqq_selective_fill_lock_guard
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-selective-fill-lock-guard
+          path: leadership/research/out/tqqq_selective_fill_lock_guard/
+          retention-days: 14
