@@ -4,6 +4,7 @@ import argparse
 import csv
 import io
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,62 @@ def resolve_ishares_product_pages(session: requests.Session, wanted: set[str]) -
     return out
 
 
+EXCHANGE_SUFFIX_RULES: list[tuple[str, str]] = [
+    ("NASDAQ", ""), ("NYSE", ""), ("CBOE", ""),
+    ("SHANGHAI", ".SS"), ("SHENZHEN", ".SZ"),
+    ("HONG KONG", ".HK"), ("TOKYO", ".T"),
+    ("KOREA EXCHANGE", ".KS"), ("KOSDAQ", ".KQ"),
+    ("TAIWAN STOCK", ".TW"), ("TAIPEI", ".TW"),
+    ("COPENHAGEN", ".CO"), ("XETRA", ".DE"), ("FRANKFURT", ".DE"),
+    ("LONDON", ".L"), ("EURONEXT LISBON", ".LS"), ("LISBON", ".LS"),
+    ("EURONEXT PARIS", ".PA"), ("PARIS", ".PA"),
+    ("EURONEXT AMSTERDAM", ".AS"), ("AMSTERDAM", ".AS"),
+    ("MILAN", ".MI"), ("BORSA ITALIANA", ".MI"),
+    ("MADRID", ".MC"), ("SWISS", ".SW"),
+    ("HELSINKI", ".HE"), ("STOCKHOLM", ".ST"), ("OSLO", ".OL"),
+    ("TORONTO", ".TO"), ("XBSP", ".SA"), ("B3", ".SA"),
+    ("TEL AVIV", ".TA"), ("NATIONAL STOCK EXCHANGE OF INDIA", ".NS"),
+    ("BOMBAY", ".BO"), ("INDONESIA", ".JK"), ("ISTANBUL", ".IS"),
+    ("WIENER", ".VI"), ("AUSTRALIAN", ".AX"), ("JOHANNESBURG", ".JO"),
+    ("SANTIAGO", ".SN"),
+]
+
+
+def normalize_ishares_symbol(symbol: str, exchange: str, location: str = "") -> str:
+    raw = str(symbol or "").strip().upper()
+    if not raw or raw in {"-", "--", "NAN"}:
+        return ""
+    ex = str(exchange or "").strip().upper()
+    loc = str(location or "").strip().upper()
+    suffix = None
+    for needle, candidate in EXCHANGE_SUFFIX_RULES:
+        if needle in ex:
+            suffix = candidate
+            break
+    if suffix is None:
+        # Conservative location fallback only where the local exchange is unambiguous.
+        location_suffix = {
+            "JAPAN": ".T", "BRAZIL": ".SA", "DENMARK": ".CO", "SWEDEN": ".ST",
+            "FINLAND": ".HE", "NORWAY": ".OL", "SWITZERLAND": ".SW", "CANADA": ".TO",
+            "TAIWAN": ".TW", "KOREA (SOUTH)": ".KS", "UNITED KINGDOM": ".L",
+            "ISRAEL": ".TA", "AUSTRALIA": ".AX", "INDONESIA": ".JK",
+        }
+        suffix = location_suffix.get(loc)
+    if suffix is None:
+        return raw
+    if suffix == "":
+        if re.fullmatch(r"[A-Z]{1,6}[/.][A-Z]", raw):
+            return raw.replace("/", "-").replace(".", "-")
+        return raw
+    if suffix == ".HK" and raw.isdigit():
+        raw = raw.zfill(4)
+    if suffix in {".ST", ".CO", ".OL", ".HE"}:
+        raw = raw.replace(" ", "-")
+    if suffix == ".L":
+        raw = raw.replace("/", "").replace(" ", "-")
+    return raw + suffix
+
+
 def fetch_ishares_holdings(session: requests.Session, ticker: str, product_page: str) -> tuple[pd.DataFrame, dict[str, Any]]:
     urls = [
         product_page.rstrip("/") + "/latest-holdings.csv",
@@ -90,9 +147,14 @@ def fetch_ishares_holdings(session: requests.Session, ticker: str, product_page:
                 raise RuntimeError("holdings CSV header not found")
             rows: list[dict[str, Any]] = []
             for row in csv.DictReader(io.StringIO("\n".join(lines[header_idx:]))):
-                symbol = (row.get("Ticker") or "").strip().upper()
+                provider_symbol = (row.get("Ticker") or "").strip().upper()
                 asset = (row.get("Asset Class") or "").strip().lower()
-                if not symbol or asset != "equity":
+                if not provider_symbol or asset != "equity":
+                    continue
+                exchange = (row.get("Exchange") or "").strip()
+                location = (row.get("Location") or "").strip()
+                symbol = normalize_ishares_symbol(provider_symbol, exchange, location)
+                if not symbol:
                     continue
                 weight = None
                 for key in ("Weight (%)", "Weight", "% of Net Assets", "Market Value Weight"):
@@ -105,9 +167,12 @@ def fetch_ishares_holdings(session: requests.Session, ticker: str, product_page:
                             break
                 rows.append({
                     "sector_etf": ticker,
+                    "provider_symbol": provider_symbol,
                     "symbol": symbol,
                     "weight_pct": weight,
                     "name": (row.get("Name") or "").strip(),
+                    "exchange": exchange,
+                    "location": location,
                     "source_url": url,
                 })
             out = pd.DataFrame(rows).drop_duplicates("symbol", keep="first")
@@ -211,7 +276,7 @@ def main() -> None:
     fail_df = qa.loc[~qa["full_stack_adapter"], failure_cols].copy()
     failures = fail_df.where(pd.notna(fail_df), None).to_dict("records") if not fail_df.empty else []
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
         "supported_provider_families": ["SSGA", "ISHARES"],
         "candidate_count": int(len(qa)),
@@ -220,6 +285,7 @@ def main() -> None:
         "full_stack_adapter_pass": int(qa["full_stack_adapter"].sum()),
         "full_stack_tickers": qa.loc[qa["full_stack_adapter"], "ticker"].tolist(),
         "persisted_flow_start": args.persist_flow_start,
+        "symbol_normalization": "iShares provider ticker + official Exchange/Location fields are translated to market-data lookup symbols while provider_symbol is preserved.",
         "failures": failures,
         "guardrails": [
             "Only official current holdings are accepted for Internals membership.",
