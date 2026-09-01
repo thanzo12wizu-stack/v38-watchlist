@@ -31,6 +31,9 @@ def load_config(path: Path) -> dict[str, Any]:
     themes = obj.get("themes")
     if not isinstance(themes, list) or len(themes) != 56:
         raise RuntimeError(f"expected exactly 56 themes, got {0 if not isinstance(themes, list) else len(themes)}")
+    tickers = [str(x.get("ticker") or "").upper().strip() for x in themes if isinstance(x, dict)]
+    if len(tickers) != 56 or len(set(tickers)) != 56 or any(not x for x in tickers):
+        raise RuntimeError("theme56 config contains duplicate or missing tickers")
     return obj
 
 
