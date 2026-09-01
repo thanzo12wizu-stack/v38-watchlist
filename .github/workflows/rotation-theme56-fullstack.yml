@@ -8,12 +8,14 @@ on:
     paths:
       - leadership/research/rotation_theme56_config.json
       - leadership/research/rotation_theme56_fullstack_snapshot.py
+      - leadership/research/rotation_theme56_fullstack_dram_overlay.py
       - leadership/research/rotation_theme56_live/theme56_price.json
       - leadership/research/rotation_theme56_provider_qa/**
       - leadership/research/rotation_theme56_holdings_expansion/**
       - leadership/research/rotation_theme56_firsttrust/**
       - leadership/research/rotation_theme56_secondary_holdings_fallback/**
       - leadership/research/rotation_theme56_etfcom_flow/**
+      - leadership/research/rotation_theme56_dram_supplement/**
       - .github/workflows/rotation-theme56-fullstack.yml
 
 permissions:
@@ -38,7 +40,9 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
       - name: Syntax check
-        run: python -m py_compile leadership/research/rotation_theme56_fullstack_snapshot.py
+        run: |
+          python -m py_compile leadership/research/rotation_theme56_fullstack_snapshot.py
+          python -m py_compile leadership/research/rotation_theme56_fullstack_dram_overlay.py
       - name: Merge exact current holdings supplements
         run: |
           python - <<'PY'
@@ -71,6 +75,17 @@ jobs:
             --etfcom-flows leadership/research/rotation_theme56_etfcom_flow/theme56_etfcom_daily_flows.csv \
             --etfcom-flow-qa leadership/research/rotation_theme56_etfcom_flow/etfcom_flow_qa.json \
             --output leadership/research/rotation_theme56_fullstack \
+            --download-start 2025-10-01 \
+            --download-end 2026-09-02
+      - name: Overlay DRAM supplemental context
+        run: |
+          test -f leadership/research/rotation_theme56_dram_supplement/dram_supplement.json
+          test -f leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv
+          python leadership/research/rotation_theme56_fullstack_dram_overlay.py \
+            --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
+            --price leadership/research/rotation_theme56_live/theme56_price.json \
+            --dram-supplement leadership/research/rotation_theme56_dram_supplement/dram_supplement.json \
+            --dram-holdings leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv \
             --download-start 2025-10-01 \
             --download-end 2026-09-02
       - name: Persist snapshot
