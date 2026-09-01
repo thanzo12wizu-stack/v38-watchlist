@@ -1,0 +1,65 @@
+name: Rotation Theme56 Quiver Holdings Rescue
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme56_quiver_holdings_rescue.py
+      - .github/workflows/rotation-theme56-quiver-holdings-rescue.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-quiver-holdings-rescue
+  cancel-in-progress: true
+
+jobs:
+  rescue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas requests beautifulsoup4 lxml html5lib
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_theme56_quiver_holdings_rescue.py
+      - name: Build current membership rescue
+        run: python leadership/research/rotation_theme56_quiver_holdings_rescue.py
+      - name: Persist output
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="leadership/research/rotation_theme56_secondary_holdings_fallback"
+          TMP="$(mktemp -d)/fallback"
+          cp -a "$SRC" "$TMP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin research/rotation-exact-flow-internals-20260831
+            git reset --hard origin/research/rotation-exact-flow-internals-20260831
+            rm -rf "$SRC"
+            mkdir -p "$(dirname "$SRC")"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "research: record current Quiver Theme56 holdings rescue"
+            if git push origin HEAD:research/rotation-exact-flow-internals-20260831; then exit 0; fi
+          done
+          exit 1
+      - name: Upload output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-quiver-holdings-rescue
+          path: leadership/research/rotation_theme56_secondary_holdings_fallback/
+          if-no-files-found: warn
+          retention-days: 14
