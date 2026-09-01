@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: rotation-theme56-fullstack
@@ -112,6 +113,10 @@ jobs:
             echo "Push race on attempt ${attempt}; retrying"
           done
           exit 1
+      - name: Dispatch public brief refresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run rotation-theme56-public-brief.yml --ref research/rotation-exact-flow-internals-20260831
       - name: Upload outputs
         if: always()
         uses: actions/upload-artifact@v4
