@@ -23,6 +23,12 @@ def num(v: Any) -> float | None:
 
 
 def classify(row: dict[str, Any]) -> tuple[str, str]:
+    if str(row.get("ticker") or "").upper() == "DRAM" and (
+        row.get("rs189_pending") is True
+        or row.get("price_quality") == "MARKET_PRICE_SERIES_RS189_PENDING"
+    ):
+        return "RS189_PENDING", "2026-04-02設定。短期価格・補助Internals・1M実Fund Flowは表示し、RS189と総合Price Scoreのみ履歴待ち。"
+
     p = num(row.get("price_score_56"))
     i = num(row.get("internal_score_56"))
     d = num(row.get("internal_delta20_56"))
@@ -77,6 +83,11 @@ def main() -> None:
         state, reason = classify(raw)
         holdings_quality = str(raw.get("holdings_quality") or "")
         flow_quality = str(raw.get("flow_quality") or "")
+        internal_display = raw.get("internal_score_56")
+        internal_display_quality = "THEME56_STANDARD"
+        if num(internal_display) is None and num(raw.get("internal_supplemental_score_55ref")) is not None:
+            internal_display = raw.get("internal_supplemental_score_55ref")
+            internal_display_quality = str(raw.get("internal_supplemental_quality") or "DRAM_SUPPLEMENTAL")
         theme_rows.append({
             "ticker": raw.get("ticker"),
             "label": raw.get("label"),
@@ -85,8 +96,17 @@ def main() -> None:
             "state_evidence": "THEME56_DESCRIPTIVE_NOT_TRADING_SIGNAL",
             "state_reason": reason,
             "price_score": raw.get("price_score_56"),
-            "internal_score": raw.get("internal_score_56"),
+            "price_quality": raw.get("price_quality"),
+            "inception_date": raw.get("inception_date"),
+            "rs189_pending": raw.get("rs189_pending") is True,
+            "rs63_vs_spy": raw.get("rs63_vs_spy"),
+            "internal_score": internal_display,
+            "internal_display_quality": internal_display_quality,
             "internal_delta20": raw.get("internal_delta20_56"),
+            "internal_supplemental_members": raw.get("internal_supplemental_members"),
+            "internal_supplemental_downloaded_members": raw.get("internal_supplemental_downloaded_members"),
+            "internal_supplemental_coverage": raw.get("internal_supplemental_coverage"),
+            "internal_supplemental_membership_asof": raw.get("internal_supplemental_membership_asof"),
             "ret_1d_pct": raw.get("ret_1d_pct"),
             "ret_5d_pct": raw.get("ret_5d_pct"),
             "ret_20d_pct": raw.get("ret_20d_pct"),
@@ -96,6 +116,10 @@ def main() -> None:
             "flow_20d_pct_aum": raw.get("flow_20d_pct_aum"),
             "flow_provider": raw.get("flow_provider"),
             "flow_quality": flow_quality or None,
+            "flow_1m_usd": raw.get("flow_1m_usd"),
+            "flow_1m_pct_aum": raw.get("flow_1m_pct_aum"),
+            "flow_1m_provider": raw.get("flow_1m_provider"),
+            "flow_1m_quality": raw.get("flow_1m_quality"),
             "holdings_quality": holdings_quality or None,
             "source_member_coverage": raw.get("source_member_coverage"),
             "quality": raw.get("quality"),
@@ -117,13 +141,13 @@ def main() -> None:
         "coverage": len(flow_rows),
         "universe": 56,
         "source_counts": fs.get("flow_source_counts") or {},
-        "note": "Issuer-derived Exact Flowを優先し、残りは発行会社データとの照合を通過したETF.com actual fund flowを使用。価格・出来高proxyは不使用。",
+        "note": "Issuer-derived Exact Flowを優先し、残りは発行会社データとの照合を通過したETF.com actual fund flowを使用。価格・出来高proxyは不使用。DRAM補助1M Flowはこの20日ランキングには混ぜない。",
     }
     out["observations"] = observations
 
     theme_asof = fs.get("asof")
     base_asof = base.get("asof")
-    out["schema"] = 4
+    out["schema"] = 5
     out["research_only"] = True
     out["deterministic_formatter"] = True
     out["asof"] = theme_asof or base_asof
@@ -146,7 +170,8 @@ def main() -> None:
         "issuer_exact_flow_count": fs.get("issuer_exact_flow_count"),
         "validated_actual_flow_count": fs.get("validated_actual_flow_count"),
         "measured_full_stack_count": fs.get("measured_full_stack_count"),
-        "formal_exception": "DRAM: 上場後の履歴不足によりRS189未計算。",
+        "dram_supplemental": fs.get("dram_supplemental"),
+        "formal_exception": "DRAM: 2026-04-02設定。短期価格・補助Internals・1M実Fund Flowは表示し、RS189と総合Price Scoreのみ履歴待ち。",
         "classification_contract": "DESCRIPTIVE_ONLY_NOT_TRADING_SIGNAL",
     }
     limits = out.get("limitations") if isinstance(out.get("limitations"), list) else []
@@ -155,7 +180,9 @@ def main() -> None:
         "Fund Flow uses issuer-derived Exact Flow where clean and ETF.com validated actual fund flow otherwise; no price/volume proxy is substituted.",
         "Theme56 constituent membership prefers issuer-exact current holdings; validated fallback membership is separately labeled and must meet the >=80% validation contract.",
         "Theme56 leading-stock membership is current membership and is not historical PIT membership.",
-        "DRAM is the sole formal data exception because its post-launch history is insufficient for RS189.",
+        "DRAM launched on 2026-04-02, so RS189 and the established composite Price Score remain pending; short returns and RS63 remain visible.",
+        "DRAM supplemental Internal uses current direct listed equities only and a frozen 55-theme reference percentile; it does not alter the existing 55-theme Internal ranks.",
+        "DRAM supplemental TradingView fund_flows.1M is displayed only as 1M context and is not substituted into the validated 20-trading-day Flow ranking or state rules.",
         "Distribution Warning is deliberately not assigned at Theme56 level until separate PIT validation is complete.",
     ]
     out["limitations"] = limits + [x for x in theme_limits if x not in limits]
