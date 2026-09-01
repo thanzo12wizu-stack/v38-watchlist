@@ -9,7 +9,10 @@ thousands of per-symbol fallback requests.
 """
 from __future__ import annotations
 
+import json
 import math
+import sys
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -92,9 +95,61 @@ def download_adjusted_ohlc_resilient(
     return _normalize(op), _normalize(cl), quality
 
 
+def _reset_display_candidate(row: dict[str, Any]) -> bool:
+    """Keep only strong, still-actionable Reset names in the published monitor."""
+    status = str(row.get("status") or "")
+    if status in {"ACTIVE_POSITION", "SIGNAL_TODAY_NEXT_OPEN"}:
+        return True
+    if status == "SIGNAL_OCCURRED" or row.get("current_theme_rs63_top3") is not True:
+        return False
+    try:
+        days_left = int(row.get("signal_window_days_left"))
+        distance = float(row.get("distance_to_30"))
+    except (TypeError, ValueError):
+        return False
+    return days_left > 0 and math.isfinite(distance) and distance <= 10.0
+
+
+def _filter_reset_monitor(path: Path) -> None:
+    state = json.loads(path.read_text(encoding="utf-8"))
+    reset = state.get("rsi_reset")
+    if not isinstance(reset, dict) or not isinstance(reset.get("monitor"), list):
+        return
+
+    visible = [row for row in reset["monitor"] if isinstance(row, dict) and _reset_display_candidate(row)]
+    reset["monitor"] = visible
+    reset["monitor_summary"] = {
+        "active_positions": sum(str(row.get("status") or "") == "ACTIVE_POSITION" for row in visible),
+        "signal_today": sum(str(row.get("status") or "") == "SIGNAL_TODAY_NEXT_OPEN" for row in visible),
+        "touched_wait_rise": sum(str(row.get("status") or "") == "RSI30_TOUCHED_WAIT_RISE" for row in visible),
+        "within_5pt": sum(
+            math.isfinite(float(row.get("distance_to_30"))) and float(row.get("distance_to_30")) <= 5.0
+            for row in visible
+            if row.get("distance_to_30") is not None
+        ),
+        "within_10pt": sum(
+            math.isfinite(float(row.get("distance_to_30"))) and float(row.get("distance_to_30")) <= 10.0
+            for row in visible
+            if row.get("distance_to_30") is not None
+        ),
+        "watch_count": len(visible),
+    }
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"SLEEVE_RESET_DISPLAY_FILTER {len(visible)} strong actionable names", flush=True)
+
+
+def _output_path() -> Path:
+    try:
+        idx = sys.argv.index("--out")
+        return Path(sys.argv[idx + 1])
+    except (ValueError, IndexError):
+        return Path("v38-sleeve-state.json")
+
+
 def main() -> None:
     live.download_adjusted_ohlc = download_adjusted_ohlc_resilient
     live.main()
+    _filter_reset_monitor(_output_path())
 
 
 if __name__ == "__main__":
