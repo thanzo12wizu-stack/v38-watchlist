@@ -105,31 +105,44 @@ def main() -> None:
 
     rows: list[dict[str, Any]] = []
     for ticker in tickers:
+        s = close[ticker] if ticker in close.columns else pd.Series(dtype=float)
+        sd = pd.to_numeric(s, errors="coerce").dropna()
+        inception_date = None if sd.empty else str(pd.Timestamp(sd.index.min()).date())
         if ticker not in usable:
+            short_ready = len(sd) >= 21
+            rs63_ready = len(sd) >= 64
+            rel63_value = None
+            if rs63_ready:
+                rel63_single = pd.to_numeric(s, errors="coerce").pct_change(63, fill_method=None).sub(
+                    spy.pct_change(63, fill_method=None), axis=0
+                )
+                rel63_value = latest_num(rel63_single)
             rows.append({
                 "ticker": ticker,
                 "label": labels[ticker],
-                "quality": "DATA_REQUIRED",
+                "quality": "MARKET_PRICE_SERIES_RS189_PENDING" if short_ready else "DATA_REQUIRED",
                 "valid_price_rows": counts[ticker],
-                "close": None,
-                "ret_1d_pct": None,
-                "ret_5d_pct": None,
-                "ret_20d_pct": None,
-                "rs63_vs_spy": None,
+                "inception_date": inception_date,
+                "rs189_pending": True,
+                "close": latest_num(s) if not sd.empty else None,
+                "ret_1d_pct": None if len(sd) < 2 else float(100.0 * (sd.iloc[-1] / sd.iloc[-2] - 1.0)),
+                "ret_5d_pct": None if len(sd) < 6 else float(100.0 * (sd.iloc[-1] / sd.iloc[-6] - 1.0)),
+                "ret_20d_pct": None if len(sd) < 21 else float(100.0 * (sd.iloc[-1] / sd.iloc[-21] - 1.0)),
+                "rs63_vs_spy": rel63_value,
                 "rs189_vs_spy": None,
                 "rs63_rank": None,
                 "rs189_rank": None,
                 "price_score": None,
             })
             continue
-        s = close[ticker]
-        sd = s.dropna()
         last = latest_num(s)
         rows.append({
             "ticker": ticker,
             "label": labels[ticker],
             "quality": "MARKET_PRICE_SERIES",
             "valid_price_rows": counts[ticker],
+            "inception_date": inception_date,
+            "rs189_pending": False,
             "close": last,
             "ret_1d_pct": None if len(sd) < 2 else float(100.0 * (sd.iloc[-1] / sd.iloc[-2] - 1.0)),
             "ret_5d_pct": None if len(sd) < 6 else float(100.0 * (sd.iloc[-1] / sd.iloc[-6] - 1.0)),
@@ -144,27 +157,29 @@ def main() -> None:
     out = pd.DataFrame(rows)
     args.output.mkdir(parents=True, exist_ok=True)
     out.to_csv(args.output / "theme56_price.csv", index=False)
-    latest_dates = [close[t].dropna().index.max() for t in usable if not close[t].dropna().empty]
+    latest_dates = [close[t].dropna().index.max() for t in tickers if t in close.columns and not close[t].dropna().empty]
     asof = str(max(latest_dates).date()) if latest_dates else None
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
         "asof": asof,
         "universe_count": len(tickers),
         "price_usable_count": len(usable),
-        "data_required_count": len(tickers) - len(usable),
+        "partial_price_count": sum(1 for x in rows if x.get("quality") == "MARKET_PRICE_SERIES_RS189_PENDING"),
+        "data_required_count": sum(1 for x in rows if x.get("quality") == "DATA_REQUIRED"),
         "price_usable_tickers": usable,
-        "data_required_tickers": [t for t in tickers if t not in usable],
+        "partial_price_tickers": [str(x.get("ticker")) for x in rows if x.get("quality") == "MARKET_PRICE_SERIES_RS189_PENDING"],
+        "data_required_tickers": [str(x.get("ticker")) for x in rows if x.get("quality") == "DATA_REQUIRED"],
         "price_rows_by_ticker": counts,
         "individual_retry_tickers": retry_tickers,
         "individual_retry_rows": retry_counts,
-        "price_cross_section": "56-theme universe only; not comparable to the old 15-ETF score scale",
+        "price_cross_section": "RS189/composite price score remains on the established >=190-row universe; short returns are retained for newer ETFs without changing existing Theme56 ranks.",
         "download_diagnostics": diag,
-        "guardrail": "No Rotation V2 state is assigned here. The old 15-ETF state thresholds are not reused before 56-theme validation.",
+        "guardrail": "No Rotation V2 state is assigned here. A newer ETF may expose short price history while RS189/composite scoring remains pending.",
         "rows": rows,
     }
     (args.output / "theme56_price.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
-    print(json.dumps({k: report[k] for k in ("asof", "universe_count", "price_usable_count", "data_required_count", "data_required_tickers", "individual_retry_rows")}, ensure_ascii=False, indent=2), flush=True)
+    print(json.dumps({k: report[k] for k in ("asof", "universe_count", "price_usable_count", "partial_price_count", "data_required_count", "partial_price_tickers", "data_required_tickers", "individual_retry_rows")}, ensure_ascii=False, indent=2), flush=True)
 
 
 if __name__ == "__main__":
