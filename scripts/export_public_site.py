@@ -14,6 +14,9 @@ PUBLIC_FILES = (
     "v38-live-state.json",
     "swinote/index.html",
     "swinote/live.js",
+    "rotation/index.html",
+    "rotation/app.css",
+    "rotation/app-theme56.js",
 )
 
 # Optional source -> public-target mappings. Leadership is produced by its own
