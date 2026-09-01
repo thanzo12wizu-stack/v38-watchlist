@@ -12,6 +12,7 @@ on:
       - leadership/research/rotation_theme56_fullstack/**
       - leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv
       - leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv
+      - leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv
       - leadership/research/rotation_live/latest_matrix.csv
       - .github/workflows/rotation-theme-stock-context-research.yml
 
@@ -127,6 +128,7 @@ jobs:
             --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
             --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
             --holdings-expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
+            --holdings-fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
             --output leadership/research/rotation_theme56_stock_context
 
       - name: Validate Theme56 context
@@ -136,11 +138,13 @@ jobs:
           from pathlib import Path
           d=json.loads(Path('leadership/research/rotation_theme56_stock_context/rotation_theme56_stock_context.json').read_text(encoding='utf-8'))
           items=d.get('industry_context') or []
-          if d.get('research_only') is not True or d.get('context_scope')!='THEME56_EXACT_CURRENT_MEMBERSHIP_X_FULL_LEADERSHIP_EXPORT': raise SystemExit('Theme56 context guard missing')
+          if d.get('research_only') is not True or d.get('context_scope')!='THEME56_READY_CURRENT_MEMBERSHIP_X_FULL_LEADERSHIP_EXPORT': raise SystemExit('Theme56 context guard missing')
           if len(items)!=56 or len({x.get('etf') for x in items})!=56: raise SystemExit('Theme56 ETF set mismatch')
-          if int(d.get('exact_membership_theme_count') or 0)<35: raise SystemExit('Theme56 exact membership coverage unexpectedly low')
-          if int(d.get('themes_with_leaders') or 0)<10: raise SystemExit('Theme56 leader coverage unexpectedly low')
-          print(json.dumps({'themes':len(items),'membership':d.get('exact_membership_theme_count'),'with_leaders':d.get('themes_with_leaders')},ensure_ascii=False))
+          if int(d.get('membership_ready_theme_count') or 0)!=55: raise SystemExit('Theme56 membership coverage must be 55/56')
+          missing=[x.get('etf') for x in items if int(x.get('membership_rows') or 0)==0]
+          if missing!=['DRAM']: raise SystemExit(f'unexpected Theme56 membership exceptions: {missing}')
+          if int(d.get('themes_with_leaders') or 0)<20: raise SystemExit('Theme56 leader coverage unexpectedly low')
+          print(json.dumps({'themes':len(items),'membership_ready':d.get('membership_ready_theme_count'),'issuer_exact':d.get('issuer_exact_membership_theme_count'),'validated_fallback':d.get('validated_fallback_membership_theme_count'),'with_leaders':d.get('themes_with_leaders')},ensure_ascii=False))
           PY
 
       - name: Upload research-only contexts
@@ -171,7 +175,7 @@ jobs:
             cp -a "$T2" leadership/research/rotation_theme56_stock_context
             git add leadership/research/rotation_theme_stock_context leadership/research/rotation_theme56_stock_context
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "research: record Rotation 15 and Theme56 stock contexts"
+            git commit -m "research: record Rotation 15 and completed Theme56 stock contexts"
             if git push origin "HEAD:$BRANCH"; then exit 0; fi
           done
           exit 1
