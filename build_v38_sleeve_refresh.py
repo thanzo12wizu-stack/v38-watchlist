@@ -13,6 +13,7 @@ import math
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -466,6 +467,36 @@ def _load_payload(path: Path) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _write_payload(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _attempted_asof(failed_payload: dict[str, Any]) -> str | None:
+    value = str(failed_payload.get("asof") or "").strip()
+    if value:
+        return value
+    companion = _load_payload(_argument_path("--companion", "v38-live-state.json"))
+    value = str(companion.get("asof") or "").strip()
+    return value or None
+
+
+def _refresh_metadata(*, status: str, attempted_asof: str | None,
+                      last_successful_asof: str | None, preserved: bool,
+                      error: str | None) -> dict[str, Any]:
+    return {
+        "status": status,
+        "attempted_at_utc": _utc_now_iso(),
+        "attempted_asof": attempted_asof,
+        "last_successful_asof": last_successful_asof,
+        "preserved_previous_ready": preserved,
+        "error": error,
+    }
+
+
 def _ready_sleeve_payload(payload: dict[str, Any]) -> bool:
     return (
         payload.get("status") == "READY"
@@ -491,7 +522,8 @@ def _restore_bytes(backups: dict[Path, bytes]) -> None:
         path.write_bytes(value)
 
 
-def run_guarded_refresh(runner: Callable[[], None] | None = None) -> dict[str, Any]:
+def run_guarded_refresh(runner: Callable[[], None] | None = None, *,
+                        continue_with_previous_ready: bool = False) -> dict[str, Any]:
     out = _argument_path("--out", "v38-sleeve-state.json")
     tqqq_state = _argument_path("--tqqq-state", "tqqq-panic-state.json")
     previous = _load_payload(out)
@@ -506,13 +538,69 @@ def run_guarded_refresh(runner: Callable[[], None] | None = None) -> dict[str, A
         live.download_adjusted_ohlc = download_adjusted_ohlc_resilient
         (runner or live.main)()
         _filter_reset_monitor(out)
-        return _validate_guarded_output(out)
+        payload = _validate_guarded_output(out)
+        payload["refresh"] = _refresh_metadata(
+            status="FRESH",
+            attempted_asof=str(payload.get("asof") or "") or None,
+            last_successful_asof=str(payload.get("asof") or "") or None,
+            preserved=False,
+            error=None,
+        )
+        _write_payload(out, payload)
+        return payload
     except BaseException as exc:
+        failed_payload = _load_payload(out)
+        attempted_asof = _attempted_asof(failed_payload)
         if previous_ready:
             _restore_bytes(backups)
+            failed_reason = str(failed_payload.get("reason") or "").strip()
+            error_text = failed_reason or f"{type(exc).__name__}: {exc}"
+            if continue_with_previous_ready:
+                preserved = _load_payload(out)
+                last_successful_asof = str(preserved.get("asof") or "") or None
+                preserved["refresh"] = _refresh_metadata(
+                    status="STALE / LAST_READY_PRESERVED",
+                    attempted_asof=attempted_asof,
+                    last_successful_asof=last_successful_asof,
+                    preserved=True,
+                    error=error_text,
+                )
+                _write_payload(out, preserved)
+
+                same_session = bool(
+                    attempted_asof and last_successful_asof
+                    and str(attempted_asof) == str(last_successful_asof)
+                )
+                normal_pct = (preserved.get("normal_stock") or {}).get("desired_pct")
+                reset_pct = (preserved.get("rsi_reset") or {}).get("desired_pct")
+                merge_asof = str(attempted_asof or last_successful_asof or "")
+                live._merge_desired_into_tqqq(
+                    tqqq_state, merge_asof,
+                    normal_pct if same_session else None,
+                    reset_pct if same_session else None,
+                    "READY" if same_session else "DATA REQUIRED",
+                    error_text,
+                )
+                tqqq_payload = _load_payload(tqqq_state)
+                tqqq_payload["sleeve_live_status"] = (
+                    "READY" if same_session else "STALE / LAST_READY_PRESERVED"
+                )
+                tqqq_payload["sleeve_live_reason"] = (
+                    "STALE / LAST_READY_PRESERVED: " + error_text
+                )
+                _write_payload(tqqq_state, tqqq_payload)
+                print(
+                    "SLEEVE_REFRESH_FAILED_LAST_READY_PRESERVED "
+                    f"attempted_asof={attempted_asof} "
+                    f"last_successful_asof={last_successful_asof} "
+                    f"same_session={same_session} {error_text}",
+                    flush=True,
+                )
+                return preserved
+
             print(
                 "SLEEVE_REFRESH_REJECTED_KEEP_PREVIOUS_READY "
-                f"{type(exc).__name__}: {exc}",
+                f"{error_text}",
                 flush=True,
             )
         raise
@@ -573,8 +661,8 @@ def reset_reproducibility_payload(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def main() -> None:
-    run_guarded_refresh()
+def main(*, continue_with_previous_ready: bool = False) -> None:
+    run_guarded_refresh(continue_with_previous_ready=continue_with_previous_ready)
 
 
 if __name__ == "__main__":

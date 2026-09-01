@@ -197,6 +197,15 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     sleeve_ready = _ready_live(sleeve_live, asof, "status")
     normal_sleeve = sleeve_live.get("normal_stock", {}) if sleeve_ready else {}
     reset_sleeve = sleeve_live.get("rsi_reset", {}) if sleeve_ready else {}
+    sleeve_refresh = sleeve_live.get("refresh", {}) if isinstance(sleeve_live, dict) else {}
+    if not isinstance(sleeve_refresh, dict):
+        sleeve_refresh = {}
+    sleeve_refresh_status = str(sleeve_refresh.get("status") or "")
+    sleeve_refresh_stale = "LAST_READY_PRESERVED" in sleeve_refresh_status
+    source_label = str(legacy_html.name)
+    if sleeve_refresh_stale:
+        last_ready = sleeve_refresh.get("last_successful_asof") or sleeve_live.get("asof") or "unknown"
+        source_label += f" / ⚠ Sleeve更新失敗・前回READY継続({last_ready})"
 
     candidates = []
     for ticker, row in details.items():
@@ -384,7 +393,12 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     }
 
     gross_state = {
-        "status": ("LIVE ALLOCATION READY" if gross_live is not None else "LIVE INPUT DATA REQUIRED"),
+        "status": (
+            "LIVE ALLOCATION READY / LAST READY PRESERVED"
+            if gross_live is not None and sleeve_refresh_stale
+            else "LIVE ALLOCATION READY" if gross_live is not None
+            else "LIVE INPUT DATA REQUIRED"
+        ),
         "adoption_status": "ADOPTED_FINAL_SPEC_20260901",
         "priority": [
             "RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK_CAPPED_70",
@@ -398,6 +412,12 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
         "sleeve_live_status": tqqq_live.get("sleeve_live_status") if tqqq_ready else "DATA REQUIRED",
         "sleeve_live_reason": tqqq_live.get("sleeve_live_reason") if tqqq_ready else "TQQQ_LIVE_REQUIRED",
+        "sleeve_refresh_status": sleeve_refresh_status or ("FRESH" if sleeve_ready else "UNKNOWN"),
+        "sleeve_refresh_attempted_asof": sleeve_refresh.get("attempted_asof"),
+        "sleeve_last_successful_asof": sleeve_refresh.get("last_successful_asof"),
+        "sleeve_refresh_attempted_at_utc": sleeve_refresh.get("attempted_at_utc"),
+        "sleeve_refresh_error": sleeve_refresh.get("error"),
+        "sleeve_preserved_previous_ready": bool(sleeve_refresh.get("preserved_previous_ready")),
         "normal_position_count": normal_sleeve.get("position_count") if sleeve_ready else None,
         "reset_position_count": reset_sleeve.get("position_count") if sleeve_ready else None,
         "note": "Reset -> protect native/Panic TQQQ to 80% under competition -> Normal Stock capped at 70% -> native TQQQ extra -> adopted Selective Fill from remaining cash only; native CURRENT30 zero is never overridden",
@@ -422,7 +442,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
 
     return {
         "schema": "v38-live-state-1",
-        "source": str(legacy_html.name),
+        "source": source_label,
         "asof": asof,
         "market": {
             "nqsar": calc.get("color"),
