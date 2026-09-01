@@ -1,21 +1,38 @@
-ticker,provider,rows,source_url,quality,status
-AIQ,GLOBALX,88,https://assets.globalxetfs.com/funds/holdings/aiq_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-BOTZ,GLOBALX,61,https://assets.globalxetfs.com/funds/holdings/botz_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-COPX,GLOBALX,40,https://assets.globalxetfs.com/funds/holdings/copx_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-DRIV,GLOBALX,74,https://assets.globalxetfs.com/funds/holdings/driv_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-DTCR,GLOBALX,25,https://assets.globalxetfs.com/funds/holdings/dtcr_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-GNOM,GLOBALX,50,https://assets.globalxetfs.com/funds/holdings/gnom_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-HYDR,GLOBALX,25,https://assets.globalxetfs.com/funds/holdings/hydr_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-LIT,GLOBALX,41,https://assets.globalxetfs.com/funds/holdings/lit_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-PAVE,GLOBALX,100,https://assets.globalxetfs.com/funds/holdings/pave_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-SHLD,GLOBALX,50,https://assets.globalxetfs.com/funds/holdings/shld_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-SIL,GLOBALX,39,https://assets.globalxetfs.com/funds/holdings/sil_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-URA,GLOBALX,57,https://assets.globalxetfs.com/funds/holdings/ura_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS
-GDX,VANECK,64,https://www.vaneck.com/us/en/investments/gold-miners-etf-gdx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-MOO,VANECK,55,https://www.vaneck.com/us/en/investments/agribusiness-etf-moo/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-NLR,VANECK,27,https://www.vaneck.com/us/en/investments/uranium-nuclear-energy-etf-nlr/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-OIH,VANECK,26,https://www.vaneck.com/us/en/investments/oil-services-etf-oih/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-PPH,VANECK,26,https://www.vaneck.com/us/en/investments/pharmaceutical-etf-pph/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-REMX,VANECK,35,https://www.vaneck.com/us/en/investments/rare-earth-strategic-metals-etf-remx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-SLX,VANECK,42,https://www.vaneck.com/us/en/investments/steel-etf-slx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
-SMH,VANECK,26,https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS
+ticker,provider,rows,source_url,quality,status,error
+BLOK,AMPLIFY,,,,FAIL,RuntimeError: Amplify page exposed only Top 10; refusing partial membership
+IBUY,AMPLIFY,,,,FAIL,RuntimeError: Amplify page exposed only Top 10; refusing partial membership
+ARKW,ARK,39.0,https://assets.ark-funds.com/fund-documents/funds-etf-csv/ARK_NEXT_GENERATION_INTERNET_ETF_ARKW_HOLDINGS.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+WGMI,COINSHARES,,,,FAIL,ImportError: `Import beautifulsoup4` failed.  Use pip or conda to install the beautifulsoup4 package.
+QTUM,DEFIANCE,88.0,https://www.defianceetfs.com/qtum-full-holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+CIBR,FIRSTTRUST,,,,FAIL,RuntimeError: First Trust holdings table not found
+FAN,FIRSTTRUST,,,,FAIL,RuntimeError: First Trust holdings table not found
+GRID,FIRSTTRUST,,,,FAIL,RuntimeError: First Trust holdings table not found
+SKYY,FIRSTTRUST,,,,FAIL,RuntimeError: First Trust holdings table not found
+AIQ,GLOBALX,88.0,https://assets.globalxetfs.com/funds/holdings/aiq_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+BOTZ,GLOBALX,61.0,https://assets.globalxetfs.com/funds/holdings/botz_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+COPX,GLOBALX,40.0,https://assets.globalxetfs.com/funds/holdings/copx_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+DRIV,GLOBALX,74.0,https://assets.globalxetfs.com/funds/holdings/driv_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+DTCR,GLOBALX,25.0,https://assets.globalxetfs.com/funds/holdings/dtcr_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+GNOM,GLOBALX,50.0,https://assets.globalxetfs.com/funds/holdings/gnom_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+HYDR,GLOBALX,25.0,https://assets.globalxetfs.com/funds/holdings/hydr_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+LIT,GLOBALX,41.0,https://assets.globalxetfs.com/funds/holdings/lit_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+PAVE,GLOBALX,100.0,https://assets.globalxetfs.com/funds/holdings/pave_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+SHLD,GLOBALX,50.0,https://assets.globalxetfs.com/funds/holdings/shld_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+SIL,GLOBALX,39.0,https://assets.globalxetfs.com/funds/holdings/sil_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+URA,GLOBALX,57.0,https://assets.globalxetfs.com/funds/holdings/ura_full-holdings_20260831.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
+PEJ,INVESCO,,,,FAIL,HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-leisure-and-entertainment-etf.html
+PHO,INVESCO,,,,FAIL,HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-water-resources-etf.html
+PKB,INVESCO,,,,FAIL,HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-building-construction-etf.html
+TAN,INVESCO,,,,FAIL,HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-solar-etf.html
+DRAM,ROUNDHILL,,,,FAIL,RuntimeError: Roundhill DRAM download CSV URL not found in official page
+BOAT,SONICSHARES,,,,FAIL,RuntimeError: SonicShares BOAT holdings table not found
+JETS,USGLOBAL,,,,FAIL,HTTPError: 403 Client Error: Forbidden for url: https://usglobaletfs.com/fund/u-s-global-jets-etf/
+GDX,VANECK,65.0,https://www.vaneck.com/us/en/investments/gold-miners-etf-gdx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+MOO,VANECK,55.0,https://www.vaneck.com/us/en/investments/agribusiness-etf-moo/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+NLR,VANECK,27.0,https://www.vaneck.com/us/en/investments/uranium-nuclear-energy-etf-nlr/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+OIH,VANECK,26.0,https://www.vaneck.com/us/en/investments/oil-services-etf-oih/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+PPH,VANECK,26.0,https://www.vaneck.com/us/en/investments/pharmaceutical-etf-pph/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+REMX,VANECK,35.0,https://www.vaneck.com/us/en/investments/rare-earth-strategic-metals-etf-remx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+SLX,VANECK,42.0,https://www.vaneck.com/us/en/investments/steel-etf-slx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+SMH,VANECK,26.0,https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+WCLD,WISDOMTREE,,,,FAIL,HTTPError: 403 Client Error: Forbidden for url: https://www.wisdomtree.com/us/products/megatrends/wcld

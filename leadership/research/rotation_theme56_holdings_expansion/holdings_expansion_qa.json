@@ -1,9 +1,11 @@
 {
-  "schema": 2,
+  "schema": 3,
   "research_only": true,
-  "candidate_count": 20,
-  "pass_count": 20,
+  "candidate_count": 37,
+  "pass_count": 22,
   "pass_tickers": [
+    "ARKW",
+    "QTUM",
     "AIQ",
     "BOTZ",
     "COPX",
@@ -25,6 +27,148 @@
     "SLX",
     "SMH"
   ],
-  "failures": [],
-  "guardrail": "This expands only exact current membership for Internals. It does not claim Exact Flow availability."
+  "failures": [
+    {
+      "ticker": "BLOK",
+      "provider": "AMPLIFY",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: Amplify page exposed only Top 10; refusing partial membership"
+    },
+    {
+      "ticker": "IBUY",
+      "provider": "AMPLIFY",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: Amplify page exposed only Top 10; refusing partial membership"
+    },
+    {
+      "ticker": "WGMI",
+      "provider": "COINSHARES",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "ImportError: `Import beautifulsoup4` failed.  Use pip or conda to install the beautifulsoup4 package."
+    },
+    {
+      "ticker": "CIBR",
+      "provider": "FIRSTTRUST",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: First Trust holdings table not found"
+    },
+    {
+      "ticker": "FAN",
+      "provider": "FIRSTTRUST",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: First Trust holdings table not found"
+    },
+    {
+      "ticker": "GRID",
+      "provider": "FIRSTTRUST",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: First Trust holdings table not found"
+    },
+    {
+      "ticker": "SKYY",
+      "provider": "FIRSTTRUST",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: First Trust holdings table not found"
+    },
+    {
+      "ticker": "PEJ",
+      "provider": "INVESCO",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-leisure-and-entertainment-etf.html"
+    },
+    {
+      "ticker": "PHO",
+      "provider": "INVESCO",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-water-resources-etf.html"
+    },
+    {
+      "ticker": "PKB",
+      "provider": "INVESCO",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-building-construction-etf.html"
+    },
+    {
+      "ticker": "TAN",
+      "provider": "INVESCO",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "HTTPError: 406 Client Error: Not Acceptable for url: https://www.invesco.com/us/en/financial-products/etfs/invesco-solar-etf.html"
+    },
+    {
+      "ticker": "DRAM",
+      "provider": "ROUNDHILL",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: Roundhill DRAM download CSV URL not found in official page"
+    },
+    {
+      "ticker": "BOAT",
+      "provider": "SONICSHARES",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "RuntimeError: SonicShares BOAT holdings table not found"
+    },
+    {
+      "ticker": "JETS",
+      "provider": "USGLOBAL",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "HTTPError: 403 Client Error: Forbidden for url: https://usglobaletfs.com/fund/u-s-global-jets-etf/"
+    },
+    {
+      "ticker": "WCLD",
+      "provider": "WISDOMTREE",
+      "rows": null,
+      "source_url": null,
+      "quality": null,
+      "status": "FAIL",
+      "error": "HTTPError: 403 Client Error: Forbidden for url: https://www.wisdomtree.com/us/products/megatrends/wcld"
+    }
+  ],
+  "symbol_normalization": "Provider/Bloomberg foreign exchange symbols are normalized only for constituent market-data lookup; original provider_symbol is preserved.",
+  "guardrails": [
+    "Only exact current official provider membership is accepted.",
+    "Partial Top-10 tables are rejected when full holdings cannot be confirmed.",
+    "This expands membership for Internals only; it does not claim Exact Flow availability.",
+    "No price-volume or other proxy is substituted for official fund flow."
+  ]
 }
