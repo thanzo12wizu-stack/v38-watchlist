@@ -1,0 +1,654 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "aggregate_validation_pass": true,
+  "official_validation_tickers": 19,
+  "canonical_reference_tickers": 15,
+  "canonical_reference_pass_ratio": 1.0,
+  "canonical_reference_provider_count": 2,
+  "reference_unit_anomalies": [
+    "IAI",
+    "WOOD",
+    "XES",
+    "XSD"
+  ],
+  "fallback_provider": "ETF.com daily actual fund-flow data; issuer exact flow remains preferred when issuer unit QA is clean",
+  "flow_unit_scale": 1000000.0,
+  "flow_unit_contract": "ETF.com chart values are normalized as USD millions only after canonical issuer-reference validation across at least two providers.",
+  "failures": [
+    {
+      "ticker": "DRAM",
+      "error": "RuntimeError: ETF.com flow failed for DRAM: unexpected ETF.com response for DRAM"
+    }
+  ],
+  "validation": [
+    {
+      "ticker": "IAI",
+      "provider": "ISHARES",
+      "n": 41,
+      "best_scale": 1.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999811885589759,
+      "median_abs_error_usd": 0.0,
+      "median_error_vs_median_official": 0.0,
+      "status": "REFERENCE_UNIT_ANOMALY"
+    },
+    {
+      "ticker": "ICLN",
+      "provider": "ISHARES",
+      "n": 40,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.999766659551999,
+      "median_abs_error_usd": 100416.5,
+      "median_error_vs_median_official": 0.0113491988615482,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IGV",
+      "provider": "ISHARES",
+      "n": 40,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9998945234892191,
+      "median_abs_error_usd": 1042844.3999999985,
+      "median_error_vs_median_official": 0.009472430940968335,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IHI",
+      "provider": "ISHARES",
+      "n": 41,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9998443792102899,
+      "median_abs_error_usd": 123841.14999999851,
+      "median_error_vs_median_official": 0.0075553174936815555,
+      "status": "PASS"
+    },
+    {
+      "ticker": "ITA",
+      "provider": "ISHARES",
+      "n": 41,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999320956331822,
+      "median_abs_error_usd": 127626.10000000149,
+      "median_error_vs_median_official": 0.005094461661968738,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IYT",
+      "provider": "ISHARES",
+      "n": 41,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.999953902602776,
+      "median_abs_error_usd": 20892.400000000373,
+      "median_error_vs_median_official": 0.0047771830447639625,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KBE",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999860473985305,
+      "median_abs_error_usd": 82768.10000000149,
+      "median_error_vs_median_official": 0.004018102976784628,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KIE",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999444504485789,
+      "median_abs_error_usd": 22246.100000000093,
+      "median_error_vs_median_official": 0.0035049676304003026,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KRE",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999216658214233,
+      "median_abs_error_usd": 517884.0,
+      "median_error_vs_median_official": 0.0048669795079942365,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SOXX",
+      "provider": "ISHARES",
+      "n": 41,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9995692152652637,
+      "median_abs_error_usd": 13526187.599999994,
+      "median_error_vs_median_official": 0.02310706945641274,
+      "status": "PASS"
+    },
+    {
+      "ticker": "WOOD",
+      "provider": "ISHARES",
+      "n": 41,
+      "best_scale": 1.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 1.0,
+      "median_abs_error_usd": 0.0,
+      "median_error_vs_median_official": 0.0,
+      "status": "REFERENCE_UNIT_ANOMALY"
+    },
+    {
+      "ticker": "XAR",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9996217574951515,
+      "median_abs_error_usd": 11329.25,
+      "median_error_vs_median_official": 0.0017659641038968471,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XBI",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9997727243339403,
+      "median_abs_error_usd": 521601.72499999404,
+      "median_error_vs_median_official": 0.007295512458828855,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XES",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9996251381729255,
+      "median_abs_error_usd": 0.0,
+      "median_error_vs_median_official": 0.0,
+      "status": "REFERENCE_UNIT_ANOMALY"
+    },
+    {
+      "ticker": "XHB",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9998378940204391,
+      "median_abs_error_usd": 461770.3999999985,
+      "median_error_vs_median_official": 0.01736507537651587,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XME",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999001682915944,
+      "median_abs_error_usd": 324379.0,
+      "median_error_vs_median_official": 0.01570845931665018,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XOP",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9998926865224673,
+      "median_abs_error_usd": 494570.0,
+      "median_error_vs_median_official": 0.011636490365143854,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XRT",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1000000.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9999305826407693,
+      "median_abs_error_usd": 399512.3999999985,
+      "median_error_vs_median_official": 0.009875294657627048,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XSD",
+      "provider": "SSGA",
+      "n": 37,
+      "best_scale": 1.0,
+      "canonical_scale": 1000000.0,
+      "sign_agreement": 1.0,
+      "corr": 0.9995241157766759,
+      "median_abs_error_usd": 0.0,
+      "median_error_vs_median_official": 0.0,
+      "status": "REFERENCE_UNIT_ANOMALY"
+    }
+  ],
+  "status": [
+    {
+      "ticker": "CIBR",
+      "flow_rows": 40,
+      "last_date": "2026-08-31",
+      "aum": 15879489797.016,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IGV",
+      "flow_rows": 40,
+      "last_date": "2026-08-28",
+      "aum": 15641750247.6,
+      "status": "PASS"
+    },
+    {
+      "ticker": "WCLD",
+      "flow_rows": 38,
+      "last_date": "2026-08-31",
+      "aum": 365015500.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "OIH",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1966882991.5082,
+      "status": "PASS"
+    },
+    {
+      "ticker": "DRAM",
+      "flow_rows": 0,
+      "last_date": null,
+      "aum": 25587631466.0,
+      "status": "DATA_REQUIRED"
+    },
+    {
+      "ticker": "SKYY",
+      "flow_rows": 40,
+      "last_date": "2026-08-31",
+      "aum": 3386210830.362,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XES",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 390606995.12,
+      "status": "PASS"
+    },
+    {
+      "ticker": "AIQ",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 10169388531.9716,
+      "status": "PASS"
+    },
+    {
+      "ticker": "ARKW",
+      "flow_rows": 39,
+      "last_date": "2026-08-31",
+      "aum": 1817957700.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "BOTZ",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 3428991027.66384,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SMH",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 67366069410.313,
+      "status": "PASS"
+    },
+    {
+      "ticker": "HYDR",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 104009878.203465,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XOP",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 3921402506.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "MOO",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1044495090.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SOXX",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 41590254167.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "DRIV",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 374154869.315681,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XSD",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 2579593145.05,
+      "status": "PASS"
+    },
+    {
+      "ticker": "QTUM",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 5573922000.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SLX",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 173583680.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "BLOK",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1097653500.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XME",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 4909906792.89144,
+      "status": "PASS"
+    },
+    {
+      "ticker": "GRID",
+      "flow_rows": 40,
+      "last_date": "2026-08-31",
+      "aum": 11899145958.408,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IAI",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1415295562.25,
+      "status": "PASS"
+    },
+    {
+      "ticker": "URA",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 6509736714.42215,
+      "status": "PASS"
+    },
+    {
+      "ticker": "NLR",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 4208901591.384,
+      "status": "PASS"
+    },
+    {
+      "ticker": "DTCR",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 2152714376.34112,
+      "status": "PASS"
+    },
+    {
+      "ticker": "FAN",
+      "flow_rows": 40,
+      "last_date": "2026-08-31",
+      "aum": 246067047.78,
+      "status": "PASS"
+    },
+    {
+      "ticker": "ICLN",
+      "flow_rows": 40,
+      "last_date": "2026-08-28",
+      "aum": 2199539604.8,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SHLD",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 7328271294.88009,
+      "status": "PASS"
+    },
+    {
+      "ticker": "LIT",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1645451799.08751,
+      "status": "PASS"
+    },
+    {
+      "ticker": "WOOD",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 271970678.7,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XBI",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 11387610283.8,
+      "status": "PASS"
+    },
+    {
+      "ticker": "GNOM",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 92242375.6618354,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PHO",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 2042263040.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KBE",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 1636675970.33956,
+      "status": "PASS"
+    },
+    {
+      "ticker": "TAN",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1078181544.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KRE",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 4049945820.64968,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IHI",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 3488298277.6,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KIE",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 607021262.5,
+      "status": "PASS"
+    },
+    {
+      "ticker": "COPX",
+      "flow_rows": 40,
+      "last_date": "2026-08-28",
+      "aum": 8644967626.4347,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IYT",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 2237445211.4,
+      "status": "PASS"
+    },
+    {
+      "ticker": "ITA",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 13896630903.9,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PAVE",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 13650487109.9531,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SIL",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 5336774365.78668,
+      "status": "PASS"
+    },
+    {
+      "ticker": "IBUY",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 128905000.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "REMX",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 2290592612.2297,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PPH",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 1038899374.3854,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PKB",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 341304480.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "BOAT",
+      "flow_rows": 39,
+      "last_date": "2026-08-31",
+      "aum": 97964200.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XRT",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 364847171.1962,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XHB",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 1354252494.55565,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XAR",
+      "flow_rows": 37,
+      "last_date": "2026-08-31",
+      "aum": 5967458409.6,
+      "status": "PASS"
+    },
+    {
+      "ticker": "WGMI",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 237096000.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "JETS",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 783483000.0,
+      "status": "PASS"
+    },
+    {
+      "ticker": "GDX",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 30967649499.75,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PEJ",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
+      "aum": 432881820.0,
+      "status": "PASS"
+    }
+  ],
+  "guardrails": [
+    "ETF.com is a third-party actual fund-flow source, not an issuer-official exact-flow source.",
+    "Noncanonical issuer-reference scale matches are quarantined as REFERENCE_UNIT_ANOMALY instead of forcing their units onto ETF.com data.",
+    "No dollar-volume, OBV, CMF, or price-volume proxy is substituted for fund flow.",
+    "DRAM remains DATA_REQUIRED when ETF.com returns no daily-flow series."
+  ]
+}
