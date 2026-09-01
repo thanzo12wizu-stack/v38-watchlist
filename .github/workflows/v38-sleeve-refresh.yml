@@ -1,0 +1,142 @@
+name: V38 sleeve live refresh
+
+on:
+  workflow_run:
+    workflows: ["Dashboard daily build"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v38-sleeve-refresh.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v38-sleeve-live-refresh-main
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Compile audited live builders
+        run: |
+          python -m py_compile \
+            build_v38_sleeve_live.py \
+            build_v38_companion.py \
+            build_v38_strict_loo_live.py \
+            v38_rules.py
+
+      - name: Rebuild Normal Stock and RSI Reset sleeves on fresh runner
+        run: |
+          python build_v38_sleeve_live.py \
+            --companion v38-live-state.json \
+            --state v38-sleeve-state.json \
+            --seed v38-normal-sleeve-seed.json \
+            --strict-history v38-strict-loo-history.json \
+            --tqqq-state tqqq-panic-state.json \
+            --out v38-sleeve-state.json
+
+      - name: Rebuild audited companion with live Gross100 inputs
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
+            --sleeve-state v38-sleeve-state.json \
+            --out v38-live-state.json
+
+      - name: Validate live sleeves and allocation
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          sleeve = json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))
+          live = json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+
+          asof = live.get('asof')
+          if not asof or sleeve.get('asof') != asof or tqqq.get('asof') != asof:
+              raise SystemExit(f'asof mismatch: live={asof} sleeve={sleeve.get("asof")} tqqq={tqqq.get("asof")}')
+          if sleeve.get('status') != 'READY':
+              raise SystemExit(f'sleeve not READY: {sleeve.get("reason")}')
+          if sleeve.get('normal_stock', {}).get('status') != 'READY':
+              raise SystemExit('normal sleeve not READY')
+          if sleeve.get('rsi_reset', {}).get('status') != 'READY':
+              raise SystemExit('reset sleeve not READY')
+          if tqqq.get('sleeve_live_status') != 'READY':
+              raise SystemExit(f'TQQQ sleeve merge not READY: {tqqq.get("sleeve_live_reason")}')
+
+          gross = live.get('gross100_allocation', {})
+          if 'LIVE ALLOCATION READY' not in str(gross.get('status')):
+              raise SystemExit(f'Gross100 not live-ready: {gross.get("status")}')
+          final_gross = gross.get('gross_allocated_pct')
+          if final_gross is None or float(final_gross) > 100.000001:
+              raise SystemExit(f'invalid Gross100 allocation: {final_gross}')
+
+          reset = sleeve.get('rsi_reset', {})
+          monitor = reset.get('monitor')
+          summary = reset.get('monitor_summary')
+          if not isinstance(monitor, list) or not isinstance(summary, dict):
+              raise SystemExit('RSI30 monitor output missing')
+          if reset.get('strategy') != 'RS63_TOP3_RISE30_SIGTOP3':
+              raise SystemExit(f'unexpected Reset rule: {reset.get("strategy")}')
+
+          print('V38_SLEEVE_REFRESH_READY', {
+              'asof': asof,
+              'normal_desired_pct': sleeve['normal_stock'].get('desired_pct'),
+              'reset_desired_pct': reset.get('desired_pct'),
+              'tqqq_desired_pct': gross.get('tqqq_desired_pct'),
+              'normal_allocated_pct': gross.get('normal_stock_allocated_pct'),
+              'reset_allocated_pct': gross.get('reset_allocated_pct'),
+              'tqqq_allocated_pct': gross.get('tqqq_allocated_pct'),
+              'gross_allocated_pct': final_gross,
+              'reset_monitor': summary,
+          })
+          PY
+
+      - name: Commit refreshed audited live states
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json
+          if git diff --cached --quiet; then
+            echo "No sleeve state changes to commit"
+            exit 0
+          fi
+          git commit -m "Refresh V38 live sleeves + Gross100 allocation"
+          git fetch --depth=1 origin main
+          if [ "$(git rev-parse origin/main)" != "$SOURCE_SHA" ]; then
+            echo "main advanced during sleeve refresh; rerunning against latest state is safer than rebasing generated files"
+            exit 1
+          fi
+          git push origin HEAD:main
