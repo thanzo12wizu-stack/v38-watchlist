@@ -69,7 +69,7 @@ jobs:
           cp v38-sleeve-state.json /tmp/v38-sleeve-state-before.json
           cp tqqq-panic-state.json /tmp/tqqq-panic-state-before.json
 
-      - name: Rebuild Normal Stock and RSI Reset sleeves with data-integrity guard
+      - name: Rebuild Normal Stock and RSI Reset sleeves on fresh runner
         env:
           V38_RESET_CACHE_DIR: .cache/v38-reset-prices
         run: |
