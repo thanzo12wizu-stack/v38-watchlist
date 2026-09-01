@@ -92,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           cd leadership/research
-          python audit_ordinary_execution_pit_survivorship.py \
+          PYTHONPATH="../..:." python audit_ordinary_execution_pit_survivorship.py \
             --root ../.. \
             --output ../../v38_gap_ordinary \
             --analysis-start 2016-01-04 \
