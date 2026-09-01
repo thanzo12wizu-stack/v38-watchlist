@@ -1,0 +1,86 @@
+name: Rotation Theme56 Public Brief
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme56_public_brief.py
+      - leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json
+      - leadership/research/rotation_daily_observation_brief/daily_observation_brief.json
+      - .github/workflows/rotation-theme56-public-brief.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-public-brief
+  cancel-in-progress: true
+
+jobs:
+  brief:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_theme56_public_brief.py
+      - name: Build public-compatible Theme56 brief
+        run: |
+          rm -rf leadership/research/rotation_theme56_public_brief
+          python leadership/research/rotation_theme56_public_brief.py \
+            --base-brief leadership/research/rotation_daily_observation_brief/daily_observation_brief.json \
+            --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
+            --output leadership/research/rotation_theme56_public_brief
+      - name: Validate output
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('leadership/research/rotation_theme56_public_brief/rotation_theme56_public_brief.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          rows=[x for v in (d.get('observations',{}).get('rotation_buckets',{}) or {}).values() for x in (v or [])]
+          if len(rows)!=56 or len({x.get('ticker') for x in rows})!=56: raise SystemExit('Theme56 public brief ETF set mismatch')
+          if any(x.get('level')!='THEME' for x in rows): raise SystemExit('unexpected level')
+          if any(x.get('state_evidence')!='THEME56_DESCRIPTIVE_NOT_TRADING_SIGNAL' for x in rows): raise SystemExit('descriptive state guard missing')
+          if any('DISTRIBUTION' in str(x.get('state')) for x in rows): raise SystemExit('unvalidated Theme56 distribution state present')
+          st=d.get('theme56_data_status') or {}
+          if int(st.get('price_ready_count') or 0)<50: raise SystemExit('price coverage unexpectedly low')
+          if int(st.get('exact_flow_count') or 0)<19: raise SystemExit('exact flow coverage unexpectedly low')
+          print(json.dumps({'asof':d.get('asof'),'alignment':d.get('input_alignment'),'data_status':st},ensure_ascii=False,indent=2))
+          PY
+      - name: Persist public brief
+        run: |
+          set -euo pipefail
+          BRANCH="research/rotation-exact-flow-internals-20260831"
+          SRC="leadership/research/rotation_theme56_public_brief"
+          TMP="$(mktemp -d)/rotation_theme56_public_brief"
+          cp -a "$SRC" "$TMP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            rm -rf "$SRC"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "research: record Theme56 public Rotation brief"
+            if git push origin "HEAD:$BRANCH"; then exit 0; fi
+          done
+          exit 1
+      - name: Upload public brief
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-public-brief
+          path: leadership/research/rotation_theme56_public_brief/
+          if-no-files-found: error
+          retention-days: 14
