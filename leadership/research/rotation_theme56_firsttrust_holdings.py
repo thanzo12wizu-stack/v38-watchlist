@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 import rotation_exact_flow_research as flowlib
 
@@ -70,21 +70,15 @@ def _row_record(cells: list[str], ticker: str, url: str) -> dict[str, Any] | Non
     if weight is None or weight < -0.1 or weight > 100:
         return None
 
-    # First Trust desktop and responsive tables use the same semantic order:
-    # Security Name | Identifier | CUSIP | Classification | Shares | Market Value | Weighting.
-    # Some rendered variants prepend a blank/sort cell, so anchor the identifier to a CUSIP-like
-    # cell instead of assuming an absolute column index.
     symbol_idx = None
     for i in range(1, min(weight_idx, 5)):
         token = cells[i].replace(" ", "").replace("-", "")
-        if re.fullmatch(r"[A-Z0-9]{8,12}", token) and i >= 1:
+        if re.fullmatch(r"[A-Z0-9]{8,12}", token):
             candidate = clean_symbol(cells[i - 1])
             if candidate and candidate not in {"IDENTIFIER", "CUSIP"}:
                 symbol_idx = i - 1
                 break
     if symbol_idx is None:
-        # Fallback for rows where the identifier itself is in column 1 and the security id is
-        # not CUSIP-shaped (common for foreign securities in FAN/GRID).
         for i in range(1, min(weight_idx, 4)):
             candidate = clean_symbol(cells[i])
             if candidate and len(candidate) <= 18 and not any(ch.isspace() for ch in candidate):
@@ -112,6 +106,27 @@ def _row_record(cells: list[str], ticker: str, url: str) -> dict[str, Any] | Non
     }
 
 
+def _parse_table(table: Tag, ticker: str, url: str) -> pd.DataFrame:
+    records: list[dict[str, Any]] = []
+    for tr in table.find_all("tr"):
+        cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"], recursive=False)]
+        if not cells:
+            cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"])]
+        rec = _row_record(cells, ticker, url)
+        if rec is not None:
+            records.append(rec)
+    if not records:
+        return pd.DataFrame()
+    return pd.DataFrame(records).drop_duplicates("provider_symbol", keep="first").reset_index(drop=True)
+
+
+def _same_membership(frames: list[pd.DataFrame]) -> bool:
+    if not frames:
+        return False
+    base = set(frames[0]["provider_symbol"].astype(str))
+    return all(set(x["provider_symbol"].astype(str)) == base for x in frames[1:])
+
+
 def fetch_holdings(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
     url = f"https://www.ftportfolios.com/Retail/Etf/EtfHoldings.aspx?Print=Y&Ticker={ticker}"
     r = session.get(url, headers={"User-Agent": flowlib.UA, "Accept": "text/html,*/*"}, timeout=45)
@@ -123,33 +138,49 @@ def fetch_holdings(session: requests.Session, ticker: str) -> tuple[pd.DataFrame
     m = re.search(r"Total Number of Holdings\s*\(excluding cash\)\s*:?\s*(\d+)", text, flags=re.I)
     if m:
         expected = int(m.group(1))
+    if expected is None:
+        raise RuntimeError("official First Trust holding count not found")
 
-    records: list[dict[str, Any]] = []
-    # Do not restrict parsing to the first parent table. First Trust emits several responsive
-    # table fragments; the earlier parser saw only the first 1-3 rows. Scan all rendered rows,
-    # then de-duplicate by provider identifier.
-    for tr in soup.find_all("tr"):
-        cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"])]
-        rec = _row_record(cells, ticker, url)
-        if rec is not None:
-            records.append(rec)
+    candidates: list[tuple[int, pd.DataFrame, str]] = []
+    for table_idx, table in enumerate(soup.find_all("table")):
+        header_text = re.sub(r"\s+", " ", table.get_text(" ", strip=True))[:500]
+        low = header_text.lower()
+        if not ("security name" in low and "identifier" in low and ("weight" in low or "weighting" in low)):
+            continue
+        frame = _parse_table(table, ticker, url)
+        if not frame.empty:
+            candidates.append((table_idx, frame, header_text))
 
-    out = pd.DataFrame(records)
-    if out.empty:
-        raise RuntimeError("First Trust holdings parsed zero rows")
-    out = out.drop_duplicates("provider_symbol", keep="first").reset_index(drop=True)
+    exact = [(idx, frame, header) for idx, frame, header in candidates if len(frame) == expected]
+    if exact:
+        exact_frames = [x[1] for x in exact]
+        if len(exact_frames) > 1 and not _same_membership(exact_frames):
+            detail = [(idx, len(frame)) for idx, frame, _ in exact]
+            raise RuntimeError(f"ambiguous exact First Trust tables: official={expected}, candidates={detail}")
+        selected_idx, out, _ = exact[0]
+        selection = "EXACT_TABLE_MATCH"
+    else:
+        table_counts = [(idx, len(frame)) for idx, frame, _ in candidates]
+        # Diagnostic only: never truncate an oversized table to the official count and never
+        # merge partial fragments until the exact membership boundary is proven.
+        raise RuntimeError(
+            f"no exact First Trust holdings table: official={expected}, semantic_table_counts={table_counts}"
+        )
 
-    if expected is not None and len(out) != expected:
-        raise RuntimeError(f"partial holdings rejected: parsed {len(out)} vs official {expected}")
-    if len(out) < 10:
-        raise RuntimeError(f"unexpectedly short First Trust holdings: {len(out)}")
+    if out["provider_symbol"].duplicated().any():
+        raise RuntimeError("duplicate provider identifiers remain after exact table selection")
+    if len(out) != expected:
+        raise RuntimeError(f"selected holdings count mismatch: parsed {len(out)} vs official {expected}")
 
-    return out, {
+    return out.reset_index(drop=True), {
         "ticker": ticker,
         "provider": "FIRSTTRUST",
         "status": "PASS",
         "rows": int(len(out)),
         "official_count": expected,
+        "selected_table_index": int(selected_idx),
+        "selection": selection,
+        "semantic_table_counts": [{"table_index": int(idx), "rows": int(len(frame))} for idx, frame, _ in candidates],
         "source_url": url,
         "quality": "EXACT_CURRENT_MEMBERSHIP",
     }
@@ -180,14 +211,16 @@ def main() -> None:
         )
     passed = qa_df.loc[qa_df["status"] == "PASS", "ticker"].tolist()
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
         "candidate_count": len(TICKERS),
         "pass_count": len(passed),
         "pass_tickers": passed,
+        "failures": json.loads(qa_df.loc[qa_df["status"] != "PASS"].where(pd.notna(qa_df), None).to_json(orient="records", force_ascii=False)),
         "guardrails": [
-            "Only the complete current holdings rows published by First Trust are accepted.",
-            "The official holding count is required to match the parsed unique provider identifiers.",
+            "Only a semantic holdings table whose unique provider identifiers exactly equal the official excluding-cash count is accepted.",
+            "Whole-page row merging is forbidden because responsive/auxiliary tables can overcount membership.",
+            "No oversized table is truncated to force the official count.",
             "Provider identifiers are preserved; foreign identifiers are normalized only for market-data lookup.",
             "No Top-10 or partial table is accepted as exact membership.",
         ],
