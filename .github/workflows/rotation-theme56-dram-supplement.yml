@@ -1,0 +1,79 @@
+name: Rotation Theme56 DRAM Supplement
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 3 * * 2-6'
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme56_dram_supplement.py
+      - .github/workflows/rotation-theme56-dram-supplement.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-dram-supplement
+  cancel-in-progress: true
+
+jobs:
+  dram:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas requests lxml html5lib
+      - name: Build DRAM supplement
+        run: python leadership/research/rotation_theme56_dram_supplement.py
+      - name: Validate DRAM supplement
+        run: |
+          python - <<'PY'
+          import json
+          import pandas as pd
+          from pathlib import Path
+          j=json.loads(Path('leadership/research/rotation_theme56_dram_supplement/dram_supplement.json').read_text(encoding='utf-8'))
+          h=pd.read_csv('leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv')
+          if j.get('ticker')!='DRAM' or j.get('inception_date')!='2026-04-02': raise SystemExit('DRAM identity mismatch')
+          if len(h)<8: raise SystemExit('DRAM direct-equity membership too small')
+          f=j.get('flow') or {}
+          if f.get('flow_quality')!='SUPPLEMENTAL_ACTUAL_FUND_FLOW_1M': raise SystemExit('DRAM 1M Flow missing')
+          if f.get('flow_1m_usd') is None or f.get('aum_usd') is None: raise SystemExit('DRAM flow values missing')
+          print({'holdings':len(h),'membership_asof':(j.get('holdings') or {}).get('membership_asof'),'flow_1m_usd':f.get('flow_1m_usd')})
+          PY
+      - name: Persist DRAM supplement
+        run: |
+          set -euo pipefail
+          BRANCH="research/rotation-exact-flow-internals-20260831"
+          SRC="leadership/research/rotation_theme56_dram_supplement"
+          TMP="$(mktemp -d)/rotation_theme56_dram_supplement"
+          cp -a "$SRC" "$TMP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            rm -rf "$SRC"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "research: record DRAM supplemental current data"
+            if git push origin "HEAD:$BRANCH"; then exit 0; fi
+          done
+          exit 1
+      - name: Upload DRAM supplement
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-dram-supplement
+          path: leadership/research/rotation_theme56_dram_supplement/
+          if-no-files-found: error
+          retention-days: 14
