@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git show HEAD^:.github/workflows/temp-sleeve-stale-fix.yml > /tmp/previous-harness.yml
+          git show HEAD~2:.github/workflows/temp-sleeve-stale-fix.yml > /tmp/previous-harness.yml
           python - <<'PY'
           from pathlib import Path
           import textwrap
@@ -36,9 +36,8 @@ jobs:
           block = textwrap.dedent(block)
           block = block.replace("text += r'''", "text += '''")
           exec(compile(block, '<guarded-sleeve-patch>', 'exec'), {})
-          PY
 
-          cat >> tests/test_v38_sleeve_refresh.py <<'PYTEST'
+          extra = '''
 
 
 def test_dashboard_style_failure_does_not_make_prior_session_current(monkeypatch, tmp_path):
@@ -98,8 +97,10 @@ def test_dashboard_style_failure_does_not_make_prior_session_current(monkeypatch
     assert merged["normal_stock_desired_pct"] is None
     assert merged["reset_desired_pct"] is None
     assert "LAST_READY_PRESERVED" in merged["sleeve_live_reason"]
-PYTEST
-
+'''
+          test_path = Path('tests/test_v38_sleeve_refresh.py')
+          test_path.write_text(test_path.read_text(encoding='utf-8') + extra, encoding='utf-8')
+          PY
       - name: Install test dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Compile and test guarded stale preservation
