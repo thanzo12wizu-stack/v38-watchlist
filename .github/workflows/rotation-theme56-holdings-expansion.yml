@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --disable-pip-version-check pandas requests openpyxl
+        run: python -m pip install --disable-pip-version-check pandas requests openpyxl lxml html5lib
       - name: Syntax check
         run: python -m py_compile leadership/research/rotation_theme56_holdings_expansion.py
       - name: Run holdings expansion QA
