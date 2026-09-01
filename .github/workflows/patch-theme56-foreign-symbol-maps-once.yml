@@ -1,0 +1,43 @@
+name: Patch Theme56 Foreign Symbol Maps Once
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/patch_theme56_foreign_symbol_maps.py
+      - .github/workflows/patch-theme56-foreign-symbol-maps-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Patch symbol maps
+        run: python leadership/research/patch_theme56_foreign_symbol_maps.py
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add leadership/research/rotation_theme56_holdings_expansion.py
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Fix Theme56 foreign constituent symbol mappings"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:research/rotation-exact-flow-internals-20260831; then exit 0; fi
+            git fetch origin research/rotation-exact-flow-internals-20260831
+            git rebase origin/research/rotation-exact-flow-internals-20260831
+          done
+          exit 1
