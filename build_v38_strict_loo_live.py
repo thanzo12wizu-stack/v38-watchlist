@@ -20,6 +20,7 @@ import json
 import math
 import re
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,7 @@ MIN_THEME_MEMBERS = 3
 RS_WINDOW = 63
 RS_MIN_PERIODS = int(math.ceil(RS_WINDOW * 0.8))
 HISTORY_KEEP_SESSIONS = 45
+PRICE_CACHE_SCHEMA = "v38-sleeve-price-cache-1"
 TICKER_RE = re.compile(r"^[A-Z][A-Z0-9.\-/]{0,9}$")
 PIT_BOOTSTRAP_COMMIT = "79073ffd9742102c2b6e9f72d349801a10e126db"
 PIT_BOOTSTRAP_EFFECTIVE_ASOF = "2026-06-22"
@@ -200,11 +202,31 @@ def yahoo_symbol(symbol: str) -> str:
     return symbol.replace(".", "-")
 
 
+def _write_price_cache(path: str | Path, open_: pd.DataFrame, close: pd.DataFrame,
+                       quality: dict[str, Any]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    pd.to_pickle({
+        "schema": PRICE_CACHE_SCHEMA,
+        "open": open_,
+        "close": close,
+        "quality": quality,
+    }, target, compression="gzip")
+
+
 def download_adjusted_close(symbols: list[str], start: str, end: str,
-                            batch_size: int = 200) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Research-compatible adjusted-close downloader, batched for the full taxonomy."""
+                            batch_size: int = 200,
+                            price_cache_path: str | Path | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Research-compatible adjusted Close plus a transient adjusted-OHLC cache.
+
+    Batch yfinance remains the primary route. Symbols with no usable observations
+    are retried independently through the crumb-free Yahoo chart endpoint, with
+    FMP as a final fallback. The returned Close keeps the prior adjusted-close
+    semantics; adjusted Open is retained only for the later sleeve step.
+    """
     requested = list(dict.fromkeys(symbols))
-    frames: list[pd.DataFrame] = []
+    close_frames: list[pd.DataFrame] = []
+    open_frames: list[pd.DataFrame] = []
     failed_batches = 0
     for pos in range(0, len(requested), batch_size):
         batch = requested[pos:pos + batch_size]
@@ -215,50 +237,133 @@ def download_adjusted_close(symbols: list[str], start: str, end: str,
                 names, start=start, end=end, auto_adjust=False, actions=False,
                 progress=False, group_by="ticker", threads=True, timeout=30,
             )
-        except Exception as exc:  # live route must degrade to DATA REQUIRED, not approximation
+        except Exception as exc:
             print(f"LOO_DOWNLOAD_BATCH_FAILED pos={pos} error={type(exc).__name__}", flush=True)
             failed_batches += 1
             continue
         if raw is None or raw.empty:
             failed_batches += 1
             continue
-        cols: dict[str, pd.Series] = {}
+        cb: dict[str, pd.Series] = {}
+        ob: dict[str, pd.Series] = {}
         if isinstance(raw.columns, pd.MultiIndex):
             level0 = set(str(x) for x in raw.columns.get_level_values(0))
             for name in names:
                 if name not in level0:
                     continue
                 part = raw[name]
-                field = "Adj Close" if "Adj Close" in part.columns else (
+                adj_field = "Adj Close" if "Adj Close" in part.columns else (
                     "Close" if "Close" in part.columns else None
                 )
-                if field:
-                    cols[reverse[name]] = pd.to_numeric(part[field], errors="coerce")
+                if adj_field is None:
+                    continue
+                adjusted_close = pd.to_numeric(part[adj_field], errors="coerce")
+                if not adjusted_close.notna().any():
+                    continue
+                symbol = reverse[name]
+                cb[symbol] = adjusted_close
+                if "Open" in part.columns and "Close" in part.columns:
+                    raw_open = pd.to_numeric(part["Open"], errors="coerce")
+                    raw_close = pd.to_numeric(part["Close"], errors="coerce")
+                    ratio = adjusted_close / raw_close.replace(0.0, np.nan)
+                    adjusted_open = raw_open * ratio
+                    if adjusted_open.notna().any():
+                        ob[symbol] = adjusted_open
         elif len(batch) == 1:
-            field = "Adj Close" if "Adj Close" in raw.columns else (
+            adj_field = "Adj Close" if "Adj Close" in raw.columns else (
                 "Close" if "Close" in raw.columns else None
             )
-            if field:
-                cols[batch[0]] = pd.to_numeric(raw[field], errors="coerce")
-        if cols:
-            frames.append(pd.DataFrame(cols))
-        print(
-            f"LOO_DOWNLOAD {min(pos + batch_size, len(requested))}/{len(requested)} "
-            f"columns={sum(frame.shape[1] for frame in frames)}",
-            flush=True,
-        )
-    if not frames:
-        raise RuntimeError("Yahoo download returned no usable adjusted-close data")
-    close = pd.concat(frames, axis=1)
-    close = close.loc[:, ~close.columns.duplicated()].sort_index()
-    close.index = pd.to_datetime(close.index).tz_localize(None).normalize()
-    close = close.replace([np.inf, -np.inf], np.nan)
-    return close, {
+            if adj_field is not None:
+                adjusted_close = pd.to_numeric(raw[adj_field], errors="coerce")
+                if adjusted_close.notna().any():
+                    symbol = batch[0]
+                    cb[symbol] = adjusted_close
+                    if "Open" in raw.columns and "Close" in raw.columns:
+                        ratio = adjusted_close / pd.to_numeric(raw["Close"], errors="coerce").replace(0.0, np.nan)
+                        adjusted_open = pd.to_numeric(raw["Open"], errors="coerce") * ratio
+                        if adjusted_open.notna().any():
+                            ob[symbol] = adjusted_open
+        if cb:
+            close_frames.append(pd.DataFrame(cb))
+        if ob:
+            open_frames.append(pd.DataFrame(ob))
+        print(f"LOO_DOWNLOAD {min(pos + batch_size, len(requested))}/{len(requested)}", flush=True)
+
+    close = pd.concat(close_frames, axis=1) if close_frames else pd.DataFrame()
+    open_ = pd.concat(open_frames, axis=1) if open_frames else pd.DataFrame()
+    for frame in (close, open_):
+        if len(frame.index):
+            frame.index = pd.to_datetime(frame.index).tz_localize(None).normalize()
+    if not close.empty:
+        close = close.loc[:, ~close.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+    if not open_.empty:
+        open_ = open_.loc[:, ~open_.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+
+    have = {str(column) for column in close.columns if close[column].notna().any()}
+    missing = [symbol for symbol in requested if symbol not in have]
+    fallback_ok = 0
+    if missing:
+        from build_v38_tqqq_live import download_fmp_frame, download_yahoo_chart
+
+        end_ts = pd.Timestamp(end)
+
+        def fetch_one(symbol: str):
+            yahoo = yahoo_symbol(symbol)
+            errors = []
+            for provider, callback in (
+                ("YAHOO_CHART", lambda: download_yahoo_chart(yahoo, start=start)),
+                ("FMP_DIVIDEND_ADJUSTED", lambda: download_fmp_frame(yahoo, start=start)),
+            ):
+                try:
+                    frame = callback()
+                    if frame is None or frame.empty:
+                        raise RuntimeError("empty")
+                    idx = pd.to_datetime(frame.index)
+                    if idx.tz is not None:
+                        idx = idx.tz_localize(None)
+                    frame = frame.copy()
+                    frame.index = idx.normalize()
+                    frame = frame[frame.index < end_ts]
+                    if not frame.empty and frame["Close"].notna().any():
+                        return symbol, frame[["Open", "Close"]], provider, None
+                except Exception as exc:
+                    errors.append(f"{provider}:{type(exc).__name__}")
+            return symbol, None, None, "|".join(errors)
+
+        fb_close: dict[str, pd.Series] = {}
+        fb_open: dict[str, pd.Series] = {}
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(fetch_one, symbol) for symbol in missing]
+            for number, future in enumerate(as_completed(futures), 1):
+                symbol, frame, provider, error = future.result()
+                if frame is not None:
+                    fb_close[symbol] = pd.to_numeric(frame["Close"], errors="coerce")
+                    fb_open[symbol] = pd.to_numeric(frame["Open"], errors="coerce")
+                    fallback_ok += 1
+                if number % 200 == 0 or number == len(missing):
+                    print(f"LOO_FALLBACK {number}/{len(missing)} recovered={fallback_ok}", flush=True)
+        if fb_close:
+            fb_c = pd.DataFrame(fb_close)
+            fb_o = pd.DataFrame(fb_open)
+            close = pd.concat([close, fb_c], axis=1)
+            open_ = pd.concat([open_, fb_o], axis=1)
+            close = close.loc[:, ~close.columns.duplicated(keep="last")].sort_index()
+            open_ = open_.loc[:, ~open_.columns.duplicated(keep="last")].sort_index()
+
+    if close.empty:
+        raise RuntimeError("Yahoo/FMP download returned no usable adjusted-close data")
+    usable_close = [column for column in close.columns if close[column].notna().any()]
+    quality = {
         "requested": len(requested),
-        "downloaded": int(close.shape[1]),
+        "downloaded": len(usable_close),
         "rows": int(close.shape[0]),
         "failed_batches": failed_batches,
+        "fallback_requested": len(missing),
+        "fallback_recovered": fallback_ok,
     }
+    if price_cache_path is not None:
+        _write_price_cache(price_cache_path, open_, close, quality)
+    return close, quality
 
 
 def arithmetic_returns(close: pd.DataFrame) -> pd.DataFrame:
@@ -525,6 +630,7 @@ def main() -> None:
     parser.add_argument("--sector-snapshot", default="sector_snapshot.json")
     parser.add_argument("--history", default="v38-strict-loo-history.json")
     parser.add_argument("--out", default="v38-strict-loo-live.json")
+    parser.add_argument("--price-cache", default="/tmp/v38-sleeve-price-cache.pkl.gz")
     parser.add_argument("--batch-size", type=int, default=200)
     args = parser.parse_args()
 
@@ -562,7 +668,7 @@ def main() -> None:
     start = str((asof - pd.Timedelta(days=170)).date())
     end = str((asof + pd.Timedelta(days=1)).date())
     try:
-        close, quality = download_adjusted_close(symbols, start, end, args.batch_size)
+        close, quality = download_adjusted_close(symbols, start, end, args.batch_size, args.price_cache)
         close = close.loc[close.index <= asof]
         if asof not in close.index:
             raise RuntimeError(f"PRICE_ASOF_REQUIRED latest={close.index.max() if len(close) else None}")

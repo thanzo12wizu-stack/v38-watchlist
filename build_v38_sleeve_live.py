@@ -38,6 +38,7 @@ RESET_SEARCH = 20
 RESET_COOLDOWN = 20
 RESET_LOOKBACK_CALENDAR_DAYS = 190
 MIN_THEME_MEMBERS = 3
+PRICE_CACHE_SCHEMA = "v38-sleeve-price-cache-1"
 
 
 def _finite(value: Any) -> bool:
@@ -58,6 +59,43 @@ def _load_json(path: Path | None, default: Any) -> Any:
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def load_shared_price_cache(path: str | Path) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    payload = pd.read_pickle(Path(path), compression="gzip")
+    if not isinstance(payload, dict) or payload.get("schema") != PRICE_CACHE_SCHEMA:
+        raise RuntimeError("SLEEVE_PRICE_CACHE_SCHEMA_INVALID")
+    op = payload.get("open")
+    cl = payload.get("close")
+    if not isinstance(op, pd.DataFrame) or not isinstance(cl, pd.DataFrame):
+        raise RuntimeError("SLEEVE_PRICE_CACHE_FRAMES_REQUIRED")
+    for frame in (op, cl):
+        frame.index = pd.to_datetime(frame.index).tz_localize(None).normalize()
+    return op.sort_index(), cl.sort_index(), dict(payload.get("quality") or {})
+
+
+def _cache_slice(op: pd.DataFrame, cl: pd.DataFrame, symbols: list[str], start: str, end: str):
+    begin = pd.Timestamp(start)
+    finish = pd.Timestamp(end)
+    cols = [symbol for symbol in symbols if symbol in cl.columns]
+    c = cl.loc[(cl.index >= begin) & (cl.index < finish), cols].copy()
+    ocols = [symbol for symbol in cols if symbol in op.columns]
+    o = op.loc[(op.index >= begin) & (op.index < finish), ocols].copy()
+    o = o.reindex(index=c.index, columns=c.columns)
+    missing = [symbol for symbol in symbols if symbol not in c.columns or not c[symbol].notna().any()]
+    return o, c, missing
+
+
+def _merge_prices(base_o: pd.DataFrame, base_c: pd.DataFrame,
+                  extra_o: pd.DataFrame | None, extra_c: pd.DataFrame | None):
+    if extra_c is None or extra_c.empty:
+        return base_o, base_c
+    c = pd.concat([base_c, extra_c], axis=1)
+    o = pd.concat([base_o, extra_o if extra_o is not None else pd.DataFrame()], axis=1)
+    c = c.loc[:, ~c.columns.duplicated(keep="last")].sort_index()
+    o = o.loc[:, ~o.columns.duplicated(keep="last")].sort_index()
+    o = o.reindex(index=c.index, columns=c.columns)
+    return o, c
 
 
 def yahoo_symbol(symbol: str) -> str:
@@ -606,6 +644,7 @@ def main() -> None:
     ap.add_argument("--seed", default="v38-normal-sleeve-seed.json")
     ap.add_argument("--strict-history", default="v38-strict-loo-history.json")
     ap.add_argument("--tqqq-state", default="tqqq-panic-state.json")
+    ap.add_argument("--price-cache", default="/tmp/v38-sleeve-price-cache.pkl.gz")
     ap.add_argument("--out", default="v38-sleeve-state.json")
     ap.add_argument("--batch-size", type=int, default=150)
     args = ap.parse_args()
@@ -624,6 +663,11 @@ def main() -> None:
     normal: dict[str, Any] | None = None
     reset: dict[str, Any] | None = None
     try:
+        cache_o = cache_c = None
+        cache_quality = {}
+        if args.price_cache and Path(args.price_cache).is_file():
+            cache_o, cache_c, cache_quality = load_shared_price_cache(args.price_cache)
+
         prior_normal = previous.get("normal_stock") if previous.get("schema") == "v38-sleeve-live-1" else None
         if not isinstance(prior_normal, dict) or prior_normal.get("status") != "READY":
             prior_normal = _normal_from_seed(seed)
@@ -639,7 +683,13 @@ def main() -> None:
             start_n = str((pd.Timestamp(str(prior_normal["asof"])) - pd.Timedelta(days=8)).date())
             end_n = str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date())
             if symbols_normal:
-                op_n, cl_n, _ = download_adjusted_ohlc(symbols_normal, start_n, end_n, min(args.batch_size, 100))
+                if cache_o is not None and cache_c is not None:
+                    op_n, cl_n, missing_n = _cache_slice(cache_o, cache_c, symbols_normal, start_n, end_n)
+                    if missing_n:
+                        extra_o, extra_c, _ = download_adjusted_ohlc(missing_n, start_n, end_n, min(args.batch_size, 100))
+                        op_n, cl_n = _merge_prices(op_n, cl_n, extra_o, extra_c)
+                else:
+                    op_n, cl_n, _ = download_adjusted_ohlc(symbols_normal, start_n, end_n, min(args.batch_size, 100))
                 cl_n = cl_n.loc[cl_n.index <= pd.Timestamp(asof)]
                 op_n = op_n.loc[op_n.index <= pd.Timestamp(asof)]
         normal = advance_normal(prior_normal, companion, asof, op_n, cl_n)
@@ -649,7 +699,18 @@ def main() -> None:
         earliest = min(str(row.get("effective_asof")) for row in history.get("taxonomy_snapshots", []) if row.get("effective_asof"))
         symbols_reset = sorted({str(s) for row in history.get("taxonomy_snapshots", []) for s in (row.get("s2t") or {})})
         start_r = max(pd.Timestamp(earliest) - pd.Timedelta(days=100), pd.Timestamp(asof) - pd.Timedelta(days=RESET_LOOKBACK_CALENDAR_DAYS))
-        op_r, cl_r, quality = download_adjusted_ohlc(symbols_reset, str(start_r.date()), str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date()), args.batch_size)
+        reset_start = str(start_r.date())
+        reset_end = str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date())
+        if cache_o is not None and cache_c is not None:
+            op_r, cl_r, missing_r = _cache_slice(cache_o, cache_c, symbols_reset, reset_start, reset_end)
+            quality = dict(cache_quality)
+            quality["cache_missing_symbols"] = len(missing_r)
+            if missing_r:
+                extra_o, extra_c, extra_quality = download_adjusted_ohlc(missing_r, reset_start, reset_end, args.batch_size)
+                op_r, cl_r = _merge_prices(op_r, cl_r, extra_o, extra_c)
+                quality["fallback_download"] = extra_quality
+        else:
+            op_r, cl_r, quality = download_adjusted_ohlc(symbols_reset, reset_start, reset_end, args.batch_size)
         cl_r = cl_r.loc[cl_r.index <= pd.Timestamp(asof)]
         op_r = op_r.reindex(index=cl_r.index, columns=cl_r.columns)
         if pd.Timestamp(asof) not in cl_r.index:

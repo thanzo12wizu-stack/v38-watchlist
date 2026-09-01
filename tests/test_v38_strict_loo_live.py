@@ -180,3 +180,22 @@ def test_first_run_fails_closed_when_t20_predates_first_saved_taxonomy():
     )
     with pytest.raises(RuntimeError, match="PIT_TAXONOMY_REQUIRED"):
         backfill_required_snapshots(history, close, idx[-1])
+
+
+
+def test_shared_price_cache_roundtrip_for_sleeve(tmp_path):
+    from build_v38_strict_loo_live import _write_price_cache
+    from build_v38_sleeve_live import load_shared_price_cache, _cache_slice
+
+    idx = pd.to_datetime(["2026-08-28", "2026-08-31"])
+    op = pd.DataFrame({"AAA": [10.0, 11.0]}, index=idx)
+    cl = pd.DataFrame({"AAA": [10.5, 11.5]}, index=idx)
+    path = tmp_path / "prices.pkl.gz"
+    _write_price_cache(path, op, cl, {"requested": 1, "downloaded": 1})
+    got_o, got_c, quality = load_shared_price_cache(path)
+    sub_o, sub_c, missing = _cache_slice(got_o, got_c, ["AAA"], "2026-08-28", "2026-09-01")
+    assert missing == []
+    assert list(sub_c.columns) == ["AAA"]
+    assert float(sub_o.loc[pd.Timestamp("2026-08-31"), "AAA"]) == 11.0
+    assert float(sub_c.loc[pd.Timestamp("2026-08-31"), "AAA"]) == 11.5
+    assert quality["downloaded"] == 1
