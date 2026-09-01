@@ -16,12 +16,11 @@ import rotation_theme56_holdings_expansion as hx
 TARGETS = ["WCLD", "BLOK", "PHO", "TAN", "IBUY", "PKB", "BOAT", "WGMI", "JETS", "PEJ"]
 SA_URL = "https://stockanalysis.com/etf/{ticker}/holdings/"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
-ETF_HEADERS_500 = {
+BASE_HEADERS = {
     "User-Agent": UA,
     "Accept": "application/json,text/plain,*/*",
     "Origin": "https://www.etf.com",
     "Referer": "https://www.etf.com/",
-    "x-limit": "500",
 }
 
 EXCHANGE_PREFIX = {
@@ -53,41 +52,63 @@ def normalize_sa_symbol(value: Any) -> str:
     return hx.clean_symbol(raw)
 
 
+def _records_to_df(records: list[dict[str, Any]], ticker: str, url: str) -> pd.DataFrame:
+    rows = []
+    for rec in records:
+        raw_symbol = etfcom._value(rec, ("symbol", "ticker", "securitySymbol", "holdingSymbol"))
+        symbol = hx.clean_symbol(raw_symbol)
+        if not symbol:
+            continue
+        rows.append({
+            "sector_etf": ticker,
+            "provider_symbol": str(raw_symbol or "").strip(),
+            "symbol": symbol,
+            "weight_pct": etfcom._num(etfcom._value(rec, ("weight", "weighting", "portfolioWeight", "percentage"))),
+            "name": str(etfcom._value(rec, ("name", "securityName", "holdingName", "description")) or "").strip(),
+            "source_url": url,
+            "provider": "ETFCOM_XLIMIT500",
+            "quality": "SECONDARY_CURRENT_MEMBERSHIP_CANDIDATE",
+        })
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return out
+    return out[out["symbol"] != ""].drop_duplicates("symbol", keep="first").reset_index(drop=True)
+
+
 def fetch_etfcom_500(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
-    url = etfcom.API_URL.format(ticker=ticker)
-    last_exc: Exception | None = None
-    for attempt in range(4):
+    base = etfcom.API_URL.format(ticker=ticker)
+    # ETF.com sometimes returns a short default slice on a direct x-limit request. The probe
+    # demonstrated that walking the endpoint through its normal query variants before the
+    # x-limit call exposes the larger current securities set. Keep the largest valid response.
+    variants = [
+        (base, BASE_HEADERS, "base"),
+        (base + "&limit=500", BASE_HEADERS, "limit500"),
+        (base + "&pageSize=500", BASE_HEADERS, "pageSize500"),
+        (base + "&size=500", BASE_HEADERS, "size500"),
+        (base + "&offset=0&limit=500", BASE_HEADERS, "offset_limit"),
+        (base, {**BASE_HEADERS, "x-limit": "500"}, "xlimit500"),
+        (base, {**BASE_HEADERS, "x-limit": "500", "x-offset": "0"}, "xlimit500_offset0"),
+    ]
+    best = pd.DataFrame()
+    best_variant = None
+    errors = []
+    for url, headers, name in variants:
         try:
-            r = session.get(url, headers=ETF_HEADERS_500, timeout=35)
+            r = session.get(url, headers=headers, timeout=35)
             r.raise_for_status()
             records = etfcom._find_record_list(r.json())
             if not records:
                 raise RuntimeError("no ETF.com securities rows")
-            rows = []
-            for rec in records:
-                raw_symbol = etfcom._value(rec, ("symbol", "ticker", "securitySymbol", "holdingSymbol"))
-                symbol = hx.clean_symbol(raw_symbol)
-                if not symbol:
-                    continue
-                rows.append({
-                    "sector_etf": ticker,
-                    "provider_symbol": str(raw_symbol or "").strip(),
-                    "symbol": symbol,
-                    "weight_pct": etfcom._num(etfcom._value(rec, ("weight", "weighting", "portfolioWeight", "percentage"))),
-                    "name": str(etfcom._value(rec, ("name", "securityName", "holdingName", "description")) or "").strip(),
-                    "source_url": url,
-                    "provider": "ETFCOM_XLIMIT500",
-                    "quality": "SECONDARY_CURRENT_MEMBERSHIP_CANDIDATE",
-                })
-            out = pd.DataFrame(rows)
-            out = out[out["symbol"] != ""].drop_duplicates("symbol", keep="first").reset_index(drop=True)
-            if len(out) < 5:
-                raise RuntimeError(f"ETF.com x-limit=500 unexpectedly short: {len(out)}")
-            return out, {"ticker": ticker, "rows": len(out), "source_url": url}
+            out = _records_to_df(records, ticker, url)
+            if len(out) > len(best):
+                best = out
+                best_variant = name
         except Exception as exc:
-            last_exc = exc
-            time.sleep(1.0 * (attempt + 1))
-    raise RuntimeError(f"ETF.com x-limit=500 failed for {ticker}: {last_exc}")
+            errors.append(f"{name}:{type(exc).__name__}:{exc}")
+        time.sleep(0.08)
+    if len(best) < 5:
+        raise RuntimeError(f"ETF.com best-response unexpectedly short: {len(best)}; {' | '.join(errors)}")
+    return best, {"ticker": ticker, "rows": len(best), "source_url": base, "best_variant": best_variant}
 
 
 def fetch_stockanalysis(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
@@ -153,8 +174,6 @@ def main() -> None:
 
             method = None
             selected = None
-            # Prefer one internally consistent source; use a union only when neither source alone
-            # reaches the pre-existing 80% Internal membership threshold.
             if 0.80 <= e_ratio <= 1.10:
                 selected = e.copy()
                 method = "ETFCOM_XLIMIT500"
@@ -177,12 +196,13 @@ def main() -> None:
             else:
                 ratio = max(e_ratio, a_ratio, union_ratio)
 
-            row = {
+            qa.append({
                 "ticker": ticker,
                 "status": status,
                 "selected_method": method,
                 "selected_rows": None if selected is None else len(selected),
                 "etfcom_rows": len(e),
+                "etfcom_best_variant": ed.get("best_variant"),
                 "stockanalysis_visible_rows": len(a),
                 "union_rows": len(union),
                 "declared_total": total,
@@ -192,12 +212,11 @@ def main() -> None:
                 "estimated_coverage": ratio,
                 "etfcom_source": ed.get("source_url"),
                 "count_source": ad.get("source_url"),
-            }
-            qa.append(row)
+            })
         except Exception as exc:
             qa.append({"ticker": ticker, "status": "FAIL", "error": f"{type(exc).__name__}: {exc}"})
         print(json.dumps(qa[-1], ensure_ascii=False), flush=True)
-        time.sleep(0.2)
+        time.sleep(0.15)
 
     qdf = pd.DataFrame(qa)
     qdf.to_csv(outdir / "secondary_holdings_qa.csv", index=False)
@@ -205,13 +224,13 @@ def main() -> None:
         pd.concat(frames, ignore_index=True).drop_duplicates(["sector_etf", "symbol"]).to_csv(outdir / "validated_current_membership_fallback.csv", index=False)
     passed = qdf.loc[qdf["status"] == "PASS", "ticker"].tolist()
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
         "candidate_count": len(TARGETS),
         "pass_count": len(passed),
         "pass_tickers": passed,
         "rows": qa,
-        "quality_contract": "Fallback membership is accepted only when a current ETF.com x-limit=500 list, StockAnalysis/Finnhub visible list, or their conservative union covers 80%-110% of an independently declared current total holdings count. It is not labeled issuer-exact.",
+        "quality_contract": "Fallback membership is accepted only when a current ETF.com best-response securities list, StockAnalysis/Finnhub visible list, or their conservative union covers 80%-110% of an independently declared current total holdings count. It is not labeled issuer-exact.",
         "guardrails": [
             "Issuer exact current holdings remain preferred.",
             "The existing 80% constituent-price coverage requirement is not lowered.",
