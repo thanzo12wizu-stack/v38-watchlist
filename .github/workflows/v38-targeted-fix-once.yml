@@ -24,10 +24,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Apply staged route patch
+      - name: Apply final sleeve fallback patch
         run: |
-          python scripts/v38_route_fix_once.py
-          python scripts/v38_route_fix_correction.py
+          python scripts/v38_sleeve_fallback_fix_once.py
+          python scripts/v38_sleeve_fallback_test_import.py
 
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
@@ -36,22 +36,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile build_v38_strict_loo_live.py build_v38_sleeve_live.py
-          pytest -q tests/test_v38_strict_loo_live.py tests/test_v38_sleeve_live.py tests/test_v38_companion.py tests/test_v38_tqqq_live.py
-          grep -q 'default="/tmp/v38-sleeve-price-cache.pkl.gz"' build_v38_strict_loo_live.py
-          grep -q 'default="/tmp/v38-sleeve-price-cache.pkl.gz"' build_v38_sleeve_live.py
-          git diff --exit-code -- .github/workflows/dashboard.yml
+          python -m py_compile build_v38_sleeve_live.py
+          pytest -q tests/test_v38_sleeve_live.py tests/test_v38_companion.py tests/test_v38_tqqq_live.py
+          grep -q 'SLEEVE_FALLBACK' build_v38_sleeve_live.py
+          grep -q 'download_yahoo_chart' build_v38_sleeve_live.py
+          git diff --check
 
-      - name: Commit route fix
+      - name: Commit final route fix and remove one-shot helpers
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add build_v38_strict_loo_live.py build_v38_sleeve_live.py tests/test_v38_strict_loo_live.py
-          git rm scripts/v38_route_fix_once.py scripts/v38_route_fix_correction.py
+          git add build_v38_sleeve_live.py tests/test_v38_sleeve_live.py
+          git rm scripts/v38_sleeve_fallback_fix_once.py scripts/v38_sleeve_fallback_test_import.py .github/workflows/v38-targeted-fix-once.yml
           git diff --cached --check
-          git commit -m 'fix: share V38 price cache with live sleeves'
+          git commit -m 'fix: add resilient fallback for V38 sleeve prices'
           git push origin HEAD:main
 
       - name: Dispatch canonical dashboard rebuild
