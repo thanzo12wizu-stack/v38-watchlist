@@ -1,135 +1,30 @@
 {
-  "schema": 1,
+  "schema": 2,
   "research_only": true,
   "candidate_count": 20,
-  "pass_count": 7,
+  "pass_count": 20,
   "pass_tickers": [
+    "AIQ",
+    "BOTZ",
+    "COPX",
+    "DRIV",
+    "DTCR",
+    "GNOM",
+    "HYDR",
+    "LIT",
+    "PAVE",
+    "SHLD",
+    "SIL",
+    "URA",
     "GDX",
     "MOO",
+    "NLR",
     "OIH",
     "PPH",
     "REMX",
     "SLX",
     "SMH"
   ],
-  "failures": [
-    {
-      "ticker": "AIQ",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "BOTZ",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "COPX",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "DRIV",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "DTCR",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "GNOM",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "HYDR",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "LIT",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "PAVE",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "SHLD",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "SIL",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "URA",
-      "provider": "GLOBALX",
-      "status": "FAIL",
-      "error": "ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7\n",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    },
-    {
-      "ticker": "NLR",
-      "provider": "VANECK",
-      "status": "FAIL",
-      "error": "BadZipFile: File is not a zip file",
-      "rows": NaN,
-      "source_url": NaN,
-      "quality": NaN
-    }
-  ],
+  "failures": [],
   "guardrail": "This expands only exact current membership for Internals. It does not claim Exact Flow availability."
 }
