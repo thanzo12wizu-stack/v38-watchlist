@@ -1,0 +1,21 @@
+{
+  "schema": 4,
+  "research_only": true,
+  "candidate_count": 4,
+  "pass_count": 4,
+  "pass_tickers": [
+    "CIBR",
+    "FAN",
+    "GRID",
+    "SKYY"
+  ],
+  "failures": [],
+  "guardrails": [
+    "First Trust's official holding count explicitly excludes cash; currency/cash identifiers such as $USD/$EUR are therefore excluded before count matching.",
+    "Only a semantic holdings table whose unique provider identifiers exactly equal the official excluding-cash count is accepted.",
+    "Whole-page row merging is forbidden because responsive/auxiliary tables can overcount membership.",
+    "No oversized table is truncated to force the official count.",
+    "Provider identifiers are preserved; foreign identifiers are normalized only for market-data lookup.",
+    "No Top-10 or partial table is accepted as exact membership."
+  ]
+}
