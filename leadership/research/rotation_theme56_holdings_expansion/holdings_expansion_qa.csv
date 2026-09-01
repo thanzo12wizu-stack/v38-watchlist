@@ -2,7 +2,7 @@ ticker,provider,rows,source_url,quality,status,error
 BLOK,AMPLIFY,,,,FAIL,RuntimeError: Amplify page exposed only Top 10; refusing partial membership
 IBUY,AMPLIFY,,,,FAIL,RuntimeError: Amplify page exposed only Top 10; refusing partial membership
 ARKW,ARK,39.0,https://assets.ark-funds.com/fund-documents/funds-etf-csv/ARK_NEXT_GENERATION_INTERNET_ETF_ARKW_HOLDINGS.csv,EXACT_CURRENT_MEMBERSHIP,PASS,
-WGMI,COINSHARES,,,,FAIL,ImportError: `Import beautifulsoup4` failed.  Use pip or conda to install the beautifulsoup4 package.
+WGMI,COINSHARES,,,,FAIL,ValueError: No tables found matching pattern '.+'
 QTUM,DEFIANCE,88.0,https://www.defianceetfs.com/qtum-full-holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
 CIBR,FIRSTTRUST,,,,FAIL,RuntimeError: First Trust holdings table not found
 FAN,FIRSTTRUST,,,,FAIL,RuntimeError: First Trust holdings table not found
