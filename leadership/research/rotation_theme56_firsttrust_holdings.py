@@ -27,7 +27,7 @@ EXCHANGE_SUFFIX = {
 
 def clean_symbol(value: Any) -> str:
     raw = str(value or "").strip().upper()
-    if not raw or raw in {"-", "--", "NAN", "N/A", "CASH"} or "CASH" in raw:
+    if not raw or raw.startswith("$") or raw in {"-", "--", "NAN", "N/A", "CASH"} or "CASH" in raw:
         return ""
     raw = re.sub(r"\s+", " ", raw)
     raw = re.sub(r"/\.(?=[A-Z]{2}$)", ".", raw)
@@ -158,11 +158,9 @@ def fetch_holdings(session: requests.Session, ticker: str) -> tuple[pd.DataFrame
             detail = [(idx, len(frame)) for idx, frame, _ in exact]
             raise RuntimeError(f"ambiguous exact First Trust tables: official={expected}, candidates={detail}")
         selected_idx, out, _ = exact[0]
-        selection = "EXACT_TABLE_MATCH"
+        selection = "EXACT_TABLE_MATCH_EXCLUDING_CURRENCY_CASH"
     else:
         table_counts = [(idx, len(frame)) for idx, frame, _ in candidates]
-        # Diagnostic only: never truncate an oversized table to the official count and never
-        # merge partial fragments until the exact membership boundary is proven.
         raise RuntimeError(
             f"no exact First Trust holdings table: official={expected}, semantic_table_counts={table_counts}"
         )
@@ -211,13 +209,14 @@ def main() -> None:
         )
     passed = qa_df.loc[qa_df["status"] == "PASS", "ticker"].tolist()
     report = {
-        "schema": 3,
+        "schema": 4,
         "research_only": True,
         "candidate_count": len(TICKERS),
         "pass_count": len(passed),
         "pass_tickers": passed,
         "failures": json.loads(qa_df.loc[qa_df["status"] != "PASS"].where(pd.notna(qa_df), None).to_json(orient="records", force_ascii=False)),
         "guardrails": [
+            "First Trust's official holding count explicitly excludes cash; currency/cash identifiers such as $USD/$EUR are therefore excluded before count matching.",
             "Only a semantic holdings table whose unique provider identifiers exactly equal the official excluding-cash count is accepted.",
             "Whole-page row merging is forbidden because responsive/auxiliary tables can overcount membership.",
             "No oversized table is truncated to force the official count.",
