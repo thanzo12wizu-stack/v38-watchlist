@@ -14,7 +14,7 @@ permissions:
 jobs:
   patch-test-commit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Apply exact targeted patches
+      - name: Apply shared price-cache fix
         shell: bash
         run: |
           set -euo pipefail
@@ -36,172 +36,336 @@ jobs:
               text = p.read_text(encoding='utf-8')
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one match, got {count}: {old[:100]!r}')
+                  raise SystemExit(f'{path}: expected one match, got {count}: {old[:120]!r}')
               p.write_text(text.replace(old, new, 1), encoding='utf-8')
 
-          # 1) Normal-stock biotech policy + auditable eligibility fields.
-          path = 'build_v38_companion.py'
+          def replace_block(path, start_marker, end_marker, new_block):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              start = text.find(start_marker)
+              if start < 0:
+                  raise SystemExit(f'{path}: start marker not found: {start_marker!r}')
+              end = text.find(end_marker, start)
+              if end < 0:
+                  raise SystemExit(f'{path}: end marker not found: {end_marker!r}')
+              p.write_text(text[:start] + new_block + text[end:], encoding='utf-8')
+
+          # Strict LOO remains the single bulk taxonomy price collector.  It now
+          # retains adjusted Open as a transient cache for the later sleeve step,
+          # and fills failed yfinance batches through the crumb-free Yahoo chart
+          # route (FMP only as fallback).  LOO calculations still use the exact
+          # same adjusted Close series semantics.
+          path = 'build_v38_strict_loo_live.py'
           replace_once(
               path,
-              '''def _finite(value) -> bool:\n    try:\n        return math.isfinite(float(value))\n    except (TypeError, ValueError):\n        return False\n\n\ndef _load_json''',
-              '''def _finite(value) -> bool:\n    try:\n        return math.isfinite(float(value))\n    except (TypeError, ValueError):\n        return False\n\n\nNORMAL_STOCK_BIOTECH_INDUSTRIES = frozenset({"Biotechnology", "Pharmaceuticals: Other"})\n\n\ndef _normal_stock_biotech_excluded(industry) -> bool:\n    """Normal-stock sleeve: broadly exclude biotech-like clinical industries.\n\n    This is deliberately stricter than the legacy structural-small-biotech\n    helper retained in v38_rules for historical audit compatibility.\n    """\n    return str(industry or "").strip() in NORMAL_STOCK_BIOTECH_INDUSTRIES\n\n\ndef _load_json'''
+              'import subprocess\nfrom collections import defaultdict',
+              'import subprocess\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\nfrom collections import defaultdict'
           )
           replace_once(
               path,
-              '        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)\n        eligible = (',
-              '        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)\n        normal_biotech_excluded = _normal_stock_biotech_excluded(industry_value)\n        eligible = ('
+              'HISTORY_KEEP_SESSIONS = 45\nTICKER_RE =',
+              'HISTORY_KEEP_SESSIONS = 45\nPRICE_CACHE_SCHEMA = "v38-sleeve-price-cache-1"\nTICKER_RE ='
+          )
+          new_downloader = r'''def _write_price_cache(path: str | Path, open_: pd.DataFrame, close: pd.DataFrame,
+                       quality: dict[str, Any]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    pd.to_pickle({
+        "schema": PRICE_CACHE_SCHEMA,
+        "open": open_,
+        "close": close,
+        "quality": quality,
+    }, target, compression="gzip")
+
+
+def download_adjusted_close(symbols: list[str], start: str, end: str,
+                            batch_size: int = 200,
+                            price_cache_path: str | Path | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Research-compatible adjusted Close plus a transient adjusted-OHLC cache.
+
+    Batch yfinance remains the primary route. Symbols with no usable observations
+    are retried independently through the crumb-free Yahoo chart endpoint, with
+    FMP as a final fallback. The returned Close is unchanged in meaning from the
+    prior implementation; adjusted Open is retained only for the later sleeve.
+    """
+    requested = list(dict.fromkeys(symbols))
+    close_frames: list[pd.DataFrame] = []
+    open_frames: list[pd.DataFrame] = []
+    failed_batches = 0
+    for pos in range(0, len(requested), batch_size):
+        batch = requested[pos:pos + batch_size]
+        names = [yahoo_symbol(symbol) for symbol in batch]
+        reverse = {yahoo_symbol(symbol): symbol for symbol in batch}
+        try:
+            raw = yf.download(
+                names, start=start, end=end, auto_adjust=False, actions=False,
+                progress=False, group_by="ticker", threads=True, timeout=30,
+            )
+        except Exception as exc:
+            print(f"LOO_DOWNLOAD_BATCH_FAILED pos={pos} error={type(exc).__name__}", flush=True)
+            failed_batches += 1
+            continue
+        if raw is None or raw.empty:
+            failed_batches += 1
+            continue
+        cb: dict[str, pd.Series] = {}
+        ob: dict[str, pd.Series] = {}
+        if isinstance(raw.columns, pd.MultiIndex):
+            level0 = set(str(x) for x in raw.columns.get_level_values(0))
+            for name in names:
+                if name not in level0:
+                    continue
+                part = raw[name]
+                adj_field = "Adj Close" if "Adj Close" in part.columns else (
+                    "Close" if "Close" in part.columns else None
+                )
+                if adj_field is None:
+                    continue
+                adjusted_close = pd.to_numeric(part[adj_field], errors="coerce")
+                if not adjusted_close.notna().any():
+                    continue
+                symbol = reverse[name]
+                cb[symbol] = adjusted_close
+                if "Open" in part.columns and "Close" in part.columns:
+                    raw_open = pd.to_numeric(part["Open"], errors="coerce")
+                    raw_close = pd.to_numeric(part["Close"], errors="coerce")
+                    ratio = adjusted_close / raw_close.replace(0.0, np.nan)
+                    adjusted_open = raw_open * ratio
+                    if adjusted_open.notna().any():
+                        ob[symbol] = adjusted_open
+        elif len(batch) == 1:
+            adj_field = "Adj Close" if "Adj Close" in raw.columns else (
+                "Close" if "Close" in raw.columns else None
+            )
+            if adj_field is not None:
+                adjusted_close = pd.to_numeric(raw[adj_field], errors="coerce")
+                if adjusted_close.notna().any():
+                    symbol = batch[0]
+                    cb[symbol] = adjusted_close
+                    if "Open" in raw.columns and "Close" in raw.columns:
+                        ratio = adjusted_close / pd.to_numeric(raw["Close"], errors="coerce").replace(0.0, np.nan)
+                        adjusted_open = pd.to_numeric(raw["Open"], errors="coerce") * ratio
+                        if adjusted_open.notna().any():
+                            ob[symbol] = adjusted_open
+        if cb:
+            close_frames.append(pd.DataFrame(cb))
+        if ob:
+            open_frames.append(pd.DataFrame(ob))
+        print(f"LOO_DOWNLOAD {min(pos + batch_size, len(requested))}/{len(requested)}", flush=True)
+
+    close = pd.concat(close_frames, axis=1) if close_frames else pd.DataFrame()
+    open_ = pd.concat(open_frames, axis=1) if open_frames else pd.DataFrame()
+    for frame in (close, open_):
+        if len(frame.index):
+            frame.index = pd.to_datetime(frame.index).tz_localize(None).normalize()
+    if not close.empty:
+        close = close.loc[:, ~close.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+    if not open_.empty:
+        open_ = open_.loc[:, ~open_.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+
+    have = {str(column) for column in close.columns if close[column].notna().any()}
+    missing = [symbol for symbol in requested if symbol not in have]
+    fallback_ok = 0
+    if missing:
+        from build_v38_tqqq_live import download_fmp_frame, download_yahoo_chart
+
+        end_ts = pd.Timestamp(end)
+        def fetch_one(symbol: str):
+            yahoo = yahoo_symbol(symbol)
+            errors = []
+            for provider, callback in (
+                ("YAHOO_CHART", lambda: download_yahoo_chart(yahoo, start=start)),
+                ("FMP_DIVIDEND_ADJUSTED", lambda: download_fmp_frame(yahoo, start=start)),
+            ):
+                try:
+                    frame = callback()
+                    if frame is None or frame.empty:
+                        raise RuntimeError("empty")
+                    frame = frame[pd.to_datetime(frame.index).tz_localize(None) < end_ts].copy()
+                    if not frame.empty and frame["Close"].notna().any():
+                        return symbol, frame[["Open", "Close"]], provider, None
+                except Exception as exc:
+                    errors.append(f"{provider}:{type(exc).__name__}")
+            return symbol, None, None, "|".join(errors)
+
+        fb_close: dict[str, pd.Series] = {}
+        fb_open: dict[str, pd.Series] = {}
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(fetch_one, symbol) for symbol in missing]
+            for number, future in enumerate(as_completed(futures), 1):
+                symbol, frame, provider, error = future.result()
+                if frame is not None:
+                    idx = pd.to_datetime(frame.index).tz_localize(None).normalize()
+                    fb_close[symbol] = pd.Series(pd.to_numeric(frame["Close"], errors="coerce").to_numpy(), index=idx)
+                    fb_open[symbol] = pd.Series(pd.to_numeric(frame["Open"], errors="coerce").to_numpy(), index=idx)
+                    fallback_ok += 1
+                if number % 200 == 0 or number == len(missing):
+                    print(f"LOO_FALLBACK {number}/{len(missing)} recovered={fallback_ok}", flush=True)
+        if fb_close:
+            fb_c = pd.DataFrame(fb_close)
+            fb_o = pd.DataFrame(fb_open)
+            close = pd.concat([close, fb_c], axis=1)
+            open_ = pd.concat([open_, fb_o], axis=1)
+            close = close.loc[:, ~close.columns.duplicated(keep="last")].sort_index()
+            open_ = open_.loc[:, ~open_.columns.duplicated(keep="last")].sort_index()
+
+    if close.empty:
+        raise RuntimeError("Yahoo/FMP download returned no usable adjusted-close data")
+    usable_close = [column for column in close.columns if close[column].notna().any()]
+    quality = {
+        "requested": len(requested),
+        "downloaded": len(usable_close),
+        "rows": int(close.shape[0]),
+        "failed_batches": failed_batches,
+        "fallback_requested": len(missing),
+        "fallback_recovered": fallback_ok,
+    }
+    if price_cache_path is not None:
+        _write_price_cache(price_cache_path, open_, close, quality)
+    return close, quality
+
+
+'''
+          replace_block(path, 'def download_adjusted_close(', 'def arithmetic_returns', new_downloader)
+          replace_once(
+              path,
+              '    parser.add_argument("--out", default="v38-strict-loo-live.json")\n    parser.add_argument("--batch-size", type=int, default=200)',
+              '    parser.add_argument("--out", default="v38-strict-loo-live.json")\n    parser.add_argument("--price-cache", default=None)\n    parser.add_argument("--batch-size", type=int, default=200)'
           )
           replace_once(
               path,
-              '            and not bio.excluded\n        )',
-              '            and not bio.excluded\n            and not normal_biotech_excluded\n        )'
-          )
-          replace_once(
-              path,
-              '            "price": row.get("px"),\n            "rs189": row.get("rs189"),',
-              '''            "price": row.get("px"),\n            "daily_dollar_volume_m": row.get("dvol"),\n            "sma50_gt_sma200": bool(row.get("ma5020")),\n            "close_vs_sma200_pct": row.get("v200"),\n            "eligibility_checks": {\n                "price_gte_5": _finite(row.get("px")) and float(row["px"]) >= 5,\n                "dollar_volume_gte_10m": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,\n                "sma50_gt_sma200": bool(row.get("ma5020")),\n                "close_gt_sma200": _finite(row.get("v200")) and float(row["v200"]) > 0,\n                "rs189_gte_85": _finite(row.get("rs189")) and float(row["rs189"]) >= 85,\n                "rs63_gte_85": _finite(row.get("rs")) and float(row["rs"]) >= 85,\n                "biotech_industry_excluded": normal_biotech_excluded,\n            },\n            "normal_biotech_policy": {\n                "industry": industry_value,\n                "excluded": normal_biotech_excluded,\n                "policy": "EXCLUDE_BIOTECHNOLOGY_AND_PHARMACEUTICALS_OTHER",\n            },\n            "rs189": row.get("rs189"),'''
-          )
-          replace_once(
-              path,
-              '            "history_min_sessions": 21,\n            "full_eligible_count": len(candidates),',
-              '            "history_min_sessions": 21,\n            "normal_biotech_policy": "EXCLUDE Biotechnology / Pharmaceuticals: Other",\n            "full_eligible_count": len(candidates),'
+              '        close, quality = download_adjusted_close(symbols, start, end, args.batch_size)',
+              '        close, quality = download_adjusted_close(symbols, start, end, args.batch_size, args.price_cache)'
           )
 
-          # 2) MC57: legacy command-center state is the canonical live value.
-          path = 'build_v38_tqqq_live.py'
+          # Sleeve consumes that transient cache. Only a genuinely absent symbol
+          # falls back to its existing downloader, so the full taxonomy is never
+          # downloaded twice in the normal successful route.
+          path = 'build_v38_sleeve_live.py'
           replace_once(
               path,
-              '''def _series_from_payload(payload: dict[str, Any]) -> pd.Series:\n    values = pd.to_numeric(pd.Series(payload.get("data", [])), errors="coerce").to_numpy(float)\n    return pd.Series(values, index=pd.to_datetime(payload.get("index", [])), dtype=float).sort_index()\n\n\ndef compute_mc57''',
-              '''def _series_from_payload(payload: dict[str, Any]) -> pd.Series:\n    values = pd.to_numeric(pd.Series(payload.get("data", [])), errors="coerce").to_numpy(float)\n    return pd.Series(values, index=pd.to_datetime(payload.get("index", [])), dtype=float).sort_index()\n\n\ndef apply_legacy_mc57_overlay(sources: dict[str, Any], state: dict[str, Any],\n                              mri_log_path: Path | None = None) -> dict[str, Any]:\n    """Overlay the legacy Dashboard MC57 onto the research history.\n\n    The long independently reconstructed series remains only as warm-up history\n    for the Stage34 state machine. Persisted command-center values are canonical\n    wherever available, and the current state.json value is mandatory.\n    """\n    if not isinstance(sources, dict) or "mc57" not in sources:\n        raise RuntimeError("MC57_SOURCE_CACHE_REQUIRED")\n    state_date = str(state.get("date") or "").strip()\n    try:\n        state_value = float(state.get("mri"))\n    except (TypeError, ValueError):\n        state_value = float("nan")\n    if not state_date or not np.isfinite(state_value):\n        raise RuntimeError("LEGACY_DASHBOARD_MC57_REQUIRED")\n\n    points: dict[pd.Timestamp, float] = {}\n    if mri_log_path is not None and Path(mri_log_path).is_file():\n        try:\n            log = pd.read_csv(mri_log_path)\n            for _, row in log.iterrows():\n                try:\n                    date = pd.Timestamp(row.get("date")).normalize()\n                    value = float(row.get("mri"))\n                except (TypeError, ValueError):\n                    continue\n                if pd.notna(date) and np.isfinite(value):\n                    points[date] = value\n        except Exception:\n            pass\n    current_date = pd.Timestamp(state_date).normalize()\n    points[current_date] = state_value\n\n    merged = pd.to_numeric(sources["mc57"], errors="coerce").copy()\n    merged.index = pd.to_datetime(merged.index).tz_localize(None).normalize()\n    for date, value in points.items():\n        merged.loc[date] = value\n    merged = merged[~merged.index.duplicated(keep="last")].sort_index()\n\n    out = dict(sources)\n    out["mc57"] = merged\n    providers = dict(out.get("providers") or {})\n    providers["mc57_canonical"] = {\n        "source": "command-center.html via state.json + daily_log.csv",\n        "state_date": state_date,\n        "state_value": state_value,\n        "persisted_points": len(points),\n        "policy": "LEGACY_DASHBOARD_CANONICAL_OVERLAY",\n    }\n    out["providers"] = providers\n    return out\n\n\ndef compute_mc57'''
+              'MIN_THEME_MEMBERS = 3\n',
+              'MIN_THEME_MEMBERS = 3\nPRICE_CACHE_SCHEMA = "v38-sleeve-price-cache-1"\n'
+          )
+          insert = r'''def load_shared_price_cache(path: str | Path) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    payload = pd.read_pickle(Path(path), compression="gzip")
+    if not isinstance(payload, dict) or payload.get("schema") != PRICE_CACHE_SCHEMA:
+        raise RuntimeError("SLEEVE_PRICE_CACHE_SCHEMA_INVALID")
+    op = payload.get("open")
+    cl = payload.get("close")
+    if not isinstance(op, pd.DataFrame) or not isinstance(cl, pd.DataFrame):
+        raise RuntimeError("SLEEVE_PRICE_CACHE_FRAMES_REQUIRED")
+    for frame in (op, cl):
+        frame.index = pd.to_datetime(frame.index).tz_localize(None).normalize()
+    return op.sort_index(), cl.sort_index(), dict(payload.get("quality") or {})
+
+
+def _cache_slice(op: pd.DataFrame, cl: pd.DataFrame, symbols: list[str], start: str, end: str):
+    begin = pd.Timestamp(start)
+    finish = pd.Timestamp(end)
+    cols = [symbol for symbol in symbols if symbol in cl.columns]
+    c = cl.loc[(cl.index >= begin) & (cl.index < finish), cols].copy()
+    ocols = [symbol for symbol in cols if symbol in op.columns]
+    o = op.loc[(op.index >= begin) & (op.index < finish), ocols].copy()
+    o = o.reindex(index=c.index, columns=c.columns)
+    missing = [symbol for symbol in symbols if symbol not in c.columns or not c[symbol].notna().any()]
+    return o, c, missing
+
+
+def _merge_prices(base_o: pd.DataFrame, base_c: pd.DataFrame,
+                  extra_o: pd.DataFrame | None, extra_c: pd.DataFrame | None):
+    if extra_c is None or extra_c.empty:
+        return base_o, base_c
+    c = pd.concat([base_c, extra_c], axis=1)
+    o = pd.concat([base_o, extra_o if extra_o is not None else pd.DataFrame()], axis=1)
+    c = c.loc[:, ~c.columns.duplicated(keep="last")].sort_index()
+    o = o.loc[:, ~o.columns.duplicated(keep="last")].sort_index()
+    o = o.reindex(index=c.index, columns=c.columns)
+    return o, c
+
+
+'''
+          replace_once(path, 'def yahoo_symbol(symbol: str) -> str:\n', insert + 'def yahoo_symbol(symbol: str) -> str:\n')
+          replace_once(
+              path,
+              '    parser.add_argument("--tqqq-state", default="tqqq-panic-state.json")\n    parser.add_argument("--out", default="v38-sleeve-state.json")',
+              '    parser.add_argument("--tqqq-state", default="tqqq-panic-state.json")\n    parser.add_argument("--price-cache", default=None)\n    parser.add_argument("--out", default="v38-sleeve-state.json")'
           )
           replace_once(
               path,
-              '    parser.add_argument("--cache", default=None)\n    parser.add_argument("--prefetch-cache", default=None)',
-              '    parser.add_argument("--cache", default=None)\n    parser.add_argument("--mri-log", default="daily_log.csv")\n    parser.add_argument("--prefetch-cache", default=None)'
+              '        prior_normal = previous.get("normal_stock") if previous.get("status") == "READY" else None\n        if not isinstance(prior_normal, dict) or prior_normal.get("status") != "READY":',
+              '        cache_o = cache_c = None\n        cache_quality = {}\n        if args.price_cache and Path(args.price_cache).is_file():\n            cache_o, cache_c, cache_quality = load_shared_price_cache(args.price_cache)\n\n        prior_normal = previous.get("normal_stock") if previous.get("status") == "READY" else None\n        if not isinstance(prior_normal, dict) or prior_normal.get("status") != "READY":'
+          )
+          old_normal = '''            if symbols_normal:\n                op_n, cl_n, _ = download_adjusted_ohlc(symbols_normal, start_n, end_n, min(args.batch_size, 100))\n                cl_n = cl_n.loc[cl_n.index <= pd.Timestamp(asof)]\n                op_n = op_n.loc[op_n.index <= pd.Timestamp(asof)]'''
+          new_normal = '''            if symbols_normal:\n                if cache_o is not None and cache_c is not None:\n                    op_n, cl_n, missing_n = _cache_slice(cache_o, cache_c, symbols_normal, start_n, end_n)\n                    if missing_n:\n                        extra_o, extra_c, _ = download_adjusted_ohlc(missing_n, start_n, end_n, min(args.batch_size, 100))\n                        op_n, cl_n = _merge_prices(op_n, cl_n, extra_o, extra_c)\n                else:\n                    op_n, cl_n, _ = download_adjusted_ohlc(symbols_normal, start_n, end_n, min(args.batch_size, 100))\n                cl_n = cl_n.loc[cl_n.index <= pd.Timestamp(asof)]\n                op_n = op_n.loc[op_n.index <= pd.Timestamp(asof)]'''
+          replace_once(path, old_normal, new_normal)
+          old_reset = '''        op_r, cl_r, quality = download_adjusted_ohlc(symbols_reset, str(start_r.date()), str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date()), args.batch_size)\n        cl_r = cl_r.loc[cl_r.index <= pd.Timestamp(asof)]\n        op_r = op_r.reindex(index=cl_r.index, columns=cl_r.columns)'''
+          new_reset = '''        reset_start = str(start_r.date())\n        reset_end = str((pd.Timestamp(asof) + pd.Timedelta(days=1)).date())\n        if cache_o is not None and cache_c is not None:\n            op_r, cl_r, missing_r = _cache_slice(cache_o, cache_c, symbols_reset, reset_start, reset_end)\n            quality = dict(cache_quality)\n            quality["cache_missing_symbols"] = len(missing_r)\n            if missing_r:\n                extra_o, extra_c, extra_quality = download_adjusted_ohlc(missing_r, reset_start, reset_end, args.batch_size)\n                op_r, cl_r = _merge_prices(op_r, cl_r, extra_o, extra_c)\n                quality["fallback_download"] = extra_quality\n        else:\n            op_r, cl_r, quality = download_adjusted_ohlc(symbols_reset, reset_start, reset_end, args.batch_size)\n        cl_r = cl_r.loc[cl_r.index <= pd.Timestamp(asof)]\n        op_r = op_r.reindex(index=cl_r.index, columns=cl_r.columns)'''
+          replace_once(path, old_reset, new_reset)
+
+          # Canonical workflow wires the same runner-local cache between LOO and sleeve.
+          path = '.github/workflows/dashboard.yml'
+          replace_once(
+              path,
+              '''          python build_v38_strict_loo_live.py \\\n            --state state.json \\\n            --sector-snapshot sector_snapshot.json \\\n            --history v38-strict-loo-history.json \\\n            --out v38-strict-loo-live.json''',
+              '''          python build_v38_strict_loo_live.py \\\n            --state state.json \\\n            --sector-snapshot sector_snapshot.json \\\n            --history v38-strict-loo-history.json \\\n            --price-cache /tmp/v38-sleeve-price-cache.pkl.gz \\\n            --out v38-strict-loo-live.json'''
           )
           replace_once(
               path,
-              '        sources = load_source_cache(args.cache) if args.cache else None\n        live = build_live(asof, sources=sources)',
-              '''        if not args.cache:\n            raise RuntimeError("CANONICAL_MC57_CACHE_REQUIRED")\n        sources = load_source_cache(args.cache)\n        sources = apply_legacy_mc57_overlay(sources, state, Path(args.mri_log))\n        live = build_live(asof, sources=sources)'''
+              '''          python build_v38_sleeve_live.py \\\n            --companion v38-live-state.json \\\n            --state v38-sleeve-state.json \\\n            --seed v38-normal-sleeve-seed.json \\\n            --strict-history v38-strict-loo-history.json \\\n            --tqqq-state tqqq-panic-state.json \\\n            --out v38-sleeve-state.json''',
+              '''          python build_v38_sleeve_live.py \\\n            --companion v38-live-state.json \\\n            --state v38-sleeve-state.json \\\n            --seed v38-normal-sleeve-seed.json \\\n            --strict-history v38-strict-loo-history.json \\\n            --tqqq-state tqqq-panic-state.json \\\n            --price-cache /tmp/v38-sleeve-price-cache.pkl.gz \\\n            --out v38-sleeve-state.json'''
           )
 
-          # 3) V38 UI: legacy Command Center palette + visible eligibility audit.
-          path = 'command-center-v38.html'
-          replace_once(
-              path,
-              ':root{--bg:#09111d;--panel:#111d2c;--panel2:#162438;--line:#263951;--text:#eef5ff;--muted:#9fb0c6;--good:#6fd3a2;--warn:#ffd166;--bad:#ff7d8c;--blue:#72a7ff;--chip:#1c2d44}',
-              ':root{--bg:#0b0f17;--panel:#101722;--panel2:#16243e;--line:rgba(255,255,255,.08);--text:#e6edf3;--muted:#7d8da1;--good:#16a34a;--warn:#ca8a04;--bad:#dc2626;--blue:#9ecbff;--chip:#16243e}'
-          )
-          replace_once(
-              path,
-              'body{margin:0;background:linear-gradient(180deg,#08101b,#0c1624 38%,#08111c);color:var(--text);',
-              'body{margin:0;background:#0b0f17;color:var(--text);'
-          )
-          replace_once(
-              path,
-              '<div class="card"><div class="hdr"><h2>候補一覧</h2><span class="badge">上位50表示</span></div>',
-              '<div class="card"><div class="hdr"><h2>候補一覧</h2><span class="badge">Eligibility通過後 上位50</span></div>'
-          )
-          replace_once(
-              path,
-              '<th>順位</th><th>銘柄</th><th>V38 Score</th><th>RS189</th><th>RS63</th><th>Theme</th><th>Theme Score</th><th>Rotation参考</th><th>今買える?</th>',
-              '<th>順位</th><th>銘柄</th><th>V38 Score</th><th>RS189</th><th>RS63</th><th>$Vol(M)</th><th>50&gt;200</th><th>Price&gt;200</th><th>Theme</th><th>Theme Score</th><th>Rotation参考</th><th>今買える?</th>'
-          )
-          replace_once(
-              path,
-              "function whyText(x){let parts=[];parts.push(`RS189 ${fmt(x.rs189)} / RS63 ${fmt(x.rs63)}`);",
-              "function whyText(x){let parts=[];parts.push(`RS189 ${fmt(x.rs189)} / RS63 ${fmt(x.rs63)} / $Vol ${fmt(x.daily_dollar_volume_m,1)}M / 50>200 ${x.sma50_gt_sma200?'PASS':'FAIL'} / Price>200 ${(x.close_vs_sma200_pct??0)>0?'PASS':'FAIL'}`);"
-          )
-          replace_once(
-              path,
-              "<td>${fmt(x.rs189)}</td><td>${fmt(x.rs63)}</td><td>${esc(x.peer_theme||'—')}</td>",
-              "<td>${fmt(x.rs189)}</td><td>${fmt(x.rs63)}</td><td>${x.daily_dollar_volume_m==null?'—':fmt(x.daily_dollar_volume_m,1)}</td><td>${x.sma50_gt_sma200?'PASS':'FAIL'}</td><td>${(x.close_vs_sma200_pct??0)>0?'PASS':'FAIL'}</td><td>${esc(x.peer_theme||'—')}</td>"
-          )
-          replace_once(
-              path,
-              '構造的小型Clinical Biotechは除外。判定はTheme名ではなくIndustry + Market Cap + Revenue TTMで行う。',
-              'Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外。Theme名ではなくIndustryで判定する。'
-          )
-
-          # 4) Targeted tests updated for the stricter bio policy and canonical MC overlay.
-          path = 'tests/test_v38_companion.py'
-          replace_once(
-              path,
-              '    assert "BIGBIO" in got and "MISSINGREV" in got and "LABELONLY" in got\n    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True',
-              '    assert "BIGBIO" not in got and "MISSINGREV" not in got and "LABELONLY" in got'
-          )
-          replace_once(
-              path,
-              '    assert "BIGBIO" in got and "MISSINGREV" in got\n    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True\n    assert got["BIGBIO"]["clinical_biotech"]["metadata_source"] == "universe.csv"',
-              '    assert "BIGBIO" not in got and "MISSINGREV" not in got'
-          )
-          replace_once(
-              path,
-              '    assert state["candidates"][0]["final_rank"] == 1',
-              '''    assert state["candidates"][0]["final_rank"] == 1\n    checks = state["candidates"][0]["eligibility_checks"]\n    assert checks["price_gte_5"] and checks["dollar_volume_gte_10m"]\n    assert checks["sma50_gt_sma200"] and checks["close_gt_sma200"]\n    assert checks["rs189_gte_85"] and checks["rs63_gte_85"]\n    assert not checks["biotech_industry_excluded"]'''
-          )
-          replace_once(
-              path,
-              '    assert "M30_TOUCH30_F80_D10" in html',
-              '''    assert "M30_TOUCH30_F80_D10" in html\n    assert "$Vol(M)" in html\n    assert "50&gt;200" in html and "Price&gt;200" in html\n    assert "Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外" in html'''
-          )
-
-          path = 'tests/test_v38_tqqq_live.py'
-          replace_once(
-              path,
-              '    _frame_payload,\n    load_source_cache,',
-              '    _frame_payload,\n    apply_legacy_mc57_overlay,\n    load_source_cache,'
-          )
-          p = Path(path)
-          text = p.read_text(encoding='utf-8')
-          marker = '\n\ndef base_data(n=40):'
-          test = '''\n\ndef test_legacy_dashboard_mc57_overrides_reconstructed_current_and_log(tmp_path):\n    log = tmp_path / "daily_log.csv"\n    log.write_text("date,gate,mri\\n2026-08-28,Yellow,62.6\\n2026-08-31,Yellow,58.6\\n", encoding="utf-8")\n    sources = {\n        "mc57": pd.Series([55.0, 56.6], index=pd.to_datetime(["2026-08-28", "2026-08-31"])),\n        "providers": {"mc57": {"coverage_tickers": 57}},\n    }\n    state = {"date": "2026-08-31", "mri": 58.7}\n    out = apply_legacy_mc57_overlay(sources, state, log)\n    assert math.isclose(out["mc57"].loc[pd.Timestamp("2026-08-28")], 62.6)\n    assert math.isclose(out["mc57"].loc[pd.Timestamp("2026-08-31")], 58.7)\n    assert out["providers"]["mc57_canonical"]["policy"] == "LEGACY_DASHBOARD_CANONICAL_OVERLAY"\n'''
+          # Persistent cache round-trip regression test (no network).
+          test_path = Path('tests/test_v38_strict_loo_live.py')
+          text = test_path.read_text(encoding='utf-8')
+          marker = 'def test_shared_price_cache_roundtrip_for_sleeve('
           if marker not in text:
-              raise SystemExit(f'{path}: base_data marker not found')
-          p.write_text(text.replace(marker, test + marker, 1), encoding='utf-8')
+              text += r'''
+
+
+def test_shared_price_cache_roundtrip_for_sleeve(tmp_path):
+    from build_v38_strict_loo_live import _write_price_cache
+    from build_v38_sleeve_live import load_shared_price_cache, _cache_slice
+
+    idx = pd.to_datetime(["2026-08-28", "2026-08-31"])
+    op = pd.DataFrame({"AAA": [10.0, 11.0]}, index=idx)
+    cl = pd.DataFrame({"AAA": [10.5, 11.5]}, index=idx)
+    path = tmp_path / "prices.pkl.gz"
+    _write_price_cache(path, op, cl, {"requested": 1, "downloaded": 1})
+    got_o, got_c, quality = load_shared_price_cache(path)
+    sub_o, sub_c, missing = _cache_slice(got_o, got_c, ["AAA"], "2026-08-28", "2026-09-01")
+    assert missing == []
+    assert list(sub_c.columns) == ["AAA"]
+    assert float(sub_o.loc[pd.Timestamp("2026-08-31"), "AAA"]) == 11.0
+    assert float(sub_c.loc[pd.Timestamp("2026-08-31"), "AAA"]) == 11.5
+    assert quality["downloaded"] == 1
+'''
+              test_path.write_text(text, encoding='utf-8')
           PY
 
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
 
       - name: Run targeted validation
-        shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile build_v38_companion.py build_v38_tqqq_live.py
-          pytest -q tests/test_v38_companion.py tests/test_v38_tqqq_live.py
-          python - <<'PY'
-          from pathlib import Path
-          html = Path('command-center-v38.html').read_text(encoding='utf-8')
-          for token in ('$Vol(M)', '50&gt;200', 'Price&gt;200', 'Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外'):
-              assert token in html, token
-          assert '#0b0f17' in html and '#9ecbff' in html
-          PY
+          python -m py_compile build_v38_strict_loo_live.py build_v38_sleeve_live.py
+          pytest -q tests/test_v38_strict_loo_live.py tests/test_v38_sleeve_live.py tests/test_v38_companion.py tests/test_v38_tqqq_live.py
+          grep -q -- '--price-cache /tmp/v38-sleeve-price-cache.pkl.gz' .github/workflows/dashboard.yml
 
-      - name: Commit targeted fixes
-        id: commit
+      - name: Commit route fix
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add build_v38_companion.py build_v38_tqqq_live.py command-center-v38.html tests/test_v38_companion.py tests/test_v38_tqqq_live.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build_v38_strict_loo_live.py build_v38_sleeve_live.py tests/test_v38_strict_loo_live.py .github/workflows/dashboard.yml
           git diff --cached --check
-          git commit -m 'fix: canonicalize V38 MC57 and exclude biotech candidates'
+          git commit -m 'fix: share V38 price cache with live sleeves'
           git push origin HEAD:main
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Dispatch canonical dashboard rebuild
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail-with-body -L \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/dashboard.yml/dispatches" \
-            -d '{"ref":"main"}'
-          echo "patched_sha=${{ steps.commit.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"
+        run: gh workflow run dashboard.yml --ref main
