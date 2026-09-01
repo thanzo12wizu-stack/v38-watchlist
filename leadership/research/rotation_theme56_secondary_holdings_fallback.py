@@ -16,6 +16,13 @@ import rotation_theme56_holdings_expansion as hx
 TARGETS = ["WCLD", "BLOK", "PHO", "TAN", "IBUY", "PKB", "BOAT", "WGMI", "JETS", "PEJ"]
 SA_URL = "https://stockanalysis.com/etf/{ticker}/holdings/"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
+ETF_HEADERS_500 = {
+    "User-Agent": UA,
+    "Accept": "application/json,text/plain,*/*",
+    "Origin": "https://www.etf.com",
+    "Referer": "https://www.etf.com/",
+    "x-limit": "500",
+}
 
 EXCHANGE_PREFIX = {
     "HKG": ".HK", "TYO": ".T", "TSE": ".T", "CPH": ".CO", "TSX": ".TO",
@@ -44,6 +51,43 @@ def normalize_sa_symbol(value: Any) -> str:
         if exch in {"NASDAQ", "NYSE", "NYSEARCA", "AMEX", "CBOE"}:
             return hx.clean_symbol(base)
     return hx.clean_symbol(raw)
+
+
+def fetch_etfcom_500(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
+    url = etfcom.API_URL.format(ticker=ticker)
+    last_exc: Exception | None = None
+    for attempt in range(4):
+        try:
+            r = session.get(url, headers=ETF_HEADERS_500, timeout=35)
+            r.raise_for_status()
+            records = etfcom._find_record_list(r.json())
+            if not records:
+                raise RuntimeError("no ETF.com securities rows")
+            rows = []
+            for rec in records:
+                raw_symbol = etfcom._value(rec, ("symbol", "ticker", "securitySymbol", "holdingSymbol"))
+                symbol = hx.clean_symbol(raw_symbol)
+                if not symbol:
+                    continue
+                rows.append({
+                    "sector_etf": ticker,
+                    "provider_symbol": str(raw_symbol or "").strip(),
+                    "symbol": symbol,
+                    "weight_pct": etfcom._num(etfcom._value(rec, ("weight", "weighting", "portfolioWeight", "percentage"))),
+                    "name": str(etfcom._value(rec, ("name", "securityName", "holdingName", "description")) or "").strip(),
+                    "source_url": url,
+                    "provider": "ETFCOM_XLIMIT500",
+                    "quality": "SECONDARY_CURRENT_MEMBERSHIP_CANDIDATE",
+                })
+            out = pd.DataFrame(rows)
+            out = out[out["symbol"] != ""].drop_duplicates("symbol", keep="first").reset_index(drop=True)
+            if len(out) < 5:
+                raise RuntimeError(f"ETF.com x-limit=500 unexpectedly short: {len(out)}")
+            return out, {"ticker": ticker, "rows": len(out), "source_url": url}
+        except Exception as exc:
+            last_exc = exc
+            time.sleep(1.0 * (attempt + 1))
+    raise RuntimeError(f"ETF.com x-limit=500 failed for {ticker}: {last_exc}")
 
 
 def fetch_stockanalysis(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
@@ -83,7 +127,7 @@ def fetch_stockanalysis(session: requests.Session, ticker: str) -> tuple[pd.Data
         "name": best[n_col].astype(str) if n_col else "",
         "source_url": url,
         "provider": "STOCKANALYSIS_FINNHUB_VISIBLE",
-        "quality": "VISIBLE_TOP_HOLDINGS_SUPPLEMENT",
+        "quality": "VISIBLE_TOP_HOLDINGS_CANDIDATE",
     })
     out = out[out["symbol"] != ""].drop_duplicates("symbol", keep="first").reset_index(drop=True)
     if total is None:
@@ -99,27 +143,52 @@ def main() -> None:
     qa = []
     for ticker in TARGETS:
         try:
-            e, ed = etfcom.fetch_holdings(s, ticker)
+            e, ed = fetch_etfcom_500(s, ticker)
             a, ad = fetch_stockanalysis(s, ticker)
-            union = pd.concat([e, a], ignore_index=True)
-            union["sector_etf"] = ticker
-            union = union.drop_duplicates("symbol", keep="first")
             total = int(ad["declared_total"])
-            ratio = min(len(union), total) / total if total else 0.0
-            status = "PASS" if total >= 5 and ratio >= 0.80 else "FAIL"
-            union["provider"] = "ETFCOM_PLUS_STOCKANALYSIS_VALIDATED"
-            union["quality"] = "VALIDATED_CURRENT_MEMBERSHIP_80PCT_PLUS"
-            union["declared_total_holdings"] = total
-            union["estimated_membership_coverage"] = ratio
-            if status == "PASS":
-                frames.append(union)
+            e_ratio = len(e) / total if total else 0.0
+            a_ratio = len(a) / total if total else 0.0
+            union = pd.concat([e, a], ignore_index=True).drop_duplicates("symbol", keep="first")
+            union_ratio = len(union) / total if total else 0.0
+
+            method = None
+            selected = None
+            # Prefer one internally consistent source; use a union only when neither source alone
+            # reaches the pre-existing 80% Internal membership threshold.
+            if 0.80 <= e_ratio <= 1.10:
+                selected = e.copy()
+                method = "ETFCOM_XLIMIT500"
+            elif 0.80 <= a_ratio <= 1.10:
+                selected = a.copy()
+                method = "STOCKANALYSIS_VISIBLE"
+            elif 0.80 <= union_ratio <= 1.10:
+                selected = union.copy()
+                method = "ETFCOM_PLUS_STOCKANALYSIS"
+
+            status = "PASS" if selected is not None and total >= 5 else "FAIL"
+            if selected is not None:
+                ratio = len(selected) / total
+                selected["sector_etf"] = ticker
+                selected["provider"] = method
+                selected["quality"] = "VALIDATED_CURRENT_MEMBERSHIP_80PCT_PLUS"
+                selected["declared_total_holdings"] = total
+                selected["estimated_membership_coverage"] = ratio
+                frames.append(selected)
+            else:
+                ratio = max(e_ratio, a_ratio, union_ratio)
+
             row = {
                 "ticker": ticker,
                 "status": status,
+                "selected_method": method,
+                "selected_rows": None if selected is None else len(selected),
                 "etfcom_rows": len(e),
                 "stockanalysis_visible_rows": len(a),
                 "union_rows": len(union),
                 "declared_total": total,
+                "etfcom_coverage": e_ratio,
+                "stockanalysis_coverage": a_ratio,
+                "union_coverage": union_ratio,
                 "estimated_coverage": ratio,
                 "etfcom_source": ed.get("source_url"),
                 "count_source": ad.get("source_url"),
@@ -129,22 +198,24 @@ def main() -> None:
             qa.append({"ticker": ticker, "status": "FAIL", "error": f"{type(exc).__name__}: {exc}"})
         print(json.dumps(qa[-1], ensure_ascii=False), flush=True)
         time.sleep(0.2)
+
     qdf = pd.DataFrame(qa)
     qdf.to_csv(outdir / "secondary_holdings_qa.csv", index=False)
     if frames:
         pd.concat(frames, ignore_index=True).drop_duplicates(["sector_etf", "symbol"]).to_csv(outdir / "validated_current_membership_fallback.csv", index=False)
     passed = qdf.loc[qdf["status"] == "PASS", "ticker"].tolist()
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "candidate_count": len(TARGETS),
         "pass_count": len(passed),
         "pass_tickers": passed,
         "rows": qa,
-        "quality_contract": "Fallback membership is accepted only when ETF.com high-limit securities plus StockAnalysis/Finnhub visible holdings cover at least 80% of an independently declared current total holdings count. It is not labeled issuer-exact.",
+        "quality_contract": "Fallback membership is accepted only when a current ETF.com x-limit=500 list, StockAnalysis/Finnhub visible list, or their conservative union covers 80%-110% of an independently declared current total holdings count. It is not labeled issuer-exact.",
         "guardrails": [
             "Issuer exact current holdings remain preferred.",
             "The existing 80% constituent-price coverage requirement is not lowered.",
+            "A selected membership set exceeding 110% of the declared current holding count is rejected.",
             "No price/volume inference is used to manufacture membership.",
             "DRAM is excluded from this fallback because its short history is the separately accepted exception.",
         ],
