@@ -52,7 +52,7 @@ jobs:
           python leadership/research/audit_tqqq_base30_vs40_stress.py \
             --integrated-dir exposure \
             --tqqq-repo /tmp/tqqq \
-            --output tqqq_base30_vs40_stress
+            --output "${GITHUB_WORKSPACE}/tqqq_base30_vs40_stress"
       - name: Upload audit
         uses: actions/upload-artifact@v4
         with:
