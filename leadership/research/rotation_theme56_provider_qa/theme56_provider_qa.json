@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "research_only": true,
   "supported_provider_families": [
     "SSGA",
@@ -30,6 +30,7 @@
     "XRT",
     "XSD"
   ],
+  "persisted_flow_start": "2022-01-01",
   "failures": [],
   "guardrails": [
     "Only official current holdings are accepted for Internals membership.",
