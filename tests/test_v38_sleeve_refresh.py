@@ -112,12 +112,14 @@ def test_reset_nan_columns_do_not_count_as_real_downloads(monkeypatch, tmp_path)
     symbols = [f"T{i}" for i in range(60)]
 
     def fake_column_complete(requested, start, end, batch_size=150):
-        good = requested[:20]
+        # Only the same fixed 20 symbols ever contain real OHLC. Retries for the
+        # other symbols must not manufacture coverage merely because columns exist.
+        good = [s for s in requested if int(s[1:]) < 20]
         op, cl = _reset_frame(good)
-        # Add every requested column, but most contain no actual OHLC values.
-        for symbol in requested[20:]:
-            op[symbol] = np.nan
-            cl[symbol] = np.nan
+        for symbol in requested:
+            if symbol not in good:
+                op[symbol] = np.nan
+                cl[symbol] = np.nan
         return op, cl, {
             "requested": len(requested),
             "downloaded": len(requested),
