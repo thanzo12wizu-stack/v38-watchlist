@@ -1,0 +1,137 @@
+name: V38 Final Gap Audit
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - research/v38-final-gap-audit-20260901
+    paths:
+      - 'leadership/research/audit_tqqq_fixed30_spec.py'
+      - 'leadership/research/audit_v38_final_gap_portfolio.py'
+      - 'leadership/research/audit_ordinary_execution_pit_survivorship.py'
+      - '.github/workflows/v38-final-gap-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Syntax check research audits
+        run: |
+          python -m py_compile \
+            leadership/research/audit_tqqq_fixed30_spec.py \
+            leadership/research/audit_v38_final_gap_portfolio.py \
+            leadership/research/audit_ordinary_execution_pit_survivorship.py
+
+      - name: Download frozen component and lock-guard artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p frozen_components frozen_lock_guard
+          curl -fL --retry 3 \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9739833328/zip" \
+            -o /tmp/components.zip
+          unzip -q /tmp/components.zip -d frozen_components
+          curl -fL --retry 3 \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9790852808/zip" \
+            -o /tmp/lock_guard.zip
+          unzip -q /tmp/lock_guard.zip -d frozen_lock_guard
+          find frozen_components -maxdepth 3 -type f | sort
+          find frozen_lock_guard -maxdepth 3 -type f | sort
+
+      - name: Rebuild CURRENT30 and Fixed30 TQQQ definitions from Stage56 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin tqqq-backtest-once-20260826
+          git worktree add /tmp/tqqq FETCH_HEAD
+          cp leadership/research/audit_tqqq_fixed30_spec.py /tmp/tqqq/audit_tqqq_fixed30_spec.py
+          (
+            cd /tmp/tqqq
+            python audit_tqqq_fixed30_spec.py
+          )
+          cp -R /tmp/tqqq/v38_gap_tqqq ./v38_gap_tqqq
+
+      - name: Run final specification factorial portfolio audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMP_DIR="$(dirname "$(find frozen_components -name ordinary_PEAK30_PART25_R3_daily.csv.gz -print -quit)")"
+          LOCK_DIR="$(dirname "$(find frozen_lock_guard -name daily_selective_fill_no_zero_override.csv.gz -print -quit)")"
+          test -n "$COMP_DIR" && test -f "$COMP_DIR/ordinary_PEAK30_PART25_R3_daily.csv.gz"
+          test -n "$LOCK_DIR" && test -f "$LOCK_DIR/daily_selective_fill_no_zero_override.csv.gz"
+          python leadership/research/audit_v38_final_gap_portfolio.py \
+            --components-dir "$COMP_DIR" \
+            --tqqq-spec-dir v38_gap_tqqq \
+            --lock-guard-dir "$LOCK_DIR" \
+            --output v38_gap_portfolio
+
+      - name: Run ordinary execution PIT survivorship audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd leadership/research
+          python audit_ordinary_execution_pit_survivorship.py \
+            --root ../.. \
+            --output ../../v38_gap_ordinary \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-03-20 \
+            --max-tickers 6000 \
+            --batch-size 75
+
+      - name: Build audit manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = {
+              "status": "V38_FINAL_GAP_AUDIT_COMPLETE",
+              "research_branch": "research/v38-final-gap-audit-20260901",
+              "main_modified": False,
+              "checks": [
+                  "CURRENT30 vs FIXED30",
+                  "Normal Stock 70% cap semantics",
+                  "Selective Fill interaction",
+                  "PIT Theme methodology",
+                  "Survivorship methodology and optional FMP delisted probe",
+                  "Constituent next-open execution cost 0/10/25/50bp",
+                  "4H RSI Panic signal -> next-session execution parity",
+              ],
+          }
+          Path("v38_final_gap_manifest.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+          PY
+
+      - name: Upload final gap audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: v38-final-gap-audit
+          retention-days: 14
+          path: |
+            v38_gap_tqqq/**
+            v38_gap_portfolio/**
+            v38_gap_ordinary/**
+            v38_final_gap_manifest.json
