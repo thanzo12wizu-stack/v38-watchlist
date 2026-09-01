@@ -231,32 +231,58 @@ def tqqq_allocation(underlying_target: float, panic_active: bool,
                           max(0.0, requested - executable))
 
 
+def selective_tqqq_fill_eligible(market_mode_name: Optional[str],
+                                 native_tqqq_target: Optional[float]) -> bool:
+    """Return whether adopted SELECTIVE_FILL_NO_ZERO_OVERRIDE may use idle cash.
+
+    The market gate is ATTACK/SELECTIVE (Blue/Green with Breadth50 >= 50% as
+    resolved upstream).  The native Stage34 CURRENT30 target must be positive;
+    a native zero is a risk lock and is never overridden by Selective Fill.
+    """
+    mode_name = str(market_mode_name or "").strip().upper()
+    try:
+        native = float(native_tqqq_target)
+    except (TypeError, ValueError):
+        return False
+    return mode_name in {"ATTACK", "SELECTIVE"} and native > 0.0
+
+
 @dataclass(frozen=True)
 class Gross100Allocation:
     reset_desired: float
     tqqq_desired: float
     normal_stock_desired: float
+    normal_stock_capped_desired: float
     reset_allocated: float
     tqqq_protected: float
     normal_stock_allocated: float
     tqqq_extra: float
+    base_gross_allocated: float
+    selective_fill_eligible: bool
+    selective_fill: float
     tqqq_allocated: float
     gross_allocated: float
     remaining_capacity: float
 
 
 def gross100_allocation(reset_desired: float, tqqq_desired: float,
-                        normal_stock_desired: float) -> Gross100Allocation:
-    """Gross100 research candidate: Reset -> TQQQ80 -> Normal -> TQQQ extra.
+                        normal_stock_desired: float, *,
+                        market_mode_name: Optional[str] = None,
+                        native_tqqq_target: Optional[float] = None,
+                        apply_selective_fill: bool = False) -> Gross100Allocation:
+    """Canonical Gross100 allocator with Normal 70% cap and optional Selective Fill.
 
-    This is the scalar equivalent of research function
-    ``reset_first_tqqq_floor(..., floor=.80)``.  The 80% value is neither a
-    TQQQ cap nor a fixed target; it is the amount protected before normal
-    stocks only when sleeves compete for Gross100 capacity.
+    Base priority is Reset -> TQQQ protected to 80% -> Normal Stock -> native
+    TQQQ extra.  Normal Stock is capped at 70% before allocation.  The formally
+    adopted ``SELECTIVE_FILL_NO_ZERO_OVERRIDE`` is applied only after the base
+    allocation, only to otherwise-idle capacity, only in ATTACK/SELECTIVE, and
+    only when the native Stage34 CURRENT30 target is positive.  It never trims
+    Reset or Normal Stock and never overrides a native TQQQ target of zero.
     """
     reset = max(0.0, float(reset_desired))
     tqqq = max(0.0, float(tqqq_desired))
-    normal = max(0.0, float(normal_stock_desired))
+    normal_raw = max(0.0, float(normal_stock_desired))
+    normal = min(normal_raw, NORMAL_STOCK_BUDGET)
 
     reset_alloc = min(reset, GROSS_EXPOSURE_LIMIT)
     remaining = GROSS_EXPOSURE_LIMIT - reset_alloc
@@ -266,9 +292,19 @@ def gross100_allocation(reset_desired: float, tqqq_desired: float,
     remaining -= normal_alloc
     extra = min(max(tqqq - protected, 0.0), remaining)
     remaining -= extra
-    tqqq_alloc = protected + extra
+    base_gross = reset_alloc + normal_alloc + protected + extra
+
+    fill_eligible = bool(
+        apply_selective_fill
+        and selective_tqqq_fill_eligible(market_mode_name, native_tqqq_target)
+    )
+    selective_fill = remaining if fill_eligible else 0.0
+    remaining -= selective_fill
+
+    tqqq_alloc = protected + extra + selective_fill
     gross = reset_alloc + normal_alloc + tqqq_alloc
     return Gross100Allocation(
-        reset, tqqq, normal, reset_alloc, protected, normal_alloc, extra,
-        tqqq_alloc, gross, max(0.0, remaining),
+        reset, tqqq, normal_raw, normal,
+        reset_alloc, protected, normal_alloc, extra, base_gross,
+        fill_eligible, selective_fill, tqqq_alloc, gross, max(0.0, remaining),
     )
