@@ -1,0 +1,50 @@
+name: RSI30 current screener backtest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/rsi30-current-screener-backtest-20260901]
+    paths:
+      - 'leadership/research/backtest_current_rsi30_screener.py'
+      - '.github/workflows/rsi30-current-screener-backtest.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy scipy yfinance
+      - name: Download frozen Theme Momentum activation rows
+        uses: actions/download-artifact@v4
+        with:
+          name: theme-ltr-expert-gate-A
+          path: leadership/research/rsi30_current_screen_input
+          github-token: ${{ github.token }}
+          run-id: 33040661731
+      - name: Validate research inputs
+        run: |
+          PYTHONPATH=leadership/research python -m py_compile leadership/research/backtest_current_rsi30_screener.py
+          test -s leadership/research/rsi30_current_screen_input/frozen_event_stock_rows.csv.gz
+      - name: Backtest exact current screen semantics on frozen research universe
+        run: |
+          PYTHONPATH=leadership/research python leadership/research/backtest_current_rsi30_screener.py \
+            --root . \
+            --input leadership/research/rsi30_current_screen_input/frozen_event_stock_rows.csv.gz \
+            --output leadership/research/rsi30_current_screen_output
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsi30-current-screener-backtest
+          path: leadership/research/rsi30_current_screen_output/
+          retention-days: 14
+          if-no-files-found: warn
