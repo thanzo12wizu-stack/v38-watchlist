@@ -16,6 +16,7 @@ YAHOO_EXCHANGE_SUFFIXES = {
     ".KS", ".KQ", ".HK", ".T", ".TW", ".DE", ".SW", ".AS", ".L", ".HE",
     ".MI", ".PA", ".CO", ".LS", ".TO", ".TA", ".AX", ".JO", ".OL", ".ST",
     ".SS", ".SZ", ".SA", ".NS", ".BO", ".JK", ".IS", ".VI", ".MC", ".SN",
+    ".SI", ".BK", ".KL",
 }
 FIELDS = ("Close", "High", "Low", "Volume")
 FLOW_COLS = {"date", "ticker", "provider", "aum", "flow_1d", "flow_5d", "flow_20d", "flow_20d_pct_aum", "source_url"}
@@ -252,6 +253,7 @@ def main() -> None:
     ap.add_argument("--price-json", type=Path, default=Path("leadership/research/rotation_theme56_live/theme56_price.json"))
     ap.add_argument("--holdings", type=Path, default=Path("leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv"))
     ap.add_argument("--holdings-expansion", type=Path, default=Path("leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv"))
+    ap.add_argument("--holdings-fallback", type=Path, default=Path("leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv"))
     ap.add_argument("--issuer-flows", "--flows", dest="issuer_flows", type=Path, default=Path("leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv"))
     ap.add_argument("--etfcom-flows", type=Path, default=Path("leadership/research/rotation_theme56_etfcom_flow/theme56_etfcom_daily_flows.csv"))
     ap.add_argument("--etfcom-flow-qa", type=Path, default=Path("leadership/research/rotation_theme56_etfcom_flow/etfcom_flow_qa.json"))
@@ -272,13 +274,23 @@ def main() -> None:
     price_rows = price_obj.get("rows") if isinstance(price_obj.get("rows"), list) else []
     price = {str(x.get("ticker") or "").upper(): x for x in price_rows if isinstance(x, dict)}
 
-    frames = [normalize_holdings(pd.read_csv(args.holdings), universe)]
+    exact_frames = [normalize_holdings(pd.read_csv(args.holdings), universe)]
     if args.holdings_expansion.exists():
-        frames.append(normalize_holdings(pd.read_csv(args.holdings_expansion), universe))
-    holdings = pd.concat(frames, ignore_index=True).drop_duplicates(["sector_etf", "symbol"], keep="first")
+        exact_frames.append(normalize_holdings(pd.read_csv(args.holdings_expansion), universe))
+    exact_holdings = pd.concat(exact_frames, ignore_index=True).drop_duplicates(["sector_etf", "symbol"], keep="first")
+    exact_tickers = set(exact_holdings["sector_etf"])
+
+    fallback_holdings = pd.DataFrame(columns=["sector_etf", "symbol"])
+    if args.holdings_fallback.exists():
+        fallback_holdings = normalize_holdings(pd.read_csv(args.holdings_fallback), universe)
+        # Never replace issuer-exact membership with a fallback source.
+        fallback_holdings = fallback_holdings[~fallback_holdings["sector_etf"].isin(exact_tickers)]
+    fallback_tickers = set(fallback_holdings["sector_etf"]) if not fallback_holdings.empty else set()
+
+    holdings = pd.concat([exact_holdings, fallback_holdings], ignore_index=True).drop_duplicates(["sector_etf", "symbol"], keep="first")
     internal_tickers = [t for t in labels if t in set(holdings["sector_etf"])]
     if not internal_tickers:
-        raise RuntimeError("no exact current holdings tickers")
+        raise RuntimeError("no current holdings tickers available")
 
     members = sorted({s for s in holdings["symbol"] if s and " " not in s})
     ohlcv, dl_diag = download_theme56_ohlcv(members, args.download_start, args.download_end, 20)
@@ -311,6 +323,7 @@ def main() -> None:
         else:
             quality = "DATA_REQUIRED"
         flow_quality = None if f is None else f.get("flow_quality")
+        holdings_quality = "ISSUER_EXACT_CURRENT" if ticker in exact_tickers else ("VALIDATED_CURRENT_80PCT_PLUS" if ticker in fallback_tickers else "DATA_REQUIRED")
         rec: dict[str, Any] = {
             "ticker": ticker,
             "label": labels[ticker],
@@ -322,6 +335,7 @@ def main() -> None:
             "ret_5d_pct": p.get("ret_5d_pct"),
             "ret_20d_pct": p.get("ret_20d_pct"),
             "holdings_adapter": "PASS" if ticker in internal_tickers else "DATA_REQUIRED",
+            "holdings_quality": holdings_quality,
             "exact_flow_adapter": "PASS" if ticker in issuer_exact_clean else "DATA_REQUIRED",
             "actual_flow_adapter": "PASS" if ticker in flow_ready else "DATA_REQUIRED",
             "source_members": i_diag.get("source_members"),
@@ -356,12 +370,15 @@ def main() -> None:
     price_ready = out[out["price_quality"] == "MARKET_PRICE_SERIES"]
     flow_source_counts = {str(k): int(v) for k, v in out["flow_quality"].dropna().value_counts().to_dict().items()}
     report = {
-        "schema": 4,
+        "schema": 5,
         "research_only": True,
         "asof": price_obj.get("asof"),
         "universe_count": 56,
         "price_ready_count": int(len(price_ready)),
-        "exact_holdings_count": int(len(internal_tickers)),
+        "exact_holdings_count": int(len(exact_tickers)),
+        "issuer_exact_holdings_count": int(len(exact_tickers)),
+        "validated_fallback_holdings_count": int(len(fallback_tickers)),
+        "holdings_ready_count": int(len(internal_tickers)),
         "internal_measured_count": int(len(pi)),
         "exact_flow_count": int(len(issuer_exact_clean)),
         "issuer_exact_flow_count": int(len(issuer_exact_clean)),
@@ -372,9 +389,11 @@ def main() -> None:
         "measured_full_stack_tickers": full["ticker"].tolist(),
         "internal_measured_tickers": pi["ticker"].tolist(),
         "price_only_or_missing_tickers": out.loc[~out["quality"].isin(["MEASURED_FULL_STACK_UNVALIDATED", "MEASURED_PRICE_INTERNAL_FLOW_MISSING"]), "ticker"].tolist(),
+        "holdings_data_required_tickers": sorted(universe - set(internal_tickers)),
         "flow_data_required_tickers": sorted(universe - flow_ready),
         "flow_diagnostics": flow_diag,
-        "internal_cross_section_note": "Internals are ranked across the current Theme56 ETFs with exact current provider holdings and sufficient member-price coverage.",
+        "internal_cross_section_note": "Internals are ranked across Theme56 ETFs using issuer-exact current memberships where available and separately labeled validated-current memberships covering at least 80% where issuer endpoints are blocked. The 80% constituent-price coverage requirement is unchanged.",
+        "holdings_contract": "Issuer-exact current holdings remain preferred. Validated fallback membership is never labeled issuer-exact and is only accepted at >=80% independently checked current membership coverage.",
         "flow_contract": "Issuer-derived Exact Flow is used only for cross-validated canonical-unit references. ETF.com validated actual fund flow fills the remaining supported themes. No price-volume proxy is used.",
         "state_contract": "No legacy 15-ETF trading signal is claimed. Theme56 public states are descriptive observation labels only.",
         "download_diagnostics": dl_diag,
@@ -382,7 +401,7 @@ def main() -> None:
         "rows": rows,
     }
     (args.output / "theme56_fullstack_snapshot.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
-    print(json.dumps({k: report[k] for k in ("universe_count", "price_ready_count", "exact_holdings_count", "internal_measured_count", "issuer_exact_flow_count", "flow_ready_count", "measured_full_stack_count", "flow_data_required_tickers")}, ensure_ascii=False, indent=2), flush=True)
+    print(json.dumps({k: report[k] for k in ("universe_count", "price_ready_count", "issuer_exact_holdings_count", "validated_fallback_holdings_count", "holdings_ready_count", "internal_measured_count", "issuer_exact_flow_count", "flow_ready_count", "measured_full_stack_count", "holdings_data_required_tickers", "flow_data_required_tickers")}, ensure_ascii=False, indent=2), flush=True)
 
 
 if __name__ == "__main__":
