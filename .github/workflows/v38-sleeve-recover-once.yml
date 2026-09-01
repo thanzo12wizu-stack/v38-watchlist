@@ -1,0 +1,76 @@
+name: V38 sleeve recover once
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/v38-sleeve-recover-once.yml']
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: v38-sleeve-recover-once
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Restore last verified READY sleeve state
+        shell: bash
+        run: |
+          set -euo pipefail
+          READY_SHA=6e1d04de3c42aee0999359b855810e086455eeed
+          git fetch --depth=1 origin "$READY_SHA"
+          git show "$READY_SHA:v38-sleeve-state.json" > /tmp/v38-sleeve-state-ready.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('/tmp/v38-sleeve-state-ready.json').read_text())
+          assert p.get('status') == 'READY', p
+          assert p.get('asof') == '2026-08-31', p.get('asof')
+          assert p.get('normal_stock',{}).get('status') == 'READY'
+          assert p.get('rsi_reset',{}).get('status') == 'READY'
+          print('READY_RECOVERY_SOURCE_OK', p.get('asof'))
+          PY
+          cp /tmp/v38-sleeve-state-ready.json v38-sleeve-state.json
+
+      - name: Commit recovered state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v38-sleeve-state.json
+          git commit -m "Restore last READY V38 sleeve state before 2026-09-01 advance"
+          git fetch --depth=1 origin main
+          if [ "$(git rev-parse origin/main)" != "$SOURCE_SHA" ]; then
+            echo "main advanced during recovery; refusing stale overwrite"
+            exit 1
+          fi
+          git push origin HEAD:main
+
+      - name: Dispatch normal sleeve refresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run v38-sleeve-refresh.yml --ref main
+          echo "Dispatched v38-sleeve-refresh.yml"
