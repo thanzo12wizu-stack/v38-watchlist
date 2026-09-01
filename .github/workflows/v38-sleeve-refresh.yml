@@ -99,9 +99,31 @@ jobs:
           gross = live.get('gross100_allocation', {})
           if 'LIVE ALLOCATION READY' not in str(gross.get('status')):
               raise SystemExit(f'Gross100 not live-ready: {gross.get("status")}')
+          if gross.get('selective_fill_rule') != 'SELECTIVE_FILL_NO_ZERO_OVERRIDE':
+              raise SystemExit(f'unexpected Selective Fill rule: {gross.get("selective_fill_rule")}')
+
           final_gross = gross.get('gross_allocated_pct')
           if final_gross is None or float(final_gross) > 100.000001:
               raise SystemExit(f'invalid Gross100 allocation: {final_gross}')
+
+          normal_alloc = gross.get('normal_stock_allocated_pct')
+          if normal_alloc is None or float(normal_alloc) > 70.000001:
+              raise SystemExit(f'Normal Stock allocation exceeds 70% cap: {normal_alloc}')
+
+          native_tqqq = gross.get('native_tqqq_target_pct')
+          selective_fill = gross.get('tqqq_selective_fill_pct')
+          if native_tqqq is None or selective_fill is None:
+              raise SystemExit(f'Selective Fill guard inputs missing: native={native_tqqq} fill={selective_fill}')
+          if float(native_tqqq) <= 0 and abs(float(selective_fill)) > 1e-9:
+              raise SystemExit(
+                  f'Selective Fill overrode native TQQQ zero: native={native_tqqq} fill={selective_fill}'
+              )
+
+          market_mode = str(live.get('market', {}).get('mode') or '')
+          if market_mode not in {'ATTACK', 'SELECTIVE'} and abs(float(selective_fill)) > 1e-9:
+              raise SystemExit(
+                  f'Selective Fill active outside ATTACK/SELECTIVE: mode={market_mode} fill={selective_fill}'
+              )
 
           reset = sleeve.get('rsi_reset', {})
           monitor = reset.get('monitor')
@@ -113,11 +135,18 @@ jobs:
 
           print('V38_SLEEVE_REFRESH_READY', {
               'asof': asof,
+              'market_mode': market_mode,
               'normal_desired_pct': sleeve['normal_stock'].get('desired_pct'),
+              'normal_portfolio_desired_pct': gross.get('normal_stock_portfolio_desired_pct'),
               'reset_desired_pct': reset.get('desired_pct'),
+              'native_tqqq_target_pct': native_tqqq,
               'tqqq_desired_pct': gross.get('tqqq_desired_pct'),
-              'normal_allocated_pct': gross.get('normal_stock_allocated_pct'),
+              'normal_allocated_pct': normal_alloc,
               'reset_allocated_pct': gross.get('reset_allocated_pct'),
+              'tqqq_native_allocated_pct': (
+                  float(gross.get('tqqq_protected_pct') or 0) + float(gross.get('tqqq_extra_pct') or 0)
+              ),
+              'tqqq_selective_fill_pct': selective_fill,
               'tqqq_allocated_pct': gross.get('tqqq_allocated_pct'),
               'gross_allocated_pct': final_gross,
               'reset_monitor': summary,
