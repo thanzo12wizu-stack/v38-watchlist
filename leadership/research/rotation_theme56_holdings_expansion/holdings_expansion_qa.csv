@@ -27,12 +27,12 @@ TAN,INVESCO,,,,FAIL,HTTPError: 406 Client Error: Not Acceptable for url: https:/
 DRAM,ROUNDHILL,,,,FAIL,RuntimeError: Roundhill DRAM download CSV URL not found in official page
 BOAT,SONICSHARES,,,,FAIL,RuntimeError: SonicShares BOAT holdings table not found
 JETS,USGLOBAL,,,,FAIL,HTTPError: 403 Client Error: Forbidden for url: https://usglobaletfs.com/fund/u-s-global-jets-etf/
-GDX,VANECK,65.0,https://www.vaneck.com/us/en/investments/gold-miners-etf-gdx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-MOO,VANECK,55.0,https://www.vaneck.com/us/en/investments/agribusiness-etf-moo/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-NLR,VANECK,27.0,https://www.vaneck.com/us/en/investments/uranium-nuclear-energy-etf-nlr/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-OIH,VANECK,26.0,https://www.vaneck.com/us/en/investments/oil-services-etf-oih/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-PPH,VANECK,26.0,https://www.vaneck.com/us/en/investments/pharmaceutical-etf-pph/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-REMX,VANECK,35.0,https://www.vaneck.com/us/en/investments/rare-earth-strategic-metals-etf-remx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-SLX,VANECK,42.0,https://www.vaneck.com/us/en/investments/steel-etf-slx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
-SMH,VANECK,26.0,https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+GDX,VANECK,59.0,https://www.vaneck.com/us/en/investments/gold-miners-etf-gdx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+MOO,VANECK,49.0,https://www.vaneck.com/us/en/investments/agribusiness-etf-moo/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+NLR,VANECK,25.0,https://www.vaneck.com/us/en/investments/uranium-nuclear-energy-etf-nlr/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+OIH,VANECK,25.0,https://www.vaneck.com/us/en/investments/oil-services-etf-oih/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+PPH,VANECK,25.0,https://www.vaneck.com/us/en/investments/pharmaceutical-etf-pph/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+REMX,VANECK,30.0,https://www.vaneck.com/us/en/investments/rare-earth-strategic-metals-etf-remx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+SLX,VANECK,39.0,https://www.vaneck.com/us/en/investments/steel-etf-slx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
+SMH,VANECK,25.0,https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP,PASS,
 WCLD,WISDOMTREE,,,,FAIL,HTTPError: 403 Client Error: Forbidden for url: https://www.wisdomtree.com/us/products/megatrends/wcld
