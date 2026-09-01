@@ -1,0 +1,34 @@
+from pathlib import Path
+import re
+
+p = Path("command-center-v38.html")
+s = p.read_text(encoding="utf-8")
+if 'id="resetSignalRows"' in s:
+    raise SystemExit("formal Reset signal UI already exists")
+
+marker = '<section id="resetwatch" class="panel">'
+signal_card = '<div class="card"><div class="hdr"><h2>正式Resetシグナル</h2><span class="badge" id="resetSignalStatus">判定中</span></div><div class="explain"><b>この欄に出た銘柄だけが翌営業日寄りのEntry対象です。</b> RSI14≤30到達後の反発確認と、Signal日のTheme内RS63 Top3を通過した銘柄だけを表示します。</div><div class="scroll"><table class="ranktable"><thead><tr><th>銘柄</th><th>Theme</th><th>RSI14</th><th>Signal日</th><th>状態</th><th>行動</th></tr></thead><tbody id="resetSignalRows"></tbody></table></div></div>'
+if marker not in s:
+    raise SystemExit("resetwatch section marker missing")
+s = s.replace(marker, marker + signal_card, 1)
+
+s = s.replace('<h2>RSI30 Panic Reset 監視</h2>', '<h2>RSI30接近候補（まだ買わない）</h2>', 1)
+old_explain = 'ここに出るのは、すでに「強いTheme＋20日改善＋Theme内21EMA上比率＋Day0のRS63 Top3」を通過した元主導株だけです。RSI30への近さは監視用で、実際のEntry条件は <b>RSI14≤30を一度付けた後の初回上昇＋Signal日にTheme内RS63 Top3</b> のままです。'
+new_explain = 'ここは<b>正式シグナル前の監視候補だけ</b>です。強いTheme＋20日改善＋Theme内21EMA上比率＋Day0のRS63 Top3を通過し、現在もTheme内RS63 Top3を維持してRSI30へ接近している元主導株を表示します。<b>ここに出ているだけでは買いません。</b>'
+if old_explain not in s:
+    raise SystemExit("reset watch explanation marker missing")
+s = s.replace(old_explain, new_explain, 1)
+
+new_func = """function renderResetWatch(){let r=STATE?.panic_reset||{},sum=r.monitor_summary||{},rows=r.monitor||[];let signals=rows.filter(x=>x.status==='SIGNAL_TODAY_NEXT_OPEN');let watch=rows.filter(x=>x.status!=='SIGNAL_TODAY_NEXT_OPEN'&&x.status!=='ACTIVE_POSITION');$('resetSignalStatus').textContent=r.status==='READY / LIVE'?(signals.length?`正式Signal ${signals.length}銘柄`:'正式Signalなし'):'DATA REQUIRED';$('resetSignalRows').innerHTML=signals.map(x=>`<tr><td><b>${esc(x.symbol)}</b></td><td>${esc(x.theme||'—')}</td><td>${x.current_rsi14==null?'—':fmt(x.current_rsi14,1)}</td><td>${esc(x.signal_date||STATE.asof||'—')}</td><td><b>${esc(resetStatusJa(x.status))}</b></td><td><b>翌営業日寄りEntry</b></td></tr>`).join('')||'<tr><td colspan=\"6\"><div class=\"empty\">現在、正式Resetシグナルはありません。</div></td></tr>';$('resetWatchStatus').textContent=r.status==='READY / LIVE'?'LIVE / '+watch.length+'銘柄':'DATA REQUIRED';$('resetActiveCount').textContent=r.position_count??sum.active_positions??'—';$('resetTouchedCount').textContent=watch.filter(x=>x.status==='RSI30_TOUCHED_WAIT_RISE').length;$('resetNear5Count').textContent=watch.filter(x=>x.distance_to_30!=null&&x.distance_to_30<=5).length;$('resetWatchCount').textContent=watch.length;let visible=[...watch].sort((a,b)=>{let pa={RSI30_TOUCHED_WAIT_RISE:0,APPROACHING_RSI30:1,NEAR_RSI30:2,WATCHING:3,SIGNAL_OCCURRED:4};return(pa[a.status]??99)-(pa[b.status]??99)||(a.distance_to_30??999)-(b.distance_to_30??999)||String(a.symbol).localeCompare(String(b.symbol))});$('resetWatchRows').innerHTML=visible.map(x=>`<tr><td><b>${esc(resetStatusJa(x.status))}</b></td><td><b>${esc(x.symbol)}</b></td><td>${x.current_rsi14==null?'—':fmt(x.current_rsi14,1)}</td><td>${x.distance_to_30==null?'—':fmt(x.distance_to_30,1)+'pt'}</td><td>${esc(x.theme||'—')}</td><td>${x.theme_rs_pct_day0==null?'—':fmt(x.theme_rs_pct_day0,1)}</td><td>${x.theme_rank_improvement20_day0==null?'—':fmt(x.theme_rank_improvement20_day0,1)+'pt'}</td><td>${x.theme_breadth21_day0==null?'—':fmt(x.theme_breadth21_day0,1)+'%'}</td><td>${x.day0_rs63_rank==null?'—':'#'+x.day0_rs63_rank}</td><td>${x.current_theme_rs63_top3?'YES':'NO'}</td><td>${x.signal_window_days_left??'—'}</td></tr>`).join('')||'<tr><td colspan=\"11\"><div class=\"empty\">現在、正式Signal前のRSI30接近候補はありません。</div></td></tr>'}
+function renderAllocation(){"""
+pat = re.compile(r"function renderResetWatch\(\)\{.*?\}\nfunction renderAllocation\(\)\{", re.S)
+s, n = pat.subn(lambda _m: new_func, s, count=1)
+if n != 1:
+    raise SystemExit(f"renderResetWatch replacement count={n}")
+
+for token in ('id="resetSignalRows"', '正式Resetシグナル', 'RSI30接近候補（まだ買わない）', "signals=rows.filter(x=>x.status==='SIGNAL_TODAY_NEXT_OPEN')"):
+    if token not in s:
+        raise SystemExit(f"validation token missing: {token}")
+
+p.write_text(s, encoding="utf-8")
+print("V38_RESET_SIGNAL_UI_PATCHED")
