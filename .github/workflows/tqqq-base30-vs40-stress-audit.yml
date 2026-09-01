@@ -46,6 +46,8 @@ jobs:
             -o /tmp/baseexp.zip
           unzip -q /tmp/baseexp.zip -d exposure
       - name: Run matched 30 vs 40 audit
+        env:
+          PYTHONPATH: /tmp/tqqq
         run: |
           python leadership/research/audit_tqqq_base30_vs40_stress.py \
             --integrated-dir exposure \
