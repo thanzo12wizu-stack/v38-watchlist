@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import io
 import json
 import re
@@ -21,7 +20,7 @@ VANECK_SLUGS = {
     "SMH": "semiconductor-etf-smh",
     "MOO": "agribusiness-etf-moo",
     "SLX": "steel-etf-slx",
-    "NLR": "uranium-nuclear-etf-nlr",
+    "NLR": "uranium-nuclear-energy-etf-nlr",
     "REMX": "rare-earth-strategic-metals-etf-remx",
     "PPH": "pharmaceutical-etf-pph",
     "GDX": "gold-miners-etf-gdx",
@@ -32,10 +31,17 @@ def clean_symbol(value: Any) -> str:
     s = str(value or "").strip().upper()
     if not s or s in {"NAN", "--", "-"}:
         return ""
-    # VanEck US listings are commonly rendered as "NVDA US" in spreadsheets.
     if re.fullmatch(r"[A-Z][A-Z0-9.\-]{0,9} US", s):
         s = s[:-3].strip()
     return s
+
+
+def _find_csv_header(lines: list[str]) -> int:
+    for i, line in enumerate(lines[:50]):
+        normalized = line.replace('"', '').strip().lower()
+        if "," in normalized and "ticker" in normalized and ("name" in normalized or "holding" in normalized):
+            return i
+    raise RuntimeError("holdings CSV header not found")
 
 
 def fetch_globalx(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
@@ -45,7 +51,6 @@ def fetch_globalx(session: requests.Session, ticker: str) -> tuple[pd.DataFrame,
     pattern = re.compile(rf"https://assets\.globalxetfs\.com/funds/holdings/{ticker.lower()}_full-holdings_\d{{8}}\.csv", re.I)
     hits = pattern.findall(r.text)
     if not hits:
-        # Some page payloads escape slashes but retain the filename.
         m = re.search(rf"[^\"']*{ticker.lower()}_full-holdings_\d{{8}}\.csv", r.text, re.I)
         if m:
             raw = m.group(0).replace("\\/", "/")
@@ -56,9 +61,13 @@ def fetch_globalx(session: requests.Session, ticker: str) -> tuple[pd.DataFrame,
     url = sorted(set(hits))[-1]
     h = session.get(url, headers={"User-Agent": flowlib.UA, "Accept": "text/csv,*/*"}, timeout=45)
     h.raise_for_status()
-    df = pd.read_csv(io.BytesIO(h.content))
-    ticker_col = next((c for c in df.columns if str(c).strip().lower() == "ticker"), None)
-    name_col = next((c for c in df.columns if str(c).strip().lower() == "name"), None)
+    text = h.content.decode("utf-8-sig", errors="replace")
+    lines = text.splitlines()
+    header_idx = _find_csv_header(lines)
+    df = pd.read_csv(io.StringIO("\n".join(lines[header_idx:])), engine="python")
+    columns = {str(c).strip().lower(): c for c in df.columns}
+    ticker_col = columns.get("ticker")
+    name_col = columns.get("name") or next((c for c in df.columns if "holding name" in str(c).lower()), None)
     weight_col = next((c for c in df.columns if "net assets" in str(c).lower() and "%" in str(c)), None)
     if ticker_col is None:
         raise RuntimeError(f"Ticker column missing: {list(df.columns)}")
@@ -113,7 +122,14 @@ def fetch_vaneck(session: requests.Session, ticker: str, slug: str) -> tuple[pd.
     return out.reset_index(drop=True), {"ticker": ticker, "provider": "VANECK", "rows": int(len(out)), "source_url": url, "quality": "EXACT_CURRENT_MEMBERSHIP"}
 
 
+def _clean_json_records(df: pd.DataFrame) -> list[dict[str, Any]]:
+    if df.empty:
+        return []
+    return json.loads(df.where(pd.notna(df), None).to_json(orient="records", force_ascii=False))
+
+
 def main() -> None:
+    import argparse
     ap = argparse.ArgumentParser(description="Expand Theme56 official current holdings beyond SSGA/iShares")
     ap.add_argument("--output", type=Path, default=Path("leadership/research/rotation_theme56_holdings_expansion"))
     args = ap.parse_args()
@@ -143,15 +159,15 @@ def main() -> None:
         pd.concat(frames, ignore_index=True).to_csv(args.output / "exact_current_holdings_expansion.csv", index=False)
     passed = qa[qa["status"] == "PASS"]
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "candidate_count": int(len(qa)),
         "pass_count": int(len(passed)),
         "pass_tickers": passed["ticker"].tolist(),
-        "failures": qa.loc[qa["status"] != "PASS"].where(pd.notna(qa), None).to_dict("records"),
+        "failures": _clean_json_records(qa.loc[qa["status"] != "PASS"]),
         "guardrail": "This expands only exact current membership for Internals. It does not claim Exact Flow availability.",
     }
-    (args.output / "holdings_expansion_qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+    (args.output / "holdings_expansion_qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2), flush=True)
 
 
