@@ -12,6 +12,7 @@ on:
       - leadership/research/rotation_theme56_provider_qa/**
       - leadership/research/rotation_theme56_holdings_expansion/**
       - leadership/research/rotation_theme56_firsttrust/**
+      - leadership/research/rotation_theme56_etfcom_flow/**
       - .github/workflows/rotation-theme56-fullstack.yml
 
 permissions:
@@ -62,10 +63,11 @@ jobs:
           python leadership/research/rotation_theme56_fullstack_snapshot.py \
             --config leadership/research/rotation_theme56_config.json \
             --price-json leadership/research/rotation_theme56_live/theme56_price.json \
-            --provider-qa leadership/research/rotation_theme56_provider_qa/theme56_provider_qa.csv \
             --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
             --holdings-expansion /tmp/theme56_exact_holdings_supplements.csv \
-            --flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
+            --issuer-flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
+            --etfcom-flows leadership/research/rotation_theme56_etfcom_flow/theme56_etfcom_daily_flows.csv \
+            --etfcom-flow-qa leadership/research/rotation_theme56_etfcom_flow/etfcom_flow_qa.json \
             --output leadership/research/rotation_theme56_fullstack \
             --download-start 2025-10-01 \
             --download-end 2026-09-02
