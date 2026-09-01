@@ -1,0 +1,59 @@
+name: TQQQ Base30 vs Base40 Stress Audit
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - research/v38-final-gap-audit-20260901
+    paths:
+      - 'leadership/research/audit_tqqq_base30_vs40_stress.py'
+      - '.github/workflows/tqqq-base30-vs40-stress-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Add frozen TQQQ research worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin tqqq-backtest-once-20260826
+          git worktree add --detach /tmp/tqqq FETCH_HEAD
+      - name: Download frozen final base exposure artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p exposure
+          curl -fL --retry 3 \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9794804060/zip" \
+            -o /tmp/baseexp.zip
+          unzip -q /tmp/baseexp.zip -d exposure
+      - name: Run matched 30 vs 40 audit
+        run: |
+          python leadership/research/audit_tqqq_base30_vs40_stress.py \
+            --integrated-dir exposure \
+            --tqqq-repo /tmp/tqqq \
+            --output tqqq_base30_vs40_stress
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-base30-vs40-stress-audit
+          retention-days: 14
+          path: tqqq_base30_vs40_stress/**
