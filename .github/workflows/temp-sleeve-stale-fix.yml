@@ -5,6 +5,7 @@ on:
     branches: [fix/sleeve-stale-preserve-20260902]
     paths:
       - '.github/workflows/temp-sleeve-stale-fix.yml'
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -16,88 +17,89 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: fix/sleeve-stale-preserve-20260902
-          fetch-depth: 1
+          fetch-depth: 2
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
-      - name: Apply minimal guarded-sleeve patch
+      - name: Apply corrected minimal patch
         shell: bash
         run: |
+          set -euo pipefail
+          git show HEAD^:.github/workflows/temp-sleeve-stale-fix.yml > /tmp/previous-harness.yml
           python - <<'PY'
           from pathlib import Path
+          import textwrap
 
-          def replace_once(path, old, new):
-              p = Path(path)
-              text = p.read_text(encoding='utf-8')
-              if text.count(old) != 1:
-                  raise SystemExit(f'{path}: expected one match, found {text.count(old)}')
-              p.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          path = 'build_v38_sleeve_refresh.py'
-          replace_once(
-              path,
-              'import time\nfrom pathlib import Path\nfrom typing import Any, Callable\n',
-              'import time\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Callable\n',
-          )
-
-          replace_once(
-              path,
-              '''def _load_payload(path: Path) -> dict[str, Any]:\n    try:\n        value = json.loads(path.read_text(encoding="utf-8"))\n    except (OSError, ValueError):\n        return {}\n    return value if isinstance(value, dict) else {}\n\n\ndef _ready_sleeve_payload(payload: dict[str, Any]) -> bool:\n''',
-              '''def _load_payload(path: Path) -> dict[str, Any]:\n    try:\n        value = json.loads(path.read_text(encoding="utf-8"))\n    except (OSError, ValueError):\n        return {}\n    return value if isinstance(value, dict) else {}\n\n\ndef _write_payload(path: Path, payload: dict[str, Any]) -> None:\n    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")\n\n\ndef _utc_now_iso() -> str:\n    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")\n\n\ndef _attempted_asof(failed_payload: dict[str, Any]) -> str | None:\n    value = str(failed_payload.get("asof") or "").strip()\n    if value:\n        return value\n    companion = _load_payload(_argument_path("--companion", "v38-live-state.json"))\n    value = str(companion.get("asof") or "").strip()\n    return value or None\n\n\ndef _refresh_metadata(*, status: str, attempted_asof: str | None,\n                      last_successful_asof: str | None, preserved: bool,\n                      error: str | None) -> dict[str, Any]:\n    return {\n        "status": status,\n        "attempted_at_utc": _utc_now_iso(),\n        "attempted_asof": attempted_asof,\n        "last_successful_asof": last_successful_asof,\n        "preserved_previous_ready": preserved,\n        "error": error,\n    }\n\n\ndef _ready_sleeve_payload(payload: dict[str, Any]) -> bool:\n''',
-          )
-
-          replace_once(
-              path,
-              '''def run_guarded_refresh(runner: Callable[[], None] | None = None) -> dict[str, Any]:\n    out = _argument_path("--out", "v38-sleeve-state.json")\n    tqqq_state = _argument_path("--tqqq-state", "tqqq-panic-state.json")\n    previous = _load_payload(out)\n    previous_ready = _ready_sleeve_payload(previous)\n    backups = {\n        path: path.read_bytes()\n        for path in (out, tqqq_state)\n        if path.is_file()\n    }\n\n    try:\n        live.download_adjusted_ohlc = download_adjusted_ohlc_resilient\n        (runner or live.main)()\n        _filter_reset_monitor(out)\n        return _validate_guarded_output(out)\n    except BaseException as exc:\n        if previous_ready:\n            _restore_bytes(backups)\n            print(\n                "SLEEVE_REFRESH_REJECTED_KEEP_PREVIOUS_READY "\n                f"{type(exc).__name__}: {exc}",\n                flush=True,\n            )\n        raise\n''',
-              '''def run_guarded_refresh(runner: Callable[[], None] | None = None, *,\n                        continue_with_previous_ready: bool = False) -> dict[str, Any]:\n    out = _argument_path("--out", "v38-sleeve-state.json")\n    tqqq_state = _argument_path("--tqqq-state", "tqqq-panic-state.json")\n    previous = _load_payload(out)\n    previous_ready = _ready_sleeve_payload(previous)\n    backups = {\n        path: path.read_bytes()\n        for path in (out, tqqq_state)\n        if path.is_file()\n    }\n\n    try:\n        live.download_adjusted_ohlc = download_adjusted_ohlc_resilient\n        (runner or live.main)()\n        _filter_reset_monitor(out)\n        payload = _validate_guarded_output(out)\n        payload["refresh"] = _refresh_metadata(\n            status="FRESH",\n            attempted_asof=str(payload.get("asof") or "") or None,\n            last_successful_asof=str(payload.get("asof") or "") or None,\n            preserved=False,\n            error=None,\n        )\n        _write_payload(out, payload)\n        return payload\n    except BaseException as exc:\n        failed_payload = _load_payload(out)\n        attempted_asof = _attempted_asof(failed_payload)\n        if previous_ready:\n            _restore_bytes(backups)\n            error_text = f"{type(exc).__name__}: {exc}"\n            if continue_with_previous_ready:\n                preserved = _load_payload(out)\n                last_successful_asof = str(preserved.get("asof") or "") or None\n                preserved["refresh"] = _refresh_metadata(\n                    status="STALE / LAST_READY_PRESERVED",\n                    attempted_asof=attempted_asof,\n                    last_successful_asof=last_successful_asof,\n                    preserved=True,\n                    error=error_text,\n                )\n                _write_payload(out, preserved)\n\n                same_session = bool(\n                    attempted_asof and last_successful_asof\n                    and str(attempted_asof) == str(last_successful_asof)\n                )\n                normal_pct = (preserved.get("normal_stock") or {}).get("desired_pct")\n                reset_pct = (preserved.get("rsi_reset") or {}).get("desired_pct")\n                merge_asof = str(attempted_asof or last_successful_asof or "")\n                live._merge_desired_into_tqqq(\n                    tqqq_state, merge_asof,\n                    normal_pct if same_session else None,\n                    reset_pct if same_session else None,\n                    "READY" if same_session else "DATA REQUIRED",\n                    error_text,\n                )\n                tqqq_payload = _load_payload(tqqq_state)\n                tqqq_payload["sleeve_live_status"] = (\n                    "READY" if same_session else "STALE / LAST_READY_PRESERVED"\n                )\n                tqqq_payload["sleeve_live_reason"] = (\n                    "STALE / LAST_READY_PRESERVED: " + error_text\n                )\n                _write_payload(tqqq_state, tqqq_payload)\n                print(\n                    "SLEEVE_REFRESH_FAILED_LAST_READY_PRESERVED "\n                    f"attempted_asof={attempted_asof} "\n                    f"last_successful_asof={last_successful_asof} "\n                    f"same_session={same_session} {error_text}",\n                    flush=True,\n                )\n                return preserved\n\n            print(\n                "SLEEVE_REFRESH_REJECTED_KEEP_PREVIOUS_READY "\n                f"{error_text}",\n                flush=True,\n            )\n        raise\n''',
-          )
-
-          replace_once(
-              path,
-              '''def main() -> None:\n    run_guarded_refresh()\n''',
-              '''def main(*, continue_with_previous_ready: bool = False) -> None:\n    run_guarded_refresh(continue_with_previous_ready=continue_with_previous_ready)\n''',
-          )
-
-          replace_once(
-              'build_v38_sleeve_live.py',
-              '''if __name__ == "__main__":\n    main()\n''',
-              '''if __name__ == "__main__":\n    # Direct CLI execution is used by Dashboard daily build. Route it through\n    # the guarded wrapper so a transient provider failure cannot overwrite a\n    # previously READY sleeve state. Same-session preserved READY data remains\n    # executable but is explicitly marked stale by the wrapper.\n    from build_v38_sleeve_refresh import main as guarded_main\n\n    guarded_main(continue_with_previous_ready=True)\n''',
-          )
-
-          replace_once(
-              'build_v38_companion.py',
-              '''    sleeve_live = _load_json(sleeve_state_path, {})\n    sleeve_ready = _ready_live(sleeve_live, asof, "status")\n    normal_sleeve = sleeve_live.get("normal_stock", {}) if sleeve_ready else {}\n    reset_sleeve = sleeve_live.get("rsi_reset", {}) if sleeve_ready else {}\n''',
-              '''    sleeve_live = _load_json(sleeve_state_path, {})\n    sleeve_ready = _ready_live(sleeve_live, asof, "status")\n    normal_sleeve = sleeve_live.get("normal_stock", {}) if sleeve_ready else {}\n    reset_sleeve = sleeve_live.get("rsi_reset", {}) if sleeve_ready else {}\n    sleeve_refresh = sleeve_live.get("refresh", {}) if isinstance(sleeve_live, dict) else {}\n    if not isinstance(sleeve_refresh, dict):\n        sleeve_refresh = {}\n    sleeve_refresh_status = str(sleeve_refresh.get("status") or "")\n    sleeve_refresh_stale = "LAST_READY_PRESERVED" in sleeve_refresh_status\n    source_label = str(legacy_html.name)\n    if sleeve_refresh_stale:\n        last_ready = sleeve_refresh.get("last_successful_asof") or sleeve_live.get("asof") or "unknown"\n        source_label += f" / ⚠ Sleeve更新失敗・前回READY継続({last_ready})"\n''',
-          )
-
-          replace_once(
-              'build_v38_companion.py',
-              '''        "status": ("LIVE ALLOCATION READY" if gross_live is not None else "LIVE INPUT DATA REQUIRED"),\n''',
-              '''        "status": (\n            "LIVE ALLOCATION READY / LAST READY PRESERVED"\n            if gross_live is not None and sleeve_refresh_stale\n            else "LIVE ALLOCATION READY" if gross_live is not None\n            else "LIVE INPUT DATA REQUIRED"\n        ),\n''',
-          )
-
-          replace_once(
-              'build_v38_companion.py',
-              '''        "sleeve_live_status": tqqq_live.get("sleeve_live_status") if tqqq_ready else "DATA REQUIRED",\n        "sleeve_live_reason": tqqq_live.get("sleeve_live_reason") if tqqq_ready else "TQQQ_LIVE_REQUIRED",\n''',
-              '''        "sleeve_live_status": tqqq_live.get("sleeve_live_status") if tqqq_ready else "DATA REQUIRED",\n        "sleeve_live_reason": tqqq_live.get("sleeve_live_reason") if tqqq_ready else "TQQQ_LIVE_REQUIRED",\n        "sleeve_refresh_status": sleeve_refresh_status or ("FRESH" if sleeve_ready else "UNKNOWN"),\n        "sleeve_refresh_attempted_asof": sleeve_refresh.get("attempted_asof"),\n        "sleeve_last_successful_asof": sleeve_refresh.get("last_successful_asof"),\n        "sleeve_refresh_attempted_at_utc": sleeve_refresh.get("attempted_at_utc"),\n        "sleeve_refresh_error": sleeve_refresh.get("error"),\n        "sleeve_preserved_previous_ready": bool(sleeve_refresh.get("preserved_previous_ready")),\n''',
-          )
-
-          replace_once(
-              'build_v38_companion.py',
-              '''        "source": str(legacy_html.name),\n''',
-              '''        "source": source_label,\n''',
-          )
-
-          p = Path('tests/test_v38_sleeve_refresh.py')
-          text = p.read_text(encoding='utf-8')
-          text += r'''\n\ndef test_dashboard_style_failure_preserves_same_session_ready_and_marks_stale(monkeypatch, tmp_path):\n    out = tmp_path / "v38-sleeve-state.json"\n    tqqq = tmp_path / "tqqq-panic-state.json"\n    previous = {\n        "schema": "v38-sleeve-live-1",\n        "asof": "2026-09-01",\n        "status": "READY",\n        "normal_stock": {"status": "READY", "desired_pct": 85.0},\n        "rsi_reset": {\n            "status": "READY",\n            "strategy": "RS63_TOP3_RISE30_SIGTOP3",\n            "desired_pct": 2.9,\n            "position_count": 1,\n            "positions": [{"symbol": "HRL", "entry_date": "2026-08-31"}],\n            "monitor": [],\n            "download_quality": {"coverage_ok": True},\n        },\n    }\n    tqqq_before = {\n        "schema": "v38-tqqq-panic-state-1",\n        "asof": "2026-09-01",\n        "live_generation_status": "READY",\n        "underlying_target_pct": 30.0,\n        "requested_target_pct": 30.0,\n        "normal_stock_desired_pct": None,\n        "reset_desired_pct": None,\n    }\n    out.write_text(json.dumps(previous), encoding="utf-8")\n    tqqq.write_text(json.dumps(tqqq_before), encoding="utf-8")\n    monkeypatch.setattr(\n        sys, "argv",\n        ["build_v38_sleeve_live.py", "--out", str(out), "--tqqq-state", str(tqqq)],\n    )\n\n    def bad_runner():\n        out.write_text(\n            json.dumps({\n                "schema": "v38-sleeve-live-1",\n                "asof": "2026-09-01",\n                "status": "DATA REQUIRED",\n                "reason": "RuntimeError: SLEEVE_PRICE_DOWNLOAD_EMPTY",\n                "rsi_reset": {"status": "DATA REQUIRED", "monitor": []},\n            }),\n            encoding="utf-8",\n        )\n        tqqq.write_text(json.dumps({**tqqq_before, "sleeve_live_status": "DATA REQUIRED"}), encoding="utf-8")\n\n    result = refresh.run_guarded_refresh(bad_runner, continue_with_previous_ready=True)\n    saved = json.loads(out.read_text(encoding="utf-8"))\n    merged = json.loads(tqqq.read_text(encoding="utf-8"))\n    assert result["status"] == "READY"\n    assert saved["rsi_reset"]["positions"][0]["symbol"] == "HRL"\n    assert saved["refresh"]["status"] == "STALE / LAST_READY_PRESERVED"\n    assert saved["refresh"]["attempted_asof"] == "2026-09-01"\n    assert saved["refresh"]["last_successful_asof"] == "2026-09-01"\n    assert saved["refresh"]["preserved_previous_ready"] is True\n    assert "SLEEVE_PRICE_DOWNLOAD_EMPTY" in saved["refresh"]["error"]\n    assert merged["sleeve_live_status"] == "READY"\n    assert merged["normal_stock_desired_pct"] == 85.0\n    assert merged["reset_desired_pct"] == 2.9\n    assert "LAST_READY_PRESERVED" in merged["sleeve_live_reason"]\n\n\ndef test_direct_sleeve_cli_routes_through_guarded_refresh():\n    source = Path("build_v38_sleeve_live.py").read_text(encoding="utf-8")\n    assert "guarded_main(continue_with_previous_ready=True)" in source\n'''
-          p.write_text(text, encoding='utf-8')
-
-          p = Path('tests/test_v38_companion.py')
-          text = p.read_text(encoding='utf-8')
-          text += r'''\n\ndef test_companion_exposes_preserved_ready_refresh_warning(tmp_path):\n    source = tmp_path / "command-center.html"\n    write_legacy(source, {"asof": "2026-09-01", "color": "Yellow"}, {})\n    tqqq_path = tmp_path / "tqqq.json"\n    tqqq_path.write_text(json.dumps({\n        "schema": "v38-tqqq-panic-state-1",\n        "asof": "2026-09-01",\n        "live_generation_status": "READY",\n        "current30": {"status": "READY"},\n        "underlying_target_pct": 30.0,\n        "requested_target_pct": 30.0,\n        "reset_desired_pct": 0.0,\n        "normal_stock_desired_pct": 70.0,\n        "sleeve_live_status": "READY",\n        "sleeve_live_reason": "STALE / LAST_READY_PRESERVED: RuntimeError: rate limit",\n    }), encoding="utf-8")\n    sleeve_path = tmp_path / "sleeve.json"\n    sleeve_path.write_text(json.dumps({\n        "schema": "v38-sleeve-live-1",\n        "asof": "2026-09-01",\n        "status": "READY",\n        "normal_stock": {"status": "READY", "desired_pct": 70.0, "position_count": 10, "positions": []},\n        "rsi_reset": {"status": "READY", "desired_pct": 0.0, "position_count": 0, "positions": [], "monitor": []},\n        "refresh": {\n            "status": "STALE / LAST_READY_PRESERVED",\n            "attempted_asof": "2026-09-01",\n            "last_successful_asof": "2026-09-01",\n            "attempted_at_utc": "2026-09-02T00:00:00Z",\n            "preserved_previous_ready": True,\n            "error": "RuntimeError: rate limit",\n        },\n    }), encoding="utf-8")\n    state = build_state(source, tqqq_panic_path=tqqq_path, sleeve_state_path=sleeve_path)\n    gross = state["gross100_allocation"]\n    assert "LAST READY PRESERVED" in gross["status"]\n    assert gross["sleeve_refresh_status"] == "STALE / LAST_READY_PRESERVED"\n    assert gross["sleeve_last_successful_asof"] == "2026-09-01"\n    assert gross["sleeve_preserved_previous_ready"] is True\n    assert "Sleeve更新失敗・前回READY継続(2026-09-01)" in state["source"]\n'''
-          p.write_text(text, encoding='utf-8')
+          workflow = Path('/tmp/previous-harness.yml').read_text(encoding='utf-8')
+          marker = "          python - <<'PY'\n"
+          block = workflow.split(marker, 1)[1].split("\n          PY\n", 1)[0]
+          block = textwrap.dedent(block)
+          block = block.replace("text += r'''", "text += '''")
+          exec(compile(block, '<guarded-sleeve-patch>', 'exec'), {})
           PY
+
+          cat >> tests/test_v38_sleeve_refresh.py <<'PYTEST'
+
+
+def test_dashboard_style_failure_does_not_make_prior_session_current(monkeypatch, tmp_path):
+    out = tmp_path / "v38-sleeve-state.json"
+    tqqq = tmp_path / "tqqq-panic-state.json"
+    previous = {
+        "schema": "v38-sleeve-live-1",
+        "asof": "2026-08-31",
+        "status": "READY",
+        "normal_stock": {"status": "READY", "desired_pct": 70.0},
+        "rsi_reset": {
+            "status": "READY",
+            "strategy": "RS63_TOP3_RISE30_SIGTOP3",
+            "desired_pct": 2.9,
+            "position_count": 1,
+            "positions": [{"symbol": "HRL", "entry_date": "2026-08-31"}],
+            "monitor": [],
+            "download_quality": {"coverage_ok": True},
+        },
+    }
+    tqqq_before = {
+        "schema": "v38-tqqq-panic-state-1",
+        "asof": "2026-09-01",
+        "live_generation_status": "READY",
+        "underlying_target_pct": 30.0,
+        "requested_target_pct": 30.0,
+        "normal_stock_desired_pct": None,
+        "reset_desired_pct": None,
+    }
+    out.write_text(json.dumps(previous), encoding="utf-8")
+    tqqq.write_text(json.dumps(tqqq_before), encoding="utf-8")
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_v38_sleeve_live.py", "--out", str(out), "--tqqq-state", str(tqqq)],
+    )
+
+    def bad_runner():
+        out.write_text(
+            json.dumps({
+                "schema": "v38-sleeve-live-1",
+                "asof": "2026-09-01",
+                "status": "DATA REQUIRED",
+                "reason": "RuntimeError: SLEEVE_PRICE_DOWNLOAD_EMPTY",
+                "rsi_reset": {"status": "DATA REQUIRED", "monitor": []},
+            }),
+            encoding="utf-8",
+        )
+
+    result = refresh.run_guarded_refresh(bad_runner, continue_with_previous_ready=True)
+    saved = json.loads(out.read_text(encoding="utf-8"))
+    merged = json.loads(tqqq.read_text(encoding="utf-8"))
+    assert result["status"] == "READY"
+    assert saved["asof"] == "2026-08-31"
+    assert saved["refresh"]["attempted_asof"] == "2026-09-01"
+    assert saved["refresh"]["last_successful_asof"] == "2026-08-31"
+    assert merged["sleeve_live_status"] == "STALE / LAST_READY_PRESERVED"
+    assert merged["normal_stock_desired_pct"] is None
+    assert merged["reset_desired_pct"] is None
+    assert "LAST_READY_PRESERVED" in merged["sleeve_live_reason"]
+PYTEST
+
       - name: Install test dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
       - name: Compile and test guarded stale preservation
