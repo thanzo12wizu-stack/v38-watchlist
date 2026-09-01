@@ -52,9 +52,17 @@ jobs:
           if any(x.get('state_evidence')!='THEME56_DESCRIPTIVE_NOT_TRADING_SIGNAL' for x in rows): raise SystemExit('descriptive state guard missing')
           if any('DISTRIBUTION' in str(x.get('state')) for x in rows): raise SystemExit('unvalidated Theme56 distribution state present')
           st=d.get('theme56_data_status') or {}
-          if int(st.get('price_ready_count') or 0)<50: raise SystemExit('price coverage unexpectedly low')
-          if int(st.get('exact_flow_count') or 0)<19: raise SystemExit('exact flow coverage unexpectedly low')
-          print(json.dumps({'asof':d.get('asof'),'alignment':d.get('input_alignment'),'data_status':st},ensure_ascii=False,indent=2))
+          if int(st.get('price_ready_count') or 0)!=55: raise SystemExit('expected 55/56 price coverage')
+          if int(st.get('holdings_ready_count') or 0)!=55: raise SystemExit('expected 55/56 holdings coverage')
+          if int(st.get('internal_measured_count') or 0)!=55: raise SystemExit('expected 55/56 internal coverage')
+          if int(st.get('flow_ready_count') or 0)!=55: raise SystemExit('expected 55/56 validated flow coverage')
+          if int(st.get('measured_full_stack_count') or 0)!=55: raise SystemExit('expected 55/56 full-stack coverage')
+          missing=[x.get('ticker') for x in rows if x.get('state')=='DATA_REQUIRED']
+          if missing!=['DRAM']: raise SystemExit(f'unexpected data exceptions: {missing}')
+          flow=d.get('observations',{}).get('flow',{}) or {}
+          if int(flow.get('coverage') or 0)!=55: raise SystemExit('public fund-flow coverage mismatch')
+          if flow.get('scope')!='VALIDATED_ACTUAL_FUND_FLOW': raise SystemExit('fund-flow provenance contract missing')
+          print(json.dumps({'asof':d.get('asof'),'alignment':d.get('input_alignment'),'data_status':st,'flow':{'scope':flow.get('scope'),'coverage':flow.get('coverage'),'source_counts':flow.get('source_counts')}},ensure_ascii=False,indent=2))
           PY
       - name: Persist public brief
         run: |
@@ -72,7 +80,7 @@ jobs:
             cp -a "$TMP" "$SRC"
             git add "$SRC"
             if git diff --cached --quiet; then exit 0; fi
-            git commit -m "research: record Theme56 public Rotation brief"
+            git commit -m "research: record completed Theme56 public Rotation brief"
             if git push origin "HEAD:$BRANCH"; then exit 0; fi
           done
           exit 1
