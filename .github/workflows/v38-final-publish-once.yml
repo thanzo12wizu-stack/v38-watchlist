@@ -1,0 +1,26 @@
+name: V38 final publish once
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/v38-final-publish-once.yml']
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch canonical Dashboard workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            repos/${GITHUB_REPOSITORY}/actions/workflows/dashboard.yml/dispatches \
+            -f ref=main
+          echo "Dashboard workflow dispatched"
