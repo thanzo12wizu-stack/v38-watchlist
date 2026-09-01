@@ -9,6 +9,7 @@ on:
     paths:
       - '.github/workflows/v38-sleeve-refresh.yml'
       - 'build_v38_sleeve_refresh.py'
+      - 'tests/test_v38_sleeve_refresh.py'
   workflow_dispatch: {}
 
 permissions:
@@ -22,7 +23,7 @@ jobs:
   refresh:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,6 +45,14 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt
 
+      - name: Restore validated Reset OHLC cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/v38-reset-prices
+          key: ${{ runner.os }}-v38-reset-prices-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-v38-reset-prices-
+
       - name: Compile audited live builders
         run: |
           python -m py_compile \
@@ -53,7 +62,16 @@ jobs:
             build_v38_strict_loo_live.py \
             v38_rules.py
 
+      - name: Preserve pre-refresh READY inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp v38-sleeve-state.json /tmp/v38-sleeve-state-before.json
+          cp tqqq-panic-state.json /tmp/tqqq-panic-state-before.json
+
       - name: Rebuild Normal Stock and RSI Reset sleeves on fresh runner
+        env:
+          V38_RESET_CACHE_DIR: .cache/v38-reset-prices
         run: |
           python build_v38_sleeve_refresh.py \
             --companion v38-live-state.json \
@@ -62,6 +80,41 @@ jobs:
             --strict-history v38-strict-loo-history.json \
             --tqqq-state tqqq-panic-state.json \
             --out v38-sleeve-state.json
+
+      - name: Rebuild same Reset input a second time from validated cache
+        env:
+          V38_RESET_CACHE_DIR: .cache/v38-reset-prices
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/tqqq-panic-state-before.json /tmp/tqqq-panic-state-repeat.json
+          python build_v38_sleeve_refresh.py \
+            --companion v38-live-state.json \
+            --state /tmp/v38-sleeve-state-before.json \
+            --seed v38-normal-sleeve-seed.json \
+            --strict-history v38-strict-loo-history.json \
+            --tqqq-state /tmp/tqqq-panic-state-repeat.json \
+            --out /tmp/v38-sleeve-state-repeat.json
+
+      - name: Verify Reset same-input reproducibility
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from build_v38_sleeve_refresh import reset_reproducibility_payload
+
+          first = json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))
+          repeat = json.loads(Path('/tmp/v38-sleeve-state-repeat.json').read_text(encoding='utf-8'))
+          a = reset_reproducibility_payload(first)
+          b = reset_reproducibility_payload(repeat)
+          if a != b:
+              raise SystemExit(
+                  'RESET_REPRODUCIBILITY_MISMATCH\n'
+                  + json.dumps({'first': a, 'repeat': b}, ensure_ascii=False, indent=2)
+              )
+          print('RESET_REPRODUCIBILITY_PASS', json.dumps(a, ensure_ascii=False, sort_keys=True))
+          PY
 
       - name: Rebuild audited companion with live Gross100 inputs
         run: |
@@ -128,10 +181,16 @@ jobs:
           reset = sleeve.get('rsi_reset', {})
           monitor = reset.get('monitor')
           summary = reset.get('monitor_summary')
+          quality = reset.get('download_quality')
           if not isinstance(monitor, list) or not isinstance(summary, dict):
               raise SystemExit('RSI30 monitor output missing')
           if reset.get('strategy') != 'RS63_TOP3_RISE30_SIGTOP3':
               raise SystemExit(f'unexpected Reset rule: {reset.get("strategy")}')
+          if not isinstance(quality, dict) or quality.get('coverage_ok') is not True:
+              raise SystemExit(f'Reset OHLC coverage not proven: {quality}')
+          for key in ('history_coverage_ratio', 'target_coverage_ratio', 'recent_median_coverage_ratio'):
+              if quality.get(key) is None:
+                  raise SystemExit(f'Reset OHLC coverage metric missing: {key}')
 
           print('V38_SLEEVE_REFRESH_READY', {
               'asof': asof,
@@ -139,6 +198,8 @@ jobs:
               'normal_desired_pct': sleeve['normal_stock'].get('desired_pct'),
               'normal_portfolio_desired_pct': gross.get('normal_stock_portfolio_desired_pct'),
               'reset_desired_pct': reset.get('desired_pct'),
+              'reset_position_count': reset.get('position_count'),
+              'reset_price_quality': quality,
               'native_tqqq_target_pct': native_tqqq,
               'tqqq_desired_pct': gross.get('tqqq_desired_pct'),
               'normal_allocated_pct': normal_alloc,
