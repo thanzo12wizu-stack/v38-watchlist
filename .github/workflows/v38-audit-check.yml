@@ -17,6 +17,7 @@ on:
       - 'tests/test_privacy_audit.py'
       - '.github/workflows/v38-audit-check.yml'
       - '.github/workflows/dashboard.yml'
+      - '.github/workflows/v38-sleeve-refresh.yml'
   workflow_dispatch: {}
 
 permissions:
