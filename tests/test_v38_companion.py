@@ -30,6 +30,9 @@ def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
     assert "通常個別株の新規保有可能総数は最大4" in html
     assert "すべて当日終値で判定し、注文は次営業日寄りで執行" in html
     assert "M30_TOUCH30_F80_D10" in html
+    assert "$Vol(M)" in html
+    assert "50&gt;200" in html and "Price&gt;200" in html
+    assert "Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外" in html
     for element_id in ("mcEntry", "seedAge", "underlyingTarget", "requestedTarget",
                        "resetAllocation", "tqqqParts", "normalAllocation", "executableTarget"):
         assert f'id="{element_id}"' in html
@@ -160,6 +163,11 @@ def test_companion_selective_uses_rs189_and_never_theme_approximation(tmp_path):
     assert state["market"]["mode"] == "SELECTIVE"
     assert state["ranking"]["mode"] == "RS189_ONLY"
     assert state["candidates"][0]["final_rank"] == 1
+    checks = state["candidates"][0]["eligibility_checks"]
+    assert checks["price_gte_5"] and checks["dollar_volume_gte_10m"]
+    assert checks["sma50_gt_sma200"] and checks["close_gt_sma200"]
+    assert checks["rs189_gte_85"] and checks["rs63_gte_85"]
+    assert not checks["biotech_industry_excluded"]
 
 
 def test_companion_tqqq_schema_separates_current_hierarchy_floor_and_allocation(tmp_path):
@@ -219,8 +227,7 @@ def test_companion_structural_bio_filter_ignores_legacy_theme_label(tmp_path):
                         revenue_path=rev_path)
     got = {row["ticker"]: row for row in state["candidates"]}
     assert "SMALLBIO" not in got and "SMALLPHARMA" not in got
-    assert "BIGBIO" in got and "MISSINGREV" in got and "LABELONLY" in got
-    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True
+    assert "BIGBIO" not in got and "MISSINGREV" not in got and "LABELONLY" in got
 
 
 def test_companion_uses_universe_csv_structural_clinical_fields(tmp_path):
@@ -244,9 +251,7 @@ def test_companion_uses_universe_csv_structural_clinical_fields(tmp_path):
     state = build_state(source, universe_path=universe)
     got = {row["ticker"]: row for row in state["candidates"]}
     assert "SMALLBIO" not in got and "SMALLPHARMA" not in got
-    assert "BIGBIO" in got and "MISSINGREV" in got
-    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True
-    assert got["BIGBIO"]["clinical_biotech"]["metadata_source"] == "universe.csv"
+    assert "BIGBIO" not in got and "MISSINGREV" not in got
 
 
 def test_attack_strict_loo_uses_s2t_memberships_and_full_universe_before_top50(tmp_path):

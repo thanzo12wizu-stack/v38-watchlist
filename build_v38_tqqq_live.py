@@ -254,6 +254,61 @@ def _series_from_payload(payload: dict[str, Any]) -> pd.Series:
     return pd.Series(values, index=pd.to_datetime(payload.get("index", [])), dtype=float).sort_index()
 
 
+def apply_legacy_mc57_overlay(sources: dict[str, Any], state: dict[str, Any],
+                              mri_log_path: Path | None = None) -> dict[str, Any]:
+    """Overlay the legacy Dashboard MC57 onto the research history.
+
+    The long independently reconstructed series remains only as warm-up history
+    for the Stage34 state machine. Persisted command-center values are canonical
+    wherever available, and the current state.json value is mandatory.
+    """
+    if not isinstance(sources, dict) or "mc57" not in sources:
+        raise RuntimeError("MC57_SOURCE_CACHE_REQUIRED")
+    state_date = str(state.get("date") or "").strip()
+    try:
+        state_value = float(state.get("mri"))
+    except (TypeError, ValueError):
+        state_value = float("nan")
+    if not state_date or not np.isfinite(state_value):
+        raise RuntimeError("LEGACY_DASHBOARD_MC57_REQUIRED")
+
+    points: dict[pd.Timestamp, float] = {}
+    if mri_log_path is not None and Path(mri_log_path).is_file():
+        try:
+            log = pd.read_csv(mri_log_path)
+            for _, row in log.iterrows():
+                try:
+                    date = pd.Timestamp(row.get("date")).normalize()
+                    value = float(row.get("mri"))
+                except (TypeError, ValueError):
+                    continue
+                if pd.notna(date) and np.isfinite(value):
+                    points[date] = value
+        except Exception:
+            pass
+    current_date = pd.Timestamp(state_date).normalize()
+    points[current_date] = state_value
+
+    merged = pd.to_numeric(sources["mc57"], errors="coerce").copy()
+    merged.index = pd.to_datetime(merged.index).tz_localize(None).normalize()
+    for date, value in points.items():
+        merged.loc[date] = value
+    merged = merged[~merged.index.duplicated(keep="last")].sort_index()
+
+    out = dict(sources)
+    out["mc57"] = merged
+    providers = dict(out.get("providers") or {})
+    providers["mc57_canonical"] = {
+        "source": "command-center.html via state.json + daily_log.csv",
+        "state_date": state_date,
+        "state_value": state_value,
+        "persisted_points": len(points),
+        "policy": "LEGACY_DASHBOARD_CANONICAL_OVERLAY",
+    }
+    out["providers"] = providers
+    return out
+
+
 def compute_mc57(include_meta: bool = False):
     """Same MC57 construction called by the Stage56 research dependency."""
     # Use the crumb-free chart endpoint directly. yfinance's shared crumb/session
@@ -1049,6 +1104,7 @@ def main() -> None:
     parser.add_argument("--state", default="state.json")
     parser.add_argument("--out", default="tqqq-panic-state.json")
     parser.add_argument("--cache", default=None)
+    parser.add_argument("--mri-log", default="daily_log.csv")
     parser.add_argument("--prefetch-cache", default=None)
     args = parser.parse_args()
     if args.prefetch_cache:
@@ -1070,7 +1126,10 @@ def main() -> None:
     try:
         if asof is None:
             raise RuntimeError("STATE_DATE_REQUIRED")
-        sources = load_source_cache(args.cache) if args.cache else None
+        if not args.cache:
+            raise RuntimeError("CANONICAL_MC57_CACHE_REQUIRED")
+        sources = load_source_cache(args.cache)
+        sources = apply_legacy_mc57_overlay(sources, state, Path(args.mri_log))
         live = build_live(asof, sources=sources)
     except Exception as exc:
         live = data_required(asof, f"{type(exc).__name__}: {exc}")

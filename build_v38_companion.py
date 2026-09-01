@@ -35,6 +35,18 @@ def _finite(value) -> bool:
         return False
 
 
+NORMAL_STOCK_BIOTECH_INDUSTRIES = frozenset({"Biotechnology", "Pharmaceuticals: Other"})
+
+
+def _normal_stock_biotech_excluded(industry) -> bool:
+    """Normal-stock sleeve: broadly exclude biotech-like clinical industries.
+
+    This is deliberately stricter than the legacy structural-small-biotech
+    helper retained in v38_rules for historical audit compatibility.
+    """
+    return str(industry or "").strip() in NORMAL_STOCK_BIOTECH_INDUSTRIES
+
+
 def _load_json(path: Path | None, default):
     if path is None or not path.is_file():
         return default
@@ -203,6 +215,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         if not _finite(revenue_value):
             revenue_value = _revenue_value(revenues, ticker)
         bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)
+        normal_biotech_excluded = _normal_stock_biotech_excluded(industry_value)
         eligible = (
             _finite(row.get("px")) and float(row["px"]) >= 5
             and _finite(row.get("dvol")) and float(row["dvol"]) >= 10
@@ -211,6 +224,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             and _finite(row.get("rs189")) and float(row["rs189"]) >= 85
             and _finite(row.get("rs")) and float(row["rs"]) >= 85
             and not bio.excluded
+            and not normal_biotech_excluded
         )
         if not eligible:
             continue
@@ -224,6 +238,23 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         candidates.append({
             "ticker": ticker,
             "price": row.get("px"),
+            "daily_dollar_volume_m": row.get("dvol"),
+            "sma50_gt_sma200": bool(row.get("ma5020")),
+            "close_vs_sma200_pct": row.get("v200"),
+            "eligibility_checks": {
+                "price_gte_5": _finite(row.get("px")) and float(row["px"]) >= 5,
+                "dollar_volume_gte_10m": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,
+                "sma50_gt_sma200": bool(row.get("ma5020")),
+                "close_gt_sma200": _finite(row.get("v200")) and float(row["v200"]) > 0,
+                "rs189_gte_85": _finite(row.get("rs189")) and float(row["rs189"]) >= 85,
+                "rs63_gte_85": _finite(row.get("rs")) and float(row["rs"]) >= 85,
+                "biotech_industry_excluded": normal_biotech_excluded,
+            },
+            "normal_biotech_policy": {
+                "industry": industry_value,
+                "excluded": normal_biotech_excluded,
+                "policy": "EXCLUDE_BIOTECHNOLOGY_AND_PHARMACEUTICALS_OTHER",
+            },
             "rs189": row.get("rs189"),
             "rs63": row.get("rs"),
             "peer_theme": selected,
@@ -423,6 +454,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "missing_theme_policy": "NEUTRAL_50_AT_FINAL_SCORE_ONLY",
             "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
             "history_min_sessions": 21,
+            "normal_biotech_policy": "EXCLUDE Biotechnology / Pharmaceuticals: Other",
             "full_eligible_count": len(candidates),
             "display_limit_applied_after_full_sort": 50,
             "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",

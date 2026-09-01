@@ -7,6 +7,7 @@ import pandas as pd
 from build_v38_tqqq_live import (
     CACHE_SCHEMA,
     _frame_payload,
+    apply_legacy_mc57_overlay,
     load_source_cache,
     build_4h_bars,
     current30_trace,
@@ -14,6 +15,20 @@ from build_v38_tqqq_live import (
     write_source_cache,
     wilder_rsi,
 )
+
+
+def test_legacy_dashboard_mc57_overrides_reconstructed_current_and_log(tmp_path):
+    log = tmp_path / "daily_log.csv"
+    log.write_text("date,gate,mri\n2026-08-28,Yellow,62.6\n2026-08-31,Yellow,58.6\n", encoding="utf-8")
+    sources = {
+        "mc57": pd.Series([55.0, 56.6], index=pd.to_datetime(["2026-08-28", "2026-08-31"])),
+        "providers": {"mc57": {"coverage_tickers": 57}},
+    }
+    state = {"date": "2026-08-31", "mri": 58.7}
+    out = apply_legacy_mc57_overlay(sources, state, log)
+    assert math.isclose(out["mc57"].loc[pd.Timestamp("2026-08-28")], 62.6)
+    assert math.isclose(out["mc57"].loc[pd.Timestamp("2026-08-31")], 58.7)
+    assert out["providers"]["mc57_canonical"]["policy"] == "LEGACY_DASHBOARD_CANONICAL_OVERLAY"
 
 
 def base_data(n=40):
