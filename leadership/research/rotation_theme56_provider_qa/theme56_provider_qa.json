@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "research_only": true,
   "supported_provider_families": [
     "SSGA",
@@ -31,6 +31,7 @@
     "XSD"
   ],
   "persisted_flow_start": "2022-01-01",
+  "symbol_normalization": "iShares provider ticker + official Exchange/Location fields are translated to market-data lookup symbols while provider_symbol is preserved.",
   "failures": [],
   "guardrails": [
     "Only official current holdings are accepted for Internals membership.",
