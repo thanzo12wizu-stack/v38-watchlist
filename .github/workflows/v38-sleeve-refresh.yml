@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/v38-sleeve-refresh.yml'
+      - 'build_v38_sleeve_refresh.py'
   workflow_dispatch: {}
 
 permissions:
@@ -47,13 +48,14 @@ jobs:
         run: |
           python -m py_compile \
             build_v38_sleeve_live.py \
+            build_v38_sleeve_refresh.py \
             build_v38_companion.py \
             build_v38_strict_loo_live.py \
             v38_rules.py
 
       - name: Rebuild Normal Stock and RSI Reset sleeves on fresh runner
         run: |
-          python build_v38_sleeve_live.py \
+          python build_v38_sleeve_refresh.py \
             --companion v38-live-state.json \
             --state v38-sleeve-state.json \
             --seed v38-normal-sleeve-seed.json \
