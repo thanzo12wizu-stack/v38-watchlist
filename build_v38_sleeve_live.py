@@ -14,6 +14,7 @@ import argparse
 import json
 import math
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -142,15 +143,79 @@ def download_adjusted_ohlc(symbols: list[str], start: str, end: str,
             opens.append(pd.DataFrame(ob))
             closes.append(pd.DataFrame(cb))
         print(f"SLEEVE_DOWNLOAD {min(pos + batch_size, len(requested))}/{len(requested)}", flush=True)
-    if not opens:
-        raise RuntimeError("SLEEVE_PRICE_DOWNLOAD_EMPTY")
-    op = pd.concat(opens, axis=1)
-    cl = pd.concat(closes, axis=1)
+    op = pd.concat(opens, axis=1) if opens else pd.DataFrame()
+    cl = pd.concat(closes, axis=1) if closes else pd.DataFrame()
     for frame in (op, cl):
-        frame.index = pd.to_datetime(frame.index).tz_localize(None).normalize()
-    op = op.loc[:, ~op.columns.duplicated()].sort_index().replace([np.inf, -np.inf], np.nan)
-    cl = cl.loc[:, ~cl.columns.duplicated()].sort_index().replace([np.inf, -np.inf], np.nan)
-    return op, cl, {"requested": len(requested), "downloaded": int(cl.shape[1]), "failed_batches": failed}
+        if len(frame.index):
+            frame.index = pd.to_datetime(frame.index).tz_localize(None).normalize()
+    if not op.empty:
+        op = op.loc[:, ~op.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+    if not cl.empty:
+        cl = cl.loc[:, ~cl.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+
+    have = {str(column) for column in cl.columns if cl[column].notna().any()}
+    missing = [symbol for symbol in requested if symbol not in have]
+    fallback_ok = 0
+    if missing:
+        from build_v38_tqqq_live import download_fmp_frame, download_yahoo_chart
+
+        end_ts = pd.Timestamp(end)
+
+        def fetch_one(symbol: str):
+            yahoo = yahoo_symbol(symbol)
+            errors = []
+            for provider, callback in (
+                ("YAHOO_CHART", lambda: download_yahoo_chart(yahoo, start=start)),
+                ("FMP_DIVIDEND_ADJUSTED", lambda: download_fmp_frame(yahoo, start=start)),
+            ):
+                try:
+                    frame = callback()
+                    if frame is None or frame.empty:
+                        raise RuntimeError("empty")
+                    idx = pd.to_datetime(frame.index)
+                    if idx.tz is not None:
+                        idx = idx.tz_localize(None)
+                    frame = frame.copy()
+                    frame.index = idx.normalize()
+                    frame = frame[frame.index < end_ts]
+                    if (not frame.empty and "Open" in frame.columns and "Close" in frame.columns
+                            and frame["Close"].notna().any()):
+                        return symbol, frame[["Open", "Close"]], provider, None
+                except Exception as exc:
+                    errors.append(f"{provider}:{type(exc).__name__}")
+            return symbol, None, None, "|".join(errors)
+
+        fb_open: dict[str, pd.Series] = {}
+        fb_close: dict[str, pd.Series] = {}
+        with ThreadPoolExecutor(max_workers=min(8, max(1, len(missing)))) as executor:
+            futures = [executor.submit(fetch_one, symbol) for symbol in missing]
+            for number, future in enumerate(as_completed(futures), 1):
+                symbol, frame, provider, error = future.result()
+                if frame is not None:
+                    fb_open[symbol] = pd.to_numeric(frame["Open"], errors="coerce")
+                    fb_close[symbol] = pd.to_numeric(frame["Close"], errors="coerce")
+                    fallback_ok += 1
+                if number % 100 == 0 or number == len(missing):
+                    print(f"SLEEVE_FALLBACK {number}/{len(missing)} recovered={fallback_ok}", flush=True)
+        if fb_close:
+            fb_o = pd.DataFrame(fb_open)
+            fb_c = pd.DataFrame(fb_close)
+            op = pd.concat([op, fb_o], axis=1)
+            cl = pd.concat([cl, fb_c], axis=1)
+            op = op.loc[:, ~op.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+            cl = cl.loc[:, ~cl.columns.duplicated(keep="last")].sort_index().replace([np.inf, -np.inf], np.nan)
+
+    if cl.empty:
+        raise RuntimeError("SLEEVE_PRICE_DOWNLOAD_EMPTY")
+    usable = [column for column in cl.columns if cl[column].notna().any()]
+    op = op.reindex(index=cl.index, columns=cl.columns)
+    return op, cl, {
+        "requested": len(requested),
+        "downloaded": len(usable),
+        "failed_batches": failed,
+        "fallback_requested": len(missing),
+        "fallback_recovered": fallback_ok,
+    }
 
 
 def _px(frame: pd.DataFrame, date: pd.Timestamp, symbol: str, fallback: float | None = None) -> float | None:

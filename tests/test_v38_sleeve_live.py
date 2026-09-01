@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pandas as pd
+
 from build_v38_sleeve_live import _merge_desired_into_tqqq, _monitor_band, advance_normal
 
 
@@ -56,3 +58,32 @@ def test_sleeve_refresh_uses_fresh_runner_after_dashboard_and_fails_closed_befor
     assert "RSI30 monitor output missing" in workflow
     assert "git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json" in workflow
     assert "main advanced during sleeve refresh" in workflow
+
+
+def test_sleeve_price_download_falls_back_after_empty_yfinance(monkeypatch):
+    import build_v38_sleeve_live as sleeve
+    import build_v38_tqqq_live as tqqq
+
+    monkeypatch.setattr(sleeve.yf, "download", lambda *args, **kwargs: pd.DataFrame())
+    idx = pd.to_datetime(["2026-08-28", "2026-08-31"])
+    fallback = pd.DataFrame({
+        "Open": [100.0, 101.0],
+        "High": [102.0, 103.0],
+        "Low": [99.0, 100.0],
+        "Close": [101.0, 102.0],
+        "Volume": [1_000_000, 1_100_000],
+    }, index=idx)
+    monkeypatch.setattr(tqqq, "download_yahoo_chart", lambda *args, **kwargs: fallback.copy())
+
+    def no_fmp(*args, **kwargs):
+        raise AssertionError("FMP should not be needed when Yahoo Chart succeeds")
+
+    monkeypatch.setattr(tqqq, "download_fmp_frame", no_fmp)
+    op, cl, quality = sleeve.download_adjusted_ohlc(
+        ["SPY"], "2026-08-28", "2026-09-01", batch_size=10
+    )
+    assert list(cl.columns) == ["SPY"]
+    assert float(cl.loc[pd.Timestamp("2026-08-31"), "SPY"]) == 102.0
+    assert float(op.loc[pd.Timestamp("2026-08-31"), "SPY"]) == 101.0
+    assert quality["fallback_requested"] == 1
+    assert quality["fallback_recovered"] == 1
