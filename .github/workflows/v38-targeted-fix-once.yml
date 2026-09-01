@@ -1,0 +1,207 @@
+name: V38 targeted fix once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v38-targeted-fix-once.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Apply exact targeted patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, got {count}: {old[:100]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # 1) Normal-stock biotech policy + auditable eligibility fields.
+          path = 'build_v38_companion.py'
+          replace_once(
+              path,
+              '''def _finite(value) -> bool:\n    try:\n        return math.isfinite(float(value))\n    except (TypeError, ValueError):\n        return False\n\n\ndef _load_json''',
+              '''def _finite(value) -> bool:\n    try:\n        return math.isfinite(float(value))\n    except (TypeError, ValueError):\n        return False\n\n\nNORMAL_STOCK_BIOTECH_INDUSTRIES = frozenset({"Biotechnology", "Pharmaceuticals: Other"})\n\n\ndef _normal_stock_biotech_excluded(industry) -> bool:\n    """Normal-stock sleeve: broadly exclude biotech-like clinical industries.\n\n    This is deliberately stricter than the legacy structural-small-biotech\n    helper retained in v38_rules for historical audit compatibility.\n    """\n    return str(industry or "").strip() in NORMAL_STOCK_BIOTECH_INDUSTRIES\n\n\ndef _load_json'''
+          )
+          replace_once(
+              path,
+              '        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)\n        eligible = (',
+              '        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)\n        normal_biotech_excluded = _normal_stock_biotech_excluded(industry_value)\n        eligible = ('
+          )
+          replace_once(
+              path,
+              '            and not bio.excluded\n        )',
+              '            and not bio.excluded\n            and not normal_biotech_excluded\n        )'
+          )
+          replace_once(
+              path,
+              '            "price": row.get("px"),\n            "rs189": row.get("rs189"),',
+              '''            "price": row.get("px"),\n            "daily_dollar_volume_m": row.get("dvol"),\n            "sma50_gt_sma200": bool(row.get("ma5020")),\n            "close_vs_sma200_pct": row.get("v200"),\n            "eligibility_checks": {\n                "price_gte_5": _finite(row.get("px")) and float(row["px"]) >= 5,\n                "dollar_volume_gte_10m": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,\n                "sma50_gt_sma200": bool(row.get("ma5020")),\n                "close_gt_sma200": _finite(row.get("v200")) and float(row["v200"]) > 0,\n                "rs189_gte_85": _finite(row.get("rs189")) and float(row["rs189"]) >= 85,\n                "rs63_gte_85": _finite(row.get("rs")) and float(row["rs"]) >= 85,\n                "biotech_industry_excluded": normal_biotech_excluded,\n            },\n            "normal_biotech_policy": {\n                "industry": industry_value,\n                "excluded": normal_biotech_excluded,\n                "policy": "EXCLUDE_BIOTECHNOLOGY_AND_PHARMACEUTICALS_OTHER",\n            },\n            "rs189": row.get("rs189"),'''
+          )
+          replace_once(
+              path,
+              '            "history_min_sessions": 21,\n            "full_eligible_count": len(candidates),',
+              '            "history_min_sessions": 21,\n            "normal_biotech_policy": "EXCLUDE Biotechnology / Pharmaceuticals: Other",\n            "full_eligible_count": len(candidates),'
+          )
+
+          # 2) MC57: legacy command-center state is the canonical live value.
+          path = 'build_v38_tqqq_live.py'
+          replace_once(
+              path,
+              '''def _series_from_payload(payload: dict[str, Any]) -> pd.Series:\n    values = pd.to_numeric(pd.Series(payload.get("data", [])), errors="coerce").to_numpy(float)\n    return pd.Series(values, index=pd.to_datetime(payload.get("index", [])), dtype=float).sort_index()\n\n\ndef compute_mc57''',
+              '''def _series_from_payload(payload: dict[str, Any]) -> pd.Series:\n    values = pd.to_numeric(pd.Series(payload.get("data", [])), errors="coerce").to_numpy(float)\n    return pd.Series(values, index=pd.to_datetime(payload.get("index", [])), dtype=float).sort_index()\n\n\ndef apply_legacy_mc57_overlay(sources: dict[str, Any], state: dict[str, Any],\n                              mri_log_path: Path | None = None) -> dict[str, Any]:\n    """Overlay the legacy Dashboard MC57 onto the research history.\n\n    The long independently reconstructed series remains only as warm-up history\n    for the Stage34 state machine. Persisted command-center values are canonical\n    wherever available, and the current state.json value is mandatory.\n    """\n    if not isinstance(sources, dict) or "mc57" not in sources:\n        raise RuntimeError("MC57_SOURCE_CACHE_REQUIRED")\n    state_date = str(state.get("date") or "").strip()\n    try:\n        state_value = float(state.get("mri"))\n    except (TypeError, ValueError):\n        state_value = float("nan")\n    if not state_date or not np.isfinite(state_value):\n        raise RuntimeError("LEGACY_DASHBOARD_MC57_REQUIRED")\n\n    points: dict[pd.Timestamp, float] = {}\n    if mri_log_path is not None and Path(mri_log_path).is_file():\n        try:\n            log = pd.read_csv(mri_log_path)\n            for _, row in log.iterrows():\n                try:\n                    date = pd.Timestamp(row.get("date")).normalize()\n                    value = float(row.get("mri"))\n                except (TypeError, ValueError):\n                    continue\n                if pd.notna(date) and np.isfinite(value):\n                    points[date] = value\n        except Exception:\n            pass\n    current_date = pd.Timestamp(state_date).normalize()\n    points[current_date] = state_value\n\n    merged = pd.to_numeric(sources["mc57"], errors="coerce").copy()\n    merged.index = pd.to_datetime(merged.index).tz_localize(None).normalize()\n    for date, value in points.items():\n        merged.loc[date] = value\n    merged = merged[~merged.index.duplicated(keep="last")].sort_index()\n\n    out = dict(sources)\n    out["mc57"] = merged\n    providers = dict(out.get("providers") or {})\n    providers["mc57_canonical"] = {\n        "source": "command-center.html via state.json + daily_log.csv",\n        "state_date": state_date,\n        "state_value": state_value,\n        "persisted_points": len(points),\n        "policy": "LEGACY_DASHBOARD_CANONICAL_OVERLAY",\n    }\n    out["providers"] = providers\n    return out\n\n\ndef compute_mc57'''
+          )
+          replace_once(
+              path,
+              '    parser.add_argument("--cache", default=None)\n    parser.add_argument("--prefetch-cache", default=None)',
+              '    parser.add_argument("--cache", default=None)\n    parser.add_argument("--mri-log", default="daily_log.csv")\n    parser.add_argument("--prefetch-cache", default=None)'
+          )
+          replace_once(
+              path,
+              '        sources = load_source_cache(args.cache) if args.cache else None\n        live = build_live(asof, sources=sources)',
+              '''        if not args.cache:\n            raise RuntimeError("CANONICAL_MC57_CACHE_REQUIRED")\n        sources = load_source_cache(args.cache)\n        sources = apply_legacy_mc57_overlay(sources, state, Path(args.mri_log))\n        live = build_live(asof, sources=sources)'''
+          )
+
+          # 3) V38 UI: legacy Command Center palette + visible eligibility audit.
+          path = 'command-center-v38.html'
+          replace_once(
+              path,
+              ':root{--bg:#09111d;--panel:#111d2c;--panel2:#162438;--line:#263951;--text:#eef5ff;--muted:#9fb0c6;--good:#6fd3a2;--warn:#ffd166;--bad:#ff7d8c;--blue:#72a7ff;--chip:#1c2d44}',
+              ':root{--bg:#0b0f17;--panel:#101722;--panel2:#16243e;--line:rgba(255,255,255,.08);--text:#e6edf3;--muted:#7d8da1;--good:#16a34a;--warn:#ca8a04;--bad:#dc2626;--blue:#9ecbff;--chip:#16243e}'
+          )
+          replace_once(
+              path,
+              'body{margin:0;background:linear-gradient(180deg,#08101b,#0c1624 38%,#08111c);color:var(--text);',
+              'body{margin:0;background:#0b0f17;color:var(--text);'
+          )
+          replace_once(
+              path,
+              '<div class="card"><div class="hdr"><h2>候補一覧</h2><span class="badge">上位50表示</span></div>',
+              '<div class="card"><div class="hdr"><h2>候補一覧</h2><span class="badge">Eligibility通過後 上位50</span></div>'
+          )
+          replace_once(
+              path,
+              '<th>順位</th><th>銘柄</th><th>V38 Score</th><th>RS189</th><th>RS63</th><th>Theme</th><th>Theme Score</th><th>Rotation参考</th><th>今買える?</th>',
+              '<th>順位</th><th>銘柄</th><th>V38 Score</th><th>RS189</th><th>RS63</th><th>$Vol(M)</th><th>50&gt;200</th><th>Price&gt;200</th><th>Theme</th><th>Theme Score</th><th>Rotation参考</th><th>今買える?</th>'
+          )
+          replace_once(
+              path,
+              "function whyText(x){let parts=[];parts.push(`RS189 ${fmt(x.rs189)} / RS63 ${fmt(x.rs63)}`);",
+              "function whyText(x){let parts=[];parts.push(`RS189 ${fmt(x.rs189)} / RS63 ${fmt(x.rs63)} / $Vol ${fmt(x.daily_dollar_volume_m,1)}M / 50>200 ${x.sma50_gt_sma200?'PASS':'FAIL'} / Price>200 ${(x.close_vs_sma200_pct??0)>0?'PASS':'FAIL'}`);"
+          )
+          replace_once(
+              path,
+              "<td>${fmt(x.rs189)}</td><td>${fmt(x.rs63)}</td><td>${esc(x.peer_theme||'—')}</td>",
+              "<td>${fmt(x.rs189)}</td><td>${fmt(x.rs63)}</td><td>${x.daily_dollar_volume_m==null?'—':fmt(x.daily_dollar_volume_m,1)}</td><td>${x.sma50_gt_sma200?'PASS':'FAIL'}</td><td>${(x.close_vs_sma200_pct??0)>0?'PASS':'FAIL'}</td><td>${esc(x.peer_theme||'—')}</td>"
+          )
+          replace_once(
+              path,
+              '構造的小型Clinical Biotechは除外。判定はTheme名ではなくIndustry + Market Cap + Revenue TTMで行う。',
+              'Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外。Theme名ではなくIndustryで判定する。'
+          )
+
+          # 4) Targeted tests updated for the stricter bio policy and canonical MC overlay.
+          path = 'tests/test_v38_companion.py'
+          replace_once(
+              path,
+              '    assert "BIGBIO" in got and "MISSINGREV" in got and "LABELONLY" in got\n    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True',
+              '    assert "BIGBIO" not in got and "MISSINGREV" not in got and "LABELONLY" in got'
+          )
+          replace_once(
+              path,
+              '    assert "BIGBIO" in got and "MISSINGREV" in got\n    assert got["MISSINGREV"]["clinical_biotech"]["revenue_missing_fail_open"] is True\n    assert got["BIGBIO"]["clinical_biotech"]["metadata_source"] == "universe.csv"',
+              '    assert "BIGBIO" not in got and "MISSINGREV" not in got'
+          )
+          replace_once(
+              path,
+              '    assert state["candidates"][0]["final_rank"] == 1',
+              '''    assert state["candidates"][0]["final_rank"] == 1\n    checks = state["candidates"][0]["eligibility_checks"]\n    assert checks["price_gte_5"] and checks["dollar_volume_gte_10m"]\n    assert checks["sma50_gt_sma200"] and checks["close_gt_sma200"]\n    assert checks["rs189_gte_85"] and checks["rs63_gte_85"]\n    assert not checks["biotech_industry_excluded"]'''
+          )
+          replace_once(
+              path,
+              '    assert "M30_TOUCH30_F80_D10" in html',
+              '''    assert "M30_TOUCH30_F80_D10" in html\n    assert "$Vol(M)" in html\n    assert "50&gt;200" in html and "Price&gt;200" in html\n    assert "Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外" in html'''
+          )
+
+          path = 'tests/test_v38_tqqq_live.py'
+          replace_once(
+              path,
+              '    _frame_payload,\n    load_source_cache,',
+              '    _frame_payload,\n    apply_legacy_mc57_overlay,\n    load_source_cache,'
+          )
+          p = Path(path)
+          text = p.read_text(encoding='utf-8')
+          marker = '\n\ndef base_data(n=40):'
+          test = '''\n\ndef test_legacy_dashboard_mc57_overrides_reconstructed_current_and_log(tmp_path):\n    log = tmp_path / "daily_log.csv"\n    log.write_text("date,gate,mri\\n2026-08-28,Yellow,62.6\\n2026-08-31,Yellow,58.6\\n", encoding="utf-8")\n    sources = {\n        "mc57": pd.Series([55.0, 56.6], index=pd.to_datetime(["2026-08-28", "2026-08-31"])),\n        "providers": {"mc57": {"coverage_tickers": 57}},\n    }\n    state = {"date": "2026-08-31", "mri": 58.7}\n    out = apply_legacy_mc57_overlay(sources, state, log)\n    assert math.isclose(out["mc57"].loc[pd.Timestamp("2026-08-28")], 62.6)\n    assert math.isclose(out["mc57"].loc[pd.Timestamp("2026-08-31")], 58.7)\n    assert out["providers"]["mc57_canonical"]["policy"] == "LEGACY_DASHBOARD_CANONICAL_OVERLAY"\n'''
+          if marker not in text:
+              raise SystemExit(f'{path}: base_data marker not found')
+          p.write_text(text.replace(marker, test + marker, 1), encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: Run targeted validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile build_v38_companion.py build_v38_tqqq_live.py
+          pytest -q tests/test_v38_companion.py tests/test_v38_tqqq_live.py
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('command-center-v38.html').read_text(encoding='utf-8')
+          for token in ('$Vol(M)', '50&gt;200', 'Price&gt;200', 'Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外'):
+              assert token in html, token
+          assert '#0b0f17' in html and '#9ecbff' in html
+          PY
+
+      - name: Commit targeted fixes
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add build_v38_companion.py build_v38_tqqq_live.py command-center-v38.html tests/test_v38_companion.py tests/test_v38_tqqq_live.py
+          git diff --cached --check
+          git commit -m 'fix: canonicalize V38 MC57 and exclude biotech candidates'
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch canonical dashboard rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/dashboard.yml/dispatches" \
+            -d '{"ref":"main"}'
+          echo "patched_sha=${{ steps.commit.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"
