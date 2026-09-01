@@ -1,0 +1,905 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "aggregate_validation_pass": false,
+  "reference_ticker_count": 45,
+  "comparable_reference_tickers": 45,
+  "validation_pass_ratio": 0.3333333333333333,
+  "api_success_count": 53,
+  "api_success_tickers": [
+    "AIQ",
+    "ARKW",
+    "BLOK",
+    "BOAT",
+    "BOTZ",
+    "CIBR",
+    "DRIV",
+    "DTCR",
+    "FAN",
+    "GDX",
+    "GNOM",
+    "GRID",
+    "HYDR",
+    "IAI",
+    "IBUY",
+    "ICLN",
+    "IGV",
+    "IHI",
+    "ITA",
+    "IYT",
+    "JETS",
+    "KBE",
+    "KIE",
+    "KRE",
+    "LIT",
+    "MOO",
+    "NLR",
+    "OIH",
+    "PAVE",
+    "PEJ",
+    "PHO",
+    "PKB",
+    "PPH",
+    "QTUM",
+    "REMX",
+    "SHLD",
+    "SIL",
+    "SKYY",
+    "SLX",
+    "SMH",
+    "SOXX",
+    "TAN",
+    "WCLD",
+    "WGMI",
+    "WOOD",
+    "XAR",
+    "XBI",
+    "XES",
+    "XHB",
+    "XME",
+    "XOP",
+    "XRT",
+    "XSD"
+  ],
+  "fetch": [
+    {
+      "ticker": "CIBR",
+      "rows": 25,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/CIBR/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "IGV",
+      "rows": 109,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/IGV/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "WCLD",
+      "rows": 62,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/WCLD/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "OIH",
+      "rows": 25,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/OIH/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "DRAM",
+      "status": "FAIL",
+      "error": "RuntimeError: ETF.com holdings failed for DRAM: no securities rows in ETF.com response"
+    },
+    {
+      "ticker": "SKYY",
+      "rows": 61,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/SKYY/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XES",
+      "rows": 30,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XES/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "AIQ",
+      "rows": 57,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/AIQ/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "ARKW",
+      "rows": 32,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/ARKW/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "BOTZ",
+      "rows": 20,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/BOTZ/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "SMH",
+      "rows": 25,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/SMH/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "HYDR",
+      "rows": 7,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/HYDR/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XOP",
+      "rows": 53,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XOP/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "MOO",
+      "rows": 17,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/MOO/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "SOXX",
+      "rows": 28,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/SOXX/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "DRIV",
+      "rows": 40,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/DRIV/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XSD",
+      "rows": 40,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XSD/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "QTUM",
+      "rows": 50,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/QTUM/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "SLX",
+      "rows": 25,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/SLX/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "BLOK",
+      "rows": 39,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/BLOK/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XME",
+      "rows": 36,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XME/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "GRID",
+      "rows": 43,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/GRID/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "IAI",
+      "rows": 32,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/IAI/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "URA",
+      "status": "FAIL",
+      "error": "RuntimeError: ETF.com holdings failed for URA: unexpectedly short ETF.com holdings: 4"
+    },
+    {
+      "ticker": "NLR",
+      "rows": 8,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/NLR/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "DTCR",
+      "rows": 16,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/DTCR/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "FAN",
+      "rows": 10,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/FAN/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "ICLN",
+      "rows": 13,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/ICLN/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "SHLD",
+      "rows": 16,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/SHLD/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "LIT",
+      "rows": 6,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/LIT/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "WOOD",
+      "rows": 6,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/WOOD/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XBI",
+      "rows": 141,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XBI/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "GNOM",
+      "rows": 38,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/GNOM/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "PHO",
+      "rows": 38,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/PHO/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "KBE",
+      "rows": 94,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/KBE/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "TAN",
+      "rows": 14,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/TAN/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "KRE",
+      "rows": 142,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/KRE/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "IHI",
+      "rows": 47,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/IHI/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "KIE",
+      "rows": 51,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/KIE/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "COPX",
+      "status": "FAIL",
+      "error": "RuntimeError: ETF.com holdings failed for COPX: unexpectedly short ETF.com holdings: 1"
+    },
+    {
+      "ticker": "IYT",
+      "rows": 44,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/IYT/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "ITA",
+      "rows": 35,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/ITA/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "PAVE",
+      "rows": 101,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/PAVE/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "SIL",
+      "rows": 7,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/SIL/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "IBUY",
+      "rows": 50,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/IBUY/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "REMX",
+      "rows": 5,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/REMX/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "PPH",
+      "rows": 23,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/PPH/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "PKB",
+      "rows": 31,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/PKB/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "BOAT",
+      "rows": 7,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/BOAT/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XRT",
+      "rows": 78,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XRT/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XHB",
+      "rows": 35,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XHB/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "XAR",
+      "rows": 33,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/XAR/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "WGMI",
+      "rows": 9,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/WGMI/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "JETS",
+      "rows": 25,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/JETS/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "GDX",
+      "rows": 8,
+      "as_of": "2024-11-20T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/GDX/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    },
+    {
+      "ticker": "PEJ",
+      "rows": 31,
+      "as_of": "2024-11-21T00:00:00.000Z",
+      "source_url": "https://api-prod.etf.com/private/fund/PEJ/holdings?type=securities&formatValues=true",
+      "status": "FETCHED"
+    }
+  ],
+  "validation": [
+    {
+      "ticker": "AIQ",
+      "reference_rows": 88,
+      "api_rows": 57,
+      "intersection": 45,
+      "reference_coverage": 0.5113636364,
+      "api_precision": 0.7894736842,
+      "jaccard": 0.45,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "ARKW",
+      "reference_rows": 39,
+      "api_rows": 32,
+      "intersection": 19,
+      "reference_coverage": 0.4871794872,
+      "api_precision": 0.59375,
+      "jaccard": 0.3653846154,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "BOTZ",
+      "reference_rows": 61,
+      "api_rows": 20,
+      "intersection": 10,
+      "reference_coverage": 0.1639344262,
+      "api_precision": 0.5,
+      "jaccard": 0.1408450704,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "CIBR",
+      "reference_rows": 42,
+      "api_rows": 25,
+      "intersection": 23,
+      "reference_coverage": 0.5476190476,
+      "api_precision": 0.92,
+      "jaccard": 0.5227272727,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "COPX",
+      "reference_rows": 40,
+      "api_rows": 0,
+      "intersection": 0,
+      "reference_coverage": 0.0,
+      "api_precision": 0.0,
+      "jaccard": 0.0,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "DRIV",
+      "reference_rows": 74,
+      "api_rows": 40,
+      "intersection": 32,
+      "reference_coverage": 0.4324324324,
+      "api_precision": 0.8,
+      "jaccard": 0.3902439024,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "DTCR",
+      "reference_rows": 25,
+      "api_rows": 16,
+      "intersection": 15,
+      "reference_coverage": 0.6,
+      "api_precision": 0.9375,
+      "jaccard": 0.5769230769,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "FAN",
+      "reference_rows": 47,
+      "api_rows": 10,
+      "intersection": 7,
+      "reference_coverage": 0.1489361702,
+      "api_precision": 0.7,
+      "jaccard": 0.14,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "GDX",
+      "reference_rows": 59,
+      "api_rows": 8,
+      "intersection": 7,
+      "reference_coverage": 0.1186440678,
+      "api_precision": 0.875,
+      "jaccard": 0.1166666667,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "GNOM",
+      "reference_rows": 50,
+      "api_rows": 38,
+      "intersection": 29,
+      "reference_coverage": 0.58,
+      "api_precision": 0.7631578947,
+      "jaccard": 0.4915254237,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "GRID",
+      "reference_rows": 119,
+      "api_rows": 43,
+      "intersection": 42,
+      "reference_coverage": 0.3529411765,
+      "api_precision": 0.976744186,
+      "jaccard": 0.35,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "HYDR",
+      "reference_rows": 25,
+      "api_rows": 7,
+      "intersection": 6,
+      "reference_coverage": 0.24,
+      "api_precision": 0.8571428571,
+      "jaccard": 0.2307692308,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "IAI",
+      "reference_rows": 35,
+      "api_rows": 32,
+      "intersection": 31,
+      "reference_coverage": 0.8857142857,
+      "api_precision": 0.96875,
+      "jaccard": 0.8611111111,
+      "status": "PASS"
+    },
+    {
+      "ticker": "ICLN",
+      "reference_rows": 103,
+      "api_rows": 13,
+      "intersection": 9,
+      "reference_coverage": 0.0873786408,
+      "api_precision": 0.6923076923,
+      "jaccard": 0.0841121495,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "IGV",
+      "reference_rows": 106,
+      "api_rows": 109,
+      "intersection": 86,
+      "reference_coverage": 0.8113207547,
+      "api_precision": 0.7889908257,
+      "jaccard": 0.6666666667,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "IHI",
+      "reference_rows": 46,
+      "api_rows": 47,
+      "intersection": 42,
+      "reference_coverage": 0.9130434783,
+      "api_precision": 0.8936170213,
+      "jaccard": 0.8235294118,
+      "status": "PASS"
+    },
+    {
+      "ticker": "ITA",
+      "reference_rows": 48,
+      "api_rows": 35,
+      "intersection": 31,
+      "reference_coverage": 0.6458333333,
+      "api_precision": 0.8857142857,
+      "jaccard": 0.5961538462,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "IYT",
+      "reference_rows": 43,
+      "api_rows": 44,
+      "intersection": 40,
+      "reference_coverage": 0.9302325581,
+      "api_precision": 0.9090909091,
+      "jaccard": 0.8510638298,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KBE",
+      "reference_rows": 101,
+      "api_rows": 94,
+      "intersection": 86,
+      "reference_coverage": 0.8514851485,
+      "api_precision": 0.914893617,
+      "jaccard": 0.7889908257,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KIE",
+      "reference_rows": 53,
+      "api_rows": 51,
+      "intersection": 48,
+      "reference_coverage": 0.9056603774,
+      "api_precision": 0.9411764706,
+      "jaccard": 0.8571428571,
+      "status": "PASS"
+    },
+    {
+      "ticker": "KRE",
+      "reference_rows": 157,
+      "api_rows": 142,
+      "intersection": 123,
+      "reference_coverage": 0.7834394904,
+      "api_precision": 0.8661971831,
+      "jaccard": 0.6988636364,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "LIT",
+      "reference_rows": 41,
+      "api_rows": 6,
+      "intersection": 5,
+      "reference_coverage": 0.1219512195,
+      "api_precision": 0.8333333333,
+      "jaccard": 0.119047619,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "MOO",
+      "reference_rows": 49,
+      "api_rows": 17,
+      "intersection": 16,
+      "reference_coverage": 0.3265306122,
+      "api_precision": 0.9411764706,
+      "jaccard": 0.32,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "NLR",
+      "reference_rows": 25,
+      "api_rows": 8,
+      "intersection": 7,
+      "reference_coverage": 0.28,
+      "api_precision": 0.875,
+      "jaccard": 0.2692307692,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "OIH",
+      "reference_rows": 25,
+      "api_rows": 25,
+      "intersection": 24,
+      "reference_coverage": 0.96,
+      "api_precision": 0.96,
+      "jaccard": 0.9230769231,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PAVE",
+      "reference_rows": 100,
+      "api_rows": 101,
+      "intersection": 90,
+      "reference_coverage": 0.9,
+      "api_precision": 0.8910891089,
+      "jaccard": 0.8108108108,
+      "status": "PASS"
+    },
+    {
+      "ticker": "PPH",
+      "reference_rows": 25,
+      "api_rows": 23,
+      "intersection": 21,
+      "reference_coverage": 0.84,
+      "api_precision": 0.9130434783,
+      "jaccard": 0.7777777778,
+      "status": "PASS"
+    },
+    {
+      "ticker": "QTUM",
+      "reference_rows": 88,
+      "api_rows": 50,
+      "intersection": 44,
+      "reference_coverage": 0.5,
+      "api_precision": 0.88,
+      "jaccard": 0.4680851064,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "REMX",
+      "reference_rows": 30,
+      "api_rows": 5,
+      "intersection": 4,
+      "reference_coverage": 0.1333333333,
+      "api_precision": 0.8,
+      "jaccard": 0.1290322581,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "SHLD",
+      "reference_rows": 50,
+      "api_rows": 16,
+      "intersection": 15,
+      "reference_coverage": 0.3,
+      "api_precision": 0.9375,
+      "jaccard": 0.2941176471,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "SIL",
+      "reference_rows": 39,
+      "api_rows": 7,
+      "intersection": 5,
+      "reference_coverage": 0.1282051282,
+      "api_precision": 0.7142857143,
+      "jaccard": 0.1219512195,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "SKYY",
+      "reference_rows": 63,
+      "api_rows": 61,
+      "intersection": 56,
+      "reference_coverage": 0.8888888889,
+      "api_precision": 0.9180327869,
+      "jaccard": 0.8235294118,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SLX",
+      "reference_rows": 39,
+      "api_rows": 25,
+      "intersection": 14,
+      "reference_coverage": 0.358974359,
+      "api_precision": 0.56,
+      "jaccard": 0.28,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "SMH",
+      "reference_rows": 25,
+      "api_rows": 25,
+      "intersection": 23,
+      "reference_coverage": 0.92,
+      "api_precision": 0.92,
+      "jaccard": 0.8518518519,
+      "status": "PASS"
+    },
+    {
+      "ticker": "SOXX",
+      "reference_rows": 30,
+      "api_rows": 28,
+      "intersection": 23,
+      "reference_coverage": 0.7666666667,
+      "api_precision": 0.8214285714,
+      "jaccard": 0.6571428571,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "URA",
+      "reference_rows": 57,
+      "api_rows": 0,
+      "intersection": 0,
+      "reference_coverage": 0.0,
+      "api_precision": 0.0,
+      "jaccard": 0.0,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "WOOD",
+      "reference_rows": 25,
+      "api_rows": 6,
+      "intersection": 4,
+      "reference_coverage": 0.16,
+      "api_precision": 0.6666666667,
+      "jaccard": 0.1481481481,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "XAR",
+      "reference_rows": 47,
+      "api_rows": 33,
+      "intersection": 31,
+      "reference_coverage": 0.6595744681,
+      "api_precision": 0.9393939394,
+      "jaccard": 0.6326530612,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "XBI",
+      "reference_rows": 147,
+      "api_rows": 141,
+      "intersection": 107,
+      "reference_coverage": 0.7278911565,
+      "api_precision": 0.7588652482,
+      "jaccard": 0.591160221,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "XES",
+      "reference_rows": 34,
+      "api_rows": 30,
+      "intersection": 28,
+      "reference_coverage": 0.8235294118,
+      "api_precision": 0.9333333333,
+      "jaccard": 0.7777777778,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XHB",
+      "reference_rows": 33,
+      "api_rows": 35,
+      "intersection": 30,
+      "reference_coverage": 0.9090909091,
+      "api_precision": 0.8571428571,
+      "jaccard": 0.7894736842,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XME",
+      "reference_rows": 39,
+      "api_rows": 36,
+      "intersection": 26,
+      "reference_coverage": 0.6666666667,
+      "api_precision": 0.7222222222,
+      "jaccard": 0.5306122449,
+      "status": "FAIL"
+    },
+    {
+      "ticker": "XOP",
+      "reference_rows": 52,
+      "api_rows": 53,
+      "intersection": 45,
+      "reference_coverage": 0.8653846154,
+      "api_precision": 0.8490566038,
+      "jaccard": 0.75,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XRT",
+      "reference_rows": 75,
+      "api_rows": 78,
+      "intersection": 67,
+      "reference_coverage": 0.8933333333,
+      "api_precision": 0.858974359,
+      "jaccard": 0.7790697674,
+      "status": "PASS"
+    },
+    {
+      "ticker": "XSD",
+      "reference_rows": 47,
+      "api_rows": 40,
+      "intersection": 40,
+      "reference_coverage": 0.8510638298,
+      "api_precision": 1.0,
+      "jaccard": 0.8510638298,
+      "status": "PASS"
+    }
+  ],
+  "contract": "ETF.com current membership can only be used as a broad fallback if it validates across exact issuer current memberships. Issuer exact holdings remain preferred."
+}
