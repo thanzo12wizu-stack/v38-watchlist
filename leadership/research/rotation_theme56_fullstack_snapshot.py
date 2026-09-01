@@ -5,10 +5,19 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
+import yfinance as yf
 
 import rotation_live_snapshot as live
-import validate_pioneer_leader as pl
+
+
+YAHOO_EXCHANGE_SUFFIXES = {
+    ".KS", ".KQ", ".HK", ".T", ".TW", ".DE", ".SW", ".AS", ".L", ".HE",
+    ".MI", ".PA", ".CO", ".LS", ".TO", ".TA", ".AX", ".JO", ".OL", ".ST",
+    ".SS", ".SZ", ".SA", ".NS", ".BO", ".JK", ".IS", ".VI", ".MC", ".SN",
+}
+FIELDS = ("Close", "High", "Low", "Volume")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -33,6 +42,134 @@ def normalize_holdings(df: pd.DataFrame, universe: set[str]) -> pd.DataFrame:
     out = out[out["sector_etf"].isin(universe)]
     out = out[~out["symbol"].isin({"", "NAN", "-", "--"})]
     return out.drop_duplicates(["sector_etf", "symbol"], keep="first")
+
+
+def yahoo_market_symbol(symbol: str) -> str:
+    s = str(symbol or "").strip().upper()
+    if not s:
+        return s
+    if any(s.endswith(suffix) for suffix in YAHOO_EXCHANGE_SUFFIXES):
+        return s
+    # Yahoo uses BRK-B / BF-B style for US class shares.  Do not apply this
+    # transformation to real foreign-market suffixes such as 005930.KS.
+    if "." in s:
+        return s.replace(".", "-")
+    return s
+
+
+def _download_batch(batch: list[str], start: str, end: str) -> dict[str, dict[str, pd.Series]]:
+    yf_names = [yahoo_market_symbol(s) for s in batch]
+    reverse = {yahoo_market_symbol(s): s for s in batch}
+    raw = yf.download(
+        yf_names,
+        start=start,
+        end=end,
+        auto_adjust=True,
+        actions=False,
+        progress=False,
+        group_by="ticker",
+        threads=True,
+        timeout=30,
+    )
+    result: dict[str, dict[str, pd.Series]] = {field: {} for field in FIELDS}
+    if raw is None or raw.empty:
+        return result
+    if isinstance(raw.columns, pd.MultiIndex):
+        level0 = {str(x) for x in raw.columns.get_level_values(0)}
+        for ysym in yf_names:
+            if ysym not in level0:
+                continue
+            part = raw[ysym]
+            sym = reverse.get(ysym)
+            if not sym:
+                continue
+            for field in FIELDS:
+                if field in part.columns:
+                    sr = pd.to_numeric(part[field], errors="coerce")
+                    if sr.notna().any():
+                        result[field][sym] = sr
+    elif len(batch) == 1:
+        sym = batch[0]
+        for field in FIELDS:
+            if field in raw.columns:
+                sr = pd.to_numeric(raw[field], errors="coerce")
+                if sr.notna().any():
+                    result[field][sym] = sr
+    return result
+
+
+def download_theme56_ohlcv(symbols: list[str], start: str, end: str, batch_size: int = 20) -> tuple[dict[str, pd.DataFrame], dict[str, Any]]:
+    requested = list(dict.fromkeys(str(s).strip().upper() for s in symbols if str(s).strip()))
+    collected: dict[str, dict[str, pd.Series]] = {field: {} for field in FIELDS}
+    failed_batches = 0
+
+    def merge(result: dict[str, dict[str, pd.Series]]) -> None:
+        for field in FIELDS:
+            collected[field].update(result.get(field, {}))
+
+    for pos in range(0, len(requested), batch_size):
+        batch = requested[pos:pos + batch_size]
+        try:
+            merge(_download_batch(batch, start, end))
+        except Exception:
+            failed_batches += 1
+        print(f"THEME56_DOWNLOAD {min(pos + batch_size, len(requested))}/{len(requested)}", flush=True)
+
+    def common_symbols() -> set[str]:
+        sets = [set(collected[field]) for field in FIELDS]
+        return set.intersection(*sets) if sets else set()
+
+    initial_common = common_symbols()
+    missing = [s for s in requested if s not in initial_common]
+    retry_batches = 0
+    # First retry missing names in small chunks. This recovers transient Yahoo
+    # batch failures without weakening the 80% constituent-coverage guard.
+    for pos in range(0, len(missing), 5):
+        batch = missing[pos:pos + 5]
+        retry_batches += 1
+        try:
+            merge(_download_batch(batch, start, end))
+        except Exception:
+            pass
+
+    still_missing = [s for s in requested if s not in common_symbols()]
+    # Final one-by-one retry avoids one bad/unsupported foreign ticker taking
+    # other valid members down with it.
+    individual_attempts = 0
+    for sym in still_missing:
+        individual_attempts += 1
+        try:
+            merge(_download_batch([sym], start, end))
+        except Exception:
+            pass
+
+    final_common = sorted(common_symbols())
+    if not final_common:
+        raise RuntimeError("Yahoo download returned no usable common OHLCV data")
+
+    out: dict[str, pd.DataFrame] = {}
+    for field in FIELDS:
+        df = pd.DataFrame({s: collected[field][s] for s in final_common if s in collected[field]})
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+        df = df.sort_index().replace([np.inf, -np.inf], np.nan)
+        out[field.lower()] = df[final_common]
+
+    diag = {
+        "requested": len(requested),
+        "downloaded_common_ohlcv": len(final_common),
+        "initial_downloaded_common_ohlcv": len(initial_common),
+        "retry_requested": len(missing),
+        "retry_recovered": len(set(final_common) - initial_common),
+        "retry_batches": retry_batches,
+        "individual_retry_attempts": individual_attempts,
+        "final_missing": len(requested) - len(final_common),
+        "rows": int(len(out["close"])),
+        "start": str(out["close"].index.min().date()),
+        "end": str(out["close"].index.max().date()),
+        "failed_batches": failed_batches,
+        "ticker_mapping_note": "Foreign Yahoo exchange suffixes are preserved; dot-to-hyphen conversion is only used for non-exchange dotted symbols such as US class shares.",
+    }
+    return out, diag
 
 
 def main() -> None:
@@ -77,7 +214,7 @@ def main() -> None:
         raise RuntimeError("no exact current holdings tickers")
 
     members = sorted({s for s in holdings["symbol"] if s and " " not in s})
-    ohlcv, dl_diag = pl.download_ohlcv(members, args.download_start, args.download_end, 20)
+    ohlcv, dl_diag = download_theme56_ohlcv(members, args.download_start, args.download_end, 20)
     internal_parts, internal_score, internal_delta20, internal_diag = live.build_internal(
         ohlcv, holdings, internal_tickers, args.min_source_coverage
     )
@@ -152,7 +289,7 @@ def main() -> None:
     pi = out[out["quality"].isin(["MEASURED_FULL_STACK_UNVALIDATED", "MEASURED_PRICE_INTERNAL_FLOW_MISSING"])]
     price_ready = out[out["price_quality"] == "MARKET_PRICE_SERIES"]
     report = {
-        "schema": 2,
+        "schema": 3,
         "research_only": True,
         "asof": price_obj.get("asof"),
         "universe_count": 56,
