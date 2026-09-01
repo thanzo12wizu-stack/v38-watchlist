@@ -37,25 +37,25 @@
     {
       "ticker": "ICLN",
       "provider": "ISHARES",
-      "n": 40,
+      "n": 41,
       "best_scale": 1000000.0,
       "canonical_scale": 1000000.0,
       "sign_agreement": 1.0,
-      "corr": 0.999766659551999,
-      "median_abs_error_usd": 100416.5,
-      "median_error_vs_median_official": 0.0113491988615482,
+      "corr": 0.9997669733653369,
+      "median_abs_error_usd": 82062.5,
+      "median_error_vs_median_official": 0.009289497883749087,
       "status": "PASS"
     },
     {
       "ticker": "IGV",
       "provider": "ISHARES",
-      "n": 40,
+      "n": 41,
       "best_scale": 1000000.0,
       "canonical_scale": 1000000.0,
       "sign_agreement": 1.0,
-      "corr": 0.9998945234892191,
-      "median_abs_error_usd": 1042844.3999999985,
-      "median_error_vs_median_official": 0.009472430940968335,
+      "corr": 0.9998966789189776,
+      "median_abs_error_usd": 1104676.899999991,
+      "median_error_vs_median_official": 0.009859164103399891,
       "status": "PASS"
     },
     {
@@ -261,8 +261,8 @@
     },
     {
       "ticker": "IGV",
-      "flow_rows": 40,
-      "last_date": "2026-08-28",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
       "aum": 15641750247.6,
       "status": "PASS"
     },
@@ -443,8 +443,8 @@
     },
     {
       "ticker": "ICLN",
-      "flow_rows": 40,
-      "last_date": "2026-08-28",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
       "aum": 2199539604.8,
       "status": "PASS"
     },
@@ -527,8 +527,8 @@
     },
     {
       "ticker": "COPX",
-      "flow_rows": 40,
-      "last_date": "2026-08-28",
+      "flow_rows": 41,
+      "last_date": "2026-08-31",
       "aum": 8644967626.4347,
       "status": "PASS"
     },
@@ -649,6 +649,6 @@
     "ETF.com is a third-party actual fund-flow source, not an issuer-official exact-flow source.",
     "Noncanonical issuer-reference scale matches are quarantined as REFERENCE_UNIT_ANOMALY instead of forcing their units onto ETF.com data.",
     "No dollar-volume, OBV, CMF, or price-volume proxy is substituted for fund flow.",
-    "DRAM remains DATA_REQUIRED when ETF.com returns no daily-flow series."
+    "A ticker remains DATA_REQUIRED only when no validated daily actual-flow series is returned."
   ]
 }
