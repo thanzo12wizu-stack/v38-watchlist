@@ -16,8 +16,8 @@ import re
 from pathlib import Path
 
 from v38_rules import (
-    attack_rank_score, clinical_biotech_exclusion, gross100_allocation,
-    market_mode, peer_theme_score, select_peer_theme,
+    NORMAL_STOCK_BUDGET, attack_rank_score, clinical_biotech_exclusion,
+    gross100_allocation, market_mode, peer_theme_score, select_peer_theme,
 )
 
 
@@ -288,6 +288,10 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     requested_pct = _pct(tqqq_live.get("requested_target_pct")) if tqqq_ready else None
     reset_desired_pct = _pct(tqqq_live.get("reset_desired_pct")) if tqqq_ready else None
     normal_desired_pct = _pct(tqqq_live.get("normal_stock_desired_pct")) if tqqq_ready else None
+    normal_portfolio_desired_pct = (
+        min(normal_desired_pct, NORMAL_STOCK_BUDGET * 100.0)
+        if normal_desired_pct is not None else None
+    )
 
     gross_live_ready = (
         tqqq_ready and tqqq_live.get("sleeve_live_status") == "READY" and sleeve_ready
@@ -299,6 +303,9 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             reset_desired_pct / 100.0,
             requested_pct / 100.0,
             normal_desired_pct / 100.0,
+            market_mode_name=mode.name,
+            native_tqqq_target=(underlying_pct / 100.0 if underlying_pct is not None else None),
+            apply_selective_fill=True,
         )
 
     normal_tqqq = {
@@ -324,7 +331,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "entry_requires_mc57_gte": 20,
         "active_exit_mc57_lt": 20,
         "nqsar_scope": "not a Panic F80 overlay entry gate; underlying CURRENT30 hierarchy may use NQSAR",
-        "allocation_priority": "GROSS100 LIVE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA",
+        "allocation_priority": "GROSS100 LIVE / RESET_TQQQ80_NORMAL_TQQQ_EXTRA_SELECTIVE_FILL",
         "required_route": "tqqq-panic-state.json",
         "asof_match_required": True,
         "vix_close": tqqq_live.get("vix_close") if tqqq_ready else None,
@@ -347,8 +354,12 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
 
     gross_state = {
         "status": ("LIVE ALLOCATION READY" if gross_live is not None else "LIVE INPUT DATA REQUIRED"),
-        "adoption_status": "ADOPTED_AFTER_FINAL_RESET_RECHECK",
-        "priority": ["RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK", "TQQQ_EXTRA"],
+        "adoption_status": "ADOPTED_FINAL_SPEC_20260901",
+        "priority": [
+            "RSI_RESET", "TQQQ_PROTECTED_TO_80", "NORMAL_STOCK_CAPPED_70",
+            "TQQQ_NATIVE_EXTRA", "SELECTIVE_TQQQ_FILL_FROM_IDLE_CAPACITY",
+        ],
+        "selective_fill_rule": "SELECTIVE_FILL_NO_ZERO_OVERRIDE",
         "run_id": 33405477190,
         "artifact_id": 9763251012,
         "workflow_commit": "692fe4d68407138372514fe78bd316587250974a",
@@ -358,16 +369,24 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "sleeve_live_reason": tqqq_live.get("sleeve_live_reason") if tqqq_ready else "TQQQ_LIVE_REQUIRED",
         "normal_position_count": normal_sleeve.get("position_count") if sleeve_ready else None,
         "reset_position_count": reset_sleeve.get("position_count") if sleeve_ready else None,
-        "note": "Reset -> protect TQQQ to 80% under competition -> Normal Stock -> TQQQ extra; final reproducible Reset recheck passed",
+        "note": "Reset -> protect native/Panic TQQQ to 80% under competition -> Normal Stock capped at 70% -> native TQQQ extra -> adopted Selective Fill from remaining cash only; native CURRENT30 zero is never overridden",
         "reset_desired_pct": reset_desired_pct,
+        "native_tqqq_target_pct": underlying_pct,
         "tqqq_desired_pct": requested_pct,
         "normal_stock_desired_pct": normal_desired_pct,
+        "normal_stock_standalone_desired_pct": normal_desired_pct,
+        "normal_stock_portfolio_desired_pct": normal_portfolio_desired_pct,
+        "normal_stock_max_pct": NORMAL_STOCK_BUDGET * 100.0,
         "reset_allocated_pct": (gross_live.reset_allocated * 100 if gross_live else None),
         "tqqq_protected_pct": (gross_live.tqqq_protected * 100 if gross_live else None),
         "normal_stock_allocated_pct": (gross_live.normal_stock_allocated * 100 if gross_live else None),
         "tqqq_extra_pct": (gross_live.tqqq_extra * 100 if gross_live else None),
+        "base_gross_allocated_pct": (gross_live.base_gross_allocated * 100 if gross_live else None),
+        "selective_fill_eligible": (gross_live.selective_fill_eligible if gross_live else None),
+        "tqqq_selective_fill_pct": (gross_live.selective_fill * 100 if gross_live else None),
         "tqqq_allocated_pct": (gross_live.tqqq_allocated * 100 if gross_live else None),
         "gross_allocated_pct": (gross_live.gross_allocated * 100 if gross_live else None),
+        "remaining_capacity_pct": (gross_live.remaining_capacity * 100 if gross_live else None),
     }
 
     return {
@@ -429,7 +448,11 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "normal_stock_sleeve": {
             "status": normal_sleeve.get("status") if sleeve_ready else "DATA REQUIRED",
             "strategy": normal_sleeve.get("strategy") if sleeve_ready else "PEAK30_PART25_R3",
-            "desired_pct": normal_desired_pct, "position_count": normal_sleeve.get("position_count") if sleeve_ready else None,
+            "desired_pct": normal_desired_pct,
+            "standalone_desired_pct": normal_desired_pct,
+            "portfolio_desired_pct": normal_portfolio_desired_pct,
+            "portfolio_max_pct": NORMAL_STOCK_BUDGET * 100.0,
+            "position_count": normal_sleeve.get("position_count") if sleeve_ready else None,
             "positions": normal_sleeve.get("positions", []) if sleeve_ready else [],
             "pending": normal_sleeve.get("pending", {}) if sleeve_ready else {},
         },
