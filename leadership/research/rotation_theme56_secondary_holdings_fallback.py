@@ -14,7 +14,7 @@ import requests
 import rotation_theme56_etfcom_holdings as etfcom
 import rotation_theme56_holdings_expansion as hx
 
-TARGETS = ["WCLD", "BLOK", "PHO", "TAN", "IBUY", "PKB", "BOAT", "WGMI", "JETS", "PEJ"]
+TARGETS = ["WCLD", "BLOK", "PHO", "TAN", "IBUY", "PKB", "BOAT", "WGMI", "JETS", "PEJ", "DRAM"]
 SA_URL = "https://stockanalysis.com/etf/{ticker}/holdings/"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
 BASE_HEADERS = {"User-Agent": UA, "Accept": "text/html,application/xhtml+xml,application/json,*/*"}
@@ -51,6 +51,7 @@ BLOOMBERG_SUFFIX = {
     "MM": ".MX",
 }
 CASH_WORDS = ("CASH", "CURRENCY", "PENDING DIVIDEND", "TREASURY OBLIGATION", "MONEY MARKET")
+DRAM_NON_EQUITY_WORDS = ("TREASURY BILL", "SWAP", "SOUTH KOREA WON", "CHINESE YUAN", "TAIWAN DOLLAR")
 
 
 def normalize_name(value: Any) -> str:
@@ -73,6 +74,10 @@ def normalize_sa_symbol(value: Any) -> str:
             return base.replace("/", "-") + suffix
         if exch in {"NASDAQ", "NYSE", "NYSEARCA", "AMEX", "CBOE"}:
             return hx.clean_symbol(base)
+    # StockAnalysis/Finnhub occasionally exposes Bloomberg-style dot suffixes.
+    for old, new in ((".JP", ".T"), (".TT", ".TW"), (".C1", ".SS")):
+        if raw.endswith(old):
+            return raw[: -len(old)] + new
     return normalize_bloomberg_symbol(raw)
 
 
@@ -100,6 +105,18 @@ def fetch_stockanalysis(session: requests.Session, ticker: str) -> tuple[pd.Data
     m = re.search(r"Showing\s+\d+\s+of\s+([0-9,]+)\s+holdings", r.text, flags=re.I)
     if m:
         total = int(m.group(1).replace(",", ""))
+    if total is None:
+        m = re.search(r"total\s+of\s+([0-9,]+)\s+individual\s+holdings", r.text, flags=re.I)
+        if m:
+            total = int(m.group(1).replace(",", ""))
+    asof = None
+    matches = re.findall(r"As\s+of\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})", r.text, flags=re.I)
+    for text_date in reversed(matches):
+        try:
+            asof = pd.to_datetime(text_date, errors="raise").date()
+            break
+        except Exception:
+            pass
     tables = pd.read_html(io.StringIO(r.text))
     best = None
     for df in tables:
@@ -109,14 +126,72 @@ def fetch_stockanalysis(session: requests.Session, ticker: str) -> tuple[pd.Data
     if best is None:
         raise RuntimeError("StockAnalysis holdings table not found")
     cm = {str(c).strip().lower(): c for c in best.columns}
+    weight_col = next((c for k, c in cm.items() if "weight" in k), None)
     out = pd.DataFrame({
         "provider_symbol": best[cm["symbol"]].astype(str),
         "symbol": best[cm["symbol"]].map(normalize_sa_symbol),
         "name": best[cm["name"]].astype(str),
     })
+    if weight_col is not None:
+        out["weight_pct"] = pd.to_numeric(best[weight_col].astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False), errors="coerce")
+    else:
+        out["weight_pct"] = None
     out["name_key"] = out["name"].map(normalize_name)
     out = out[(out["symbol"] != "") & (out["name_key"] != "")].drop_duplicates("name_key")
-    return out, {"total": total, "source_url": url}
+    return out, {"total": total, "asof": asof, "source_url": url, "raw_rows": int(len(best))}
+
+
+def fetch_stockanalysis_current_dram(session: requests.Session) -> tuple[pd.DataFrame, dict[str, Any]]:
+    ticker = "DRAM"
+    sa, diag = fetch_stockanalysis(session, ticker)
+    asof = diag.get("asof")
+    if asof is None:
+        raise RuntimeError("DRAM current holdings as-of date missing")
+    age_days = (date.today() - asof).days
+    if age_days < -2 or age_days > 7:
+        raise RuntimeError(f"stale DRAM holdings date {asof} age={age_days}")
+    raw_rows = int(diag.get("raw_rows") or 0)
+    declared = int(diag.get("total") or raw_rows)
+    rows: list[dict[str, Any]] = []
+    for _, rec in sa.iterrows():
+        name = str(rec.get("name") or "").strip()
+        upper = name.upper()
+        if not name or any(w in upper for w in CASH_WORDS + DRAM_NON_EQUITY_WORDS):
+            continue
+        symbol = str(rec.get("symbol") or "").strip().upper()
+        if not symbol or " " in symbol or ".TRS" in symbol:
+            continue
+        # Keep only market-price-resolvable equities; currencies/collateral/derivatives are excluded.
+        if not re.fullmatch(r"(?:[A-Z][A-Z0-9-]{0,12}|[0-9A-Z-]{2,12}\.(?:KS|KQ|T|TW|SS|SZ|HK))", symbol):
+            continue
+        weight = pd.to_numeric(rec.get("weight_pct"), errors="coerce")
+        rows.append({
+            "sector_etf": ticker,
+            "provider_symbol": str(rec.get("provider_symbol") or ""),
+            "symbol": symbol,
+            "weight_pct": None if pd.isna(weight) else float(weight),
+            "name": name,
+            "source_url": diag.get("source_url"),
+            "provider": "STOCKANALYSIS_FINNHUB_CURRENT_FULL_LIST",
+            "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY",
+            "membership_asof": str(asof),
+            "declared_total_holdings": declared,
+        })
+    out = pd.DataFrame(rows).drop_duplicates("symbol", keep="first")
+    if raw_rows < 20 or len(out) < 8:
+        raise RuntimeError(f"DRAM equity membership insufficient: equity={len(out)} raw={raw_rows}")
+    return out.reset_index(drop=True), {
+        "ticker": ticker,
+        "status": "PASS",
+        "method": "STOCKANALYSIS_FINNHUB_CURRENT_FULL_LIST",
+        "rows": int(len(out)),
+        "declared_total": declared,
+        "raw_rows": raw_rows,
+        "coverage_vs_declared": float(len(out) / max(declared, 1)),
+        "membership_asof": str(asof),
+        "source_url": diag.get("source_url"),
+        "note": "Equity-only Internals membership; swaps, Treasury collateral and currencies are excluded.",
+    }
 
 
 def fetch_etfcom_resolver(session: requests.Session, ticker: str) -> pd.DataFrame:
@@ -239,7 +314,10 @@ def main() -> None:
     qa: list[dict[str, Any]] = []
     for ticker in TARGETS:
         try:
-            df, diag = fetch_cmc_current(session, ticker)
+            if ticker == "DRAM":
+                df, diag = fetch_stockanalysis_current_dram(session)
+            else:
+                df, diag = fetch_cmc_current(session, ticker)
             frames.append(df)
             qa.append(diag)
         except Exception as exc:
@@ -255,20 +333,20 @@ def main() -> None:
         )
     passed = qdf.loc[qdf["status"] == "PASS", "ticker"].tolist()
     report = {
-        "schema": 4,
+        "schema": 5,
         "research_only": True,
         "candidate_count": len(TARGETS),
         "pass_count": len(passed),
         "pass_tickers": passed,
         "rows": qa,
-        "quality_contract": "Current full-list secondary membership is accepted only with a holdings as-of date no older than 21 days and broad resolution of the published full equity list. ETF.com historical membership is never used to establish current membership; it may only resolve an exchange suffix for a company already present in the current full list.",
+        "quality_contract": "Issuer-exact current holdings remain preferred. Current full-list secondary membership is accepted only with a fresh as-of date and sufficient source coverage; DRAM uses the current StockAnalysis/Finnhub full list because Roundhill's public page does not expose a stable server-rendered holdings feed to this pipeline.",
         "guardrails": [
             "Issuer exact current holdings remain preferred and override this fallback in Full Stack.",
             "The existing 80% constituent-price coverage requirement in Full Stack is not lowered.",
             "Current source membership, not stale ETF.com membership, determines which securities are included.",
             "Cash/currency rows are excluded from Internal membership.",
+            "DRAM swaps and Treasury collateral are excluded; only market-price-resolvable equity constituents feed Internals.",
             "No price/volume inference is used to manufacture membership.",
-            "DRAM is excluded because its short price history is the separately accepted exception.",
         ],
     }
     (outdir / "secondary_holdings_qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
