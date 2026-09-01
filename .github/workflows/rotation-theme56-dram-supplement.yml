@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: rotation-theme56-dram-supplement
@@ -69,6 +70,10 @@ jobs:
             if git push origin "HEAD:$BRANCH"; then exit 0; fi
           done
           exit 1
+      - name: Dispatch Full Stack refresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run rotation-theme56-fullstack.yml --ref research/rotation-exact-flow-internals-20260831
       - name: Upload DRAM supplement
         if: always()
         uses: actions/upload-artifact@v4
