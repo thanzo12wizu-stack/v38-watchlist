@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "supported_provider_families": [
+    "SSGA",
+    "ISHARES"
+  ],
+  "candidate_count": 19,
+  "holdings_pass": 19,
+  "flow_pass": 19,
+  "full_stack_adapter_pass": 19,
+  "full_stack_tickers": [
+    "IAI",
+    "ICLN",
+    "IGV",
+    "IHI",
+    "ITA",
+    "IYT",
+    "SOXX",
+    "WOOD",
+    "KBE",
+    "KIE",
+    "KRE",
+    "XAR",
+    "XBI",
+    "XES",
+    "XHB",
+    "XME",
+    "XOP",
+    "XRT",
+    "XSD"
+  ],
+  "failures": [],
+  "guardrails": [
+    "Only official current holdings are accepted for Internals membership.",
+    "Only official daily NAV + shares outstanding are accepted for Exact Flow.",
+    "No price-volume proxy is substituted for fund flow.",
+    "Provider adapter PASS does not validate the old 15-ETF state thresholds on the 56-theme cross-section."
+  ]
+}
