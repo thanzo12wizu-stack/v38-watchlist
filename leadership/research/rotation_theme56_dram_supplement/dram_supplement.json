@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "ticker": "DRAM",
+  "inception_date": "2026-04-02",
+  "rs189_pending": true,
+  "holdings": {
+    "membership_asof": "2026-08-31",
+    "membership_age_days": 1,
+    "declared_total_holdings": 23,
+    "direct_equity_rows": 14,
+    "source_url": "https://stockanalysis.com/etf/dram/holdings/",
+    "quality": "SUPPLEMENTAL_CURRENT_EQUITY_ONLY",
+    "note": "Direct listed equities only. Treasury collateral, currencies and total-return swaps are excluded from the supplemental Internal calculation."
+  },
+  "flow": {
+    "symbol_ref": "CBOE:DRAM",
+    "exchange": "CBOE",
+    "aum_usd": 25587631466.0,
+    "flow_1m_usd": -437685344.0,
+    "nav": 57.095,
+    "flow_1m_pct_aum": -1.710534812812127,
+    "flow_window": "1M",
+    "flow_provider": "TRADINGVIEW_FUND_FLOWS_1M",
+    "flow_quality": "SUPPLEMENTAL_ACTUAL_FUND_FLOW_1M",
+    "note": "TradingView fund_flows.1M field. It is displayed as 1M and is not relabeled as the validated Theme56 20-trading-day Flow series."
+  },
+  "generated_at": "2026-09-01T23:16:08.187167+00:00",
+  "guardrails": [
+    "This supplement does not change the existing 55-theme Price, Internal or 20D Flow rankings.",
+    "DRAM short price history remains separate from the RS189-based composite until enough observations exist.",
+    "DRAM Internal is supplemental and uses direct listed equities only; derivatives/collateral/currencies are excluded.",
+    "DRAM 1M Flow is an actual fund-flow field and remains explicitly labeled 1M; it is not substituted into the validated 20D Flow ranking or state rules."
+  ]
+}
