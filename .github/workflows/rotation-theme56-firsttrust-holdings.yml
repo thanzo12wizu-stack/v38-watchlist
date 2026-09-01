@@ -1,0 +1,65 @@
+name: Rotation Theme56 First Trust Holdings
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme56_firsttrust_holdings.py
+      - .github/workflows/rotation-theme56-firsttrust-holdings.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-firsttrust-holdings
+  cancel-in-progress: true
+
+jobs:
+  holdings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas requests beautifulsoup4 lxml
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_theme56_firsttrust_holdings.py
+      - name: Fetch exact First Trust holdings
+        run: python leadership/research/rotation_theme56_firsttrust_holdings.py --output leadership/research/rotation_theme56_firsttrust
+      - name: Persist outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          SRC="leadership/research/rotation_theme56_firsttrust"
+          TMP="$(mktemp -d)/rotation_theme56_firsttrust"
+          cp -a "$SRC" "$TMP"
+          for attempt in 1 2 3; do
+            git fetch origin research/rotation-exact-flow-internals-20260831
+            git reset --hard origin/research/rotation-exact-flow-internals-20260831
+            rm -rf "$SRC"
+            mkdir -p "$(dirname "$SRC")"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "research: record First Trust Theme56 holdings"
+            if git push origin HEAD:research/rotation-exact-flow-internals-20260831; then exit 0; fi
+          done
+          exit 1
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-firsttrust-holdings
+          path: leadership/research/rotation_theme56_firsttrust/
+          if-no-files-found: warn
+          retention-days: 14
