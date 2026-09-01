@@ -394,7 +394,7 @@ def test_tqqq_ready_route_populates_current30_stage56_and_gross100(tmp_path):
     assert gross["normal_stock_allocated_pct"] == 12
     assert gross["tqqq_extra_pct"] == 0
     assert gross["gross_allocated_pct"] == 100
-    assert gross["adoption_status"] == "ADOPTED_AFTER_FINAL_RESET_RECHECK"
+    assert gross["adoption_status"] == "ADOPTED_FINAL_SPEC_20260901"
     assert state["panic_reset"]["status"] == "READY / LIVE"
     assert state["panic_reset"]["monitor"][0]["symbol"] == "AAA"
     assert state["normal_stock_sleeve"]["position_count"] == 6
@@ -430,3 +430,90 @@ def test_audited_companion_leads_with_action_and_never_labels_stop_watchlist_as_
     assert "今日の最終配分" in html
     assert "RS63_TOP3_RISE30_SIGTOP3" in html
     assert "表示帯は売買ルールではない" in html
+
+
+def _write_ready_sleeve(path, *, normal_desired, reset_desired=0):
+    path.write_text(json.dumps({
+        "schema": "v38-sleeve-live-1",
+        "asof": "2026-08-28",
+        "status": "READY",
+        "normal_stock": {
+            "status": "READY", "strategy": "PEAK30_PART25_R3",
+            "desired_pct": normal_desired, "position_count": 0,
+            "positions": [], "pending": {},
+        },
+        "rsi_reset": {
+            "status": "READY", "strategy": "RS63_TOP3_RISE30_SIGTOP3",
+            "desired_pct": reset_desired, "position_count": 0,
+            "positions": [], "monitor": [], "monitor_summary": {},
+        },
+    }), encoding="utf-8")
+
+
+def _write_ready_tqqq(path, *, native, requested, normal_desired, reset_desired=0):
+    path.write_text(json.dumps({
+        "asof": "2026-08-28",
+        "live_generation_status": "READY",
+        "current30": {
+            "status": "READY", "underlying_target_pct": native,
+            "risk_lock": native == 0, "slow_lock": False,
+            "fast_lock": False, "mc_lock": False, "sleeve": "TEST",
+        },
+        "underlying_target_pct": native,
+        "requested_target_pct": requested,
+        "active": False,
+        "reset_desired_pct": reset_desired,
+        "normal_stock_desired_pct": normal_desired,
+        "sleeve_live_status": "READY",
+        "sleeve_live_reason": None,
+    }), encoding="utf-8")
+
+
+def test_companion_caps_raw_normal_desired_at_70_before_gross100(tmp_path):
+    source = tmp_path / "legacy.html"
+    write_legacy(source, {"asof": "2026-08-28", "color": "Yellow"}, {})
+    panic = tmp_path / "tqqq.json"
+    sleeve = tmp_path / "sleeve.json"
+    _write_ready_tqqq(panic, native=0, requested=0, normal_desired=85.955)
+    _write_ready_sleeve(sleeve, normal_desired=85.955)
+
+    state = build_state(source, tqqq_panic_path=panic, sleeve_state_path=sleeve)
+    gross = state["gross100_allocation"]
+    assert gross["normal_stock_standalone_desired_pct"] == 85.955
+    assert gross["normal_stock_portfolio_desired_pct"] == 70
+    assert gross["normal_stock_allocated_pct"] == 70
+    assert gross["normal_stock_max_pct"] == 70
+    assert gross["tqqq_selective_fill_pct"] == 0
+    assert gross["gross_allocated_pct"] == 70
+    assert state["normal_stock_sleeve"]["portfolio_desired_pct"] == 70
+
+
+def test_companion_selective_fill_uses_idle_cash_and_never_overrides_native_zero(tmp_path):
+    det = {f"T{i}": eligible_row(v50=5 if i < 26 else -5) for i in range(40)}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, {"asof": "2026-08-28", "color": "Green"}, det)
+    panic = tmp_path / "tqqq.json"
+    sleeve = tmp_path / "sleeve.json"
+    _write_ready_sleeve(sleeve, normal_desired=40)
+
+    _write_ready_tqqq(panic, native=30, requested=30, normal_desired=40)
+    filled = build_state(source, tqqq_panic_path=panic, sleeve_state_path=sleeve)
+    gross = filled["gross100_allocation"]
+    assert filled["market"]["mode"] == "ATTACK"
+    assert gross["selective_fill_rule"] == "SELECTIVE_FILL_NO_ZERO_OVERRIDE"
+    assert gross["selective_fill_eligible"] is True
+    assert gross["base_gross_allocated_pct"] == 70
+    assert round(gross["tqqq_selective_fill_pct"], 10) == 30
+    assert round(gross["tqqq_allocated_pct"], 10) == 60
+    assert gross["normal_stock_allocated_pct"] == 40
+    assert round(gross["gross_allocated_pct"], 10) == 100
+
+    _write_ready_tqqq(panic, native=0, requested=0, normal_desired=40)
+    locked = build_state(source, tqqq_panic_path=panic, sleeve_state_path=sleeve)
+    locked_gross = locked["gross100_allocation"]
+    assert locked_gross["native_tqqq_target_pct"] == 0
+    assert locked_gross["selective_fill_eligible"] is False
+    assert locked_gross["tqqq_selective_fill_pct"] == 0
+    assert locked_gross["tqqq_allocated_pct"] == 0
+    assert locked_gross["normal_stock_allocated_pct"] == 40
+    assert locked_gross["gross_allocated_pct"] == 40
