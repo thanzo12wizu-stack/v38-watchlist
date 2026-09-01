@@ -40,6 +40,8 @@ SPACE_SUFFIX_TO_YAHOO = {
     "LN": ".L", "FH": ".HE", "IM": ".MI", "FP": ".PA", "DC": ".CO",
     "PL": ".LS", "CN": ".TO", "IT": ".TA", "AU": ".AX", "SJ": ".JO",
     "NO": ".OL", "SS": ".ST",
+    "SP": ".SI", "TB": ".BK", "BZ": ".SA", "MK": ".KL", "IJ": ".JK",
+    "C1": ".SS", "C2": ".SZ",
 }
 DOT_SUFFIX_TO_YAHOO = {
     ".GY": ".DE", ".GR": ".DE", ".FP": ".PA", ".LN": ".L", ".IM": ".MI",
@@ -63,13 +65,13 @@ def _normalize_base_for_exchange(base: str, exchange: str) -> str:
 
 def clean_symbol(value: Any) -> str:
     raw = str(value or "").strip().upper()
-    if not raw or raw in {"NAN", "--", "-", "CASH&OTHER", "CASH"}:
+    if not raw or raw in {"NAN", "--", "-", "CASH&OTHER", "CASH"} or "CASH" in raw:
         return ""
     raw = re.sub(r"\s+", " ", raw)
     if re.fullmatch(r"[A-Z][A-Z0-9./\-]{0,15} US", raw):
         raw = raw[:-3].strip()
 
-    m = re.fullmatch(r"(.+?)\s+(KS|KQ|HK|JP|JT|TT|GR|GY|SW|NA|LN|FH|IM|FP|DC|PL|CN|IT|AU|SJ|NO|SS)", raw)
+    m = re.fullmatch(r"(.+?)\s+(KS|KQ|HK|JP|JT|TT|GR|GY|SW|NA|LN|FH|IM|FP|DC|PL|CN|IT|AU|SJ|NO|SS|SP|TB|BZ|MK|IJ|C1|C2)", raw)
     if m:
         base, exchange = m.group(1), m.group(2)
         base = _normalize_base_for_exchange(base, exchange)
