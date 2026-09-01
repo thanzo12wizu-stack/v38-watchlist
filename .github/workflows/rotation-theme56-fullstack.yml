@@ -1,0 +1,80 @@
+name: Rotation Theme56 Full Stack
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme56_config.json
+      - leadership/research/rotation_theme56_fullstack_snapshot.py
+      - leadership/research/rotation_theme56_live/theme56_price.json
+      - leadership/research/rotation_theme56_provider_qa/**
+      - .github/workflows/rotation-theme56-fullstack.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-fullstack
+  cancel-in-progress: true
+
+jobs:
+  fullstack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_theme56_fullstack_snapshot.py
+      - name: Build measured full-stack snapshot
+        run: |
+          python leadership/research/rotation_theme56_fullstack_snapshot.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --price-json leadership/research/rotation_theme56_live/theme56_price.json \
+            --provider-qa leadership/research/rotation_theme56_provider_qa/theme56_provider_qa.csv \
+            --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
+            --output leadership/research/rotation_theme56_fullstack \
+            --download-start 2025-10-01 \
+            --download-end 2026-09-02
+      - name: Persist snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          OUT_TMP="$(mktemp -d)/rotation_theme56_fullstack"
+          cp -a leadership/research/rotation_theme56_fullstack "$OUT_TMP"
+          for attempt in 1 2 3; do
+            git fetch origin research/rotation-exact-flow-internals-20260831
+            git reset --hard origin/research/rotation-exact-flow-internals-20260831
+            rm -rf leadership/research/rotation_theme56_fullstack
+            mkdir -p leadership/research
+            cp -a "$OUT_TMP" leadership/research/rotation_theme56_fullstack
+            git add leadership/research/rotation_theme56_fullstack/
+            if git diff --cached --quiet; then
+              echo "No Theme56 full-stack changes"
+              exit 0
+            fi
+            git commit -m "research: record theme56 full-stack snapshot"
+            if git push origin HEAD:research/rotation-exact-flow-internals-20260831; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; retrying"
+          done
+          exit 1
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-fullstack
+          path: leadership/research/rotation_theme56_fullstack/
+          if-no-files-found: warn
+          retention-days: 14
