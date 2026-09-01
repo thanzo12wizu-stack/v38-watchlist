@@ -1,0 +1,118 @@
+name: TEMP guarded sleeve stale-state patch v2
+
+on:
+  push:
+    branches: [fix/sleeve-stale-preserve-20260902]
+    paths:
+      - '.github/workflows/temp-sleeve-stale-fix-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/sleeve-stale-preserve-20260902
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Apply corrected minimal patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/temp-sleeve-stale-fix.yml').read_text(encoding='utf-8')
+          marker = "          python - <<'PY'\n"
+          block = workflow.split(marker, 1)[1].split("\n          PY\n", 1)[0]
+          block = textwrap.dedent(block)
+          # The first temporary runner used raw strings for appended tests,
+          # leaving literal backslash-n sequences. Make only those two appends
+          # ordinary triple-quoted strings; source patch logic is unchanged.
+          block = block.replace("text += r'''", "text += '''")
+          exec(compile(block, '<guarded-sleeve-patch>', 'exec'), {})
+          PY
+
+          cat >> tests/test_v38_sleeve_refresh.py <<'PYTEST'
+
+
+def test_dashboard_style_failure_does_not_make_prior_session_current(monkeypatch, tmp_path):
+    out = tmp_path / "v38-sleeve-state.json"
+    tqqq = tmp_path / "tqqq-panic-state.json"
+    previous = {
+        "schema": "v38-sleeve-live-1",
+        "asof": "2026-08-31",
+        "status": "READY",
+        "normal_stock": {"status": "READY", "desired_pct": 70.0},
+        "rsi_reset": {
+            "status": "READY",
+            "strategy": "RS63_TOP3_RISE30_SIGTOP3",
+            "desired_pct": 2.9,
+            "position_count": 1,
+            "positions": [{"symbol": "HRL", "entry_date": "2026-08-31"}],
+            "monitor": [],
+            "download_quality": {"coverage_ok": True},
+        },
+    }
+    tqqq_before = {
+        "schema": "v38-tqqq-panic-state-1",
+        "asof": "2026-09-01",
+        "live_generation_status": "READY",
+        "underlying_target_pct": 30.0,
+        "requested_target_pct": 30.0,
+        "normal_stock_desired_pct": None,
+        "reset_desired_pct": None,
+    }
+    out.write_text(json.dumps(previous), encoding="utf-8")
+    tqqq.write_text(json.dumps(tqqq_before), encoding="utf-8")
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_v38_sleeve_live.py", "--out", str(out), "--tqqq-state", str(tqqq)],
+    )
+
+    def bad_runner():
+        out.write_text(
+            json.dumps({
+                "schema": "v38-sleeve-live-1",
+                "asof": "2026-09-01",
+                "status": "DATA REQUIRED",
+                "reason": "RuntimeError: SLEEVE_PRICE_DOWNLOAD_EMPTY",
+                "rsi_reset": {"status": "DATA REQUIRED", "monitor": []},
+            }),
+            encoding="utf-8",
+        )
+
+    result = refresh.run_guarded_refresh(bad_runner, continue_with_previous_ready=True)
+    saved = json.loads(out.read_text(encoding="utf-8"))
+    merged = json.loads(tqqq.read_text(encoding="utf-8"))
+    assert result["status"] == "READY"
+    assert saved["asof"] == "2026-08-31"
+    assert saved["refresh"]["attempted_asof"] == "2026-09-01"
+    assert saved["refresh"]["last_successful_asof"] == "2026-08-31"
+    assert merged["sleeve_live_status"] == "STALE / LAST_READY_PRESERVED"
+    assert merged["normal_stock_desired_pct"] is None
+    assert merged["reset_desired_pct"] is None
+    assert "LAST_READY_PRESERVED" in merged["sleeve_live_reason"]
+PYTEST
+
+      - name: Install test dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Compile and test guarded stale preservation
+        run: |
+          python -m py_compile build_v38_sleeve_live.py build_v38_sleeve_refresh.py build_v38_companion.py
+          pytest -q tests/test_v38_sleeve_refresh.py tests/test_v38_companion.py
+      - name: Commit tested patch to fix branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build_v38_sleeve_live.py build_v38_sleeve_refresh.py build_v38_companion.py tests/test_v38_sleeve_refresh.py tests/test_v38_companion.py
+          git commit -m "fix: preserve READY sleeve on dashboard refresh failure"
+          git push origin HEAD:fix/sleeve-stale-preserve-20260902
