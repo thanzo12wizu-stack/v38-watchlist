@@ -1,0 +1,64 @@
+name: V38 Final Execution Integration
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - research/v38-final-gap-audit-20260901
+    paths:
+      - 'leadership/research/audit_v38_final_execution_integration.py'
+      - '.github/workflows/v38-final-execution-integration.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install numerical dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Download frozen audit artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p prior_gap components stage56 lock_guard
+          for spec in \
+            "9794226024:/tmp/gap.zip:prior_gap" \
+            "9739833328:/tmp/components.zip:components" \
+            "9649902954:/tmp/stage56.zip:stage56" \
+            "9790852808:/tmp/lock.zip:lock_guard"
+          do
+            IFS=: read -r aid zip dest <<< "$spec"
+            curl -fL --retry 3 \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${aid}/zip" \
+              -o "$zip"
+            unzip -q "$zip" -d "$dest"
+          done
+      - name: Run final frozen execution integration
+        run: |
+          python leadership/research/audit_v38_final_execution_integration.py \
+            --final-gap-dir prior_gap \
+            --components-dir components \
+            --stage56-dir stage56 \
+            --lock-dir lock_guard \
+            --output v38_final_execution
+      - name: Upload integrated result
+        uses: actions/upload-artifact@v4
+        with:
+          name: v38-final-execution-integration
+          retention-days: 14
+          path: v38_final_execution/**
