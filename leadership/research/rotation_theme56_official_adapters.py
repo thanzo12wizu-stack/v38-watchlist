@@ -4,7 +4,6 @@ import argparse
 import csv
 import io
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -15,8 +14,6 @@ import rotation_divergence_proxy_backtest as proxy
 import rotation_exact_flow_research as flowlib
 
 
-# Verified issuer families for the existing Command Center 56-theme ETF universe.
-# Only provider families with an implemented official contract are enabled here.
 SSGA_ETFS = {
     "XES", "XOP", "XSD", "XME", "XBI", "KBE", "KRE", "KIE", "XRT", "XHB", "XAR",
 }
@@ -59,7 +56,7 @@ def resolve_ishares_product_pages(session: requests.Session, wanted: set[str]) -
         if ticker not in wanted:
             continue
         candidates: list[str] = []
-        for key, value in raw.items():
+        for value in raw.values():
             text = _ishares_text(value)
             if "/products/" in text:
                 candidates.append(text)
@@ -138,14 +135,14 @@ def fetch_flow(session: requests.Session, ticker: str, ishares_ids: dict[str, in
         series = flowlib.fetch_ishares_nav_history(session, ticker, pid)
     else:
         raise RuntimeError("unsupported provider")
-    frame, diag = flowlib.derive_exact_flows(series)
-    return frame, diag
+    return flowlib.derive_exact_flows(series)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="QA official holdings and exact fund-flow adapters for the Theme56 Rotation universe")
     ap.add_argument("--config", type=Path, default=Path("leadership/research/rotation_theme56_config.json"))
     ap.add_argument("--output", type=Path, default=Path("leadership/research/rotation_theme56_provider_qa"))
+    ap.add_argument("--persist-flow-start", default="2022-01-01")
     args = ap.parse_args()
 
     universe = set(load_config(args.config))
@@ -168,10 +165,6 @@ def main() -> None:
             if provider == "SSGA":
                 h = proxy.fetch_ssga_current_holdings(session, ticker)
                 hdiag = {
-                    "ticker": ticker,
-                    "provider": provider,
-                    "quality": "EXACT_CURRENT_MEMBERSHIP",
-                    "rows": int(len(h)),
                     "source_url": proxy.HOLDINGS_URL.format(ticker=ticker.lower()),
                 }
             else:
@@ -180,24 +173,23 @@ def main() -> None:
                     raise RuntimeError("iShares product page not resolved")
                 h, hdiag = fetch_ishares_holdings(session, ticker, page)
             holdings_frames.append(h)
-            rec["holdings_status"] = "PASS"
-            rec["holdings_rows"] = int(len(h))
-            rec["holdings_source"] = hdiag.get("source_url")
+            rec.update(holdings_status="PASS", holdings_rows=int(len(h)), holdings_source=hdiag.get("source_url"))
         except Exception as exc:
-            rec["holdings_status"] = "FAIL"
-            rec["holdings_error"] = f"{type(exc).__name__}: {exc}"
+            rec.update(holdings_status="FAIL", holdings_error=f"{type(exc).__name__}: {exc}")
 
         try:
             f, fdiag = fetch_flow(session, ticker, ishares_ids)
-            flow_frames.append(f.assign(ticker=ticker))
-            rec["flow_status"] = "PASS"
-            rec["flow_rows"] = int(f["flow_usd"].notna().sum())
-            rec["flow_first_date"] = fdiag.get("first_date")
-            rec["flow_last_date"] = fdiag.get("last_date")
-            rec["flow_source"] = fdiag.get("source_url")
+            f = f.assign(ticker=ticker)
+            flow_frames.append(f)
+            rec.update(
+                flow_status="PASS",
+                flow_rows=int(f["flow_usd"].notna().sum()),
+                flow_first_date=fdiag.get("first_date"),
+                flow_last_date=fdiag.get("last_date"),
+                flow_source=fdiag.get("source_url"),
+            )
         except Exception as exc:
-            rec["flow_status"] = "FAIL"
-            rec["flow_error"] = f"{type(exc).__name__}: {exc}"
+            rec.update(flow_status="FAIL", flow_error=f"{type(exc).__name__}: {exc}")
 
         rec["full_stack_adapter"] = rec.get("holdings_status") == "PASS" and rec.get("flow_status") == "PASS"
         rows.append(rec)
@@ -209,11 +201,17 @@ def main() -> None:
         pd.concat(holdings_frames, ignore_index=True).to_csv(args.output / "theme56_exact_current_holdings.csv", index=False)
     if flow_frames:
         f = pd.concat(flow_frames, ignore_index=True)
+        f["date"] = pd.to_datetime(f["date"], errors="coerce")
+        persist_start = pd.Timestamp(args.persist_flow_start)
+        f = f[f["date"] >= persist_start].copy()
         keep = [x for x in ["date", "ticker", "provider", "nav", "shares_outstanding", "aum", "flow_usd", "flow_1d", "flow_5d", "flow_20d", "flow_20d_pct_aum", "source_url"] if x in f.columns]
         f[keep].to_csv(args.output / "theme56_exact_flows.csv", index=False, date_format="%Y-%m-%d")
 
+    failure_cols = [c for c in ["ticker", "provider", "holdings_status", "flow_status", "holdings_error", "flow_error"] if c in qa.columns]
+    fail_df = qa.loc[~qa["full_stack_adapter"], failure_cols].copy()
+    failures = fail_df.where(pd.notna(fail_df), None).to_dict("records") if not fail_df.empty else []
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "supported_provider_families": ["SSGA", "ISHARES"],
         "candidate_count": int(len(qa)),
@@ -221,7 +219,8 @@ def main() -> None:
         "flow_pass": int((qa["flow_status"] == "PASS").sum()),
         "full_stack_adapter_pass": int(qa["full_stack_adapter"].sum()),
         "full_stack_tickers": qa.loc[qa["full_stack_adapter"], "ticker"].tolist(),
-        "failures": qa.loc[~qa["full_stack_adapter"], ["ticker", "provider", "holdings_status", "flow_status", "holdings_error", "flow_error"]].where(pd.notna(qa), None).to_dict("records") if (~qa["full_stack_adapter"]).any() else [],
+        "persisted_flow_start": args.persist_flow_start,
+        "failures": failures,
         "guardrails": [
             "Only official current holdings are accepted for Internals membership.",
             "Only official daily NAV + shares outstanding are accepted for Exact Flow.",
