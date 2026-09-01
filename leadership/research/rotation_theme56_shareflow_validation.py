@@ -94,6 +94,7 @@ def main() -> None:
             z["ticker"] = ticker
             aligned_frames.append(z)
         except Exception as exc:
+            rec.setdefault("yahoo_observations", 0)
             rec["status"] = "DATA_REQUIRED"
             rec["error"] = f"{type(exc).__name__}: {exc}"
         rows.append(rec)
@@ -103,32 +104,35 @@ def main() -> None:
     args.output.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.output / "shareflow_validation_by_etf.csv", index=False)
     if aligned_frames:
-        aligned = pd.concat(aligned_frames, ignore_index=True)
-        aligned.to_csv(args.output / "shareflow_validation_aligned.csv", index=False, date_format="%Y-%m-%d")
+        pd.concat(aligned_frames, ignore_index=True).to_csv(args.output / "shareflow_validation_aligned.csv", index=False, date_format="%Y-%m-%d")
 
     measured = df[df["status"] == "MEASURED"].copy()
+
     def med(col: str) -> float | None:
-        x = pd.to_numeric(measured.get(col), errors="coerce").dropna()
+        if col not in measured.columns or measured.empty:
+            return None
+        x = pd.to_numeric(measured[col], errors="coerce").dropna()
         return None if x.empty else float(x.median())
 
-    decision = "RESEARCH_ONLY"
-    if len(measured) >= max(10, int(0.7 * len(tickers))):
+    enough = len(measured) >= max(10, int(0.7 * len(tickers)))
+    decision = "DO_NOT_USE_AS_FLOW_FALLBACK"
+    if enough:
         err = med("median_share_rel_error")
         share_sign = med("share_cr20_sign_agreement_vs_official_shares")
         flow_sign = med("share_cr20_sign_agreement_vs_exact_flow_aum")
         flow_corr = med("share_cr20_corr_vs_exact_flow_aum")
         if err is not None and err <= 0.005 and share_sign is not None and share_sign >= 0.95 and flow_sign is not None and flow_sign >= 0.85 and flow_corr is not None and flow_corr >= 0.85:
             decision = "CANDIDATE_FALLBACK_FOR_VALIDATION"
-        else:
-            decision = "DO_NOT_USE_AS_FLOW_FALLBACK"
 
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "window": {"start": args.start, "end": args.end},
         "official_reference_tickers": len(tickers),
         "measured_tickers": int(len(measured)),
+        "yahoo_observations_total": int(pd.to_numeric(df.get("yahoo_observations", pd.Series(dtype=float)), errors="coerce").fillna(0).sum()),
         "decision": decision,
+        "decision_reason": "Yahoo get_shares_full returned no usable ETF share history on the validation set" if measured.empty else "Measured against official SSGA/iShares reference set",
         "median_of_etf_median_share_rel_error": med("median_share_rel_error"),
         "median_share_cr20_sign_agreement_vs_official_shares": med("share_cr20_sign_agreement_vs_official_shares"),
         "median_share_cr20_corr_vs_exact_flow_aum": med("share_cr20_corr_vs_exact_flow_aum"),
@@ -136,7 +140,7 @@ def main() -> None:
         "guardrails": [
             "This test does not relabel Yahoo data as official Exact Flow.",
             "The candidate metric is Creation/Redemption from shares outstanding; no dollar-volume proxy is used.",
-            "Adoption requires measured agreement against official SSGA/iShares shares and Exact Flow, then separate Theme56 state validation.",
+            "No-data is a valid negative validation result and must not be converted into a proxy.",
         ],
     }
     (args.output / "shareflow_validation.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
