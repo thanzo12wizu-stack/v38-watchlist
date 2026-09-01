@@ -1,0 +1,63 @@
+name: TQQQ Normal Base Exposure Audit
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - research/v38-final-gap-audit-20260901
+    paths:
+      - 'leadership/research/audit_tqqq_normal_base_exposure.py'
+      - '.github/workflows/tqqq-normal-base-exposure-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install numerical dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Download frozen artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p components stage56 lock_guard execution
+          for spec in \
+            "9739833328:/tmp/components.zip:components" \
+            "9649902954:/tmp/stage56.zip:stage56" \
+            "9790852808:/tmp/lock.zip:lock_guard" \
+            "9794499368:/tmp/execution.zip:execution"
+          do
+            IFS=: read -r aid zip dest <<< "$spec"
+            curl -fL --retry 3 \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${aid}/zip" \
+              -o "$zip"
+            unzip -q "$zip" -d "$dest"
+          done
+      - name: Run base exposure audit
+        run: |
+          python leadership/research/audit_tqqq_normal_base_exposure.py \
+            --components-dir components \
+            --stage56-dir stage56 \
+            --lock-dir lock_guard \
+            --execution-dir execution \
+            --output tqqq_normal_base_exposure
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-normal-base-exposure-audit
+          retention-days: 14
+          path: tqqq_normal_base_exposure/**
