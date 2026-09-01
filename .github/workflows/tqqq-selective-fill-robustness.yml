@@ -1,0 +1,51 @@
+name: TQQQ Selective Fill Robustness
+
+on:
+  push:
+    branches:
+      - research/tqqq-attack-fill-20260901
+    paths:
+      - leadership/research/audit_tqqq_selective_fill_robustness.py
+      - .github/workflows/tqqq-selective-fill-robustness.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_tqqq_selective_fill_robustness.py
+      - name: Download frozen lock-guard inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p inputs/lock_guard
+          gh run download 33483510815 -R "$GITHUB_REPOSITORY" -n tqqq-selective-fill-lock-guard -D inputs/lock_guard
+          test -f inputs/lock_guard/daily_base.csv.gz
+          test -f inputs/lock_guard/daily_selective_fill_no_zero_override.csv.gz
+      - name: Run fixed-candidate robustness audit
+        run: |
+          python leadership/research/audit_tqqq_selective_fill_robustness.py \
+            --input-dir inputs/lock_guard \
+            --output leadership/research/out/tqqq_selective_fill_robustness \
+            --bootstrap-samples 5000 \
+            --block 20 \
+            --seed 20260901
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-selective-fill-robustness
+          path: leadership/research/out/tqqq_selective_fill_robustness/
+          retention-days: 14
