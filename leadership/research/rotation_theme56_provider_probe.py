@@ -54,7 +54,6 @@ def page_probe(session: requests.Session, name: str, url: str) -> dict:
             if any(k in ll for k in ["nav", "hold", "histor", "price", "fund", "api", "csv", "xls", "json", "asset"]):
                 links.append(link.rstrip(".,);"))
         out["candidate_links"] = list(dict.fromkeys(links))[:80]
-        # Keep short snippets around the key terms only; never persist full pages.
         snippets = []
         for key in ["shares outstanding", "outstanding shares", "net assets", "historical", "export to excel", "download holdings", "fund holdings"]:
             pos = low.find(key)
@@ -72,17 +71,17 @@ def endpoint_probe(session: requests.Session) -> list[dict]:
         ("NASDAQ_NO_KEY", "https://data.nasdaq.com/api/v3/datatables/ETFG/FUND.json?ticker=CIBR&qopts.rows=5"),
         ("ETFCOM_DETAILS", "https://www.etf.com/api/v1/api-details"),
         ("ETFCOM_FLOW_NOAUTH", "https://api-prod.etf.com/private/apps/fundflows/CIBR/charts?startDate=20260801&endDate=20260831"),
+        ("ETFCOM_HOLDINGS_NOAUTH", "https://api-prod.etf.com/private/fund/CIBR/holdings?type=securities&formatValues=true"),
     ]
     for name, url in tests:
         rec = {"name": name, "url": url}
         try:
-            r = session.get(url, headers={**HEADERS, "Referer": "https://www.etf.com/"}, timeout=30)
-            rec.update({"status": r.status_code, "bytes": len(r.content), "content_type": r.headers.get("content-type"), "prefix": re.sub(r"\s+", " ", r.text[:800])})
+            r = session.get(url, headers={**HEADERS, "Referer": "https://www.etf.com/", "Origin": "https://www.etf.com", "x-limit": "10000"}, timeout=30)
+            rec.update({"status": r.status_code, "bytes": len(r.content), "content_type": r.headers.get("content-type"), "prefix": re.sub(r"\s+", " ", r.text[:4000])})
         except Exception as exc:
             rec["error"] = f"{type(exc).__name__}: {exc}"
         out.append(rec)
 
-    # TradingView public scanner: request the 1M flow field for a known ETF.
     tv = {"name": "TRADINGVIEW_SCANNER_1M", "url": "https://scanner.tradingview.com/global/scan"}
     payload = {
         "symbols": {"tickers": ["NASDAQ:CIBR"], "query": {"types": []}},
@@ -113,7 +112,7 @@ def main() -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     session = requests.Session()
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "pages": [page_probe(session, name, url) for name, url in PAGES.items()],
         "endpoints": endpoint_probe(session),
