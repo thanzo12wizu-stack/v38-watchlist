@@ -25,7 +25,9 @@ jobs:
           python-version: '3.11'
 
       - name: Apply staged route patch
-        run: python scripts/v38_route_fix_once.py
+        run: |
+          python scripts/v38_route_fix_once.py
+          python scripts/v38_route_fix_correction.py
 
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
@@ -36,7 +38,9 @@ jobs:
           set -euo pipefail
           python -m py_compile build_v38_strict_loo_live.py build_v38_sleeve_live.py
           pytest -q tests/test_v38_strict_loo_live.py tests/test_v38_sleeve_live.py tests/test_v38_companion.py tests/test_v38_tqqq_live.py
-          grep -q -- '--price-cache /tmp/v38-sleeve-price-cache.pkl.gz' .github/workflows/dashboard.yml
+          grep -q 'default="/tmp/v38-sleeve-price-cache.pkl.gz"' build_v38_strict_loo_live.py
+          grep -q 'default="/tmp/v38-sleeve-price-cache.pkl.gz"' build_v38_sleeve_live.py
+          git diff --exit-code -- .github/workflows/dashboard.yml
 
       - name: Commit route fix
         shell: bash
@@ -44,8 +48,8 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add build_v38_strict_loo_live.py build_v38_sleeve_live.py tests/test_v38_strict_loo_live.py .github/workflows/dashboard.yml
-          git rm scripts/v38_route_fix_once.py
+          git add build_v38_strict_loo_live.py build_v38_sleeve_live.py tests/test_v38_strict_loo_live.py
+          git rm scripts/v38_route_fix_once.py scripts/v38_route_fix_correction.py
           git diff --cached --check
           git commit -m 'fix: share V38 price cache with live sleeves'
           git push origin HEAD:main
