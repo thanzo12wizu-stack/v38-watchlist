@@ -56,6 +56,27 @@ jobs:
             --stage56-dir stage56 \
             --lock-dir lock_guard \
             --output v38_final_execution
+      - name: Correct actual cash-fill event count
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import pandas as pd
+
+          fill_path = next(Path('prior_gap').rglob('daily_current30_cap70_selective_fill.csv.gz'))
+          base_path = next(Path('prior_gap').rglob('daily_current30_cap70_nofill.csv.gz'))
+          fill = pd.read_csv(fill_path, compression='gzip')
+          base = pd.read_csv(base_path, compression='gzip')
+          actual = int(((fill['alloc_tqqq'] - base['alloc_tqqq']) > 1e-12).sum())
+          summary_path = Path('v38_final_execution/summary.json')
+          payload = json.loads(summary_path.read_text(encoding='utf-8'))
+          payload['allocation']['gate_eligible_days'] = int(payload['allocation'].get('fill_days', 0))
+          payload['allocation']['fill_days'] = actual
+          payload['allocation']['fill_day_definition'] = 'days with actual extra TQQQ allocation versus the same CAP70 no-fill allocator'
+          summary_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+          print({'actual_fill_days': actual, 'gate_eligible_days': payload['allocation']['gate_eligible_days']})
+          PY
       - name: Upload integrated result
         uses: actions/upload-artifact@v4
         with:
