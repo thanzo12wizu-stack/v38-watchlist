@@ -1,0 +1,33 @@
+ticker,provider,status,error,rows,source_url,quality
+AIQ,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+BOTZ,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+COPX,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+DRIV,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+DTCR,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+GNOM,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+HYDR,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+LIT,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+PAVE,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+SHLD,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+SIL,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+URA,GLOBALX,FAIL,"ParserError: Error tokenizing data. C error: Expected 1 fields in line 3, saw 7
+",,,
+GDX,VANECK,PASS,,64.0,https://www.vaneck.com/us/en/investments/gold-miners-etf-gdx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
+MOO,VANECK,PASS,,55.0,https://www.vaneck.com/us/en/investments/agribusiness-etf-moo/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
+NLR,VANECK,FAIL,BadZipFile: File is not a zip file,,,
+OIH,VANECK,PASS,,26.0,https://www.vaneck.com/us/en/investments/oil-services-etf-oih/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
+PPH,VANECK,PASS,,26.0,https://www.vaneck.com/us/en/investments/pharmaceutical-etf-pph/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
+REMX,VANECK,PASS,,35.0,https://www.vaneck.com/us/en/investments/rare-earth-strategic-metals-etf-remx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
+SLX,VANECK,PASS,,42.0,https://www.vaneck.com/us/en/investments/steel-etf-slx/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
+SMH,VANECK,PASS,,26.0,https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/downloads/holdings/,EXACT_CURRENT_MEMBERSHIP
