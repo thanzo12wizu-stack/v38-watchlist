@@ -830,4 +830,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # Direct CLI execution is used by Dashboard daily build. Route it through
+    # the guarded wrapper so a transient provider failure cannot overwrite a
+    # previously READY sleeve state. Same-session preserved READY data remains
+    # executable but is explicitly marked stale by the wrapper.
+    from build_v38_sleeve_refresh import main as guarded_main
+
+    guarded_main(continue_with_previous_ready=True)
