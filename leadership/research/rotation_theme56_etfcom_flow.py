@@ -26,6 +26,31 @@ def load_json(path: Path) -> dict[str, Any]:
     return obj
 
 
+def _find_flow_points(obj: Any) -> list[dict[str, Any]] | None:
+    """Find ETF.com chart points without assuming one response wrapper.
+
+    ETF.com has returned more than one JSON envelope for fund-flow charts.  The
+    payload itself is still a list of objects carrying asOf/value, so accept
+    that canonical payload wherever it is nested rather than special-casing a
+    ticker or substituting a proxy.
+    """
+    if isinstance(obj, list):
+        points = [x for x in obj if isinstance(x, dict) and "asOf" in x and "value" in x]
+        if points:
+            return points
+        for item in obj:
+            found = _find_flow_points(item)
+            if found:
+                return found
+        return None
+    if isinstance(obj, dict):
+        for value in obj.values():
+            found = _find_flow_points(value)
+            if found:
+                return found
+    return None
+
+
 def fetch_flow(session: requests.Session, ticker: str, start: str, end: str) -> pd.DataFrame:
     url = FLOW_URL.format(ticker=ticker, start=start.replace("-", ""), end=end.replace("-", ""))
     last_exc: Exception | None = None
@@ -34,8 +59,7 @@ def fetch_flow(session: requests.Session, ticker: str, start: str, end: str) -> 
             r = session.get(url, headers=HEADERS, timeout=35)
             r.raise_for_status()
             obj = r.json()
-            result = (((obj or {}).get("data") or {}).get("results") or {}) if isinstance(obj, dict) else {}
-            points = result.get("data") if isinstance(result, dict) else None
+            points = _find_flow_points(obj)
             if not isinstance(points, list):
                 raise RuntimeError(f"unexpected ETF.com response for {ticker}")
             rows: list[dict[str, Any]] = []
@@ -223,7 +247,7 @@ def main() -> None:
             "ETF.com is a third-party actual fund-flow source, not an issuer-official exact-flow source.",
             "Noncanonical issuer-reference scale matches are quarantined as REFERENCE_UNIT_ANOMALY instead of forcing their units onto ETF.com data.",
             "No dollar-volume, OBV, CMF, or price-volume proxy is substituted for fund flow.",
-            "DRAM remains DATA_REQUIRED when ETF.com returns no daily-flow series.",
+            "A ticker remains DATA_REQUIRED only when no validated daily actual-flow series is returned.",
         ],
     }
     (args.output / "etfcom_flow_qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
