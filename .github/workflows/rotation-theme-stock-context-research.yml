@@ -7,6 +7,11 @@ on:
       - research/rotation-exact-flow-internals-20260831
     paths:
       - leadership/research/rotation_theme_stock_context.py
+      - leadership/research/rotation_theme56_stock_context.py
+      - leadership/research/rotation_theme56_config.json
+      - leadership/research/rotation_theme56_fullstack/**
+      - leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv
+      - leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv
       - leadership/research/rotation_live/latest_matrix.csv
       - .github/workflows/rotation-theme-stock-context-research.yml
 
@@ -39,6 +44,7 @@ jobs:
       - name: Syntax check
         run: |
           python -m py_compile leadership/research/rotation_theme_stock_context.py
+          python -m py_compile leadership/research/rotation_theme56_stock_context.py
           python -m py_compile leadership/build_market_snapshot.py
           python -m py_compile leadership/build_leadership_exact.py
 
@@ -72,7 +78,7 @@ jobs:
             --root . \
             --output /tmp/rotation-leadership-model
 
-      - name: Join ETF membership to existing Leadership model
+      - name: Build legacy 15-ETF context
         run: |
           rm -rf leadership/research/rotation_theme_stock_context
           python leadership/research/rotation_theme_stock_context.py \
@@ -80,158 +86,92 @@ jobs:
             --matrix leadership/research/rotation_live/latest_matrix.csv \
             --output leadership/research/rotation_theme_stock_context
 
-      - name: Upgrade context to full ETF membership coverage
+      - name: Upgrade legacy context to full Leadership export coverage
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           import pandas as pd
-
-          root = Path('leadership/research/rotation_theme_stock_context')
-          jp = root / 'rotation_theme_stock_context.json'
-          cp = root / 'rotation_theme_stock_context.csv'
-          data = json.loads(jp.read_text(encoding='utf-8'))
-          df = pd.read_csv(cp)
-          if df.empty:
-              raise SystemExit('full context CSV is empty')
-
+          root=Path('leadership/research/rotation_theme_stock_context'); jp=root/'rotation_theme_stock_context.json'; cp=root/'rotation_theme_stock_context.csv'
+          data=json.loads(jp.read_text(encoding='utf-8')); df=pd.read_csv(cp)
           def clean(v):
-              if pd.isna(v):
-                  return None
-              if hasattr(v, 'item'):
+              if pd.isna(v): return None
+              if hasattr(v,'item'):
                   try: return v.item()
                   except Exception: pass
               return v
-
-          total = 0
+          total=0
           for item in data.get('industry_context') or []:
-              etf = str(item.get('etf') or '')
-              g = df[df['etf'].astype(str) == etf].copy()
+              etf=str(item.get('etf') or ''); g=df[df['etf'].astype(str)==etf].copy()
               if not g.empty:
-                  for c in ('group_rank','stock_rank_within_group','holding_rank'):
-                      g[c] = pd.to_numeric(g[c], errors='coerce')
-                  g = g.sort_values(['group_rank','stock_rank_within_group','holding_rank'], na_position='last')
-              leaders = g[
-                  g['role'].astype(str).isin(['PIONEER','LEADER'])
-                  & g['group_phase'].astype(str).isin(['EMERGING','LEADING'])
-              ] if not g.empty else g
-              cols = [
-                  'symbol','name','group','group_sector','group_phase','group_rank',
-                  'group_score','stock_rank_within_group','role','strength','rs189','rs63','rs21',
-                  'acceleration','holding_rank','holding_weight_pct'
-              ]
-              rows = []
-              for r in leaders.head(30).to_dict('records'):
-                  rows.append({k: clean(r.get(k)) for k in cols})
-              item['leadership_full_intersections'] = int(len(g))
-              members = int(item.get('membership_rows') or 0)
-              item['leadership_full_intersection_pct'] = (100.0 * len(g) / members) if members else None
-              item['existing_emerging_or_leading_leaders_in_full_intersection'] = rows
-              # Backward-compatible alias for the deterministic formatter. The data is now full-export coverage.
-              item['existing_emerging_or_leading_leaders_in_top15_intersection'] = rows
-              item['guardrail'] = (
-                  'Current provider ETF membership is joined against a temporary full-stock export of the existing '
-                  'Leadership model. No Rotation stock score, rank, entry signal, V38 gate, or exit is created.'
-              )
-              total += len(g)
-
-          data['schema'] = 5
-          data['context_scope'] = 'FULL_ETF_MEMBERSHIP_X_FULL_LEADERSHIP_EXPORT'
-          data['full_leadership_export_for_rotation_only'] = True
-          data['full_intersections_total'] = int(total)
-          data['guardrails'] = [
-              'The existing Leadership calculation is reused unchanged; only the temporary research export removes the 15-stock display cap.',
-              'Current ETF memberships are exact current provider holdings, not historical PIT holdings.',
-              'Sector/Industry Rotation states remain context; they do not create a second stock ranking or a V38 entry/exit.',
-              'Legacy Leadership entry metadata is not used as a Rotation buy signal.',
-              'Formal V38 eligibility, strict LOO ranking, NQSAR/Breadth permission, exits, TQQQ, and Gross100 remain separate.'
-          ]
-          jp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-          print(json.dumps({'scope': data['context_scope'], 'full_intersections_total': total}, ensure_ascii=False))
+                  for c in ('group_rank','stock_rank_within_group','holding_rank'): g[c]=pd.to_numeric(g[c],errors='coerce')
+                  g=g.sort_values(['group_rank','stock_rank_within_group','holding_rank'],na_position='last')
+              leaders=g[g['role'].astype(str).isin(['PIONEER','LEADER']) & g['group_phase'].astype(str).isin(['EMERGING','LEADING'])] if not g.empty else g
+              cols=['symbol','name','group','group_sector','group_phase','group_rank','group_score','stock_rank_within_group','role','strength','rs189','rs63','rs21','acceleration','holding_rank','holding_weight_pct']
+              rows=[{k:clean(r.get(k)) for k in cols} for r in leaders.head(30).to_dict('records')]
+              item['leadership_full_intersections']=int(len(g)); members=int(item.get('membership_rows') or 0)
+              item['leadership_full_intersection_pct']=(100.0*len(g)/members) if members else None
+              item['existing_emerging_or_leading_leaders_in_full_intersection']=rows
+              item['existing_emerging_or_leading_leaders_in_top15_intersection']=rows
+              total+=len(g)
+          data['schema']=5; data['context_scope']='FULL_ETF_MEMBERSHIP_X_FULL_LEADERSHIP_EXPORT'; data['full_leadership_export_for_rotation_only']=True; data['full_intersections_total']=int(total)
+          jp.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
 
-      - name: Validate research context output
+      - name: Build Theme56 leading-stock context
+        run: |
+          rm -rf leadership/research/rotation_theme56_stock_context
+          python leadership/research/rotation_theme56_stock_context.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --leadership /tmp/rotation-leadership-model/leadership.json \
+            --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
+            --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --holdings-expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
+            --output leadership/research/rotation_theme56_stock_context
+
+      - name: Validate Theme56 context
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path('leadership/research/rotation_theme_stock_context/rotation_theme_stock_context.json')
-          d=json.loads(p.read_text())
-          if d.get('research_only') is not True:
-              raise SystemExit('research_only guard missing')
-          if d.get('schema') != 5:
-              raise SystemExit('unexpected schema')
-          if d.get('context_scope') != 'FULL_ETF_MEMBERSHIP_X_FULL_LEADERSHIP_EXPORT':
-              raise SystemExit('full coverage scope missing')
+          d=json.loads(Path('leadership/research/rotation_theme56_stock_context/rotation_theme56_stock_context.json').read_text(encoding='utf-8'))
           items=d.get('industry_context') or []
-          expected=['XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU','XBI','XME','SOXX','IGV']
-          if [x.get('etf') for x in items] != expected:
-              raise SystemExit('ETF set mismatch')
-          if any((x.get('membership_rows') or 0) < 5 for x in items):
-              raise SystemExit('insufficient provider holdings')
-          if int(d.get('full_intersections_total') or 0) < 100:
-              raise SystemExit('unexpectedly low full intersection coverage')
-          forbidden_keys={'rotation_stock_score','rotation_rank','rotation_entry','rotation_signal','leadership_entry_status','leadership_entry_quality','leadership_entry_reason'}
-          def walk(obj, path='root'):
-              if isinstance(obj, dict):
-                  for k,v in obj.items():
-                      if str(k).lower() in forbidden_keys:
-                          raise SystemExit(f'unexpected trading-action key at {path}.{k}')
-                      walk(v, f'{path}.{k}')
-              elif isinstance(obj, list):
-                  for i,v in enumerate(obj):
-                      walk(v, f'{path}[{i}]')
-          walk(items)
-          print(json.dumps({
-              'leadership_market_asof': (d.get('leadership_coverage') or {}).get('market_asof'),
-              'scope': d.get('context_scope'),
-              'full_intersections_total': d.get('full_intersections_total'),
-              'summary': [{
-                  'etf': x.get('etf'),
-                  'state': (x.get('rotation') or {}).get('state'),
-                  'members': x.get('membership_rows'),
-                  'full_intersections': x.get('leadership_full_intersections'),
-                  'leaders': len(x.get('existing_emerging_or_leading_leaders_in_full_intersection') or []),
-              } for x in items],
-          }, ensure_ascii=False, indent=2))
+          if d.get('research_only') is not True or d.get('context_scope')!='THEME56_EXACT_CURRENT_MEMBERSHIP_X_FULL_LEADERSHIP_EXPORT': raise SystemExit('Theme56 context guard missing')
+          if len(items)!=56 or len({x.get('etf') for x in items})!=56: raise SystemExit('Theme56 ETF set mismatch')
+          if int(d.get('exact_membership_theme_count') or 0)<35: raise SystemExit('Theme56 exact membership coverage unexpectedly low')
+          if int(d.get('themes_with_leaders') or 0)<10: raise SystemExit('Theme56 leader coverage unexpectedly low')
+          print(json.dumps({'themes':len(items),'membership':d.get('exact_membership_theme_count'),'with_leaders':d.get('themes_with_leaders')},ensure_ascii=False))
           PY
 
-      - name: Upload research-only context
+      - name: Upload research-only contexts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rotation-theme-stock-context-research
-          path: leadership/research/rotation_theme_stock_context/
+          path: |
+            leadership/research/rotation_theme_stock_context/
+            leadership/research/rotation_theme56_stock_context/
           if-no-files-found: error
           retention-days: 14
 
-      - name: Persist current Theme → Stock context
+      - name: Persist both context outputs
         if: success()
         shell: bash
         run: |
           set -euo pipefail
           BRANCH="research/rotation-exact-flow-internals-20260831"
-          SRC="leadership/research/rotation_theme_stock_context"
-          TMP="$(mktemp -d)/rotation_theme_stock_context"
-          cp -a "$SRC" "$TMP"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          T1="$(mktemp -d)/rotation_theme_stock_context"; T2="$(mktemp -d)/rotation_theme56_stock_context"
+          cp -a leadership/research/rotation_theme_stock_context "$T1"
+          cp -a leadership/research/rotation_theme56_stock_context "$T2"
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for attempt in 1 2 3; do
-            git fetch origin "$BRANCH"
-            git reset --hard "origin/$BRANCH"
-            rm -rf "$SRC"
-            mkdir -p "$(dirname "$SRC")"
-            cp -a "$TMP" "$SRC"
-            git add "$SRC"
-            if git diff --cached --quiet; then
-              echo "Theme/stock context already current"
-              exit 0
-            fi
-            git commit -m "research: record current Rotation theme stock context"
-            if git push origin "HEAD:$BRANCH"; then
-              exit 0
-            fi
-            echo "Push race on attempt ${attempt}; retrying"
+            git fetch origin "$BRANCH"; git reset --hard "origin/$BRANCH"
+            rm -rf leadership/research/rotation_theme_stock_context leadership/research/rotation_theme56_stock_context
+            cp -a "$T1" leadership/research/rotation_theme_stock_context
+            cp -a "$T2" leadership/research/rotation_theme56_stock_context
+            git add leadership/research/rotation_theme_stock_context leadership/research/rotation_theme56_stock_context
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "research: record Rotation 15 and Theme56 stock contexts"
+            if git push origin "HEAD:$BRANCH"; then exit 0; fi
           done
-          echo "Failed to persist Theme/Stock context after 3 attempts" >&2
           exit 1
