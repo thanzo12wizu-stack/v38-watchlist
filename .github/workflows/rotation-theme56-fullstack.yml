@@ -11,6 +11,7 @@ on:
       - leadership/research/rotation_theme56_live/theme56_price.json
       - leadership/research/rotation_theme56_provider_qa/**
       - leadership/research/rotation_theme56_holdings_expansion/**
+      - leadership/research/rotation_theme56_firsttrust/**
       - .github/workflows/rotation-theme56-fullstack.yml
 
 permissions:
@@ -36,6 +37,26 @@ jobs:
         run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
       - name: Syntax check
         run: python -m py_compile leadership/research/rotation_theme56_fullstack_snapshot.py
+      - name: Merge exact current holdings supplements
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          sources = [
+              Path('leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv'),
+              Path('leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv'),
+          ]
+          frames = [pd.read_csv(p) for p in sources if p.exists()]
+          if not frames:
+              raise SystemExit('no Theme56 holdings supplement available')
+          out = pd.concat(frames, ignore_index=True)
+          out['sector_etf'] = out['sector_etf'].astype(str).str.upper()
+          out['symbol'] = out['symbol'].astype(str).str.upper()
+          out = out.drop_duplicates(['sector_etf','symbol'], keep='last')
+          out.to_csv('/tmp/theme56_exact_holdings_supplements.csv', index=False)
+          print({'supplement_rows': len(out), 'supplement_themes': out['sector_etf'].nunique()})
+          PY
       - name: Build measured Theme56 snapshot
         run: |
           python leadership/research/rotation_theme56_fullstack_snapshot.py \
@@ -43,7 +64,7 @@ jobs:
             --price-json leadership/research/rotation_theme56_live/theme56_price.json \
             --provider-qa leadership/research/rotation_theme56_provider_qa/theme56_provider_qa.csv \
             --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
-            --holdings-expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
+            --holdings-expansion /tmp/theme56_exact_holdings_supplements.csv \
             --flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
             --output leadership/research/rotation_theme56_fullstack \
             --download-start 2025-10-01 \
