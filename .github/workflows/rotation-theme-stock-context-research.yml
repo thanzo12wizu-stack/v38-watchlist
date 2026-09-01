@@ -12,6 +12,7 @@ on:
       - leadership/research/rotation_theme56_fullstack/**
       - leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv
       - leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv
+      - leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv
       - leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv
       - leadership/research/rotation_live/latest_matrix.csv
       - .github/workflows/rotation-theme-stock-context-research.yml
@@ -121,13 +122,26 @@ jobs:
 
       - name: Build Theme56 leading-stock context
         run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+          paths=[
+              Path('leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv'),
+              Path('leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv'),
+          ]
+          frames=[pd.read_csv(p) for p in paths if p.exists()]
+          if not frames: raise SystemExit('no expanded issuer holdings found')
+          out=pd.concat(frames,ignore_index=True).drop_duplicates(['sector_etf','symbol'],keep='first')
+          out.to_csv('/tmp/theme56_all_expanded_holdings.csv',index=False)
+          print({'expanded_rows':len(out),'expanded_themes':out['sector_etf'].nunique()})
+          PY
           rm -rf leadership/research/rotation_theme56_stock_context
           python leadership/research/rotation_theme56_stock_context.py \
             --config leadership/research/rotation_theme56_config.json \
             --leadership /tmp/rotation-leadership-model/leadership.json \
             --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
             --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
-            --holdings-expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
+            --holdings-expansion /tmp/theme56_all_expanded_holdings.csv \
             --holdings-fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
             --output leadership/research/rotation_theme56_stock_context
 
@@ -143,6 +157,8 @@ jobs:
           if int(d.get('membership_ready_theme_count') or 0)!=55: raise SystemExit('Theme56 membership coverage must be 55/56')
           missing=[x.get('etf') for x in items if int(x.get('membership_rows') or 0)==0]
           if missing!=['DRAM']: raise SystemExit(f'unexpected Theme56 membership exceptions: {missing}')
+          if int(d.get('issuer_exact_membership_theme_count') or 0)!=45: raise SystemExit('Theme56 issuer-exact membership coverage must be 45')
+          if int(d.get('validated_fallback_membership_theme_count') or 0)!=10: raise SystemExit('Theme56 validated fallback membership coverage must be 10')
           if int(d.get('themes_with_leaders') or 0)<20: raise SystemExit('Theme56 leader coverage unexpectedly low')
           print(json.dumps({'themes':len(items),'membership_ready':d.get('membership_ready_theme_count'),'issuer_exact':d.get('issuer_exact_membership_theme_count'),'validated_fallback':d.get('validated_fallback_membership_theme_count'),'with_leaders':d.get('themes_with_leaders')},ensure_ascii=False))
           PY
