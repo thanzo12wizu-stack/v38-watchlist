@@ -20,17 +20,19 @@ EXCHANGE_SUFFIX = {
     "IM": ".MI", "DC": ".CO", "PL": ".LS", "CN": ".TO", "IT": ".TA",
     "NA": ".AS", "FH": ".HE", "SS": ".ST", "NO": ".OL", "AU": ".AX",
     "JP": ".T", "JT": ".T", "HK": ".HK", "TT": ".TW", "KS": ".KS",
-    "KQ": ".KQ", "SJ": ".JO",
+    "KQ": ".KQ", "SJ": ".JO", "SP": ".SI", "TB": ".BK", "BZ": ".SA",
+    "MK": ".KL", "IJ": ".JK",
 }
 
 
 def clean_symbol(value: Any) -> str:
     raw = str(value or "").strip().upper()
-    if not raw or raw in {"-", "--", "NAN", "N/A", "CASH"}:
+    if not raw or raw in {"-", "--", "NAN", "N/A", "CASH"} or "CASH" in raw:
         return ""
     raw = re.sub(r"\s+", " ", raw)
-    raw = re.sub(r"/\.(?=[A-Z]{2}$)", ".", raw)  # NG/.LN -> NG.LN
-    m = re.fullmatch(r"(.+?)[. ](FP|SW|LN|GY|GR|IM|DC|PL|CN|IT|NA|FH|SS|NO|AU|JP|JT|HK|TT|KS|KQ|SJ)", raw)
+    raw = re.sub(r"/\.(?=[A-Z]{2}$)", ".", raw)
+    exchanges = "|".join(EXCHANGE_SUFFIX)
+    m = re.fullmatch(rf"(.+?)[. ]({exchanges})", raw)
     if m:
         base, exch = m.group(1), m.group(2)
         base = base.replace("/", "-").strip(".- ")
@@ -49,94 +51,95 @@ def parse_weight(text: str) -> float | None:
     return float(m.group(0)) if m else None
 
 
+def _row_record(cells: list[str], ticker: str, url: str) -> dict[str, Any] | None:
+    cells = [re.sub(r"\s+", " ", str(x)).strip() for x in cells]
+    if len(cells) < 5:
+        return None
+    low = " | ".join(cells).lower()
+    if "security name" in low and "identifier" in low:
+        return None
+
+    weight_idx = None
+    for i in range(len(cells) - 1, -1, -1):
+        if re.fullmatch(r"[-+]?\d+(?:\.\d+)?\s*%", cells[i].replace(",", "")):
+            weight_idx = i
+            break
+    if weight_idx is None:
+        return None
+    weight = parse_weight(cells[weight_idx])
+    if weight is None or weight < -0.1 or weight > 100:
+        return None
+
+    # First Trust desktop and responsive tables use the same semantic order:
+    # Security Name | Identifier | CUSIP | Classification | Shares | Market Value | Weighting.
+    # Some rendered variants prepend a blank/sort cell, so anchor the identifier to a CUSIP-like
+    # cell instead of assuming an absolute column index.
+    symbol_idx = None
+    for i in range(1, min(weight_idx, 5)):
+        token = cells[i].replace(" ", "").replace("-", "")
+        if re.fullmatch(r"[A-Z0-9]{8,12}", token) and i >= 1:
+            candidate = clean_symbol(cells[i - 1])
+            if candidate and candidate not in {"IDENTIFIER", "CUSIP"}:
+                symbol_idx = i - 1
+                break
+    if symbol_idx is None:
+        # Fallback for rows where the identifier itself is in column 1 and the security id is
+        # not CUSIP-shaped (common for foreign securities in FAN/GRID).
+        for i in range(1, min(weight_idx, 4)):
+            candidate = clean_symbol(cells[i])
+            if candidate and len(candidate) <= 18 and not any(ch.isspace() for ch in candidate):
+                symbol_idx = i
+                break
+    if symbol_idx is None:
+        return None
+
+    provider_symbol = cells[symbol_idx].strip().upper()
+    symbol = clean_symbol(provider_symbol)
+    if not symbol:
+        return None
+    name_idx = max(0, symbol_idx - 1)
+    name = cells[name_idx].strip()
+    if not name or name.upper() in {"SECURITY NAME", "TOTAL"}:
+        return None
+    return {
+        "sector_etf": ticker,
+        "provider_symbol": provider_symbol,
+        "symbol": symbol,
+        "weight_pct": weight,
+        "name": name,
+        "source_url": url,
+        "provider": "FIRSTTRUST",
+    }
+
+
 def fetch_holdings(session: requests.Session, ticker: str) -> tuple[pd.DataFrame, dict[str, Any]]:
     url = f"https://www.ftportfolios.com/Retail/Etf/EtfHoldings.aspx?Print=Y&Ticker={ticker}"
     r = session.get(url, headers={"User-Agent": flowlib.UA, "Accept": "text/html,*/*"}, timeout=45)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
 
-    header_tr = None
-    header_cells: list[str] = []
-    for tr in soup.find_all("tr"):
-        cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"])]
-        joined = " | ".join(cells).lower()
-        if "security name" in joined and "identifier" in joined and "weighting" in joined:
-            header_tr = tr
-            header_cells = cells
-            break
-    if header_tr is None:
-        # First Trust occasionally renders the header as div/spans. Locate the containing table.
-        for table in soup.find_all("table"):
-            text = table.get_text(" ", strip=True).lower()
-            if "security name" in text and "identifier" in text and "weighting" in text:
-                trs = table.find_all("tr")
-                for tr in trs:
-                    cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"])]
-                    joined = " | ".join(cells).lower()
-                    if "identifier" in joined and "weighting" in joined:
-                        header_tr = tr
-                        header_cells = cells
-                        break
-                if header_tr is not None:
-                    break
-    if header_tr is None:
-        raise RuntimeError("First Trust full holdings header not found")
-
-    norm = [re.sub(r"\s+", " ", x.strip().lower()) for x in header_cells]
-    def idx_contains(needle: str) -> int:
-        for i, x in enumerate(norm):
-            if needle in x:
-                return i
-        raise RuntimeError(f"First Trust header missing {needle}: {header_cells}")
-
-    name_i = idx_contains("security name")
-    symbol_i = idx_contains("identifier")
-    weight_i = idx_contains("weighting")
-
-    table = header_tr.find_parent("table")
-    if table is None:
-        raise RuntimeError("First Trust holdings table parent missing")
-    records: list[dict[str, Any]] = []
-    passed_header = False
-    for tr in table.find_all("tr"):
-        if tr is header_tr:
-            passed_header = True
-            continue
-        if not passed_header:
-            continue
-        cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"])]
-        if len(cells) <= max(name_i, symbol_i, weight_i):
-            continue
-        provider_symbol = cells[symbol_i].strip().upper()
-        symbol = clean_symbol(provider_symbol)
-        if not symbol:
-            continue
-        name = cells[name_i].strip()
-        weight = parse_weight(cells[weight_i])
-        # Ignore footer/total rows that are not security identifiers.
-        if not name or weight is None or weight < -0.1 or weight > 100:
-            continue
-        records.append({
-            "sector_etf": ticker,
-            "provider_symbol": provider_symbol,
-            "symbol": symbol,
-            "weight_pct": weight,
-            "name": name,
-            "source_url": url,
-            "provider": "FIRSTTRUST",
-        })
-
-    out = pd.DataFrame(records)
-    if out.empty:
-        raise RuntimeError("First Trust holdings parsed zero rows")
-    out = out.drop_duplicates("symbol", keep="first").reset_index(drop=True)
-
     text = soup.get_text(" ", strip=True)
     expected = None
     m = re.search(r"Total Number of Holdings\s*\(excluding cash\)\s*:?\s*(\d+)", text, flags=re.I)
     if m:
         expected = int(m.group(1))
-    if expected is not None and len(out) < max(5, expected - 1):
+
+    records: list[dict[str, Any]] = []
+    # Do not restrict parsing to the first parent table. First Trust emits several responsive
+    # table fragments; the earlier parser saw only the first 1-3 rows. Scan all rendered rows,
+    # then de-duplicate by provider identifier.
+    for tr in soup.find_all("tr"):
+        cells = [x.get_text(" ", strip=True) for x in tr.find_all(["th", "td"])]
+        rec = _row_record(cells, ticker, url)
+        if rec is not None:
+            records.append(rec)
+
+    out = pd.DataFrame(records)
+    if out.empty:
+        raise RuntimeError("First Trust holdings parsed zero rows")
+    out = out.drop_duplicates("provider_symbol", keep="first").reset_index(drop=True)
+
+    if expected is not None and len(out) != expected:
         raise RuntimeError(f"partial holdings rejected: parsed {len(out)} vs official {expected}")
     if len(out) < 10:
         raise RuntimeError(f"unexpectedly short First Trust holdings: {len(out)}")
@@ -172,21 +175,21 @@ def main() -> None:
     qa_df = pd.DataFrame(qa)
     qa_df.to_csv(args.output / "firsttrust_holdings_qa.csv", index=False)
     if frames:
-        pd.concat(frames, ignore_index=True).drop_duplicates(["sector_etf", "symbol"]).to_csv(
+        pd.concat(frames, ignore_index=True).drop_duplicates(["sector_etf", "provider_symbol"]).to_csv(
             args.output / "firsttrust_exact_current_holdings.csv", index=False
         )
     passed = qa_df.loc[qa_df["status"] == "PASS", "ticker"].tolist()
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "candidate_count": len(TICKERS),
         "pass_count": len(passed),
         "pass_tickers": passed,
         "guardrails": [
-            "Only the complete current holdings table published by First Trust is accepted.",
-            "The official holding count, when present, is used as a completeness guard.",
+            "Only the complete current holdings rows published by First Trust are accepted.",
+            "The official holding count is required to match the parsed unique provider identifiers.",
             "Provider identifiers are preserved; foreign identifiers are normalized only for market-data lookup.",
-            "This adapter does not label NAV/Net Assets-derived estimates as Exact Flow because historical Shares Outstanding is not directly published in the pricing table.",
+            "No Top-10 or partial table is accepted as exact membership.",
         ],
     }
     (args.output / "firsttrust_holdings_qa.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
