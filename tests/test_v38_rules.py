@@ -5,7 +5,7 @@ import pytest
 from v38_rules import (
     NormalPosition, apply_pending_at_open, attack_rank_score, crash_seed,
     clinical_biotech_exclusion, evaluate_normal_close, gross100_allocation,
-    market_mode, new_entry_capacity, peer_theme_score,
+    market_mode, new_entry_capacity, peer_theme_score, selective_tqqq_fill_eligible,
     select_peer_theme, tqqq_allocation, tqqq_panic_entry, tqqq_panic_exit,
 )
 
@@ -168,5 +168,48 @@ def test_gross100_invariants(reset, tqqq, normal):
     a = gross100_allocation(reset, tqqq, normal)
     assert 0 <= a.gross_allocated <= 1.0 + 1e-12
     assert a.tqqq_allocated <= max(0, tqqq) + 1e-12
-    assert a.normal_stock_allocated <= max(0, normal) + 1e-12
+    assert a.normal_stock_allocated <= min(max(0, normal), .70) + 1e-12
     assert a.reset_allocated <= max(0, reset) + 1e-12
+
+
+def test_gross100_hard_caps_normal_stock_at_70pct():
+    a = gross100_allocation(0, 0, .85955)
+    assert math.isclose(a.normal_stock_desired, .85955)
+    assert math.isclose(a.normal_stock_capped_desired, .70)
+    assert math.isclose(a.normal_stock_allocated, .70)
+    assert math.isclose(a.remaining_capacity, .30)
+
+
+@pytest.mark.parametrize("mode,eligible", [
+    ("ATTACK", True), ("SELECTIVE", True), ("STOP", False), ("DEFENSE", False),
+])
+def test_selective_fill_market_gate(mode, eligible):
+    assert selective_tqqq_fill_eligible(mode, .30) is eligible
+
+
+def test_selective_fill_never_overrides_native_zero_target():
+    assert not selective_tqqq_fill_eligible("ATTACK", 0)
+    a = gross100_allocation(
+        0, 0, .40, market_mode_name="ATTACK", native_tqqq_target=0,
+        apply_selective_fill=True,
+    )
+    assert not a.selective_fill_eligible
+    assert math.isclose(a.selective_fill, 0)
+    assert math.isclose(a.tqqq_allocated, 0)
+    assert math.isclose(a.gross_allocated, .40)
+
+
+@pytest.mark.parametrize("mode", ["ATTACK", "SELECTIVE"])
+def test_selective_fill_uses_only_idle_capacity_without_trimming_other_sleeves(mode):
+    base = gross100_allocation(.08, .30, .40)
+    filled = gross100_allocation(
+        .08, .30, .40, market_mode_name=mode, native_tqqq_target=.30,
+        apply_selective_fill=True,
+    )
+    assert math.isclose(filled.reset_allocated, base.reset_allocated)
+    assert math.isclose(filled.normal_stock_allocated, base.normal_stock_allocated)
+    assert math.isclose(filled.base_gross_allocated, base.gross_allocated)
+    assert filled.selective_fill_eligible
+    assert math.isclose(filled.selective_fill, 1.0 - base.gross_allocated)
+    assert filled.tqqq_allocated > filled.tqqq_desired
+    assert math.isclose(filled.gross_allocated, 1.0)
