@@ -30,32 +30,30 @@ def classify(row: dict[str, Any]) -> tuple[str, str]:
     if p is None:
         return "DATA_REQUIRED", "ETF価格履歴が不足。状態判定を行わない。"
     if i is None:
-        return "PRICE_ONLY", "Price/RSのみ取得。正確な構成銘柄Internalsが未取得またはcoverage不足。"
+        return "PRICE_ONLY", "Price/RSのみ取得。構成銘柄Internalsが未取得またはcoverage不足。"
 
     if f is not None:
         if p >= 60 and i >= 60 and f < 0:
-            return "REDEMPTION_DIVERGENCE", "Price/Internalは強いが、公式ETF Flowは20日流出。"
+            return "REDEMPTION_DIVERGENCE", "Price/Internalは強いが、ETF Fund Flowは20日流出。"
         if p >= 70 and i >= 60:
             return "CURRENT_STRENGTH", "Priceと構成銘柄InternalsがともにTheme56上位。"
         if p < 60 and i >= 50 and d is not None and d >= 10 and f >= 0:
-            return "EARLY_ROTATION_WATCH", "Internals改善と公式Flow流入がPriceに先行している観測状態。"
+            return "EARLY_ROTATION_WATCH", "Internals改善とFund Flow流入がPriceに先行している観測状態。"
         if p < 45 and i < 45:
             return "WEAK_BREAKDOWN", "Priceと構成銘柄InternalsがともにTheme56下位。"
         if i < 50 and f < 0:
-            return "INTERNAL_WEAK_FLOW_OUT", "Internalsが弱く、公式ETF Flowも流出。"
+            return "INTERNAL_WEAK_FLOW_OUT", "Internalsが弱く、ETF Fund Flowも流出。"
         if p < 55 and i >= 60:
-            return "INTERNAL_LEAD_WATCH", "InternalsがPriceより先行。公式Flowは決定条件に使わない観測状態。"
-        return "MIXED_HOLD", "Price/Internal/公式Flowの方向が揃っていない。"
+            return "INTERNAL_LEAD_WATCH", "InternalsがPriceより先行。Fund Flowは決定条件に使わない観測状態。"
+        return "MIXED_HOLD", "Price/Internal/Fund Flowの方向が揃っていない。"
 
-    # Exact Flow is unavailable. Price/Internal can still describe the current cross-section,
-    # but flow-dependent labels are deliberately not assigned.
     if p >= 70 and i >= 60:
-        return "CURRENT_STRENGTH", "Priceと構成銘柄InternalsがともにTheme56上位。Exact Flowは未取得。"
+        return "CURRENT_STRENGTH", "Priceと構成銘柄InternalsがともにTheme56上位。Fund Flowは未取得。"
     if p < 45 and i < 45:
-        return "WEAK_BREAKDOWN", "Priceと構成銘柄InternalsがともにTheme56下位。Exact Flowは未取得。"
+        return "WEAK_BREAKDOWN", "Priceと構成銘柄InternalsがともにTheme56下位。Fund Flowは未取得。"
     if p < 60 and i >= 60 and d is not None and d >= 10:
-        return "INTERNAL_LEAD_WATCH", "Internals改善がPriceに先行。Exact Flow未取得のため流入判定はしない。"
-    return "MIXED_HOLD", "PriceとInternalsの方向が揃わない、または中位。Exact Flowは未取得。"
+        return "INTERNAL_LEAD_WATCH", "Internals改善がPriceに先行。Fund Flow未取得のため流入判定はしない。"
+    return "MIXED_HOLD", "PriceとInternalsの方向が揃わない、または中位。Fund Flowは未取得。"
 
 
 def main() -> None:
@@ -77,6 +75,8 @@ def main() -> None:
         if not isinstance(raw, dict):
             continue
         state, reason = classify(raw)
+        holdings_quality = str(raw.get("holdings_quality") or "")
+        flow_quality = str(raw.get("flow_quality") or "")
         theme_rows.append({
             "ticker": raw.get("ticker"),
             "label": raw.get("label"),
@@ -95,30 +95,35 @@ def main() -> None:
             "flow_20d_usd": raw.get("flow_20d_usd"),
             "flow_20d_pct_aum": raw.get("flow_20d_pct_aum"),
             "flow_provider": raw.get("flow_provider"),
+            "flow_quality": flow_quality or None,
+            "holdings_quality": holdings_quality or None,
             "source_member_coverage": raw.get("source_member_coverage"),
             "quality": raw.get("quality"),
+            "flow_ready": raw.get("actual_flow_adapter") == "PASS",
             "exact_flow": raw.get("exact_flow_adapter") == "PASS",
-            "exact_holdings": raw.get("holdings_adapter") == "PASS",
+            "holdings_ready": raw.get("holdings_adapter") == "PASS",
+            "exact_holdings": holdings_quality == "ISSUER_EXACT_CURRENT",
         })
 
     observations = out.get("observations") if isinstance(out.get("observations"), dict) else {}
     observations["rotation_buckets"] = {"themes": theme_rows}
     observations["state_transitions"] = []
-    exact_flow_rows = [x for x in theme_rows if num(x.get("flow_20d_pct_aum")) is not None]
-    flow_sorted = sorted(exact_flow_rows, key=lambda x: num(x.get("flow_20d_pct_aum")) or 0.0, reverse=True)
+    flow_rows = [x for x in theme_rows if x.get("flow_ready") and num(x.get("flow_20d_pct_aum")) is not None]
+    flow_sorted = sorted(flow_rows, key=lambda x: num(x.get("flow_20d_pct_aum")) or 0.0, reverse=True)
     observations["flow"] = {
-        "scope": "EXACT_FLOW_ONLY",
+        "scope": "VALIDATED_ACTUAL_FUND_FLOW",
         "leaders": flow_sorted[:5],
         "laggards": list(reversed(flow_sorted[-5:])),
-        "coverage": len(exact_flow_rows),
+        "coverage": len(flow_rows),
         "universe": 56,
-        "note": "Flow ranking uses only ETFs with official NAV + Shares Outstanding. Missing Flow is never proxied.",
+        "source_counts": fs.get("flow_source_counts") or {},
+        "note": "Issuer-derived Exact Flowを優先し、残りは発行会社データとの照合を通過したETF.com actual fund flowを使用。価格・出来高proxyは不使用。",
     }
     out["observations"] = observations
 
     theme_asof = fs.get("asof")
     base_asof = base.get("asof")
-    out["schema"] = 3
+    out["schema"] = 4
     out["research_only"] = True
     out["deterministic_formatter"] = True
     out["asof"] = theme_asof or base_asof
@@ -133,17 +138,24 @@ def main() -> None:
     out["theme56_data_status"] = {
         "universe_count": 56,
         "price_ready_count": fs.get("price_ready_count"),
-        "exact_holdings_count": fs.get("exact_holdings_count"),
+        "holdings_ready_count": fs.get("holdings_ready_count"),
+        "issuer_exact_holdings_count": fs.get("issuer_exact_holdings_count"),
+        "validated_fallback_holdings_count": fs.get("validated_fallback_holdings_count"),
         "internal_measured_count": fs.get("internal_measured_count"),
-        "exact_flow_count": fs.get("exact_flow_count"),
+        "flow_ready_count": fs.get("flow_ready_count"),
+        "issuer_exact_flow_count": fs.get("issuer_exact_flow_count"),
+        "validated_actual_flow_count": fs.get("validated_actual_flow_count"),
         "measured_full_stack_count": fs.get("measured_full_stack_count"),
+        "formal_exception": "DRAM: 上場後の履歴不足によりRS189未計算。",
         "classification_contract": "DESCRIPTIVE_ONLY_NOT_TRADING_SIGNAL",
     }
     limits = out.get("limitations") if isinstance(out.get("limitations"), list) else []
     theme_limits = [
         "Theme56 state labels are descriptive current observations, not validated trading signals.",
-        "Exact Flow is shown only where official NAV + Shares Outstanding is available; no price/volume proxy is substituted.",
-        "Theme56 leading-stock membership uses exact current ETF holdings and is not historical PIT membership.",
+        "Fund Flow uses issuer-derived Exact Flow where clean and ETF.com validated actual fund flow otherwise; no price/volume proxy is substituted.",
+        "Theme56 constituent membership prefers issuer-exact current holdings; validated fallback membership is separately labeled and must meet the >=80% validation contract.",
+        "Theme56 leading-stock membership is current membership and is not historical PIT membership.",
+        "DRAM is the sole formal data exception because its post-launch history is insufficient for RS189.",
         "Distribution Warning is deliberately not assigned at Theme56 level until separate PIT validation is complete.",
     ]
     out["limitations"] = limits + [x for x in theme_limits if x not in limits]
@@ -154,7 +166,7 @@ def main() -> None:
     counts: dict[str, int] = {}
     for x in theme_rows:
         counts[str(x.get("state"))] = counts.get(str(x.get("state")), 0) + 1
-    print(json.dumps({"asof": out["asof"], "alignment": out["input_alignment"], "states": counts, "flow_coverage": len(exact_flow_rows)}, ensure_ascii=False, indent=2))
+    print(json.dumps({"asof": out["asof"], "alignment": out["input_alignment"], "states": counts, "flow_coverage": len(flow_rows), "data_status": out["theme56_data_status"]}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
