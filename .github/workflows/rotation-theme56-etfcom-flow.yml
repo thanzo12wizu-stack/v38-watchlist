@@ -1,0 +1,65 @@
+name: Rotation Theme56 ETFcom Flow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exact-flow-internals-20260831
+    paths:
+      - leadership/research/rotation_theme56_etfcom_flow.py
+      - .github/workflows/rotation-theme56-etfcom-flow.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-etfcom-flow
+  cancel-in-progress: true
+
+jobs:
+  flow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy requests
+      - name: Syntax check
+        run: python -m py_compile leadership/research/rotation_theme56_etfcom_flow.py
+      - name: Validate and build ETF.com flow fallback
+        run: python leadership/research/rotation_theme56_etfcom_flow.py --output leadership/research/rotation_theme56_etfcom_flow
+      - name: Persist output
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="leadership/research/rotation_theme56_etfcom_flow"
+          TMP="$(mktemp -d)/rotation_theme56_etfcom_flow"
+          cp -a "$SRC" "$TMP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin research/rotation-exact-flow-internals-20260831
+            git reset --hard origin/research/rotation-exact-flow-internals-20260831
+            rm -rf "$SRC"
+            mkdir -p "$(dirname "$SRC")"
+            cp -a "$TMP" "$SRC"
+            git add "$SRC"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "research: record validated ETF.com Theme56 flows"
+            if git push origin HEAD:research/rotation-exact-flow-internals-20260831; then exit 0; fi
+          done
+          exit 1
+      - name: Upload output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-etfcom-flow
+          path: leadership/research/rotation_theme56_etfcom_flow/
+          if-no-files-found: warn
+          retention-days: 14
