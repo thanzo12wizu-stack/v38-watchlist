@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from build_v38_sleeve_live import _merge_desired_into_tqqq, _monitor_band, advance_normal
 
@@ -41,3 +42,17 @@ def test_same_session_normal_seed_marks_exposure_and_keeps_stop_mode_no_entries(
     assert round(state["desired_pct"], 6) == round(105.0 / 125.0 * 100.0, 6)
     assert state["pending"]["entries"] == []
     assert state["pending"]["entry_cap"] == 0
+
+
+def test_sleeve_refresh_uses_fresh_runner_after_dashboard_and_fails_closed_before_commit():
+    workflow = Path(".github/workflows/v38-sleeve-refresh.yml").read_text(encoding="utf-8")
+    assert 'workflows: ["Dashboard daily build"]' in workflow
+    assert "github.event.workflow_run.conclusion == 'success'" in workflow
+    assert "Rebuild Normal Stock and RSI Reset sleeves on fresh runner" in workflow
+    assert "build_v38_sleeve_live.py" in workflow
+    assert "Rebuild audited companion with live Gross100 inputs" in workflow
+    assert "LIVE ALLOCATION READY" in workflow
+    assert "sleeve.get('status') != 'READY'" in workflow
+    assert "RSI30 monitor output missing" in workflow
+    assert "git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json" in workflow
+    assert "main advanced during sleeve refresh" in workflow
