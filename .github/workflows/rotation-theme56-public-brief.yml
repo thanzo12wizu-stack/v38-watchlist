@@ -52,17 +52,24 @@ jobs:
           if any(x.get('state_evidence')!='THEME56_DESCRIPTIVE_NOT_TRADING_SIGNAL' for x in rows): raise SystemExit('descriptive state guard missing')
           if any('DISTRIBUTION' in str(x.get('state')) for x in rows): raise SystemExit('unvalidated Theme56 distribution state present')
           st=d.get('theme56_data_status') or {}
-          if int(st.get('price_ready_count') or 0)!=55: raise SystemExit('expected 55/56 price coverage')
-          if int(st.get('holdings_ready_count') or 0)!=55: raise SystemExit('expected 55/56 holdings coverage')
-          if int(st.get('internal_measured_count') or 0)!=55: raise SystemExit('expected 55/56 internal coverage')
-          if int(st.get('flow_ready_count') or 0)!=55: raise SystemExit('expected 55/56 validated flow coverage')
-          if int(st.get('measured_full_stack_count') or 0)!=55: raise SystemExit('expected 55/56 full-stack coverage')
+          if int(st.get('price_ready_count') or 0)!=55: raise SystemExit('expected 55/56 standard price coverage')
+          if int(st.get('holdings_ready_count') or 0)!=55: raise SystemExit('expected 55/56 standard holdings coverage')
+          if int(st.get('internal_measured_count') or 0)!=55: raise SystemExit('expected 55/56 standard internal coverage')
+          if int(st.get('flow_ready_count') or 0)!=55: raise SystemExit('expected 55/56 validated 20D flow coverage')
+          if int(st.get('measured_full_stack_count') or 0)!=55: raise SystemExit('expected 55/56 standard full-stack coverage')
+          pending=[x.get('ticker') for x in rows if x.get('state')=='RS189_PENDING']
+          if pending!=['DRAM']: raise SystemExit(f'unexpected RS189 pending set: {pending}')
           missing=[x.get('ticker') for x in rows if x.get('state')=='DATA_REQUIRED']
-          if missing!=['DRAM']: raise SystemExit(f'unexpected data exceptions: {missing}')
+          if missing: raise SystemExit(f'unexpected data-required themes: {missing}')
+          dram=next(x for x in rows if x.get('ticker')=='DRAM')
+          if dram.get('inception_date')!='2026-04-02' or dram.get('rs189_pending') is not True: raise SystemExit('DRAM launch/RS189 contract missing')
+          if dram.get('ret_20d_pct') is None: raise SystemExit('DRAM short price context missing')
+          if dram.get('internal_score') is None or dram.get('internal_display_quality')=='THEME56_STANDARD': raise SystemExit('DRAM supplemental Internal missing')
+          if dram.get('flow_1m_usd') is None or dram.get('flow_1m_quality')!='SUPPLEMENTAL_ACTUAL_FUND_FLOW_1M': raise SystemExit('DRAM supplemental 1M Flow missing')
           flow=d.get('observations',{}).get('flow',{}) or {}
-          if int(flow.get('coverage') or 0)!=55: raise SystemExit('public fund-flow coverage mismatch')
+          if int(flow.get('coverage') or 0)!=55: raise SystemExit('public validated 20D fund-flow coverage mismatch')
           if flow.get('scope')!='VALIDATED_ACTUAL_FUND_FLOW': raise SystemExit('fund-flow provenance contract missing')
-          print(json.dumps({'asof':d.get('asof'),'alignment':d.get('input_alignment'),'data_status':st,'flow':{'scope':flow.get('scope'),'coverage':flow.get('coverage'),'source_counts':flow.get('source_counts')}},ensure_ascii=False,indent=2))
+          print(json.dumps({'asof':d.get('asof'),'alignment':d.get('input_alignment'),'data_status':st,'dram':dram,'flow':{'scope':flow.get('scope'),'coverage':flow.get('coverage'),'source_counts':flow.get('source_counts')}},ensure_ascii=False,indent=2))
           PY
       - name: Persist public brief
         run: |
