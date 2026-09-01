@@ -37,6 +37,17 @@ jobs:
           block = textwrap.dedent(block)
           block = block.split("\np = Path('tests/test_v38_sleeve_refresh.py')", 1)[0]
           exec(compile(block, '<guarded-sleeve-source-patch>', 'exec'), {})
+
+          path = Path('build_v38_sleeve_refresh.py')
+          text = path.read_text(encoding='utf-8')
+          old = '            error_text = f"{type(exc).__name__}: {exc}"\n'
+          new = (
+              '            failed_reason = str(failed_payload.get("reason") or "").strip()\n'
+              '            error_text = failed_reason or f"{type(exc).__name__}: {exc}"\n'
+          )
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one error_text assignment, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
       - name: Install test dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
