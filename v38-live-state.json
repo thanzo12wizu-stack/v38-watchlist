@@ -4,9 +4,9 @@
   "asof": "2026-08-31",
   "market": {
     "nqsar": "Yellow",
-    "breadth50": 51.16,
-    "breadth_valid": 3751,
-    "breadth_universe": 3751,
+    "breadth50": 51.28,
+    "breadth_valid": 3750,
+    "breadth_universe": 3750,
     "coverage": 1.0,
     "coverage_ok": true,
     "mode": "STOP",
@@ -39,13 +39,13 @@
     "required_route": "tqqq-panic-state.json",
     "asof_match_required": true,
     "vix_close": 14.920000076293945,
-    "qqq_sma50_atr_deviation": 0.5164348256093009,
+    "qqq_sma50_atr_deviation": 0.5164348256092913,
     "qqq_drawdown10": -0.006032333034213577,
     "seed_age_sessions": 105,
     "rsi4h": 50.15754810952827,
     "prior_rsi4h": 52.79949158726931,
     "touch30_today": false,
-    "mc57": 61.2,
+    "mc57": 52.1,
     "active": false,
     "held_sessions": 0,
     "underlying_target_pct": 30.0,
@@ -76,7 +76,7 @@
     "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
     "history_min_sessions": 21,
     "normal_biotech_policy": "EXCLUDE Biotechnology / Pharmaceuticals: Other",
-    "full_eligible_count": 117,
+    "full_eligible_count": 116,
     "display_limit_applied_after_full_sort": 50,
     "attack_watch_status": "READY",
     "attack_watch_semantics": "WATCH_ONLY_OUTSIDE_ATTACK; NEVER_OVERRIDES_MARKET_MODE",
@@ -131,7 +131,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oilfield Services/Equipment",
-        "market_cap": 944776790.7496644,
+        "market_cap": 946497695.6508478,
         "revenue_ttm": 791474000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -143,9 +143,9 @@
     {
       "ticker": "CLMT",
       "price": 49.73,
-      "daily_dollar_volume_m": 61.1,
+      "daily_dollar_volume_m": 61.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 60.7,
+      "close_vs_sma200_pct": 60.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -187,7 +187,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 4426115407.191132,
+        "market_cap": 4459956226.01287,
         "revenue_ttm": 4137100000.0000005,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -199,9 +199,9 @@
     {
       "ticker": "NESR",
       "price": 35.11,
-      "daily_dollar_volume_m": 78.7,
+      "daily_dollar_volume_m": 78.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 52.5,
+      "close_vs_sma200_pct": 52.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -243,7 +243,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oilfield Services/Equipment",
-        "market_cap": 3531828726.3657084,
+        "market_cap": 3528803173.487611,
         "revenue_ttm": 1324047000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -255,7 +255,7 @@
     {
       "ticker": "ECO",
       "price": 66.74,
-      "daily_dollar_volume_m": 42.6,
+      "daily_dollar_volume_m": 41.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 53.8,
       "eligibility_checks": {
@@ -299,7 +299,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 2618069932.762361,
+        "market_cap": 2603271145.7834105,
         "revenue_ttm": 391548819.004282,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -311,7 +311,7 @@
     {
       "ticker": "LPG",
       "price": 50.04,
-      "daily_dollar_volume_m": 27.5,
+      "daily_dollar_volume_m": 27.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 45.5,
       "eligibility_checks": {
@@ -355,7 +355,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 2187054946.066691,
+        "market_cap": 2140417545.1870508,
         "revenue_ttm": 481511242.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -367,7 +367,7 @@
     {
       "ticker": "OII",
       "price": 51.76,
-      "daily_dollar_volume_m": 46.1,
+      "daily_dollar_volume_m": 45.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 43.9,
       "eligibility_checks": {
@@ -411,7 +411,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Industrial Machinery",
-        "market_cap": 5105870767.488408,
+        "market_cap": 5133739067.973724,
         "revenue_ttm": 2784156000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -423,9 +423,9 @@
     {
       "ticker": "PBF",
       "price": 72.99,
-      "daily_dollar_volume_m": 202.5,
+      "daily_dollar_volume_m": 202.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 69.2,
+      "close_vs_sma200_pct": 69.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -467,7 +467,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 8584438115.916153,
+        "market_cap": 8852331379.406494,
         "revenue_ttm": 29332300000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -479,7 +479,7 @@
     {
       "ticker": "FRO",
       "price": 43.78,
-      "daily_dollar_volume_m": 96.4,
+      "daily_dollar_volume_m": 97.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 37.1,
       "eligibility_checks": {
@@ -523,7 +523,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 10015803734.572865,
+        "market_cap": 9953469325.911375,
         "revenue_ttm": 1954948000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -535,7 +535,7 @@
     {
       "ticker": "INSW",
       "price": 98.64,
-      "daily_dollar_volume_m": 52.9,
+      "daily_dollar_volume_m": 52.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 41.6,
       "eligibility_checks": {
@@ -579,7 +579,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 5008606140.6001625,
+        "market_cap": 4941986527.673865,
         "revenue_ttm": 843302000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -591,7 +591,7 @@
     {
       "ticker": "VLO",
       "price": 358.92,
-      "daily_dollar_volume_m": 886.7,
+      "daily_dollar_volume_m": 884.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 53.3,
       "eligibility_checks": {
@@ -635,7 +635,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 103053560600.15833,
+        "market_cap": 103841186195.68166,
         "revenue_ttm": 122718000000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -647,7 +647,7 @@
     {
       "ticker": "NAT",
       "price": 6.83,
-      "daily_dollar_volume_m": 22.0,
+      "daily_dollar_volume_m": 21.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 36.6,
       "eligibility_checks": {
@@ -691,7 +691,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 1460020757.4926794,
+        "market_cap": 1458962004.2240117,
         "revenue_ttm": 291690000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -703,7 +703,7 @@
     {
       "ticker": "MPC",
       "price": 373.32,
-      "daily_dollar_volume_m": 988.1,
+      "daily_dollar_volume_m": 967.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 57.9,
       "eligibility_checks": {
@@ -747,7 +747,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 105000371429.97456,
+        "market_cap": 105807742566.27083,
         "revenue_ttm": 132542000000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -759,7 +759,7 @@
     {
       "ticker": "DINO",
       "price": 101.61,
-      "daily_dollar_volume_m": 258.6,
+      "daily_dollar_volume_m": 258.4,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 59.2,
       "eligibility_checks": {
@@ -803,7 +803,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 17982835928.270348,
+        "market_cap": 18276179272.62671,
         "revenue_ttm": 26869000000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -859,7 +859,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 4364016820.324858,
+        "market_cap": 4370140037.415254,
         "revenue_ttm": 10722900000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -871,9 +871,9 @@
     {
       "ticker": "PSX",
       "price": 246.58,
-      "daily_dollar_volume_m": 716.1,
+      "daily_dollar_volume_m": 707.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 46.7,
+      "close_vs_sma200_pct": 46.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -915,7 +915,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 98901322133.60338,
+        "market_cap": 99354210863.61887,
         "revenue_ttm": 132189000000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -927,7 +927,7 @@
     {
       "ticker": "RNG",
       "price": 69.62,
-      "daily_dollar_volume_m": 111.3,
+      "daily_dollar_volume_m": 110.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 79.5,
       "eligibility_checks": {
@@ -971,7 +971,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Packaged Software",
-        "market_cap": 5843761564.106866,
+        "market_cap": 5755662557.960355,
         "revenue_ttm": 2515142000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -983,9 +983,9 @@
     {
       "ticker": "TDW",
       "price": 93.12,
-      "daily_dollar_volume_m": 60.5,
+      "daily_dollar_volume_m": 60.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 28.2,
+      "close_vs_sma200_pct": 28.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1027,7 +1027,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 4784559159.824742,
+        "market_cap": 4856208132.268041,
         "revenue_ttm": 1352786000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1039,7 +1039,7 @@
     {
       "ticker": "PARR",
       "price": 79.92,
-      "daily_dollar_volume_m": 82.8,
+      "daily_dollar_volume_m": 83.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.7,
       "eligibility_checks": {
@@ -1083,7 +1083,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Oil Refining/Marketing",
-        "market_cap": 3889735063.7507505,
+        "market_cap": 3965385500.977227,
         "revenue_ttm": 7464650000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1095,9 +1095,9 @@
     {
       "ticker": "CHEF",
       "price": 112.47,
-      "daily_dollar_volume_m": 69.7,
+      "daily_dollar_volume_m": 72.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 47.3,
+      "close_vs_sma200_pct": 47.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1139,7 +1139,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Food Distributors",
-        "market_cap": 4692365350.065084,
+        "market_cap": 4734997255.740776,
         "revenue_ttm": 4149537000.0000005,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1151,7 +1151,7 @@
     {
       "ticker": "HNST",
       "price": 5.72,
-      "daily_dollar_volume_m": 20.1,
+      "daily_dollar_volume_m": 20.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 76.4,
       "eligibility_checks": {
@@ -1195,7 +1195,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Specialty Stores",
-        "market_cap": 606693179.1818181,
+        "market_cap": 602938225.8181818,
         "revenue_ttm": 371317000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1207,7 +1207,7 @@
     {
       "ticker": "WT",
       "price": 24.06,
-      "daily_dollar_volume_m": 56.0,
+      "daily_dollar_volume_m": 58.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.4,
       "eligibility_checks": {
@@ -1251,7 +1251,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Investment Managers",
-        "market_cap": 3722652594.1683292,
+        "market_cap": 3725682836.4102244,
         "revenue_ttm": 493753000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1263,7 +1263,7 @@
     {
       "ticker": "DHT",
       "price": 19.6,
-      "daily_dollar_volume_m": 68.1,
+      "daily_dollar_volume_m": 66.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 29.5,
       "eligibility_checks": {
@@ -1307,7 +1307,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 3202138689.7285714,
+        "market_cap": 3169085395.096429,
         "revenue_ttm": 497197000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1319,9 +1319,9 @@
     {
       "ticker": "ERAS",
       "price": 17.88,
-      "daily_dollar_volume_m": 59.5,
+      "daily_dollar_volume_m": 58.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 42.2,
+      "close_vs_sma200_pct": 42.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1363,7 +1363,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 5942456507.329977,
+        "market_cap": 5886494586.130872,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1375,9 +1375,9 @@
     {
       "ticker": "ETON",
       "price": 60.44,
-      "daily_dollar_volume_m": 40.5,
+      "daily_dollar_volume_m": 40.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 120.4,
+      "close_vs_sma200_pct": 120.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1419,7 +1419,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 1730137159.1464264,
+        "market_cap": 1730708821.845632,
         "revenue_ttm": 79950000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1475,7 +1475,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 2602959054.378171,
+        "market_cap": 2629333164.305847,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1489,7 +1489,7 @@
       "price": 50.33,
       "daily_dollar_volume_m": 21.2,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 115.9,
+      "close_vs_sma200_pct": 116.0,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1531,7 +1531,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Medical Specialties",
-        "market_cap": 3538314758.688456,
+        "market_cap": 3645655289.0618916,
         "revenue_ttm": 350000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1543,9 +1543,9 @@
     {
       "ticker": "CDNA",
       "price": 50.11,
-      "daily_dollar_volume_m": 56.0,
+      "daily_dollar_volume_m": 55.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 105.4,
+      "close_vs_sma200_pct": 105.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1587,7 +1587,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Medical Specialties",
-        "market_cap": 2553601249.713032,
+        "market_cap": 2515835266.887049,
         "revenue_ttm": 379805000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1655,7 +1655,7 @@
     {
       "ticker": "AAMI",
       "price": 94.2,
-      "daily_dollar_volume_m": 31.7,
+      "daily_dollar_volume_m": 32.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 47.3,
       "eligibility_checks": {
@@ -1699,7 +1699,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Investment Managers",
-        "market_cap": 3352752242.1312094,
+        "market_cap": 3261720067.8847127,
         "revenue_ttm": 600500000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1711,9 +1711,9 @@
     {
       "ticker": "DFTX",
       "price": 39.72,
-      "daily_dollar_volume_m": 88.6,
+      "daily_dollar_volume_m": 89.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 62.7,
+      "close_vs_sma200_pct": 62.8,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1755,7 +1755,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 5283308974.90433,
+        "market_cap": 5210750815.025176,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1767,9 +1767,9 @@
     {
       "ticker": "ORKA",
       "price": 92.62,
-      "daily_dollar_volume_m": 74.7,
+      "daily_dollar_volume_m": 74.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 62.7,
+      "close_vs_sma200_pct": 62.8,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1811,7 +1811,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 6076394838.985101,
+        "market_cap": 6072091208.753184,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1867,7 +1867,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 1533923685.2253492,
+        "market_cap": 1530375176.1743546,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1879,7 +1879,7 @@
     {
       "ticker": "IMMX",
       "price": 14.03,
-      "daily_dollar_volume_m": 22.4,
+      "daily_dollar_volume_m": 22.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 68.8,
       "eligibility_checks": {
@@ -1923,7 +1923,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 1002623470.3064862,
+        "market_cap": 1001908077.177477,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1935,7 +1935,7 @@
     {
       "ticker": "NMM",
       "price": 88.33,
-      "daily_dollar_volume_m": 13.0,
+      "daily_dollar_volume_m": 12.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 31.7,
       "eligibility_checks": {
@@ -1979,7 +1979,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 2531780926.9960375,
+        "market_cap": 2532349419.401336,
         "revenue_ttm": 1344143000.0147,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -1991,9 +1991,9 @@
     {
       "ticker": "HNGE",
       "price": 92.56,
-      "daily_dollar_volume_m": 174.3,
+      "daily_dollar_volume_m": 180.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 65.8,
+      "close_vs_sma200_pct": 65.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2035,7 +2035,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Packaged Software",
-        "market_cap": 7418237770.184636,
+        "market_cap": 7298810032.777117,
         "revenue_ttm": 587860000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2047,9 +2047,9 @@
     {
       "ticker": "SYRE",
       "price": 89.33,
-      "daily_dollar_volume_m": 90.4,
+      "daily_dollar_volume_m": 90.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 47.1,
+      "close_vs_sma200_pct": 47.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2091,7 +2091,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 7618213633.117653,
+        "market_cap": 7674644845.214821,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2103,7 +2103,7 @@
     {
       "ticker": "ILMN",
       "price": 213.63,
-      "daily_dollar_volume_m": 412.2,
+      "daily_dollar_volume_m": 410.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.4,
       "eligibility_checks": {
@@ -2147,7 +2147,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Medical Specialties",
-        "market_cap": 32166020734.895565,
+        "market_cap": 31525025720.250782,
         "revenue_ttm": 4338000000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2159,7 +2159,7 @@
     {
       "ticker": "OPY",
       "price": 118.79,
-      "daily_dollar_volume_m": 14.1,
+      "daily_dollar_volume_m": 14.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 27.7,
       "eligibility_checks": {
@@ -2203,7 +2203,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Investment Banks/Brokers",
-        "market_cap": 1278198928.5924737,
+        "market_cap": 1271091340.5589693,
         "revenue_ttm": 1638243000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2215,7 +2215,7 @@
     {
       "ticker": "VCTR",
       "price": 118.01,
-      "daily_dollar_volume_m": 78.6,
+      "daily_dollar_volume_m": 77.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 49.7,
       "eligibility_checks": {
@@ -2259,7 +2259,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Investment Managers",
-        "market_cap": 7172016117.213795,
+        "market_cap": 6937664647.174477,
         "revenue_ttm": 1324606000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2271,7 +2271,7 @@
     {
       "ticker": "ACRS",
       "price": 6.05,
-      "daily_dollar_volume_m": 11.7,
+      "daily_dollar_volume_m": 11.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 46.1,
       "eligibility_checks": {
@@ -2315,7 +2315,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 882457332.1727275,
+        "market_cap": 881721337.7338845,
         "revenue_ttm": 7826000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2327,7 +2327,7 @@
     {
       "ticker": "BFLY",
       "price": 7.89,
-      "daily_dollar_volume_m": 42.6,
+      "daily_dollar_volume_m": 42.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 56.4,
       "eligibility_checks": {
@@ -2371,7 +2371,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Medical Specialties",
-        "market_cap": 2154004314.9100127,
+        "market_cap": 2152647889.0190115,
         "revenue_ttm": 97610000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2383,9 +2383,9 @@
     {
       "ticker": "PAYS",
       "price": 12.46,
-      "daily_dollar_volume_m": 10.6,
+      "daily_dollar_volume_m": 10.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 92.5,
+      "close_vs_sma200_pct": 92.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2427,7 +2427,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Miscellaneous Commercial Services",
-        "market_cap": 700130716.7255217,
+        "market_cap": 701824581.3627608,
         "revenue_ttm": 82028176.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2439,9 +2439,9 @@
     {
       "ticker": "AMLX",
       "price": 33.75,
-      "daily_dollar_volume_m": 134.2,
+      "daily_dollar_volume_m": 133.2,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 105.1,
+      "close_vs_sma200_pct": 105.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2483,7 +2483,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 4202804353.7432594,
+        "market_cap": 4180212005.417926,
         "revenue_ttm": 0.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2495,7 +2495,7 @@
     {
       "ticker": "SENEA",
       "price": 198.29,
-      "daily_dollar_volume_m": 17.8,
+      "daily_dollar_volume_m": 18.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 38.1,
       "eligibility_checks": {
@@ -2539,7 +2539,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Food: Specialty/Candy",
-        "market_cap": 1374654397.8580616,
+        "market_cap": 1376178893.2101974,
         "revenue_ttm": 1659675000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2551,9 +2551,9 @@
     {
       "ticker": "PANW",
       "price": 382.13,
-      "daily_dollar_volume_m": 2177.8,
+      "daily_dollar_volume_m": 2149.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 65.8,
+      "close_vs_sma200_pct": 65.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2595,7 +2595,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Packaged Software",
-        "market_cap": 296171003783.97034,
+        "market_cap": 291590703725.45105,
         "revenue_ttm": 9221500000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2607,9 +2607,9 @@
     {
       "ticker": "ARCT",
       "price": 14.76,
-      "daily_dollar_volume_m": 21.0,
+      "daily_dollar_volume_m": 21.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 94.4,
+      "close_vs_sma200_pct": 94.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2651,7 +2651,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Pharmaceuticals: Major",
-        "market_cap": 473528336.9444444,
+        "market_cap": 464148724.02777773,
         "revenue_ttm": 67221000.0001487,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2663,7 +2663,7 @@
     {
       "ticker": "LFST",
       "price": 12.36,
-      "daily_dollar_volume_m": 55.1,
+      "daily_dollar_volume_m": 55.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 52.5,
       "eligibility_checks": {
@@ -2707,7 +2707,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Medical/Nursing Services",
-        "market_cap": 4766143515.125404,
+        "market_cap": 4731758511.809871,
         "revenue_ttm": 1424285000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2719,7 +2719,7 @@
     {
       "ticker": "TNK",
       "price": 89.64,
-      "daily_dollar_volume_m": 43.2,
+      "daily_dollar_volume_m": 41.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 29.4,
       "eligibility_checks": {
@@ -2763,7 +2763,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Marine Shipping",
-        "market_cap": 3061907093.7198796,
+        "market_cap": 3048555250.57703,
         "revenue_ttm": 951797000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2775,9 +2775,9 @@
     {
       "ticker": "CAKE",
       "price": 109.49,
-      "daily_dollar_volume_m": 204.6,
+      "daily_dollar_volume_m": 201.2,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 63.6,
+      "close_vs_sma200_pct": 63.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2819,7 +2819,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Restaurants",
-        "market_cap": 5372655284.507353,
+        "market_cap": 5331851567.425793,
         "revenue_ttm": 3751806000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
@@ -2831,9 +2831,9 @@
     {
       "ticker": "MRX",
       "price": 72.48,
-      "daily_dollar_volume_m": 45.4,
+      "daily_dollar_volume_m": 46.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 46.7,
+      "close_vs_sma200_pct": 46.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2875,7 +2875,7 @@
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
         "industry": "Internet Software/Services",
-        "market_cap": 5230093803.878725,
+        "market_cap": 5236927236.850373,
         "revenue_ttm": 3629800000.00421,
         "excluded": false,
         "revenue_missing_fail_open": false,
