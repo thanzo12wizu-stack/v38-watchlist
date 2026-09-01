@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: research/rotation-exact-flow-internals-20260831
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
