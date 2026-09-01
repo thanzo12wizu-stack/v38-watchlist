@@ -5,10 +5,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
+import yfinance as yf
 
 import rotation_divergence_proxy_backtest as proxy
+import validate_early_rotation as er
 import validate_pioneer_leader as pl
 
 
@@ -40,6 +41,30 @@ def pct_rank_frame(frame: pd.DataFrame, min_count: int) -> pd.DataFrame:
     return proxy.cross_section_rank(frame, min_count=min_count)
 
 
+def retry_close(ticker: str, start: str, end: str) -> pd.Series:
+    ysym = er.yahoo_symbol(ticker)
+    try:
+        raw = yf.download(ysym, start=start, end=end, auto_adjust=True, actions=False, progress=False, threads=False, timeout=30)
+    except Exception:
+        return pd.Series(dtype=float)
+    if raw is None or raw.empty:
+        return pd.Series(dtype=float)
+    if isinstance(raw.columns, pd.MultiIndex):
+        if ("Close", ysym) in raw.columns:
+            s = raw[("Close", ysym)]
+        elif ysym in raw.columns.get_level_values(0) and "Close" in raw[ysym].columns:
+            s = raw[ysym]["Close"]
+        else:
+            return pd.Series(dtype=float)
+    elif "Close" in raw.columns:
+        s = raw["Close"]
+    else:
+        return pd.Series(dtype=float)
+    s = pd.to_numeric(s, errors="coerce")
+    s.index = pd.to_datetime(s.index).tz_localize(None)
+    return s
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Build the 56-theme ETF price/RS layer for Rotation research")
     ap.add_argument("--config", type=Path, default=Path("leadership/research/rotation_theme56_config.json"))
@@ -58,7 +83,17 @@ def main() -> None:
     if "SPY" not in close.columns:
         raise RuntimeError("SPY price series missing")
 
-    usable = [t for t in tickers if t in close.columns and close[t].notna().sum() >= 190]
+    initial_counts = {t: int(close[t].notna().sum()) if t in close.columns else 0 for t in tickers}
+    retry_tickers = [t for t in tickers if initial_counts[t] < 190]
+    retry_counts: dict[str, int] = {}
+    for ticker in retry_tickers:
+        s = retry_close(ticker, args.download_start, args.download_end)
+        retry_counts[ticker] = int(s.notna().sum())
+        if len(s.dropna()) > initial_counts[ticker]:
+            close[ticker] = s.reindex(close.index)
+
+    counts = {t: int(close[t].notna().sum()) if t in close.columns else 0 for t in tickers}
+    usable = [t for t in tickers if counts[t] >= 190]
     spy = close["SPY"]
     etf = close.reindex(columns=usable)
     rel63 = etf.pct_change(63, fill_method=None).sub(spy.pct_change(63, fill_method=None), axis=0)
@@ -75,6 +110,7 @@ def main() -> None:
                 "ticker": ticker,
                 "label": labels[ticker],
                 "quality": "DATA_REQUIRED",
+                "valid_price_rows": counts[ticker],
                 "close": None,
                 "ret_1d_pct": None,
                 "ret_5d_pct": None,
@@ -87,15 +123,17 @@ def main() -> None:
             })
             continue
         s = close[ticker]
+        sd = s.dropna()
         last = latest_num(s)
         rows.append({
             "ticker": ticker,
             "label": labels[ticker],
             "quality": "MARKET_PRICE_SERIES",
+            "valid_price_rows": counts[ticker],
             "close": last,
-            "ret_1d_pct": None if last is None or len(s.dropna()) < 2 else float(100.0 * (s.dropna().iloc[-1] / s.dropna().iloc[-2] - 1.0)),
-            "ret_5d_pct": None if last is None or len(s.dropna()) < 6 else float(100.0 * (s.dropna().iloc[-1] / s.dropna().iloc[-6] - 1.0)),
-            "ret_20d_pct": None if last is None or len(s.dropna()) < 21 else float(100.0 * (s.dropna().iloc[-1] / s.dropna().iloc[-21] - 1.0)),
+            "ret_1d_pct": None if len(sd) < 2 else float(100.0 * (sd.iloc[-1] / sd.iloc[-2] - 1.0)),
+            "ret_5d_pct": None if len(sd) < 6 else float(100.0 * (sd.iloc[-1] / sd.iloc[-6] - 1.0)),
+            "ret_20d_pct": None if len(sd) < 21 else float(100.0 * (sd.iloc[-1] / sd.iloc[-21] - 1.0)),
             "rs63_vs_spy": latest_num(rel63[ticker]),
             "rs189_vs_spy": latest_num(rel189[ticker]),
             "rs63_rank": latest_num(rank63[ticker]),
@@ -106,12 +144,10 @@ def main() -> None:
     out = pd.DataFrame(rows)
     args.output.mkdir(parents=True, exist_ok=True)
     out.to_csv(args.output / "theme56_price.csv", index=False)
-    asof = None
-    if usable:
-        latest_dates = [close[t].dropna().index.max() for t in usable if not close[t].dropna().empty]
-        asof = str(max(latest_dates).date()) if latest_dates else None
+    latest_dates = [close[t].dropna().index.max() for t in usable if not close[t].dropna().empty]
+    asof = str(max(latest_dates).date()) if latest_dates else None
     report = {
-        "schema": 1,
+        "schema": 2,
         "research_only": True,
         "asof": asof,
         "universe_count": len(tickers),
@@ -119,13 +155,16 @@ def main() -> None:
         "data_required_count": len(tickers) - len(usable),
         "price_usable_tickers": usable,
         "data_required_tickers": [t for t in tickers if t not in usable],
+        "price_rows_by_ticker": counts,
+        "individual_retry_tickers": retry_tickers,
+        "individual_retry_rows": retry_counts,
         "price_cross_section": "56-theme universe only; not comparable to the old 15-ETF score scale",
         "download_diagnostics": diag,
         "guardrail": "No Rotation V2 state is assigned here. The old 15-ETF state thresholds are not reused before 56-theme validation.",
         "rows": rows,
     }
     (args.output / "theme56_price.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
-    print(json.dumps({k: report[k] for k in ("asof", "universe_count", "price_usable_count", "data_required_count", "data_required_tickers")}, ensure_ascii=False, indent=2), flush=True)
+    print(json.dumps({k: report[k] for k in ("asof", "universe_count", "price_usable_count", "data_required_count", "data_required_tickers", "individual_retry_rows")}, ensure_ascii=False, indent=2), flush=True)
 
 
 if __name__ == "__main__":
