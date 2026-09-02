@@ -98,7 +98,8 @@ def universe_audit(m: pd.DataFrame, names: list[str], universe_name: str) -> tup
             entity.append(row); trows.append((tk,ts["tight_minus_ease_bps"])); hrows.append((tk,hs["tight_minus_ease_bps"]))
         td=pd.Series(dict(trows),dtype=float); hd=pd.Series(dict(hrows),dtype=float)
         common=td.dropna().index.intersection(hd.dropna().index)
-        rho=float(td.loc[common].corr(hd.loc[common],method="spearman")) if len(common)>=4 else np.nan
+        # Spearman = Pearson correlation of ranks; calculate directly to avoid scipy dependency.
+        rho=float(td.loc[common].rank(method="average").corr(hd.loc[common].rank(method="average"))) if len(common)>=4 else np.nan
         sign_rate=float(np.mean(np.sign(td.loc[common])==np.sign(hd.loc[common]))) if len(common) else np.nan
         valid=td.dropna().sort_values()
         k=min(4,max(2,len(valid)//4))
@@ -142,7 +143,6 @@ def main():
         e,g,s=universe_audit(m,names,uname); all_entity+=e; all_group+=g; summaries[uname]=s
     pd.DataFrame(all_entity).to_csv(out/"entity_rate_sensitivity.csv",index=False)
     pd.DataFrame(all_group).to_csv(out/"holdout_rotation_groups.csv",index=False)
-    # Raw close/return coverage only for auditability, not for production use.
     coverage={t:{"first":str(close[t].dropna().index.min().date()),"last":str(close[t].dropna().index.max().date()),"n":int(close[t].notna().sum())} for t in tickers}
     result={"status":"RESEARCH_ONLY_NO_RULE_CHANGE","train":"2016-01-04..2021-12-31","holdout":"2022-01-03..2026-03-20",
             "state_cut_abs_z":CUT,"universes":{"GICS11":GICS,"STYLE5":STYLE},"factors":FACTORS,
