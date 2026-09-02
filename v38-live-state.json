@@ -1,10 +1,10 @@
 {
   "schema": "v38-live-state-1",
-  "source": "command-center.html",
+  "source": "command-center.html / ⚠ Sleeve更新失敗・前回READY継続(2026-09-01)",
   "asof": "2026-09-01",
   "market": {
     "nqsar": "Yellow",
-    "breadth50": 46.62,
+    "breadth50": 46.67,
     "breadth_valid": 3752,
     "breadth_universe": 3752,
     "coverage": 1.0,
@@ -39,13 +39,13 @@
     "required_route": "tqqq-panic-state.json",
     "asof_match_required": true,
     "vix_close": 16.34000015258789,
-    "qqq_sma50_atr_deviation": -0.3286058717237121,
+    "qqq_sma50_atr_deviation": -0.3286058717237064,
     "qqq_drawdown10": -0.018679495467751717,
     "seed_age_sessions": 106,
     "rsi4h": 48.70903101460771,
     "prior_rsi4h": 50.15754810952827,
     "touch30_today": false,
-    "mc57": 51.2,
+    "mc57": 49.3,
     "active": false,
     "held_sessions": 0,
     "underlying_target_pct": 30.0,
@@ -647,9 +647,9 @@
     {
       "ticker": "NESR",
       "price": 34.72,
-      "daily_dollar_volume_m": 76.4,
+      "daily_dollar_volume_m": 76.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 50.1,
+      "close_vs_sma200_pct": 50.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -927,7 +927,7 @@
     {
       "ticker": "DHT",
       "price": 19.69,
-      "daily_dollar_volume_m": 67.5,
+      "daily_dollar_volume_m": 66.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 29.8,
       "eligibility_checks": {
@@ -1039,9 +1039,9 @@
     {
       "ticker": "MPC",
       "price": 383.0,
-      "daily_dollar_volume_m": 1011.1,
+      "daily_dollar_volume_m": 990.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 61.4,
+      "close_vs_sma200_pct": 61.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1209,7 +1209,7 @@
       "price": 52.09,
       "daily_dollar_volume_m": 24.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 121.7,
+      "close_vs_sma200_pct": 121.8,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2103,7 +2103,7 @@
     {
       "ticker": "CRNX",
       "price": 84.95,
-      "daily_dollar_volume_m": 241.0,
+      "daily_dollar_volume_m": 206.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 67.7,
       "eligibility_checks": {
@@ -2383,9 +2383,9 @@
     {
       "ticker": "PARR",
       "price": 80.03,
-      "daily_dollar_volume_m": 82.5,
+      "daily_dollar_volume_m": 82.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 44.4,
+      "close_vs_sma200_pct": 44.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -3384,7 +3384,7 @@
     }
   },
   "gross100_allocation": {
-    "status": "LIVE ALLOCATION READY",
+    "status": "LIVE ALLOCATION READY / LAST READY PRESERVED",
     "adoption_status": "ADOPTED_FINAL_SPEC_20260901",
     "priority": [
       "RSI_RESET",
@@ -3403,13 +3403,13 @@
     ],
     "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
     "sleeve_live_status": "READY",
-    "sleeve_live_reason": null,
-    "sleeve_refresh_status": "FRESH",
+    "sleeve_live_reason": "STALE / LAST_READY_PRESERVED: ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000",
+    "sleeve_refresh_status": "STALE / LAST_READY_PRESERVED",
     "sleeve_refresh_attempted_asof": "2026-09-01",
     "sleeve_last_successful_asof": "2026-09-01",
-    "sleeve_refresh_attempted_at_utc": "2026-09-02T02:11:34Z",
-    "sleeve_refresh_error": null,
-    "sleeve_preserved_previous_ready": false,
+    "sleeve_refresh_attempted_at_utc": "2026-09-02T02:24:36Z",
+    "sleeve_refresh_error": "ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000",
+    "sleeve_preserved_previous_ready": true,
     "normal_position_count": 10,
     "reset_position_count": 0,
     "note": "Reset -> protect native/Panic TQQQ to 80% under competition -> Normal Stock capped at 70% -> native TQQQ extra -> adopted Selective Fill from remaining cash only; native CURRENT30 zero is never overridden",
