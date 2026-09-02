@@ -6,7 +6,7 @@
     if(!r.ok) throw new Error('Command Center '+r.status);
     let html=await r.text();
     const stamp=Date.now();
-    const addon=`<script src="command-center-unified.js?v=${stamp}"><\/script><script>document.addEventListener('click',function(e){const b=e.target.closest&&e.target.closest('#u-nav button[data-u]');if(!b)return;const route=b.dataset.u;setTimeout(function(){['today','rotation','stocks','tqqq','manage','detail'].forEach(function(id){const s=document.getElementById('u-'+id);if(s)s.classList.toggle('on',id===route)});const m=document.getElementById('t-market');if(m)m.classList.toggle('on',route==='market')},0)},true);<\/script>`;
+    const addon=`<script src="command-center-unified.js?v=${stamp}"><\/script>`;
     if(/<\/body>\s*<\/html>\s*$/i.test(html)) html=html.replace(/<\/body>\s*<\/html>\s*$/i,addon+'</body></html>');
     else html+=addon;
     document.open();document.write(html);document.close();
