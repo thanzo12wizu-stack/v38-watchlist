@@ -17,6 +17,11 @@ PUBLIC_FILES = (
     "rotation/index.html",
     "rotation/app.css",
     "rotation/app-theme56.js",
+    "rotation/market-sync.js",
+)
+
+DERIVED_PUBLIC_FILES = (
+    "rotation/dashboard-market.json",
 )
 
 # Optional source -> public-target mappings. Leadership is produced by its own
@@ -36,6 +41,48 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _read_json(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _write_rotation_dashboard_market(root: Path, output: Path) -> tuple[str, str]:
+    """Publish only the market fields Rotation needs from private/live state.
+
+    state.json itself stays outside the public allowlist. This derived payload is
+    intentionally small and contains no picks, holdings, trade state, or other
+    private dashboard details.
+    """
+    live = _read_json(root / "v38-live-state.json")
+    state = _read_json(root / "state.json")
+    market = live.get("market") if isinstance(live.get("market"), dict) else {}
+    panic = live.get("panic_tqqq") if isinstance(live.get("panic_tqqq"), dict) else {}
+
+    payload = {
+        "schema": "rotation-dashboard-market-1",
+        "v38_asof": live.get("asof"),
+        "crowd_asof": state.get("date"),
+        "market_conditions": panic.get("mc57"),
+        "nqsar": market.get("nqsar"),
+        "breadth50": market.get("breadth50"),
+        "mode": market.get("mode"),
+        "new_entry_limit": market.get("new_entry_limit"),
+        "crowd_temperature": state.get("senti"),
+        "vix": panic.get("vix_close"),
+    }
+
+    target_name = "rotation/dashboard-market.json"
+    target = output / target_name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return target_name, "derived:v38-live-state.json+state.json:selected-market-fields"
 
 
 def export_public_site(root: Path, output: Path, *, source_commit: str | None = None) -> dict:
@@ -71,8 +118,19 @@ def export_public_site(root: Path, output: Path, *, source_commit: str | None = 
             }
         )
 
+    derived_target, derived_source = _write_rotation_dashboard_market(root, output)
+    derived_path = output / derived_target
+    files.append(
+        {
+            "path": derived_target,
+            "source_path": derived_source,
+            "bytes": derived_path.stat().st_size,
+            "sha256": _sha256(derived_path),
+        }
+    )
+
     (output / ".nojekyll").write_text("", encoding="utf-8")
-    public_paths = [target_name for _, target_name in export_items]
+    public_paths = [target_name for _, target_name in export_items] + list(DERIVED_PUBLIC_FILES)
     manifest = {
         "schema_version": "1.2",
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
