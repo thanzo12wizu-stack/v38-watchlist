@@ -1,0 +1,52 @@
+name: Inverse ETF Extended Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_etf_extended.py
+      - .github/workflows/inverse-etf-extended-audit.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance requests
+      - name: Download base inverse scan artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/base
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9850106810/zip > /tmp/base.zip
+          unzip -q /tmp/base.zip -d inputs/base
+          test -s inputs/base/inverse_feature_state.csv.gz
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_inverse_etf_extended.py
+      - name: Run extended audit
+        run: |
+          set -euo pipefail
+          python leadership/research/audit_inverse_etf_extended.py \
+            --base inputs/base/inverse_feature_state.csv.gz \
+            --output leadership/research/out/inverse_etf_extended \
+            --start 2016-01-04 \
+            --end 2026-03-20
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-etf-extended-audit
+          path: leadership/research/out/inverse_etf_extended/
+          if-no-files-found: warn
+          retention-days: 14
