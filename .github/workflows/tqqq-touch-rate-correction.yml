@@ -1,0 +1,52 @@
+name: TQQQ TOUCH Rate Correction
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rate-regime-audit-20260902
+    paths:
+      - leadership/research/audit_tqqq_touch_rate_overlay.py
+      - .github/workflows/tqqq-touch-rate-correction.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_tqqq_touch_rate_overlay.py
+      - name: Download frozen inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/tqqq inputs/rates
+          gh run download 33080590798 -R "$GITHUB_REPOSITORY" -n tqqq-stage56-mandate-fx-tax -D inputs/tqqq
+          gh run download 33627699450 -R "$GITHUB_REPOSITORY" -n rate-regime-audit -D inputs/rates
+          test -s inputs/tqqq/tqqq_stage56_daily.csv.gz
+          test -s inputs/rates/rate_features.csv.gz
+      - name: Run correction audit
+        run: |
+          python leadership/research/audit_tqqq_touch_rate_overlay.py \
+            --tqqq inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --rates inputs/rates/rate_features.csv.gz \
+            --output leadership/research/out/tqqq_touch_rate_correction
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tqqq-touch-rate-correction
+          path: leadership/research/out/tqqq_touch_rate_correction/
+          if-no-files-found: warn
+          retention-days: 14
