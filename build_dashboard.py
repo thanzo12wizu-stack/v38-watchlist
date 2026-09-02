@@ -15,7 +15,7 @@ Command Center — dashboard builder (ピックアップ安定版 2026-07-11)
   B. レバスリーブ(30%): TQQQ:SOXL=50:50, SOXX MA50<100でSOXL→TQQQ, NQ4色ゲート。配分=個別70/レバ30/現金0。
   C. NQ 4色ゲート(即応・確認日数ゼロ): 個別 青100/緑100/黄=新規停止・保有はワイドトレール0.70継続(締めなし)/赤0(撤退), レバ 青100/緑50/黄0/赤0。執行は翌寄り。
   D. Market Conditions=57ETF × 12指標の完全等加重（方向対称・EMA2）。Breadth 10日変化は別軸表示。
-     ※先導株温度計は非対称: 左端(枯渇)のみNQ底に中央値18日先行(的中6割)/右端(過熱)は先取りせず。露出は動かさない。
+     ※先導株温度計は現状描写: 低位=Leadership Exhaustion、高位=現状の強さ。底/天井タイミング予測や露出変更には使わない。
   E. 8 tabs (マーケット/ピックアップ/ポートフォリオ/配分/RS比較/セクターローテ/業種RS/ルール) + 今日の運用ヘッダ + 隔週リバランス点検（月曜）。RS比較は63/126/189日Top10、1日・1週・1か月のIN/OUT、RS189 Top24の継続性を表示。
   F. 非常口ルール: equity.csvの口座NAV DDとQQQ円建て12ヶ月相対を自動判定。DD≤−28%かつ相対≤−12%でレバ半減、DD>−20%かつ相対>−8%で解除。状態はstate.jsonへ永続化。
   ※全数字はグロス・生存バイアス上限。信頼区間は対指数の相対優位。NQは手動(TradingView)が真。
@@ -10236,38 +10236,33 @@ def build_regime_alerts(m, st=None, collapsible=False, hist=None):
             f'<span class="reg-hdr {hcls}">{hdr}</span>{_tog}</div>'
             f'<div class="reg-body">'
             f'<div class="reg-grid">'
-            f'<div class="reg-cell {c1}"><div class="reg-k">F1 リーダー脱落率 <span class="reg-kind kind-t">タイミング</span></div>'
-            f'<div class="reg-role">最速の警報｜赤転換の中央48日前・19/22的中・誤報1.1/年</div>'
+            f'<div class="reg-cell {c1}"><div class="reg-k">F1 リーダー脱落率 <span class="reg-kind kind-t">Attrition</span></div>'
+            f'<div class="reg-role">内部の脱落・入替を測る｜早めに出やすいが単独の売買・赤転換予測には使わない</div>'
             f'{_onset("f1")}{_f1meta}'
             f'<div class="reg-v">{v1}</div><div class="reg-l">{l1}</div>'
             f'<div class="reg-chips">{cp1}{chips1}</div></div>'
-            f'<div class="reg-cell {c2}"><div class="reg-k">F2 勢い細り率 <span class="reg-kind kind-t">タイミング</span></div>'
-            f'<div class="reg-role">確定が近い｜赤転換の中央32日前・12/22的中・誤報1.0/年</div>'
+            f'<div class="reg-cell {c2}"><div class="reg-k">F2 勢い細り率 <span class="reg-kind kind-t">Fade</span></div>'
+            f'<div class="reg-role">リーダーの中期RS劣化を測る｜Momentum Runの失速と同じ情報群</div>'
             f'{_onset("f2")}'
             f'<div class="reg-v">{v2}</div><div class="reg-l">{l2}</div>'
             f'<div class="reg-chips">{cp2}{chips2}</div></div>'
-            f'<div class="reg-cell {c3}"><div class="reg-k">F3 キュー崩れ <span class="reg-kind kind-p">深さ</span></div>'
-            f'<div class="reg-role">下落の深さを見積もる｜60%超でDD10%確率が1.84倍（前半2.14x／後半1.63x）</div>'
+            f'<div class="reg-cell {c3}"><div class="reg-k">F3 キュー崩れ <span class="reg-kind kind-p">Damage</span></div>'
+            f'<div class="reg-role">リーダー損傷の広さ・深さを測る｜Breadthと重なるため単独予測には使わない</div>'
             f'{_onset("f3")}'
             f'<div class="reg-v">{v3}</div><div class="reg-l">{l3}</div>'
             f'<div class="reg-chips">{cp3}{chips3}</div></div>'
             f'</div>'
             f'<div class="note">'
-            f'<p><b>3灯は足し算しない。</b>それぞれ別の問いに答える計器。複合ルール（2灯以上）は時期によって安定しないため採用しない。</p>'
-            f'<p><b>F1 リーダー脱落率</b>（≥30%）｜<b>いつ</b>を答える<br>'
-            f'20日前に上位{2*N_PORT}だった銘柄のうち、今{3*N_PORT}位より下に落ちた割合。'
-            f'点灯＝<b>天井ゾーンに入った</b>。赤転換の中央48日前に点き19/22で的中（誤報1.1/年）＝3灯で最も早い。</p>'
-            f'<p><b>F2 勢い細り率</b>（≥40%・母数=上位{2*N_PORT}）｜<b>いつ</b>を答える<br>'
-            f'上位{2*N_PORT}のうち63日RSが85未満の割合。点灯＝<b>確定が近い</b>。赤転換の中央32日前・12/22的中（誤報1.0/年）。'
-            f'母数の上位{2*N_PORT}はポート表の継続境界線までと一致。</p>'
-            f'<p><b>F3 キュー崩れ</b>（≥60%・母数{qn}）｜<b>どれくらい深いか</b>を答える<br>'
-            f'適格母集団（189日RS≥85＆200日線上）のうち「反発待ち＝20日マイナス、または52週高値−15%超下」の割合。'
-            f'60%超のとき今後60日にDD10%が起きる確率が<b>1.84倍</b>（前半2.14x／後半1.63xで両期間クリア）。'
-            f'タイミングではなく<b>下落の深さの見積もり</b>に使う。</p>'
-            f'<p><b>行動</b>：F1点灯で構えを作り、F2点灯で新規サイズを絞り、F3が60%超なら深い下落を想定して裁量スイングの+25%到達玉を⅓利確（Core 12はピーク×0.70トレール維持）。'
-            f'売買ルール本体（地合いゲートとRS選定）は変えない。</p>'
-            f'<p class="fver">※上記の検証成績（19/22・1.84倍・+28.8% 等）は <b>logic {LOGIC_VERSION}</b>（build {LOGIC_HASH}）／検証データ {BACKTEST_THROUGH} 時点で算出。ロジック変更時は再検証までの暫定値。</p>'
-            f'<p class="mut">裏取りにはクレジット・VIX期間構造・売り抜け日・センチメントを併せて見る（単体では動かさない）。</p></div></div></div>')
+            f'<p><b>3灯は足し算しない。</b>F1=Attrition、F2=Fade、F3=Damage。厳格な追加検証でも静的な複合条件は独立シグナルとして残らなかった。</p>'
+            f'<p><b>F1 リーダー脱落率</b>（≥30%）｜<b>Attrition</b><br>'
+            f'20日前に上位{2*N_PORT}だった銘柄の脱落・適格外化を測る。内部の入替を早めに捉える文脈指標で、単独の赤転換予測や売買指示には使わない。</p>'
+            f'<p><b>F2 勢い細り率</b>（≥40%・母数=上位{2*N_PORT}）｜<b>Fade</b><br>'
+            f'上位{2*N_PORT}のうち63日RSが85未満の割合。Momentum Runの失速と同じ情報群なので二重カウントしない。</p>'
+            f'<p><b>F3 キュー崩れ</b>（≥60%・母数{qn}）｜<b>Damage</b><br>'
+            f'適格母集団（189日RS≥85＆200日線上）のうち「20日マイナス、または52週高値−15%超下」の割合。損傷の広さ・深さを説明するが、Breadth調整後の独立DD予測力は確認できなかった。</p>'
+            f'<p><b>Leadership Regeneration v1（前向き観測のみ）</b>：過去40営業日以内にLeader Temperature≤15を経験 → F2が40%以上から40%未満へ改善 → NQSAR Blue/GreenかつStock 50MA Breadth≥50%で成立。売買・配分・Hard Gateには非連動。</p>'
+            f'<p class="fver">※2026-09-02追加監査：Hard GateはNQSAR + Stock 50MA Breadthのまま。F1/F2/F3/Temperatureで枠数・保有・売買を変更しない。</p>'
+            f'<p class="mut">表示目的は市場内部の状態把握。閾値の足し算や複合スコア化はしない。</p></div></div></div>')
     except Exception as e:
         print("[warn] regime alerts failed:", e)
         return ""
@@ -13435,13 +13430,12 @@ def build_tenbagger_l1(m):
         return ""
 
 def build_defense_checklist(st):
-    """点灯した灯ごとに、その灯が実測で答える問いに対応する行動だけを出す。
-       各灯の点灯=警戒(bad)水準。売買ルール本体は変えない（心構えと執行の質のみ）。"""
+    """F1/F2/F3の点灯を市場内部の状態として整理する。売買・配分は変更しない。"""
     if not st:
         return ""
-    f1_on = st.get("c1") == "reg-bad"          # 脱落 ≥30%
-    f2_on = st.get("c2") == "reg-bad"          # 勢い細り ≥40%
-    f3_on = st.get("c3") == "reg-bad"          # キュー崩れ ≥60%
+    f1_on = st.get("c1") == "reg-bad"          # Attrition >=30%
+    f2_on = st.get("c2") == "reg-bad"          # Fade >=40%
+    f3_on = st.get("c3") == "reg-bad"          # Damage >=60%
     if not (f1_on or f2_on or f3_on):
         return ""
     lit = []
@@ -13450,23 +13444,20 @@ def build_defense_checklist(st):
     if f3_on: lit.append("F3")
     items = ""
     if f1_on:
-        items += ('<li><b>F1 点灯（天井ゾーン・中央48日前）</b>'
-                  '<ul><li>構えを防御に切り替える。枠を無理に埋めない</li>'
-                  '<li>この局面のリーダー群を記録（転換時に+28.8%で回帰する候補）</li></ul></li>')
+        items += ('<li><b>F1 Attrition</b>'
+                  '<ul><li>リーダーの脱落・入替が増えている。早期の内部劣化として記録するが、単独では売買しない</li></ul></li>')
     if f2_on:
-        items += ('<li><b>F2 点灯（確定が近い・中央32日前）</b>'
-                  '<ul><li>新規サイズを絞る（0.75%リスク/件 → 確信度の低いものは半分に）</li>'
-                  '<li>レバの途中参入を止める（SOXL/TQQQの新規トランシェを保留）</li></ul></li>')
+        items += ('<li><b>F2 Fade</b>'
+                  '<ul><li>現リーダーの中期RS劣化が広がっている。Momentum Runはこの内訳であり別票として数えない</li></ul></li>')
     if f3_on:
-        items += ('<li><b>F3 点灯（深い下落の確率1.84倍）</b>'
-                  '<ul><li>裁量スイングは+25%到達玉の⅓利確を確実に。<b>Core 12はピーク×0.70トレール維持（途中利確しない＝二層出口は不採用）</b></li>'
-                  '<li>全保有のピーク×0.70距離を点検。近い玉から目視レビュー</li></ul></li>')
-    return (f'<div class="card def-card"><h2>⚠ 防御チェックリスト <span class="def-badge">{"・".join(lit)} 点灯</span></h2>'
-            f'<div class="sub">点灯した灯に対応する行動だけを表示。<b>売買ルール本体（地合いゲートとRS選定）は変えない</b>。</div>'
+        items += ('<li><b>F3 Damage</b>'
+                  '<ul><li>リーダー群の損傷が広い。Breadthと重なるため、独立したDD予測や利確指示には使わない</li></ul></li>')
+    return (f'<div class="card def-card"><h2>⚠ Leadership 状態チェック <span class="def-badge">{"・".join(lit)} 点灯</span></h2>'
+            f'<div class="sub">点灯は内部状態の説明のみ。<b>Hard GateはNQSAR + Stock 50MA Breadthのまま</b>。</div>'
             f'<ul class="def-list">{items}</ul>'
             f'<div class="note">'
-            f'<p>3灯は別々の問いに答えるため<b>足し算しない</b>。F1・F2は「いつ」（赤転換までの先行）、F3は「どれくらい深いか」（条件付きDD倍率）を答える。</p>'
-            f'<p>これは心構えと執行の質を上げるトリガーであって自動売買ではない。短期タイミングの売買予測力はゼロ（検証済み）。</p>'
+            f'<p>F1=Attrition、F2=Fade、F3=Damage。3灯は別の側面を説明するため<b>足し算しない</b>。</p>'
+            f'<p>F1/F2/F3/Leader Temperatureを理由に、枠数削減・新規停止・利確・レバ変更は行わない。</p>'
             f'</div></div>')
 
 def build_transition_leaders(m, macro):
@@ -13629,7 +13620,7 @@ def build_leader_run(m, k=24):
     if acc >= fade * 2 and acc >= n * 0.3:
         health, hcol = "ラン拡大（先導株の勢いが伸びている）", "#4ade80"
     elif fade > acc:
-        health, hcol = "ラン細り（勢いが失われつつある・防御寄り）", "#fb923c"
+        health, hcol = "ラン細り（Fade優勢・内部劣化）", "#fb923c"
     else:
         health, hcol = "巡航（高値維持・方向感は中立）", "#9fb0c5"
     return dict(rows=rows, n=n, acc=acc, fade=fade, health=health, hcol=hcol)
@@ -13655,14 +13646,14 @@ def _leader_run_card(lr):
                   f'<span class="mrph">{r["phase"]}</span>'
                   f'<span class="mrtr">{traj(r)}</span></span>')
     return (f'<div class="card"><div class="hdr"><h2>先導株モメンタム・ラン</h2>{_cp([r["t"] for r in rows])}</div>'
-            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">現リーダー（RS189上位{lr["n"]}）の63日RSの軌跡（42日前→現在）。<b class="mr-acc">加速</b>＝拡大／<b class="mr-cru">巡航</b>＝維持／<b class="mr-fad">失速</b>＝細り</div></details>'
+            f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">現リーダー（RS189上位{lr["n"]}）の63日RSの軌跡（42日前→現在）。<b class="mr-acc">加速</b>＝拡大／<b class="mr-cru">巡航</b>＝維持／<b class="mr-fad">失速</b>＝細り。F2 Fadeと同じ情報群の銘柄別内訳で、別の警戒票として足し算しない。</div></details>'
             f'<div class="lbmood" style="color:{lr["hcol"]}">● {lr["health"]} ・ 加速{lr["acc"]} / 失速{lr["fade"]}（{lr["n"]}中）</div>'
             f'<div class="mrgrid">{chips}</div>'
-            f'<div class="lbnote">数字＝63日RSパーセンタイル。失速は出口線を意識——執行は確定出口線で（予兆での自動売却はしない）。</div></div>')
+            f'<div class="lbnote">数字＝63日RSパーセンタイル。失速はF2 Fadeの内訳表示であり、単独の売買・出口トリガーには使わない。</div></div>')
 
 def build_leader_temp(W, win=CHART_LB):
     """先導株の強さ温度計: 先導株(RS189上位10%)の63日リターン平均の、過去分布に対する%タイル系列。
-       予測でなく現状描写。非対称=左端(枯渇)のみNQ底に中央値18日先行(的中6割)/右端(過熱)は先取りせず。"""
+       予測でなく現状描写。低位=Leadership Exhaustion、高位=現状の強さ。底/天井タイミング予測には使わない。"""
     closes = W.get("Close")
     if closes is None or closes.shape[0] < 200:
         return None
@@ -13705,8 +13696,8 @@ def _leader_temp_card(lt):
     if not lt or not lt.get("ts"):
         return ""
     cur = lt["cur"]; ts = lt["ts"]; span = lt.get("span", "")
-    zone = ("枯渇（反発予兆）" if cur < 10 else "過熱（現状の強さ）" if cur >= 82 else
-            "強（過熱手前）" if cur >= 65 else "並" if cur >= 30 else "やや枯渇")
+    zone = ("極端な枯渇（Exhaustion）" if cur < 10 else "強い（現状の強さ）" if cur >= 82 else
+            "強" if cur >= 65 else "並" if cur >= 30 else "枯渇寄り")
     # 推移SVG: _svg_mri と同じ幾何・帯域塗り（%タイル0-100固定）
     ys = [v for _, v in ts]; n = len(ys)
     if n < 3:
@@ -13730,7 +13721,7 @@ def _leader_temp_card(lt):
     return (
         f'<div class="card"><div class="chd"><h2>リーダーの強さ</h2>'
         f'<div class="chd-now" style="color:#5b6b7f"><b>{cur:.0f}%</b><span>{zone}</span></div></div>'
-        f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">リーダー群（RS189上位10%）の勢いを過去分布の%タイルで表示・{span}</div></details>'
+        f'<details class="cxpl"><summary>読み方</summary><div class="cxpl-b">リーダー群（RS189上位10%）の勢いを過去分布の%タイルで表示・{span}。低位はExhaustion（主導株の枯渇）を示すが底打ち時期は予測しない。高位は現状の強さで、天井シグナルではない。</div></details>'
         f'{chart}'
         f'</div>')
 
@@ -19691,7 +19682,7 @@ def render(names, m, mri, breakdown, dropped, aux, setups, picks, cand,
                           "攻守ローテーション（一般消費財 / ディフェンシブ）",
                           "一般消費財÷ディフェンシブのσ。プラス＝攻め優勢／マイナス＝守り優勢",
                           "攻め優勢", "守り優勢", "#a78bfa", "dg", zero_ref=True, unit="σ")
-        + _mkt_section("③ 崩れの兆し", "リーダー脱落・勢い・下落余地", en="Warning Signs")
+        + _mkt_section("③ 崩れの兆し", "Attrition・Fade・Damage", en="Warning Signs")
         + build_regime_alerts(m, mkt.get("regime_state"), hist=mkt.get("reg_hist"))
         + (mkt.get("net_liq_card") or "")
         + (mkt.get("macro_pulse") or "")
