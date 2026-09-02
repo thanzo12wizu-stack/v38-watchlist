@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse, os, json
+import argparse, os, sys, json
 from pathlib import Path
 import numpy as np, pandas as pd, yfinance as yf
 
@@ -32,12 +32,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--legacy-dir", required=True); ap.add_argument("--v2-features", required=True); ap.add_argument("--tqqq", required=True); ap.add_argument("--output", required=True)
     a = ap.parse_args(); out = Path(a.output); out.mkdir(parents=True, exist_ok=True)
-    cwd = os.getcwd(); os.chdir(a.legacy_dir)
+    legacy_root = Path(a.legacy_dir).resolve()
+    v2_path = Path(a.v2_features).resolve(); tqqq_path = Path(a.tqqq).resolve()
+    cwd = os.getcwd(); sys.path.insert(0, str(legacy_root)); os.chdir(legacy_root)
     try:
         ns = {}; src = Path("research/tqqq_stage36_goal_first_taxaware.py").read_text(); prefix = src.split('print("\\n=== STAGE36')[0]
         exec(compile(prefix, "stage36-data-prefix", "exec"), ns)
     finally:
         os.chdir(cwd)
+        if sys.path and sys.path[0] == str(legacy_root): sys.path.pop(0)
     A = ns["A"]; F = ns["F"]; qqq = ns["qqq"]; dates = norm(F["date"])
     legacy = pd.DataFrame(index=dates)
     legacy["nq_int"] = np.asarray(A["nq"], int); legacy["nq_color"] = legacy.nq_int.map(MAP)
@@ -45,11 +48,11 @@ def main():
     qc = pd.to_numeric(qqq["Close"], errors="coerce").copy(); qc.index = norm(qc.index); qc = qc.reindex(dates)
     sma50 = qc.rolling(50, min_periods=50).mean(); legacy["qqq_dist_sma50"] = qc / sma50 - 1; legacy["sma50_slope10"] = sma50.pct_change(10)
     legacy["core_mc"] = legacy.nq_color.eq("Red") & (legacy.qqq_dist_sma50 < 0) & (legacy.sma50_slope10 < 0) & (legacy.mc_chg5 < -3)
-    tq = pd.read_csv(a.tqqq, compression="gzip", parse_dates=["date"]).set_index("date").sort_index(); tq.index = norm(tq.index); tq = tq.reindex(dates)
+    tq = pd.read_csv(tqqq_path, compression="gzip", parse_dates=["date"]).set_index("date").sort_index(); tq.index = norm(tq.index); tq = tq.reindex(dates)
     legacy["stage56"] = (tq.target_M30_TOUCH30_F80_D10 > tq.target_CURRENT30 + 1e-9).fillna(False); legacy["guard"] = legacy.panic | legacy.stage56
     legacy["event"] = cooldown(legacy.core_mc, 10) & ~legacy.guard
 
-    v2 = pd.read_csv(a.v2_features, compression="gzip", parse_dates=["date"]).set_index("date").sort_index(); v2.index = norm(v2.index)
+    v2 = pd.read_csv(v2_path, compression="gzip", parse_dates=["date"]).set_index("date").sort_index(); v2.index = norm(v2.index)
     ov = legacy.join(v2[["nq_color", "mc57", "mc_chg5", "qqq_dist_sma50", "sma50_slope10", "panic_episode"]], how="inner", lsuffix="_legacy", rsuffix="_v2")
     ov["nq_match"] = ov.nq_color_legacy.eq(ov.nq_color_v2)
     ov["legacy_core"] = ov.nq_color_legacy.eq("Red") & (ov.qqq_dist_sma50_legacy < 0) & (ov.sma50_slope10_legacy < 0) & (ov.mc_chg5_legacy < -3)
