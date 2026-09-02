@@ -28,6 +28,8 @@ OPTIONAL_PUBLIC_FILES = (
     # Publishable when the live producer creates it. Optionality is deliberate:
     # allowlisting this file does not claim that CURRENT30/4H RSI generation is live.
     ("tqqq-panic-state.json", "tqqq-panic-state.json"),
+    # Read-only same-origin diagnostic for localStorage holdings. It never writes data.
+    ("holdings-diagnostic.html", "holdings-diagnostic.html"),
 )
 
 
