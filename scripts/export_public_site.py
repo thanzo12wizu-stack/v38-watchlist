@@ -18,7 +18,6 @@ PUBLIC_FILES = (
     "rotation/app.css",
     "rotation/app-theme56.js",
     "rotation/market-sync.js",
-    "rotation/dashboard-market.json",
 )
 
 # Optional source -> public-target mappings. Leadership is produced by its own
