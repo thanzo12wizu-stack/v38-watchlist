@@ -6,10 +6,12 @@ on:
     paths:
       - 'command-center-unified.html'
       - 'command-center-unified-v3.js'
+      - '.github/workflows/unified-dashboard.yml'
   pull_request:
     paths:
       - 'command-center-unified.html'
       - 'command-center-unified-v3.js'
+      - '.github/workflows/unified-dashboard.yml'
   workflow_dispatch: {}
 
 permissions:
