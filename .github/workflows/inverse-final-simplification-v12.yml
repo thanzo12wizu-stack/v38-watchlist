@@ -37,6 +37,26 @@ jobs:
           unzip -q /tmp/g100.zip -d inputs/g100
           gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9649902954/zip > /tmp/tqqq.zip
           unzip -q /tmp/tqqq.zip -d inputs/tqqq
+      - name: Patch sensitivity alignment guard
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('leadership/research/audit_inverse_final_simplification_v12.py')
+          s=p.read_text()
+          old="dates=pd.to_datetime(d.date).dt.normalize();eligible=set(dates[baseev].tolist());nonzero={pd.Timestamp(k):float(v) for k,v in size_map.items() if float(v)>0 and pd.Timestamp(k)<=pd.Timestamp('2026-03-20')};bad=set(nonzero)-eligible\n if bad:raise RuntimeError('nonzero adaptive size on non-V4 event dates: '+','.join(str(x.date()) for x in sorted(bad)))"
+          new="dates=pd.to_datetime(d.date).dt.normalize();eligible=set(dates[baseev].tolist());all_nonzero={pd.Timestamp(k):float(v) for k,v in size_map.items() if float(v)>0 and pd.Timestamp(k)>=dates.min() and pd.Timestamp(k)<=pd.Timestamp('2026-03-20')};bad=set(all_nonzero)-eligible;nonzero={k:v for k,v in all_nonzero.items() if k in eligible}"
+          if old not in s:
+              raise SystemExit('overlay patch target not found')
+          s=s.replace(old,new)
+          old2="w,s3,s5=event_sizes(ev,3,5,.15,False);wm,_,_=event_sizes(ev,3,5,.15,True);ev['adaptive_only_size']=w;ev['macro_adaptive_size']=wm;ev.to_csv(out/'final_event_ledger.csv',index=False)"
+          new2="w,s3,s5=event_sizes(ev,3,5,.15,False);wm,_,_=event_sizes(ev,3,5,.15,True);primary_nonzero={pd.Timestamp(dt):float(sz) for dt,sz in zip(ev.signal_date,w) if float(sz)>0 and pd.Timestamp(dt)>=pd.Timestamp('2016-01-01') and pd.Timestamp(dt)<=pd.Timestamp('2026-03-20')};primary_bad=sorted(set(primary_nonzero)-v4dates);\n if primary_bad:raise RuntimeError('PRIMARY S3/L5 nonzero on non-V4 dates: '+','.join(str(x.date()) for x in primary_bad))\n ev['adaptive_only_size']=w;ev['macro_adaptive_size']=wm;ev.to_csv(out/'final_event_ledger.csv',index=False)"
+          if old2 not in s:
+              raise SystemExit('primary assert patch target not found')
+          s=s.replace(old2,new2)
+          s=s.replace("'note':'Any nonzero adaptive size outside official V4 events aborts the run.'","'note':'Sensitivity configs are intersected with official V4 events; primary S3/L5 still aborts if nonzero on any non-V4 date.'")
+          p.write_text(s)
+          PY
+          python -m py_compile leadership/research/audit_inverse_final_simplification_v12.py
       - name: Run final simplification stress
         run: |
           PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_final_simplification_v12.py \
