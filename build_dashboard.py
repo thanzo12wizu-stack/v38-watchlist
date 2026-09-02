@@ -10260,7 +10260,7 @@ def build_regime_alerts(m, st=None, collapsible=False, hist=None):
             f'上位{2*N_PORT}のうち63日RSが85未満の割合。Momentum Runの失速と同じ情報群なので二重カウントしない。</p>'
             f'<p><b>F3 キュー崩れ</b>（≥60%・母数{qn}）｜<b>Damage</b><br>'
             f'適格母集団（189日RS≥85＆200日線上）のうち「20日マイナス、または52週高値−15%超下」の割合。損傷の広さ・深さを説明するが、Breadth調整後の独立DD予測力は確認できなかった。</p>'
-            f'<p><b>Leadership Regeneration v1（前向き観測のみ）</b>：過去40営業日以内にLeader Temperature≤15を経験 → F2が40%以上から40%未満へ改善 → NQSAR Blue/GreenかつStock 50MA Breadth≥50%で成立。売買・配分・Hard Gateには非連動。</p>'
+            f'<p><b>Leadership Regeneration v1（前向き観測のみ）</b>：過去40営業日以内にLeader Temperature≤15を経験 → F2が40%以上から40%未満へ改善 → NQSAR Blue/GreenかつStock 50MA Breadth≥50%で成立。</p>'
             f'<p class="fver">※2026-09-02追加監査：Hard GateはNQSAR + Stock 50MA Breadthのまま。F1/F2/F3/Temperatureで枠数・保有・売買を変更しない。</p>'
             f'<p class="mut">表示目的は市場内部の状態把握。閾値の足し算や複合スコア化はしない。</p></div></div></div>')
     except Exception as e:
