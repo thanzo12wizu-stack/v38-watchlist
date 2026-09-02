@@ -17006,6 +17006,15 @@ function hldLoad(){
   try{ raw=localStorage.getItem(hldKey()); if(!raw) return []; var a=JSON.parse(raw); if(!Array.isArray(a)) throw new Error('not array'); return a.map(_hldNormalize).filter(function(x){return x;}); }
   catch(e){
     try{
+      if(!window._hldDiagWarned){
+        window._hldDiagWarned=1;
+        var _hldDiagMsg='HLD LOAD ERROR\nname: '+String(e&&e.name||'Error')+'\nmessage: '+String(e&&e.message||e)+'\nstack: '+String(e&&e.stack||'(none)');
+        window._hldLastLoadError=_hldDiagMsg;
+        alert(_hldDiagMsg);
+      }
+    }catch(_hldDiagErr){}
+
+    try{
       var prev=localStorage.getItem(hldKey()+'_prev');
       if(prev){ var b=JSON.parse(prev); if(Array.isArray(b)){ if(!window._hldWarned){window._hldWarned=1;alert('トレードノートの現行データを読めなかったため、直前バックアップを復元表示します。JSONバックアップも確認してください。');} return b.map(_hldNormalize).filter(function(x){return x;}); } }
       if(!window._hldWarned){window._hldWarned=1;alert('トレードノートの保存データを読み込めません。JSONバックアップから復元してください。');}
