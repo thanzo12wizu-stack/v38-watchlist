@@ -1,0 +1,52 @@
+name: Inverse Event Engine V2 Frozen
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_event_engine_v2_frozen.py
+      - .github/workflows/inverse-event-engine-v2-frozen.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests
+      - name: Download frozen first-pass artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/frozen
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9850106810/zip > /tmp/inverse.zip
+          unzip -q /tmp/inverse.zip -d inputs/frozen
+          test -s inputs/frozen/inverse_feature_state.csv.gz
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_inverse_event_engine_v2_frozen.py
+      - name: Run frozen-feature validation
+        run: |
+          set -euo pipefail
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_event_engine_v2_frozen.py \
+            --features inputs/frozen/inverse_feature_state.csv.gz \
+            --output leadership/research/out/inverse_event_engine_v2_frozen \
+            --start 2016-01-04 \
+            --end 2026-03-20
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-event-engine-v2-frozen
+          path: leadership/research/out/inverse_event_engine_v2_frozen/
+          if-no-files-found: warn
+          retention-days: 14
