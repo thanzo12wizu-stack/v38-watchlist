@@ -1,0 +1,43 @@
+name: Leadership Cycle Combination Audit 20260902
+
+on:
+  push:
+    branches:
+      - research/leadership-cycle-audit-20260902
+    paths:
+      - leadership/research/audit_leadership_cycle_combinations.py
+      - .github/workflows/leadership-cycle-combinations-20260902.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  combinations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/leadership-cycle-audit-20260902
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run prespecified leadership combination audit
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/leadership/research" \
+          python leadership/research/audit_leadership_cycle_combinations.py \
+            --root . \
+            --output leadership_cycle_combinations \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-08-31 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: leadership-cycle-combinations-20260902
+          path: leadership_cycle_combinations/
+          retention-days: 30
