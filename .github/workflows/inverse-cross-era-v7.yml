@@ -1,0 +1,50 @@
+name: Inverse Cross-Era Guard V7
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_cross_era_guard_v7.py
+      - .github/workflows/inverse-cross-era-v7.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Download frozen research inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/v6 inputs/v2
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9868903361/zip > /tmp/v6.zip
+          unzip -q /tmp/v6.zip -d inputs/v6
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9851768614/zip > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d inputs/v2
+      - name: Run cross-era guard audit
+        run: |
+          set -euo pipefail
+          python leadership/research/audit_inverse_cross_era_guard_v7.py \
+            --legacy-state inputs/v6/legacy_state_2011_2026.csv.gz \
+            --v2-features inputs/v2/feature_state_v2.csv.gz \
+            --output leadership/research/out/inverse_cross_era_v7
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-cross-era-v7
+          path: leadership/research/out/inverse_cross_era_v7/
+          retention-days: 30
+          if-no-files-found: warn
