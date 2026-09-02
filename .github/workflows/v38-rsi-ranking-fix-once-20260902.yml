@@ -1,0 +1,255 @@
+name: V38 RSI and reopening rank integrity fix once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v38-rsi-ranking-fix-once-20260902.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            build_v38_tqqq_live.py
+            build_v38_sleeve_live.py
+            build_v38_companion.py
+            build_v38_strict_loo_live.py
+            v38_rules.py
+            build_dashboard.py
+            command-center-v38.html
+            requirements.txt
+            tests
+            .github/workflows/dashboard.yml
+            .github/workflows/v38-rsi-ranking-fix-once-20260902.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Apply audited fixes only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              s = p.read_text(encoding='utf-8')
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f'{path}: expected 1 occurrence, found {n}: {old[:120]!r}')
+              p.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          # 1) Preserve intraday timezone through the private cache. Yahoo Chart 5m is UTC;
+          # build_4h_bars converts timezone-aware bars to America/New_York.
+          replace_once(
+              'build_v38_tqqq_live.py',
+              '        "qqq_5m": _frame_payload(_plain(qqq_5m)),\n',
+              '        "qqq_5m": _frame_payload(qqq_5m),\n',
+          )
+
+          # 2) Reset daily RSI must use the same SMA-seeded Wilder RMA as Stage51/Pine.
+          old = '''def wilder_rsi(close: pd.DataFrame, n: int = 14) -> pd.DataFrame:\n    delta = close.diff()\n    gain = delta.clip(lower=0.0)\n    loss = -delta.clip(upper=0.0)\n    avg_gain = gain.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()\n    avg_loss = loss.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()\n    rs = avg_gain / avg_loss.replace(0.0, np.nan)\n    out = 100.0 - 100.0 / (1.0 + rs)\n    out = out.where(avg_loss != 0.0, 100.0)\n    return out\n'''
+          new = '''def wilder_rsi(close: pd.DataFrame, n: int = 14) -> pd.DataFrame:\n    """TradingView/Pine-style Wilder RSI with an SMA seed per symbol.\n\n    Each symbol is seeded from its first n valid price changes, then advanced\n    recursively with Wilder's RMA. Pre-listing NaNs stay NaN and do not become\n    an artificial first gain/loss observation.\n    """\n    out = pd.DataFrame(np.nan, index=close.index, columns=close.columns, dtype=float)\n    for column in close.columns:\n        series = pd.to_numeric(close[column], errors="coerce").dropna()\n        if len(series) <= n:\n            continue\n        values = series.to_numpy(float)\n        delta = np.diff(values, prepend=np.nan)\n        gain = np.where(delta > 0, delta, 0.0)\n        loss = np.where(delta < 0, -delta, 0.0)\n        avg_gain = np.full(len(values), np.nan)\n        avg_loss = np.full(len(values), np.nan)\n        avg_gain[n] = np.mean(gain[1:n + 1])\n        avg_loss[n] = np.mean(loss[1:n + 1])\n        for i in range(n + 1, len(values)):\n            avg_gain[i] = (avg_gain[i - 1] * (n - 1) + gain[i]) / n\n            avg_loss[i] = (avg_loss[i - 1] * (n - 1) + loss[i]) / n\n        with np.errstate(divide="ignore", invalid="ignore"):\n            rs = avg_gain / avg_loss\n            result = 100.0 - 100.0 / (1.0 + rs)\n        result[(avg_loss == 0.0) & np.isfinite(avg_gain)] = 100.0\n        result[(avg_gain == 0.0) & (avg_loss == 0.0)] = 50.0\n        out.loc[series.index, column] = result\n    return out\n'''
+          replace_once('build_v38_sleeve_live.py', old, new)
+
+          # 3) Remove the accidental broad biotech exclusion. Keep only the audited
+          # structural Clinical Biotech decision in v38_rules.py.
+          replace_once(
+              'build_v38_companion.py',
+              '''NORMAL_STOCK_BIOTECH_INDUSTRIES = frozenset({"Biotechnology", "Pharmaceuticals: Other"})\n\n\ndef _normal_stock_biotech_excluded(industry) -> bool:\n    """Normal-stock sleeve: broadly exclude biotech-like clinical industries.\n\n    This is deliberately stricter than the legacy structural-small-biotech\n    helper retained in v38_rules for historical audit compatibility.\n    """\n    return str(industry or "").strip() in NORMAL_STOCK_BIOTECH_INDUSTRIES\n\n\n''',
+              '',
+          )
+          replace_once(
+              'build_v38_companion.py',
+              '''        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)\n        normal_biotech_excluded = _normal_stock_biotech_excluded(industry_value)\n        eligible = (\n''',
+              '''        bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)\n        eligible = (\n''',
+          )
+          replace_once(
+              'build_v38_companion.py',
+              '''            and not bio.excluded\n            and not normal_biotech_excluded\n        )\n''',
+              '''            and not bio.excluded\n        )\n''',
+          )
+          replace_once(
+              'build_v38_companion.py',
+              '''                "biotech_industry_excluded": normal_biotech_excluded,\n            },\n            "normal_biotech_policy": {\n                "industry": industry_value,\n                "excluded": normal_biotech_excluded,\n                "policy": "EXCLUDE_BIOTECHNOLOGY_AND_PHARMACEUTICALS_OTHER",\n            },\n''',
+              '''                "biotech_industry_excluded": bio.excluded,\n            },\n            "normal_biotech_policy": {\n                "industry": industry_value,\n                "excluded": bio.excluded,\n                "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open",\n            },\n''',
+          )
+
+          # 4) Always calculate both reopening routes: SELECTIVE=RS189 and ATTACK=70/30.
+          old = '''    all_attack_watch_ready = bool(candidates) and all(\n        row["attack_watch_score"] is not None for row in candidates\n    )\n    if all_attack_watch_ready:\n        watch_order = sorted(\n            candidates,\n            key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])),\n            reverse=True,\n        )\n        for rank, row in enumerate(watch_order, 1):\n            row["attack_watch_rank"] = rank\n\n    all_attack_ready = mode.name == "ATTACK" and all_attack_watch_ready\n    if mode.name == "ATTACK" and all_attack_ready:\n        candidates.sort(key=lambda row: (float(row["attack_score"]), float(row["rs189"])), reverse=True)\n    elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:\n        candidates.sort(key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])), reverse=True)\n    else:\n        candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)\n    if mode.name == "SELECTIVE":\n        for rank, row in enumerate(candidates, 1):\n            row["final_rank"] = rank\n    elif mode.name == "ATTACK" and all_attack_ready:\n        for rank, row in enumerate(candidates, 1):\n            row["final_rank"] = rank\n'''
+          new = '''    selective_order = sorted(candidates, key=lambda row: float(row["rs189"]), reverse=True)\n    for rank, row in enumerate(selective_order, 1):\n        row["selective_watch_rank"] = rank\n\n    all_attack_watch_ready = bool(candidates) and all(\n        row["attack_watch_score"] is not None for row in candidates\n    )\n    attack_order = []\n    if all_attack_watch_ready:\n        attack_order = sorted(\n            candidates,\n            key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])),\n            reverse=True,\n        )\n        for rank, row in enumerate(attack_order, 1):\n            row["attack_watch_rank"] = rank\n\n    all_attack_ready = mode.name == "ATTACK" and all_attack_watch_ready\n    if mode.name == "SELECTIVE":\n        candidates = selective_order\n        for row in candidates:\n            row["final_rank"] = row["selective_watch_rank"]\n    elif mode.name == "ATTACK" and all_attack_ready:\n        candidates = attack_order\n        for row in candidates:\n            row["attack_score"] = row["attack_watch_score"]\n            row["final_rank"] = row["attack_watch_rank"]\n    elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:\n        candidates = attack_order\n    else:\n        candidates = selective_order\n'''
+          replace_once('build_v38_companion.py', old, new)
+          replace_once(
+              'build_v38_companion.py',
+              '            "normal_biotech_policy": "EXCLUDE Biotechnology / Pharmaceuticals: Other",\n',
+              '            "normal_biotech_policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY (<10B cap AND <50M revenue; missing revenue fail-open)",\n',
+          )
+          replace_once(
+              'build_v38_companion.py',
+              '''            "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",\n            "attack_watch_semantics": "WATCH_ONLY_OUTSIDE_ATTACK; NEVER_OVERRIDES_MARKET_MODE",\n''',
+              '''            "selective_watch_status": "READY" if bool(candidates) else "DATA REQUIRED",\n            "selective_watch_semantics": "STOP/DEFENSE REOPEN TO SELECTIVE: RS189 ONLY; TOP4",\n            "selective_reopen_top4": [row["ticker"] for row in selective_order[:4]],\n            "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",\n            "attack_watch_semantics": "STOP/DEFENSE REOPEN TO ATTACK: 70/30 STRICT LOO; TOP12",\n            "attack_reopen_top12": [row["ticker"] for row in attack_order[:12]] if all_attack_watch_ready else [],\n''',
+          )
+          replace_once(
+              'build_v38_companion.py',
+              '        "candidates": candidates[:50],\n',
+              '        "candidates": candidates,\n',
+          )
+
+          # 5) Audited UI: make RSI identity explicit, show both reopening routes, and
+          # use the real command-center holdings key for capacity counts without writing it.
+          replace_once(
+              'command-center-v38.html',
+              '<div class="mini"><span>4H RSI</span><b id="rsiTrigger">—</b></div>',
+              '<div class="mini"><span>QQQ 4H RSI14（Panic判定）</span><b id="rsiTrigger">—</b></div>',
+          )
+          replace_once(
+              'command-center-v38.html',
+              'Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外。Theme名ではなくIndustryで判定する。',
+              'Biotechnology / Pharmaceuticals: Other のうち、時価総額&lt;$10B かつ Revenue TTM&lt;$50M の構造的小型Clinical Biotechだけ除外。Revenue欠落はfail-open。Theme名ではなくIndustryで判定する。',
+          )
+          replace_once(
+              'command-center-v38.html',
+              'STOP/DEFENSE中に表示する「再開時ウォッチ順位」は売買シグナルではありません。正式ATTACKと同じ70/30式を全eligible銘柄へ計算し、Market Modeが再開した時に何を見るかを準備しているだけです。',
+              'STOP/DEFENSE中は復帰先を2本に分けて表示します。Blue/Green＋Breadth 50〜60%ならSELECTIVEなのでRS189 Top4、Breadth≥60%ならATTACKなので70/30 strict-LOO Top12。どちらも復帰条件成立前は買いシグナルではありません。',
+          )
+          replace_once(
+              'command-center-v38.html',
+              '<div class="card"><div class="hdr"><h2>今日の最終配分</h2><span class="badge" id="allocationBadge">計算中</span></div>',
+              '<div class="card"><div class="hdr"><h2>戦略モデルの目標配分（実保有とは別）</h2><span class="badge" id="allocationBadge">計算中</span></div>',
+          )
+          replace_once(
+              'command-center-v38.html',
+              '<section id="positions" class="panel"><div class="card"><div class="hdr"><h2>通常個別株 Positions</h2><span class="badge">この端末に保存</span></div>',
+              '<section id="positions" class="panel"><div class="card"><div class="hdr"><h2>通常個別株 Positions（監査版メモ）</h2><span class="badge">空き枠計算には未使用</span></div>',
+          )
+          replace_once(
+              'command-center-v38.html',
+              "const KEY='v38_audited_positions_v1';let STATE=null,TQQQ_STATE=null,ROT=null,ROTCTX=null;",
+              "const KEY='v38_audited_positions_v1';const LIVE_HOLDINGS_KEY='v38_holdings';let STATE=null,TQQQ_STATE=null,ROT=null,ROTCTX=null;",
+          )
+          replace_once(
+              'command-center-v38.html',
+              "function positions(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}function save(a){localStorage.setItem(KEY,JSON.stringify(a));renderPositions();renderToday()}",
+              "function positions(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}function actualPositions(){try{let a=JSON.parse(localStorage.getItem(LIVE_HOLDINGS_KEY)||'[]');if(!Array.isArray(a))return[];return a.filter(x=>x&&x.status!=='closed'&&(x.t||x.ticker))}catch{return[]}}function save(a){localStorage.setItem(KEY,JSON.stringify(a));renderPositions();renderToday()}",
+          )
+          replace_once(
+              'command-center-v38.html',
+              "function renderToday(){if(!STATE)return;let m=STATE.market,held=positions().length,mt=modeText(m),tq=tqqqActionText(STATE.normal_tqqq||{});",
+              "function renderToday(){if(!STATE)return;let m=STATE.market,held=actualPositions().length,mt=modeText(m),tq=tqqqActionText(STATE.normal_tqqq||{});",
+          )
+
+          # Ranking helper/UI replacement. The main table stays capped at 50 rows;
+          # reopening cards use explicit precomputed ranks from the full eligible universe.
+          old = '''function rankRows(){if(!STATE)return[];let m=STATE.market,r=STATE.ranking||{},rows=[...(STATE.candidates||[])];if(m.mode==='SELECTIVE'||m.mode==='ATTACK')return rows.sort((a,b)=>(a.final_rank??999)-(b.final_rank??999));if(r.attack_watch_status==='READY')return rows.sort((a,b)=>(a.attack_watch_rank??999)-(b.attack_watch_rank??999));return rows}\nfunction rankMeta(x){let m=STATE.market;if(m.mode==='SELECTIVE')return{rank:x.final_rank,score:x.rs189,label:'RS189'};if(m.mode==='ATTACK')return{rank:x.final_rank,score:x.attack_score,label:'V38 Final'};return{rank:x.attack_watch_rank,score:x.attack_watch_score,label:'再開時V38'}}\n'''
+          new = '''function rankRows(){if(!STATE)return[];let m=STATE.market,r=STATE.ranking||{},rows=[...(STATE.candidates||[])];if(m.mode==='SELECTIVE'||m.mode==='ATTACK')return rows.sort((a,b)=>(a.final_rank??999)-(b.final_rank??999));if(r.attack_watch_status==='READY')return rows.sort((a,b)=>(a.attack_watch_rank??999)-(b.attack_watch_rank??999));return rows.sort((a,b)=>(a.selective_watch_rank??999)-(b.selective_watch_rank??999))}\nfunction rankMeta(x,kind){let m=STATE.market;if(kind==='selective')return{rank:x.selective_watch_rank,score:x.rs189,label:'RS189'};if(kind==='attack')return{rank:x.attack_watch_rank,score:x.attack_watch_score,label:'V38 70/30'};if(m.mode==='SELECTIVE')return{rank:x.final_rank,score:x.rs189,label:'RS189'};if(m.mode==='ATTACK')return{rank:x.final_rank,score:x.attack_score,label:'V38 Final'};return{rank:x.attack_watch_rank,score:x.attack_watch_score,label:'再開時V38'}}\n'''
+          replace_once('command-center-v38.html', old, new)
+          replace_once(
+              'command-center-v38.html',
+              "function pickCard(x){let q=rankMeta(x),can=STATE.market.mode==='ATTACK'||STATE.market.mode==='SELECTIVE';return`<div class=\"pick\"><div class=\"rankno\">#${q.rank??'—'} ${can?'買付優先順位':'再開時ウォッチ'}</div>",
+              "function pickCard(x,kind){let q=rankMeta(x,kind),can=!kind&&(STATE.market.mode==='ATTACK'||STATE.market.mode==='SELECTIVE');return`<div class=\"pick\"><div class=\"rankno\">#${q.rank??'—'} ${can?'買付優先順位':kind==='selective'?'SELECTIVE復帰':kind==='attack'?'ATTACK復帰':'再開時ウォッチ'}</div>",
+          )
+
+          # Replace renderRanking as a whole using stable function boundaries.
+          p = Path('command-center-v38.html')
+          s = p.read_text(encoding='utf-8')
+          start = s.index('function renderRanking(){')
+          end = s.index('\nfunction renderToday(){', start)
+          replacement = '''function renderRanking(){let rows=rankRows(),m=STATE.market,r=STATE.ranking||{},entry=m.mode==='ATTACK'||m.mode==='SELECTIVE';let ready=entry?(m.mode==='SELECTIVE'||r.strict_loo_live_status==='READY'):r.attack_watch_status==='READY';$('rankingTitle').textContent=entry?'今日の買付優先順位':'再開したら見る順番';$('rankingSubtitle').textContent=entry?'空き枠がある場合、この順に翌営業日寄りの候補。':'今は買わない。復帰先がSELECTIVEかATTACKかで買う順位が違うため、2本を分けて表示します。';$('rankingBadge').textContent=ready?'正式ロジックで順位化':'DATA REQUIRED';$('rankStatus').textContent=ready?'順位READY':'DATA REQUIRED';$('quickRankTitle').textContent=entry?'今、優先して見る銘柄':'再開時の買付候補';if(entry){$('quickRankExplain').textContent='現在のModeと空き枠が許す範囲で、上から優先します。';let top=ready?rows.slice(0,3):[];$('quickPicks').innerHTML=top.map(x=>pickCard(x)).join('')||'<div class="empty">正式順位に必要なデータが揃っていません。</div>';$('topPicks').innerHTML=top.map(x=>pickCard(x)).join('')||'<div class="empty">正式順位に必要なデータが揃っていません。</div>'}else{let all=[...(STATE.candidates||[])],sel=[...all].sort((a,b)=>(a.selective_watch_rank??999)-(b.selective_watch_rank??999)).slice(0,4),atk=[...all].filter(x=>x.attack_watch_rank!=null).sort((a,b)=>a.attack_watch_rank-b.attack_watch_rank).slice(0,12);$('quickRankExplain').textContent='Blue/Greenへ戻った時、Breadth 50〜60%ならSELECTIVE（RS189 Top4）、60%以上ならATTACK（70/30 Top12）。復帰条件成立前は買いません。';$('quickPicks').innerHTML=`<div style="grid-column:1/-1"><div class="eyebrow">SELECTIVE復帰：Breadth 50〜60% / 最大4枠 / RS189のみ</div><div class="picks">${sel.map(x=>pickCard(x,'selective')).join('')}</div></div><div style="grid-column:1/-1"><div class="eyebrow">ATTACK復帰：Breadth 60%以上 / 最大12枠 / Stock70 + Theme30</div><div class="picks">${atk.map(x=>pickCard(x,'attack')).join('')}</div></div>`;$('topPicks').innerHTML=atk.slice(0,3).map(x=>pickCard(x,'attack')).join('')||'<div class="empty">正式ATTACK順位に必要なデータが揃っていません。</div>'}$('candidateRows').innerHTML=rows.slice(0,50).map(x=>{let q=rankMeta(x),rot=rotationLabel(x);return`<tr><td>${q.rank??'—'}</td><td><a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(x.ticker)}" target="_blank" rel="noopener noreferrer" style="display:block;color:inherit;text-decoration:none;padding:9px 7px;margin:-9px -7px"><b>${esc(x.ticker)}</b></a></td><td>${q.score==null?'DATA REQUIRED':fmt(q.score,1)}</td><td>${fmt(x.rs189)}</td><td>${fmt(x.rs63)}</td><td>${x.daily_dollar_volume_m==null?'—':fmt(x.daily_dollar_volume_m,1)}</td><td>${x.sma50_gt_sma200?'PASS':'FAIL'}</td><td>${(x.close_vs_sma200_pct??0)>0?'PASS':'FAIL'}</td><td>${esc(x.peer_theme||'—')}</td><td>${x.peer_theme_score==null?'—':fmt(x.peer_theme_score)}</td><td>${esc(rot)}</td><td>${entry?'空き枠があれば候補':'今は買わない'}</td></tr>`}).join('')}'''
+          s = s[:start] + replacement + s[end:]
+          p.write_text(s, encoding='utf-8')
+
+          # Add an explicit reopening branch to the existing rule flow.
+          marker = '<details class="rulebox" open><summary>① Market Mode ─ いつ通常株を買っていい？</summary>'
+          insert = '''<div class="card"><div class="hdr"><h2>STOP / DEFENSEから戻る時の分岐</h2><span class="badge">買う株まで明示</span></div><div class="ruleflow"><div class="step"><div class="n">復帰条件</div><h3>Blue / Green ＋ Breadth≥50%</h3><p>条件成立を当日終値で確認し、翌営業日寄りから新規Entry資格が復活。</p></div><div class="step"><div class="n">50〜60%</div><h3>SELECTIVE</h3><p>Theme加点なし。RS189順位の上から最大4枠。既存が4超なら強制トリムしない。</p></div><div class="step"><div class="n">60%以上</div><h3>ATTACK</h3><p>0.70×Stock RS189＋0.30×strict LOO Theme。上から空き枠へ、最大12枠。</p></div><div class="step"><div class="n">執行</div><h3>翌営業日寄り</h3><p>画面のSELECTIVE Top4 / ATTACK Top12を使い、実保有数から空き枠だけ追加。</p></div></div></div>\n'''
+          p = Path('command-center-v38.html')
+          s = p.read_text(encoding='utf-8')
+          if s.count(marker) != 1:
+              raise SystemExit('rules marker mismatch')
+          p.write_text(s.replace(marker, insert + marker, 1), encoding='utf-8')
+
+          # 6) Tests: lock the timezone path, exact Wilder seed, structural biotech,
+          # dual reopening ranks, and UI semantics.
+          p = Path('tests/test_v38_tqqq_live.py')
+          s = p.read_text(encoding='utf-8')
+          anchor = '''def test_dashboard_prefetches_tqqq_before_bulk_build_and_consumes_private_cache():\n'''
+          add = '''def test_yahoo_utc_cache_roundtrip_builds_correct_new_york_rth_slots(tmp_path):\n    utc_index = pd.date_range("2026-08-28 13:30", "2026-08-28 19:55", freq="5min", tz="UTC")\n    values = np.linspace(100, 101, len(utc_index))\n    intraday = pd.DataFrame({"Open": values, "High": values + .1, "Low": values - .1, "Close": values}, index=utc_index)\n    daily_index = pd.date_range("2026-08-27", periods=2, freq="B")\n    daily = pd.DataFrame({"Open": [100., 101.], "High": [102., 103.], "Low": [99., 100.], "Close": [101., 102.], "Volume": [1000., 1100.]}, index=daily_index)\n    payload = {\n        "schema": CACHE_SCHEMA, "fetched_at": "2026-08-28T21:00:00+00:00",\n        "daily": {ticker: _frame_payload(daily) for ticker in ("QQQ", "TQQQ", "NQ=F", "^VIX")},\n        "mc57": {"index": [x.isoformat() for x in daily_index], "data": [50., 51.]},\n        "mc57_coverage": {"index": [x.isoformat() for x in daily_index], "data": [100., 100.]},\n        "qqq_5m": _frame_payload(intraday), "coverage": {},\n    }\n    path = tmp_path / "cache.json"\n    write_source_cache(path, payload)\n    loaded = load_source_cache(path)\n    assert str(loaded["qqq_5m"].index.tz) == "UTC"\n    bars = build_4h_bars(loaded["qqq_5m"])\n    assert list(bars["slot"]) == [0, 1]\n    assert list(bars["n"]) == [48, 30]\n\n\ndef test_wilder_rsi_matches_known_sma_seed_reference():\n    close = np.array([44.34,44.09,44.15,43.61,44.33,44.83,45.1,45.42,45.84,46.08,45.89,46.03,45.61,46.28,46.28,46.0,46.03,46.41,46.22,45.64,46.21])\n    rsi = wilder_rsi(close, 14)\n    assert math.isclose(rsi[14], 70.46413502109705, rel_tol=0, abs_tol=1e-12)\n    assert math.isclose(rsi[-1], 62.880718309962404, rel_tol=0, abs_tol=1e-12)\n\n\n'''
+          if s.count(anchor) != 1:
+              raise SystemExit('tqqq test anchor mismatch')
+          p.write_text(s.replace(anchor, add + anchor, 1), encoding='utf-8')
+
+          p = Path('tests/test_v38_sleeve_live.py')
+          s = p.read_text(encoding='utf-8')
+          if 'from build_v38_sleeve_live import' not in s:
+              raise SystemExit('sleeve import anchor missing')
+          # Append a standalone regression using module import to avoid rewriting its import list.
+          s += '''\n\ndef test_reset_wilder_rsi_matches_known_pine_reference():\n    from build_v38_sleeve_live import wilder_rsi\n    close = pd.DataFrame({"AAA": [44.34,44.09,44.15,43.61,44.33,44.83,45.1,45.42,45.84,46.08,45.89,46.03,45.61,46.28,46.28,46.0,46.03,46.41,46.22,45.64,46.21]})\n    rsi = wilder_rsi(close, 14)["AAA"]\n    assert math.isclose(float(rsi.iloc[14]), 70.46413502109705, rel_tol=0, abs_tol=1e-12)\n    assert math.isclose(float(rsi.iloc[-1]), 62.880718309962404, rel_tol=0, abs_tol=1e-12)\n'''
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('tests/test_v38_companion.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('assert "Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外" in html', 'assert "構造的小型Clinical Biotechだけ除外" in html')
+          s = s.replace('assert "BIGBIO" not in got and "MISSINGREV" not in got and "LABELONLY" in got', 'assert "BIGBIO" in got and "MISSINGREV" in got and "LABELONLY" in got')
+          s = s.replace('assert "BIGBIO" not in got and "MISSINGREV" not in got', 'assert "BIGBIO" in got and "MISSINGREV" in got')
+          s = s.replace('assert "今日の最終配分" in html', 'assert "戦略モデルの目標配分（実保有とは別）" in html')
+          s += '''\n\ndef test_stop_state_precomputes_both_selective_and_attack_reopening_routes(tmp_path):\n    calc = {"asof": "2026-08-28", "color": "Yellow"}\n    det = {f"T{i}": eligible_row(rs189=99-i/10, rs=99-i/10, v50=5) for i in range(40)}\n    source = tmp_path / "legacy.html"\n    write_legacy(source, calc, det)\n    sector = tmp_path / "sector.json"\n    sector.write_text(json.dumps({"s2t": {ticker: [] for ticker in det}}), encoding="utf-8")\n    loo = tmp_path / "loo.json"\n    loo.write_text(json.dumps({\n        "status": "READY", "asof": "2026-08-28", "history_sessions": 21,\n        "history_has_exact_20_session_base": True, "candidates": {}\n    }), encoding="utf-8")\n    state = build_state(source, sector_snapshot_path=sector, strict_loo_path=loo)\n    assert state["market"]["mode"] == "STOP"\n    assert state["ranking"]["selective_reopen_top4"] == ["T0", "T1", "T2", "T3"]\n    assert len(state["ranking"]["attack_reopen_top12"]) == 12\n    rows = {row["ticker"]: row for row in state["candidates"]}\n    assert rows["T0"]["selective_watch_rank"] == 1\n    assert rows["T0"]["attack_watch_rank"] is not None\n'''
+          p.write_text(s, encoding='utf-8')
+
+          # Sanity: no accidental broad-normal-biotech helper remains.
+          assert '_normal_stock_biotech_excluded' not in Path('build_v38_companion.py').read_text(encoding='utf-8')
+          assert '_frame_payload(_plain(qqq_5m))' not in Path('build_v38_tqqq_live.py').read_text(encoding='utf-8')
+          print('PATCH_APPLIED')
+          PY
+
+      - name: Install test dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: Run focused regressions and RSI inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile build_v38_tqqq_live.py build_v38_sleeve_live.py build_v38_companion.py v38_rules.py
+          pytest -q tests/test_v38_tqqq_live.py tests/test_v38_sleeve_live.py tests/test_v38_companion.py tests/test_v38_rules.py
+          echo '--- RSI inventory: active Python builders ---'
+          grep -niE 'rsi|relative strength index' build_v38_tqqq_live.py build_v38_sleeve_live.py build_v38_companion.py build_dashboard.py | tail -n 200 || true
+          echo '--- UI RSI labels ---'
+          grep -ni 'RSI' command-center-v38.html | tail -n 100 || true
+
+      - name: Verify diff scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git status --short
+          git diff --stat
+
+      - name: Commit audited fixes and remove one-off workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/v38-rsi-ranking-fix-once-20260902.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build_v38_tqqq_live.py build_v38_sleeve_live.py build_v38_companion.py command-center-v38.html tests/test_v38_tqqq_live.py tests/test_v38_sleeve_live.py tests/test_v38_companion.py .github/workflows/v38-rsi-ranking-fix-once-20260902.yml
+          git diff --cached --check
+          git commit -m 'Fix RSI data path and reopening stock ranks'
+          git fetch --depth=1 origin main
+          git rebase origin/main
+          git push origin HEAD:main
