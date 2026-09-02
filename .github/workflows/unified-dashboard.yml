@@ -1,0 +1,50 @@
+name: Unified dashboard UI checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'command-center-unified.html'
+      - 'command-center-unified-v3.js'
+  pull_request:
+    paths:
+      - 'command-center-unified.html'
+      - 'command-center-unified-v3.js'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unified-dashboard-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Validate unified UI only
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check command-center-unified-v3.js
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('command-center-unified.html').read_text(encoding='utf-8')
+          js = Path('command-center-unified-v3.js').read_text(encoding='utf-8')
+          if 'command-center.html' not in html:
+              raise SystemExit('unified HTML no longer uses Command Center as its base')
+          if 'command-center-unified-v3.js' not in html:
+              raise SystemExit('unified HTML does not load v3')
+          if "q('nav#tabs')||q('nav')" not in js:
+              raise SystemExit('native Command Center nav selector guard missing')
+          for label in ('今日', '市場', '資金循環', '銘柄', 'TQQQ', '保有 / RSI', '詳細'):
+              if label not in js:
+                  raise SystemExit(f'missing unified tab: {label}')
+          print('UNIFIED_UI_VALIDATE_PASS')
+          PY
