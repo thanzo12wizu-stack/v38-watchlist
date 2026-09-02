@@ -1,0 +1,63 @@
+name: Fix redundant Leadership note once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-leadership-note-once.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  fix-and-rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Sync latest main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Remove only the redundant added note
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('build_dashboard.py')
+          text = p.read_text(encoding='utf-8')
+          old = "f'<p><b>Leadership Regeneration v1（前向き観測のみ）</b>：過去40営業日以内にLeader Temperature≤15を経験 → F2が40%以上から40%未満へ改善 → NQSAR Blue/GreenかつStock 50MA Breadth≥50%で成立。売買・配分・Hard Gateには非連動。</p>'"
+          new = "f'<p><b>Leadership Regeneration v1（前向き観測のみ）</b>：過去40営業日以内にLeader Temperature≤15を経験 → F2が40%以上から40%未満へ改善 → NQSAR Blue/GreenかつStock 50MA Breadth≥50%で成立。</p>'"
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected exactly one added redundant note, found {count}')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Validate source without changing selftest
+        run: |
+          python -m py_compile build_dashboard.py
+          pip install --disable-pip-version-check -r requirements.txt pytest
+          pytest -q tests/test_dashboard_build_regressions.py
+
+      - name: Commit source correction
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build_dashboard.py
+          git commit -m 'Remove redundant Leadership Regeneration note'
+          git push origin main
+
+      - name: Remove one-off workflow
+        run: |
+          git rm .github/workflows/fix-leadership-note-once.yml
+          git commit -m 'Remove one-off Leadership note fix workflow'
+          git push origin main
+
+      - name: Rebuild dashboard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run dashboard.yml --ref main
