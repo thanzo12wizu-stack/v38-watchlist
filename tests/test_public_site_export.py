@@ -5,15 +5,21 @@ import pytest
 from scripts.export_public_site import PUBLIC_FILES, export_public_site
 
 
+def _safe_stub(path: Path) -> str:
+    if path.suffix == ".json":
+        return "{}"
+    if path.suffix == ".js":
+        return "window.TEST = {};"
+    if path.suffix == ".css":
+        return "/* safe */"
+    return "<h1>Safe public fixture</h1>"
+
+
 def _source(root: Path) -> None:
-    (root / "index.html").write_text("<h1>Hub</h1>", encoding="utf-8")
-    (root / "command-center.html").write_text("<h1>Command Center</h1>", encoding="utf-8")
-    (root / "command-center-v38.html").write_text("<h1>V38 Audited Rule Engine</h1>", encoding="utf-8")
-    (root / "v38-live-state.json").write_text('{"schema":"v38-live-state-1"}', encoding="utf-8")
-    swinote = root / "swinote"
-    swinote.mkdir()
-    (swinote / "index.html").write_text("<h1>Swinote</h1>", encoding="utf-8")
-    (swinote / "live.js").write_text("window.SWINOTE = {};", encoding="utf-8")
+    for name in PUBLIC_FILES:
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_safe_stub(path), encoding="utf-8")
     (root / "data").mkdir()
     (root / "data" / "secret.json").write_text('{"entry_candidates":[]}', encoding="utf-8")
 
