@@ -1,0 +1,33 @@
+name: One-off publish Leadership audit dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-leadership-audit-once.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  dispatch-and-clean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: Dispatch existing dashboard build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            repos/${{ github.repository }}/actions/workflows/dashboard.yml/dispatches \
+            -f ref=main
+      - name: Remove this one-off trigger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/publish-leadership-audit-once.yml
+          git commit -m "Remove one-off Leadership audit publish trigger"
+          git push origin HEAD:main
