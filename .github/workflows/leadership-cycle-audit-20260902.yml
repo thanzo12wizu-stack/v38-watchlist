@@ -1,0 +1,67 @@
+name: Leadership Cycle PIT Audit 20260902
+
+on:
+  push:
+    branches:
+      - research/leadership-cycle-audit-20260902
+    paths:
+      - leadership/research/audit_leadership_cycle.py
+      - .github/workflows/leadership-cycle-audit-20260902.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/leadership-cycle-audit-20260902
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run PIT leadership cycle event study
+        run: |
+          python leadership/research/audit_leadership_cycle.py \
+            --root . \
+            --output leadership_cycle_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-08-31 \
+            --max-tickers 6000 \
+            --batch-size 75
+
+      - name: Show compact result
+        if: always()
+        run: |
+          if [ -f leadership_cycle_output/summary.json ]; then
+            python - <<'PY'
+          import json
+          p='leadership_cycle_output/summary.json'
+          d=json.load(open(p))
+          print(json.dumps({
+            'status': d.get('status'),
+            'coverage': d.get('coverage'),
+            'current': d.get('current'),
+            'sequences': d.get('sequences'),
+          }, ensure_ascii=False, indent=2))
+          PY
+          fi
+
+      - name: Upload audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leadership-cycle-pit-audit-20260902
+          path: leadership_cycle_output/
+          retention-days: 30
