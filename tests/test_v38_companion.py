@@ -39,77 +39,34 @@ def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
     assert 'src="command-center.html"' in html
 
 
-def test_workflow_reports_build_export_mirror_and_pages_as_separate_stages():
-    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+def test_workflow_isolates_v38_live_from_command_center_and_publication():
+    workflow = Path(".github/workflows/v38-live.yml").read_text(encoding="utf-8")
+    assert 'workflows: ["Command Center daily build"]' in workflow
     assert "Prepare verified PIT taxonomy bootstrap" in workflow
     assert "79073ffd9742102c2b6e9f72d349801a10e126db" in workflow
-    assert "Build strict LOO PIT live state with exact t-20 bootstrap" in workflow
-    for phrase in (
-        "Build / validation: PASS",
-        "main generated-state persistence: PASS",
-        "Public export creation: PASS",
-        "SKIPPED / NOT CONFIGURED",
-        "GitHub Pages currentness: SEPARATE CHECK REQUIRED",
-    ):
-        assert phrase in workflow
+    assert "Build strict LOO PIT live state" in workflow
+    assert "Build CURRENT30 and Stage56 TQQQ live state" in workflow
+    assert "Build provisional audited V38 companion" in workflow
+    assert "Validate V38 live state" in workflow
+    assert "Commit V38 live states" in workflow
+    assert "build_dashboard.py" not in workflow
+    assert "Build Command Center" not in workflow
+    assert "export_public_site.py" not in workflow
 
 
-def test_workflow_collector_health_summary_executes(tmp_path):
-    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
-    section = workflow.split("      - name: Report persistence and data date", 1)[1]
-    run_block = section.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
-    script = textwrap.dedent(run_block)
-
-    fixtures = {
-        "commit_manifest.json": {},
-        "state.json": {"date": "2026-08-28", "gate": "Green"},
-        "v38-strict-loo-live.json": {
-            "status": "READY",
-            "asof": "2026-08-28",
-            "history_sessions": 21,
-            "history_has_exact_20_session_base": True,
-        },
-        "v38-strict-loo-history.json": {
-            "sessions": [{"asof": "2026-08-27"}, {"asof": "2026-08-28"}],
-        },
-        "tqqq-panic-state.json": {
-            "live_generation_status": "DATA REQUIRED",
-            "reason": "TEST_ROUTE_UNAVAILABLE",
-            "asof": "2026-08-28",
-        },
-    }
-    for name, payload in fixtures.items():
-        (tmp_path / name).write_text(json.dumps(payload), encoding="utf-8")
-    (tmp_path / "command-center.html").write_text("legacy", encoding="utf-8")
-    (tmp_path / "command-center_share.html").write_text("share", encoding="utf-8")
-    summary = tmp_path / "summary.md"
-    env = dict(os.environ, GITHUB_STEP_SUMMARY=str(summary))
-
-    subprocess.run(["bash", "-c", script], cwd=tmp_path, env=env, check=True)
-    rendered = summary.read_text(encoding="utf-8")
-    assert "strict LOO status: READY" in rendered
-    assert "strict LOO history_sessions: 21" in rendered
-    assert "strict LOO latest saved date: 2026-08-28" in rendered
-    assert "strict LOO exact t-20 snapshot: True" in rendered
-    assert "TQQQ live_generation_status: DATA REQUIRED" in rendered
-    assert "TQQQ reason: TEST_ROUTE_UNAVAILABLE" in rendered
-    for phrase in (
-        "strict LOO status",
-        "strict LOO reason",
-        "strict LOO history_sessions",
-        "strict LOO computed_snapshot_count",
-        "strict LOO PIT history start",
-        "strict LOO latest saved date",
-        "strict LOO exact t-20 snapshot",
-        "TQQQ live_generation_status",
-        "TQQQ reason",
-        "TQQQ asof",
-    ):
-        assert phrase in workflow
+def test_v38_workflow_validates_generated_dates_and_fails_closed():
+    workflow = Path(".github/workflows/v38-live.yml").read_text(encoding="utf-8")
+    assert "state date missing" in workflow
+    assert "V38 companion mismatch" in workflow
+    assert "strict LOO mismatch" in workflow
+    assert "TQQQ mismatch" in workflow
+    assert "READY TQQQ targets missing" in workflow
+    assert "V38_LIVE_VALIDATE_PASS" in workflow
+    assert "skip stale persistence" in workflow
 
 
 def test_workflow_verified_pit_bootstrap_guard_executes_without_fetch_when_persisted(tmp_path):
-    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    workflow = Path(".github/workflows/v38-live.yml").read_text(encoding="utf-8")
     section = workflow.split("      - name: Prepare verified PIT taxonomy bootstrap", 1)[1]
     run_block = section.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
     script = textwrap.dedent(run_block)
