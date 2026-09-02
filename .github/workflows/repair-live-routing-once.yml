@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
@@ -56,18 +56,6 @@ jobs:
           if '    "rotation/app-live.js",\n' not in s:
               s=s.replace('    "rotation/app-v2.js",\n','    "rotation/app-v2.js",\n    "rotation/app-live.js",\n',1)
           exp.write_text(s,encoding='utf-8')
-
-          pub=Path('.github/workflows/publish-public-site.yml')
-          s=pub.read_text(encoding='utf-8')
-          additions=[
-              ("      - 'command-center-v38.html'\n", "      - 'command-center-v38.html'\n      - 'v38-freshness.js'\n"),
-              ("      - 'rotation/app-v2.js'\n", "      - 'rotation/index.html'\n      - 'rotation/app-v2.js'\n      - 'rotation/app-live.js'\n"),
-          ]
-          if "      - 'v38-freshness.js'\n" not in s:
-              s=s.replace(*additions[0],1)
-          if "      - 'rotation/app-live.js'\n" not in s:
-              s=s.replace(*additions[1],1)
-          pub.write_text(s,encoding='utf-8')
           PY
       - name: Validate routing and public boundary
         run: |
@@ -79,19 +67,18 @@ jobs:
           grep -F '"v38-freshness.js"' scripts/export_public_site.py
           python -m pip install --disable-pip-version-check pytest
           pytest -q tests/test_public_site_export.py tests/test_privacy_audit.py
-      - name: Persist routing patch and remove one-time workflow
+      - name: Persist non-workflow routing patch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/repair-live-routing-once.yml
-          git add rotation/index.html command-center-v38.html scripts/export_public_site.py .github/workflows/publish-public-site.yml
+          git add rotation/index.html command-center-v38.html scripts/export_public_site.py
           if git diff --staged --quiet; then exit 0; fi
           git commit -m 'Route V38 and Rotation pages through fresh production data'
           for attempt in 1 2 3; do
             if git push origin HEAD:main; then exit 0; fi
-            git fetch origin main
+            git fetch --depth=1 origin main
             git rebase origin/main
             sleep $((attempt * 2))
           done
