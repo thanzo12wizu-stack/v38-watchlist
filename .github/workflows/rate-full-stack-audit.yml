@@ -1,0 +1,88 @@
+name: Rate Full Stack Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rate-regime-audit-20260902
+    paths:
+      - leadership/research/audit_rate_full_stack.py
+      - .github/workflows/rate-full-stack-audit.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Download frozen audited inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/{rates,tqqq,gross,theme,spy,sector,policy}
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9845484500/zip > /tmp/rates.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9649902954/zip > /tmp/tqqq.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9739833328/zip > /tmp/gross.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9629509751/zip > /tmp/theme.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9742353237/zip > /tmp/spy.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9847553564/zip > /tmp/sector.zip
+          unzip -q /tmp/rates.zip -d inputs/rates
+          unzip -q /tmp/tqqq.zip -d inputs/tqqq
+          unzip -q /tmp/gross.zip -d inputs/gross
+          unzip -q /tmp/theme.zip -d inputs/theme
+          unzip -q /tmp/spy.zip -d inputs/spy
+          unzip -q /tmp/sector.zip -d inputs/sector
+          test -s inputs/rates/rate_features.csv.gz
+          test -s inputs/tqqq/tqqq_stage56_daily.csv.gz
+          test -s inputs/gross/ordinary_PEAK30_PART25_R3_daily.csv.gz
+          test -s inputs/gross/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
+          test -s inputs/theme/economic_rows.csv.gz
+          test -s inputs/spy/rotation_proxy_panel.csv
+          test -s inputs/sector/rate_rotation_incremental_panel.csv.gz
+      - name: Download official Fed target range history
+        run: |
+          set -euo pipefail
+          curl --http1.1 -L --fail --retry 6 --retry-all-errors --connect-timeout 20 --max-time 180 \
+            'https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU&cosd=2013-01-01&coed=2026-03-20' \
+            -o inputs/policy/DFEDTARU.csv
+          curl --http1.1 -L --fail --retry 6 --retry-all-errors --connect-timeout 20 --max-time 180 \
+            'https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARL&cosd=2013-01-01&coed=2026-03-20' \
+            -o inputs/policy/DFEDTARL.csv
+          test -s inputs/policy/DFEDTARU.csv
+          test -s inputs/policy/DFEDTARL.csv
+          head -3 inputs/policy/DFEDTARU.csv
+          head -3 inputs/policy/DFEDTARL.csv
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_rate_full_stack.py
+      - name: Run full-stack audit
+        run: |
+          set -euo pipefail
+          python leadership/research/audit_rate_full_stack.py \
+            --rates inputs/rates/rate_features.csv.gz \
+            --policy-upper inputs/policy/DFEDTARU.csv \
+            --policy-lower inputs/policy/DFEDTARL.csv \
+            --tqqq inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --ordinary inputs/gross/ordinary_PEAK30_PART25_R3_daily.csv.gz \
+            --reset inputs/gross/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
+            --theme inputs/theme/economic_rows.csv.gz \
+            --spy-panel inputs/spy/rotation_proxy_panel.csv \
+            --sector-panel inputs/sector/rate_rotation_incremental_panel.csv.gz \
+            --output leadership/research/out/rate_full_stack
+      - name: Upload audit outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rate-full-stack-audit
+          path: leadership/research/out/rate_full_stack/
+          if-no-files-found: warn
+          retention-days: 14
