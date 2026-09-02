@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install research dependencies
-        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
       - name: Syntax check
         run: python -m py_compile leadership/research/audit_rate_rotation_etfs.py
       - name: Download frozen rate features
