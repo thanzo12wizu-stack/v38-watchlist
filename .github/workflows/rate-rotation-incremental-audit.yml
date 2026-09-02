@@ -1,0 +1,59 @@
+name: Rate Rotation Incremental Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rate-regime-audit-20260902
+    paths:
+      - leadership/research/audit_rate_rotation_incremental.py
+      - .github/workflows/rate-rotation-incremental-audit.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_rate_rotation_incremental.py
+      - name: Download frozen audited inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/pit inputs/proxy inputs/rates
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9743199098/zip > /tmp/pit.zip
+          unzip -q /tmp/pit.zip -d inputs/pit
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9742353237/zip > /tmp/proxy.zip
+          unzip -q /tmp/proxy.zip -d inputs/proxy
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9845484500/zip > /tmp/rates.zip
+          unzip -q /tmp/rates.zip -d inputs/rates
+          test -s inputs/pit/distribution_pit_panel_cov80.csv
+          test -s inputs/proxy/rotation_proxy_panel.csv
+          test -s inputs/rates/rate_features.csv.gz
+      - name: Run incremental-value audit
+        run: |
+          set -euo pipefail
+          python leadership/research/audit_rate_rotation_incremental.py \
+            --pit inputs/pit/distribution_pit_panel_cov80.csv \
+            --proxy inputs/proxy/rotation_proxy_panel.csv \
+            --rates inputs/rates/rate_features.csv.gz \
+            --output leadership/research/out/rate_rotation_incremental
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rate-rotation-incremental-audit
+          path: leadership/research/out/rate_rotation_incremental/
+          if-no-files-found: warn
+          retention-days: 14
