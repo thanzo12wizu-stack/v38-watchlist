@@ -6,38 +6,124 @@
 <meta name="theme-color" content="#0a0e13">
 <title>V38 資金循環インテリジェンス</title>
 <link rel="stylesheet" href="app.css">
-
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="brandline"><span class="brand">V38</span><span class="kicker">資金循環</span></div><h1>マーケット資金循環</h1><div class="subtitle">「今どこが強い・どこが悪化している・次に何を見るか」を先に表示</div></div><div class="meta"><span class="badge" id="asofBadge">基準日 —</span><span class="badge" id="alignBadge">データ確認中</span><span class="badge">数値判定</span></div></header>
+<header>
+  <div>
+    <div class="brandline"><span class="brand">V38</span><span class="kicker">資金循環</span></div>
+    <h1>マーケット資金循環</h1>
+    <div class="subtitle">市場環境 → 強い/改善中のテーマ → 既存V38候補、の順で見る</div>
+  </div>
+  <div class="meta">
+    <span class="badge" id="rotationDateBadge">Rotation —</span>
+    <span class="badge" id="v38DateBadge">V38 —</span>
+    <span class="badge" id="coverageBadge">データ確認中</span>
+  </div>
+</header>
 <div id="error"></div>
+
 <section class="grid">
-<div class="card hero s12"><div class="hero-top"><div><div class="hero-kicker">今日の結論</div><div class="hero-action" id="heroAction">—</div><div class="hero-sentence" id="heroSentence">読み込み中</div></div><div class="hero-permission"><div class="permission-num" id="permission">—</div><div class="permission-label">通常個別株の新規枠上限</div><div class="sub" id="permissionSub"></div></div></div><div class="summary-grid"><div class="summary-box"><div class="summary-title">現在の強さ</div><div id="summaryStrong"></div></div><div class="summary-box"><div class="summary-title">観測中</div><div id="summaryWatch"></div></div><div class="summary-box"><div class="summary-title">警戒</div><div id="summaryRisk"></div></div></div></div>
-<div class="card metric s3"><div class="label">市場モード</div><div class="big" id="mode">—</div><div class="sub" id="modeSub"></div></div>
-<div class="card metric s3"><div class="label">50日線より上</div><div class="big" id="breadth">—</div><div class="sub" id="nqsar"></div></div>
-<div class="card metric s3"><div class="label">群衆温度計</div><div class="big" id="fg">—</div><div class="sub" id="fgSub"></div></div>
-<div class="card metric s3"><div class="label">VIX / 米10年金利</div><div class="big" id="macroTop">—</div><div class="sub">恐怖指数 / 長期金利</div></div>
+  <div class="card hero s12">
+    <div class="hero-top">
+      <div>
+        <div class="hero-kicker">今日の結論</div>
+        <div class="hero-action" id="heroAction">読み込み中</div>
+        <div class="hero-sentence" id="heroSentence">—</div>
+      </div>
+      <div class="hero-permission">
+        <div class="permission-num" id="permission">—</div>
+        <div class="permission-label">通常個別株の新規枠上限</div>
+        <div class="sub" id="permissionSub">—</div>
+      </div>
+    </div>
+    <div class="summary-grid summary-grid-four">
+      <div class="summary-box"><div class="summary-title">現在強い</div><div id="summaryStrong"></div></div>
+      <div class="summary-box"><div class="summary-title">構成株が改善</div><div id="summaryImprove"></div></div>
+      <div class="summary-box"><div class="summary-title">ETF純流入 上位</div><div id="summaryInflow"></div></div>
+      <div class="summary-box"><div class="summary-title">構成株が悪化</div><div id="summaryDeteriorate"></div></div>
+    </div>
+  </div>
 
-<div class="card s8"><div class="section-head"><div><h2>テーマETF 56</h2><div class="sub">セクター温度マップと同じ粒度。Price / 構成銘柄Internal / Fund Flowで確認。</div></div></div><div id="sectorList" class="market-list"></div></div>
-<div class="card s4"><div class="section-head"><div><h2>Fund Flow確認済み</h2><div class="sub">発行会社Exactを優先し、不足分は発行会社データとの照合を通過した実Fund Flowを使用。価格・出来高proxyは使いません。</div></div></div><div id="industryList" class="market-list compact"></div></div>
+  <div class="card metric s3"><div class="label">市場モード</div><div class="big" id="mode">—</div><div class="sub" id="modeSub">既存Dashboard</div></div>
+  <div class="card metric s3"><div class="label">50日線より上</div><div class="big" id="breadth">—</div><div class="sub" id="nqsar">—</div></div>
+  <div class="card metric s3"><div class="label">群衆温度計</div><div class="big" id="crowd">—</div><div class="sub" id="crowdSub">既存Dashboard</div></div>
+  <div class="card metric s3"><div class="label">VIX</div><div class="big" id="vix">—</div><div class="sub">既存Dashboard最新値</div></div>
 
-<div class="card s12"><div class="section-head"><div><h2>強い場所の先導株・主導株</h2><div class="sub">現ETF構成銘柄 × 既存Leadership。先導株 / 主導株を表示し、Rotation独自の株ランキングは作らない。</div></div><div class="micro" id="leaderScope">照合範囲確認中</div></div><div id="leaders" class="leader-grid"></div></div>
+  <div class="card s12 explainer-card">
+    <div class="section-head"><div><h2>このページの3つの見方</h2><div class="sub">同じ「強い」でも意味が違うため、価格・構成株・ETF純資金を分けて見ます。</div></div></div>
+    <div class="explain-grid">
+      <button class="explain-item help-trigger" data-help-key="price"><b>価格の強さ</b><span>ETF価格のTheme56内順位</span><small>高いほど、そのテーマETF自体が相対的に強い</small></button>
+      <button class="explain-item help-trigger" data-help-key="internal"><b>構成株の強さ</b><span>中の個別株がどれだけ広く強いか</span><small>価格だけ上がる状態と、中身まで強い状態を分ける</small></button>
+      <button class="explain-item help-trigger" data-help-key="flow"><b>ETF純資金</b><span>ETFの設定 − 解約</span><small>売買代金ではない。ETF商品そのものへの純流入・純流出</small></button>
+    </div>
+  </div>
 
-<div class="card s12"><div class="section-head"><div><h2>状態の変化</h2><div class="sub">現在値よりも「何が改善・悪化したか」を優先。Theme56版の履歴をここから蓄積します。</div></div></div><div id="changes" class="change-list"></div></div>
+  <div class="card s8">
+    <div class="section-head">
+      <div><h2>テーマETF 56</h2><div class="sub">状態は曖昧な「方向不一致」を使わず、価格・構成株・ETF純資金の具体的な組み合わせで表示。</div></div>
+      <div class="micro" id="themeDataAsOf">—</div>
+    </div>
+    <div class="theme-head desktop-only"><div>ETF</div><div>今の状態</div><div>構成株</div><div>価格</div><div>ETF純資金</div></div>
+    <div id="themeList" class="theme-list"></div>
+  </div>
 
-<div class="card s12"><div class="section-head"><div><h2>資金循環マップ</h2><div class="sub">右＝価格が強い、上＝構成銘柄の内部参加が強い。Fund Flow取得済みでは円サイズに|20日Flow/AUM|を反映。</div></div></div><div class="matrix-grid"><div class="matrix-box"><div class="matrix-title">Theme56：Price × Internal</div><svg id="sectorMatrix" class="matrix" viewBox="0 0 720 400"></svg></div><div class="matrix-box"><div class="matrix-title">Fund Flow取得済みTheme</div><svg id="industryMatrix" class="matrix" viewBox="0 0 720 400"></svg></div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>現在強い</span><span><i class="dot" style="background:var(--blue)"></i>内部先行・観測</span><span><i class="dot" style="background:var(--amber)"></i>改善/未追随</span><span><i class="dot" style="background:var(--red)"></i>弱い</span><span><i class="dot" style="background:#657281"></i>価格のみ/未取得</span></div></div>
+  <div class="card s4">
+    <div class="section-head"><div><h2>ETF純資金の動き</h2><div class="sub">56テーマの別一覧ではなく、20日純流入・純流出の上位だけを表示。</div></div></div>
+    <div class="flow-definition">Fund Flow = ETFの設定 − 解約。<b>売買代金ではありません。</b></div>
+    <div class="flow-side-title good">純流入 TOP</div>
+    <div id="flowIn" class="flow-rank"></div>
+    <div class="flow-side-title bad">純流出 TOP</div>
+    <div id="flowOut" class="flow-rank"></div>
+  </div>
 
-<div class="card s12"><div class="section-head"><div><h2>市場背景</h2><div class="sub">Rotationを説明できる材料だけを確認。因果モデルやV38 Gateには使いません。V38市場値は既存Dashboardを正本として表示します。</div></div></div><div id="macroStrip" class="macro-strip"></div><details><summary>外部参考：Fear & Greedの内部・未取得データを見る</summary><div class="details-inner"><div id="macroFacts"></div><h3>読み筋</h3><div id="hypotheses"></div><h3>未取得</h3><div id="missing" class="missing"></div></div></details></div>
+  <div class="card s12 change-card">
+    <div class="section-head"><div><h2>何が変わっているか</h2><div class="sub">現在順位より、構成株の20日改善・悪化を優先。予測ではなく「中身が動いた方向」を表示。</div></div></div>
+    <div class="change-columns">
+      <div><div class="change-column-title good">改善が大きい</div><div id="improvingList" class="change-list"></div></div>
+      <div><div class="change-column-title bad">悪化が大きい</div><div id="deterioratingList" class="change-list"></div></div>
+    </div>
+  </div>
 
-<div class="card s12"><div class="section-head"><div><h2>V38との接続</h2><div class="sub">WHEN＝市場モード、WHERE＝Rotation、WHAT＝正式V38候補。役割を混ぜない。</div></div></div><div id="v38Action"></div><details id="v38Details"><summary>市場再開時の正式V38候補を見る</summary><div class="details-inner"><div class="sub" style="margin-bottom:8px">攻撃時順位＝ATTACK時の正式順位（Stock RS189 70%＋strict LOO Theme 30%）。STOP中は買いではありません。</div><div id="stocks"></div></div></details></div>
+  <div class="card s12">
+    <div class="section-head"><div><h2>強い・改善中テーマの先導株 / 主導株</h2><div class="sub">現ETF構成銘柄 × 既存Leadership。Rotation独自の株ランキングは作りません。</div></div><div class="micro" id="leaderScope">照合範囲確認中</div></div>
+    <div id="leaders" class="leader-grid"></div>
+  </div>
 
-<div class="card s12"><details><summary>状態の意味・データ品質・前提</summary><div class="details-inner"><div id="guide"></div><div id="quality" style="margin-top:12px"></div></div></details></div>
+  <div class="card s12">
+    <div class="section-head"><div><h2>資金循環マップ</h2><div class="sub">右＝ETF価格が強い、上＝構成株が広く強い。円サイズ＝|20日ETF純資金/AUM|。1枚に統合して重複をなくしました。</div></div></div>
+    <div class="matrix-box"><svg id="rotationMatrix" class="matrix" viewBox="0 0 760 430"></svg></div>
+    <div class="legend"><span><i class="dot" style="background:var(--green)"></i>価格・構成株とも強い</span><span><i class="dot" style="background:var(--amber)"></i>改善/先行</span><span><i class="dot" style="background:var(--red)"></i>弱化</span><span><i class="dot" style="background:var(--faint)"></i>中立/その他</span></div>
+  </div>
+
+  <div class="card s12">
+    <div class="section-head"><div><h2>市場背景</h2><div class="sub">市場判断は既存Dashboardを唯一の正本として表示。Rotation独自の市場心理判定は使いません。</div></div></div>
+    <div id="dashboardContext" class="dashboard-context"></div>
+    <details><summary>外部参考データを見る</summary><div class="details-inner"><div class="sub" id="externalAsOf"></div><div id="macroFacts"></div><div id="hypotheses"></div><div id="missing" class="missing"></div></div></details>
+  </div>
+
+  <div class="card s12">
+    <div class="section-head"><div><h2>V38との接続</h2><div class="sub">①今買ってよいか＝既存Dashboard　②どこを見るか＝Rotation　③何を買うか＝正式V38候補</div></div></div>
+    <div id="v38Connection" class="connection-grid"></div>
+    <details id="v38Details"><summary>正式V38候補を見る</summary><div class="details-inner"><div id="stocks"></div></div></details>
+  </div>
+
+  <div class="card s12">
+    <details><summary>状態の意味・データ品質・基準日</summary><div class="details-inner"><div id="guide"></div><div id="quality" style="margin-top:12px"></div></div></details>
+  </div>
 </section>
-<div class="footer">欠損は欠損のまま表示します。RotationだけでV38の新規許可・強制売却・順位変更は行いません。</div>
+<div class="footer">Rotationは観測Contextです。単独で新規許可・強制売却・正式V38順位の変更は行いません。</div>
 </div>
-<script src="app-theme56.js"></script>
-<script src="dram-addon.js"></script>
-<script src="market-sync.js"></script>
+
+<div id="helpModal" class="help-modal" hidden>
+  <div class="help-backdrop" data-close-help="1"></div>
+  <div class="help-sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <button class="help-close" type="button" data-close-help="1">×</button>
+    <div class="help-title" id="helpTitle"></div>
+    <div class="help-body" id="helpBody"></div>
+  </div>
+</div>
+
+<script src="app-v2.js"></script>
 </body>
 </html>
