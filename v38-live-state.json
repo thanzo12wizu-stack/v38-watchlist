@@ -1,6 +1,6 @@
 {
   "schema": "v38-live-state-1",
-  "source": "command-center.html / ⚠ Sleeve更新失敗・前回READY継続(2026-09-01)",
+  "source": "command-center.html",
   "asof": "2026-09-01",
   "market": {
     "nqsar": "Yellow",
@@ -3384,7 +3384,7 @@
     }
   },
   "gross100_allocation": {
-    "status": "LIVE ALLOCATION READY / LAST READY PRESERVED",
+    "status": "LIVE ALLOCATION READY",
     "adoption_status": "ADOPTED_FINAL_SPEC_20260901",
     "priority": [
       "RSI_RESET",
@@ -3403,13 +3403,13 @@
     ],
     "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
     "sleeve_live_status": "READY",
-    "sleeve_live_reason": "STALE / LAST_READY_PRESERVED: ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000",
-    "sleeve_refresh_status": "STALE / LAST_READY_PRESERVED",
+    "sleeve_live_reason": null,
+    "sleeve_refresh_status": "FRESH",
     "sleeve_refresh_attempted_asof": "2026-09-01",
     "sleeve_last_successful_asof": "2026-09-01",
-    "sleeve_refresh_attempted_at_utc": "2026-09-02T00:08:52Z",
-    "sleeve_refresh_error": "ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000",
-    "sleeve_preserved_previous_ready": true,
+    "sleeve_refresh_attempted_at_utc": "2026-09-02T00:10:14Z",
+    "sleeve_refresh_error": null,
+    "sleeve_preserved_previous_ready": false,
     "normal_position_count": 10,
     "reset_position_count": 0,
     "note": "Reset -> protect native/Panic TQQQ to 80% under competition -> Normal Stock capped at 70% -> native TQQQ extra -> adopted Selective Fill from remaining cash only; native CURRENT30 zero is never overridden",
