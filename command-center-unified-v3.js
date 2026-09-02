@@ -13,7 +13,7 @@
   const table=(heads,rows)=>`<div style="overflow-x:auto"><table class="ptab"><thead><tr>${heads.map((h,i)=>`<th${i===0?' class="l"':''}>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${heads.length}">表示対象なし</td></tr>`}</tbody></table></div>`;
   const alert=(text,bad=false)=>`<div class="${bad?'todayact ta-red':'skip-note'}">${text}</div>`;
 
-  const nav=q('nav#tabs');
+  const nav=q('nav#tabs')||q('nav');
   const wrap=q('.wrap')||document.body;
   if(!nav||typeof window.tab!=='function'){
     console.error('UNIFIED_V3: native Command Center navigation unavailable');
