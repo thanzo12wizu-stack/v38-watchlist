@@ -3,95 +3,62 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V38 Holdings Diagnostic v4</title>
+<title>V38 Holdings Runtime Diagnostic</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:920px;margin:0 auto;padding:20px;color:#222;background:#fafafa}h1{font-size:22px;margin:0 0 8px}.mut{color:#666;font-size:13px}.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin-top:14px}.ok{color:#0a6b32}.bad{color:#b42318}.warn{color:#8a5a00}pre{white-space:pre-wrap;word-break:break-word;background:#f3f3f3;padding:12px;border-radius:8px;font-size:12px;line-height:1.45;max-height:58vh;overflow:auto}button{font:inherit;padding:8px 12px;border:1px solid #bbb;border-radius:8px;background:#fff}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:900px;margin:0 auto;padding:20px;color:#222;background:#fafafa}h1{font-size:22px;margin:0 0 8px}.mut{color:#666;font-size:13px}.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin-top:14px}.ok{color:#0a6b32}.bad{color:#b42318}.warn{color:#8a5a00}pre{white-space:pre-wrap;word-break:break-word;background:#f3f3f3;padding:12px;border-radius:8px;font-size:12px;line-height:1.45;max-height:60vh;overflow:auto}button{font:inherit;padding:8px 12px;border:1px solid #bbb;border-radius:8px;background:#fff}iframe{position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0}
 </style>
 </head>
 <body>
-<h1>保有データ読み込み診断 v4</h1>
-<div class="mut">読み取り専用。localStorage の追加・変更・削除は行いません。最新 command-center.html から実物の正規化コードを抽出し、隔離環境でのみ実行します。</div>
-<div id="summary" class="card">診断中…</div>
-<div id="storage" class="card"></div>
-<div id="exact" class="card"><b>実物コード隔離実行</b><pre id="exactText">取得中…</pre></div>
-<div id="static" class="card"><b>コード整合性</b><pre id="staticText">取得中…</pre></div>
+<h1>保有データ実行時診断 v5</h1>
+<div class="mut">読み取り専用。最新 command-center.html を同一オリジンの隔離iframeで起動し、hldLoad() の実際の例外だけ取得します。localStorage は変更しません。</div>
+<div id="summary" class="card"><b class="warn">診断中…</b></div>
+<div class="card"><b>実行時イベント</b><pre id="events">準備中…</pre></div>
 <div class="card"><button id="copy">診断結果をコピー</button><pre id="report"></pre></div>
+<iframe id="runner" aria-hidden="true"></iframe>
 <script>
 (function(){
 'use strict';
-function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-function inspect(key){
-  var o={key:key,present:false,length:0,parseOk:false,arrayOk:false,count:null,tickers:[]},raw;
-  try{raw=localStorage.getItem(key);}catch(e){o.storageError=String(e&&e.message||e);return o;}
-  if(raw==null)return o;o.present=true;o.length=raw.length;
-  try{o.value=JSON.parse(raw);o.parseOk=true;}catch(e){o.parseError=String(e&&e.message||e);return o;}
-  o.arrayOk=Array.isArray(o.value);if(o.arrayOk){o.count=o.value.length;o.tickers=o.value.map(function(r){return r&&r.t!=null?String(r.t).toUpperCase():'(tickerなし)';});}
-  return o;
-}
-function storageText(o){
-  var a=['key: '+o.key,'存在: '+(o.present?'YES / 文字数 '+o.length:'NO')];
-  if(o.storageError){a.push('localStorage ERROR: '+o.storageError);return a.join('\n');}
-  if(!o.present)return a.join('\n');a.push('JSON.parse: '+(o.parseOk?'OK':'ERROR'));
-  if(o.parseError){a.push('parse error: '+o.parseError);return a.join('\n');}
-  a.push('top-level array: '+(o.arrayOk?'YES':'NO'));if(o.arrayOk){a.push('records: '+o.count);a.push('tickers: '+o.tickers.join(', '));}return a.join('\n');
-}
-function findMatchingBrace(src,start){
-  var depth=0,quote=null,escp=false,line=false,block=false;
-  for(var i=start;i<src.length;i++){
-    var c=src[i],n=src[i+1];
-    if(line){if(c==='\n')line=false;continue;}
-    if(block){if(c==='*'&&n==='/'){block=false;i++;}continue;}
-    if(quote){if(escp){escp=false;continue;}if(c==='\\'){escp=true;continue;}if(c===quote)quote=null;continue;}
-    if(c==='/'&&n==='/'){line=true;i++;continue;}if(c==='/'&&n==='*'){block=true;i++;continue;}
-    if(c==='"'||c==="'"||c==='`'){quote=c;continue;}
-    if(c==='{')depth++;else if(c==='}'){depth--;if(depth===0)return i+1;}
-  }
-  return -1;
-}
-function extractFunction(src,name){
-  var re=new RegExp('function\\s+'+name.replace(/[$]/g,'\\$&')+'\\s*\\('),m=re.exec(src);if(!m)return null;
-  var b=src.indexOf('{',m.index);if(b<0)return null;var e=findMatchingBrace(src,b);if(e<0)return null;return {name:name,start:m.index,end:e,text:src.slice(m.index,e)};
-}
-function extractVarObject(src,name){
-  var re=new RegExp('var\\s+'+name.replace(/[$]/g,'\\$&')+'\\s*=\\s*\\{'),m=re.exec(src);if(!m)return null;
-  var b=src.indexOf('{',m.index);var e=findMatchingBrace(src,b);if(e<0)return null;var semi=src.indexOf(';',e);return {name:name,start:m.index,end:(semi>=0?semi+1:e),text:src.slice(m.index,semi>=0?semi+1:e)};
-}
-function allIndexes(src,needle){var out=[],p=0;while((p=src.indexOf(needle,p))>=0){out.push(p);p+=needle.length;}return out;}
-function digestHex(s){
-  if(!(window.crypto&&crypto.subtle&&window.TextEncoder))return Promise.resolve('(SHA-256 unavailable)');
-  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(function(buf){return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');}).catch(function(){return '(SHA-256 failed)';});
-}
-var cur=inspect('v38_holdings'),prev=inspect('v38_holdings_prev');
-document.getElementById('storage').innerHTML='<b>localStorage</b><pre>'+esc(storageText(cur)+'\n\n'+storageText(prev))+'</pre>';
-var exact='(取得中)',stat='(取得中)',hash='(取得中)',verdict='診断中';
-function rebuild(){
- var rpt='V38 Holdings Diagnostic v4\n判定: '+verdict+'\n\n'+storageText(cur)+'\n\n'+storageText(prev)+'\n\n実物コード隔離実行\n'+exact+'\n\nコード整合性\n'+stat+'\n\ncommand-center SHA-256\n'+hash;
- document.getElementById('report').textContent=rpt;document.getElementById('summary').innerHTML='<b class="'+(verdict.indexOf('正常')>=0?'ok':(verdict==='診断中'?'warn':'bad'))+'">判定: '+esc(verdict)+'</b>';
- document.getElementById('exactText').textContent=exact;document.getElementById('staticText').textContent=stat;
+var events=[],done=false,raw='',tickers=[];
+try{raw=localStorage.getItem('v38_holdings')||'';var a=JSON.parse(raw||'[]');if(Array.isArray(a))tickers=a.map(function(x){return x&&x.t?String(x.t).toUpperCase():'?';});}catch(e){events.push('DIAG storage parse ERROR: '+e.name+': '+e.message);}
+function add(s){events.push(s);render();}
+function render(){
+ var verdict='診断中…',cls='warn';
+ var err=events.find(function(x){return x.indexOf('HLD CURRENT ERROR')===0;});
+ var berr=events.find(function(x){return x.indexOf('HLD BACKUP ERROR')===0;});
+ var ok=events.find(function(x){return x.indexOf('HLD CURRENT OK')===0;});
+ if(err){verdict='現行 hldLoad() の実例外を捕捉';cls='bad';}
+ else if(berr){verdict='現行経路後、バックアップ経路でも例外を捕捉';cls='bad';}
+ else if(ok){verdict='隔離実行では現行 hldLoad() が正常';cls='ok';}
+ else if(done){verdict='hldLoad() 実行イベントを捕捉できず';cls='bad';}
+ document.getElementById('summary').innerHTML='<b class="'+cls+'">判定: '+verdict+'</b>';
+ document.getElementById('events').textContent=events.length?events.join('\n\n'):'イベント待機中…';
+ var rpt='V38 Holdings Runtime Diagnostic v5\n判定: '+verdict+'\nlocalStorage bytes: '+raw.length+'\ntickers: '+tickers.join(', ')+'\n\n'+events.join('\n\n');
+ document.getElementById('report').textContent=rpt;
  document.getElementById('copy').onclick=function(){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(rpt).then(function(){document.getElementById('copy').textContent='コピーしました';});else window.prompt('診断結果をコピー',rpt);};
 }
-rebuild();
-fetch('./command-center.html?holdings_diag_v4='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(src){
-  return digestHex(src).then(function(hx){hash=hx;
-    var names=['_hldHash','_hldSig','_hldNum','_hldRiskTotal','_hldPartialExited','_hldTpRemaining','_isLevTicker','_hldNormalize'];
-    var pieces={},missing=[];names.forEach(function(n){pieces[n]=extractFunction(src,n);if(!pieces[n])missing.push(n);});
-    var lev=extractVarObject(src,'LEV_TICKERS');if(!lev)missing.push('LEV_TICKERS');
-    var hloads=allIndexes(src,'function hldLoad');var normDefs=allIndexes(src,'function _hldNormalize');var alertNeedle='トレードノートの現行データを読めなかったため、直前バックアップを復元表示します。JSONバックアップも確認してください。';var alerts=allIndexes(src,alertNeedle);
-    stat='command-center.html bytes: '+src.length+'\nSHA-256: '+hash+'\nfunction hldLoad definitions: '+hloads.length+(hloads.length?' @ '+hloads.join(', '):'')+'\nfunction _hldNormalize definitions: '+normDefs.length+(normDefs.length?' @ '+normDefs.join(', '):'')+'\n専用fallback警告 occurrences: '+alerts.length+(alerts.length?' @ '+alerts.join(', '):'')+'\n抽出失敗: '+(missing.length?missing.join(', '):'なし');
-    if(missing.length){exact='実物コード抽出に失敗: '+missing.join(', ');verdict='診断コード側で実物関数を抽出できず';rebuild();return;}
-    var sandbox='"use strict";\nvar HLD_SCHEMA=4;\n'+lev.text+'\n'+pieces._isLevTicker.text+'\n'+pieces._hldHash.text+'\n'+pieces._hldSig.text+'\n'+pieces._hldNum.text+'\n'+pieces._hldRiskTotal.text+'\n'+pieces._hldPartialExited.text+'\n'+pieces._hldTpRemaining.text+'\n'+pieces._hldNormalize.text+'\nreturn _hldNormalize;';
-    var normalize;
-    try{normalize=(new Function(sandbox))();}catch(e){exact='隔離環境の構築失敗: '+(e&&e.name)+': '+(e&&e.message)+'\n'+(e&&e.stack||'');verdict='実物正規化コードの隔離構築で例外';rebuild();return;}
-    var lines=[],errors=0;
-    if(!cur.arrayOk){lines.push('現行データが配列ではないため実行不可');errors++;}
-    else cur.value.forEach(function(r,i){var tk=r&&r.t!=null?String(r.t).toUpperCase():'?';try{var z=normalize(r);lines.push('#'+i+' '+tk+': OK -> '+(z&&z.t)+' / schema='+((z&&z.schemaVersion)!=null?z.schemaVersion:'null')+' / fills='+(z&&z.fills&&z.fills.length));}catch(e){errors++;lines.push('#'+i+' '+tk+': ERROR '+(e&&e.name)+': '+(e&&e.message)+'\n'+(e&&e.stack||''));}});
-    exact=lines.join('\n');
-    if(errors)verdict='実物 _hldNormalize で現行データに例外を再現';
-    else if(hloads.length!==1||normDefs.length!==1||alerts.length!==1)verdict='実物正規化は正常。ただしDashboard内に重複定義/重複警告経路あり';
-    else verdict='最新配信HTML＋現行3件は実物 _hldNormalize でも正常。端末で実行中のDashboardコード差（旧キャッシュ/旧タブ等）が最有力';
-    rebuild();
-  });
-}).catch(function(e){exact='SOURCE FETCH ERROR: '+String(e&&e.message||e);stat=exact;verdict='command-center.html取得失敗';rebuild();});
+window.addEventListener('message',function(ev){if(ev.origin!==location.origin||!ev.data||ev.data.__v38diag!==1)return;var d=ev.data;
+ if(d.kind==='current-error')add('HLD CURRENT ERROR\nname: '+d.name+'\nmessage: '+d.message+'\nstack: '+(d.stack||'(none)'));
+ else if(d.kind==='backup-error')add('HLD BACKUP ERROR\nname: '+d.name+'\nmessage: '+d.message+'\nstack: '+(d.stack||'(none)'));
+ else if(d.kind==='current-ok')add('HLD CURRENT OK count='+d.count+' tickers='+(d.tickers||[]).join(', '));
+ else if(d.kind==='window-error')add('WINDOW ERROR\nmessage: '+d.message+'\nsource: '+d.source+'\nline: '+d.line+':'+d.col+'\nerror: '+d.error);
+ else if(d.kind==='alert')add('ALERT: '+d.message);
+});
+render();
+fetch('./command-center.html?v38_runtime_diag='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(src){
+ var s=src.indexOf('function hldLoad()');var e=src.indexOf('function hldSave(',s);if(s<0||e<0)throw new Error('hldLoad block not found');
+ var block=src.slice(s,e);
+ var oldReturn="return a.map(_hldNormalize).filter(function(x){return x;});";
+ if(block.indexOf(oldReturn)<0)throw new Error('current return pattern not found');
+ block=block.replace(oldReturn,"var __v38o=a.map(_hldNormalize).filter(function(x){return x;}); try{parent.postMessage({__v38diag:1,kind:'current-ok',count:__v38o.length,tickers:__v38o.map(function(x){return x&&x.t||'?';})},location.origin);}catch(__v38p){} return __v38o;");
+ var c1=block.indexOf('catch(e){');if(c1<0)throw new Error('current catch not found');
+ block=block.slice(0,c1)+"catch(e){try{parent.postMessage({__v38diag:1,kind:'current-error',name:String(e&&e.name||''),message:String(e&&e.message||e),stack:String(e&&e.stack||'')},location.origin);}catch(__v38p){}"+block.slice(c1+'catch(e){'.length);
+ var c2=block.indexOf('catch(e2){}');if(c2>=0)block=block.slice(0,c2)+"catch(e2){try{parent.postMessage({__v38diag:1,kind:'backup-error',name:String(e2&&e2.name||''),message:String(e2&&e2.message||e2),stack:String(e2&&e2.stack||'')},location.origin);}catch(__v38p){}}"+block.slice(c2+'catch(e2){}'.length);
+ var patched=src.slice(0,s)+block+src.slice(e);
+ var head=patched.indexOf('<head>');if(head>=0){head+=6;var pre="<script>(function(){var __a=window.alert;window.alert=function(m){try{parent.postMessage({__v38diag:1,kind:'alert',message:String(m)},location.origin);}catch(e){};};window.addEventListener('error',function(e){try{parent.postMessage({__v38diag:1,kind:'window-error',message:String(e.message||''),source:String(e.filename||''),line:e.lineno||0,col:e.colno||0,error:String(e.error&&e.error.stack||e.error||'')},location.origin);}catch(x){}});})();<\/script>";patched=patched.slice(0,head)+pre+patched.slice(head);}
+ add('instrumented command-center bytes: '+patched.length+' / hldLoad runtime start');
+ document.getElementById('runner').srcdoc=patched;
+ setTimeout(function(){done=true;render();},7000);
+}).catch(function(e){done=true;add('DIAGNOSTIC SETUP ERROR\n'+e.name+': '+e.message+'\n'+(e.stack||''));render();});
 })();
 </script>
 </body>
