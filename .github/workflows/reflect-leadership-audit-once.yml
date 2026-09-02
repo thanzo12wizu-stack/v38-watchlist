@@ -1,0 +1,65 @@
+name: One-off reflect Leadership Cycle audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reflect-leadership-audit-once.yml'
+      - '.github/scripts/reflect_leadership_audit_once.py'
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Apply narrow research wording patch
+        run: python .github/scripts/reflect_leadership_audit_once.py
+      - name: Static checks
+        run: |
+          git diff --check
+          python -m py_compile build_dashboard.py
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('build_dashboard.py').read_text(encoding='utf-8')
+          required = [
+              'Leadership Regeneration v1（前向き観測のみ）',
+              'Hard GateはNQSAR + Stock 50MA Breadthのまま',
+              'F2 Fadeと同じ情報群の銘柄別内訳',
+              '低位はExhaustion（主導株の枯渇）を示すが底打ち時期は予測しない',
+          ]
+          banned = [
+              '赤転換の中央48日前・19/22的中',
+              '赤転換の中央32日前・12/22的中',
+              'DD10%確率が1.84倍',
+              'NQ底に中央値18日先行(的中6割)',
+              '新規サイズを絞る（0.75%リスク/件',
+              '裁量スイングは+25%到達玉の⅓利確を確実に',
+          ]
+          miss = [x for x in required if x not in s]
+          stale = [x for x in banned if x in s]
+          if miss or stale:
+              raise SystemExit(f'source audit failed missing={miss} stale={stale}')
+          print('leadership audited wording markers OK')
+          PY
+      - name: Regression tests
+        run: pytest -q tests/test_dashboard_build_regressions.py tests/test_options_positioning_quality.py tests/test_eps_acceleration.py
+      - name: Commit tested dashboard implementation and remove one-off helper
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/reflect-leadership-audit-once.yml .github/scripts/reflect_leadership_audit_once.py
+          git add build_dashboard.py
+          git diff --cached --check
+          git commit -m "Reflect Leadership Cycle audit in dashboard"
+          git push origin HEAD:main
