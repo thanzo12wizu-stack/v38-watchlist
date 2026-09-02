@@ -454,6 +454,7 @@ PPG,"PPG Industries, Inc.",109.7,-2.2020147989658545,1441287,24386309936.43131,P
 TPR,"Tapestry, Inc.",122.14,-1.013048058999919,3010352,24353699412.91239,Retail Trade,Apparel/Footwear Retail,NYSE,stock,common,8004200000
 FWONA,Liberty Media Corporation Class A,89.69,-2.574407994786014,128675,24215429126.272644,Technology Services,Internet Software/Services,NASDAQ,stock,common,4482000000
 Q,"Qnity Electronics, Inc.",115.49,-3.2990036004354115,2794697,24161494561.938457,Electronic Technology,Electronic Equipment/Instruments,NYSE,stock,common,4754000000
+SMCI,"Super Micro Computer, Inc.",36.71,-1.5289699570815458,26862886,24117198790.20708,Electronic Technology,Computer Processing Hardware,NASDAQ,stock,common,39063072000
 FWONK,Liberty Media Corporation Series C Liberty Formula One,96.95,-3.001500750375188,2353894,24109273914.48024,Technology Services,Internet Software/Services,NASDAQ,stock,common,4482000000
 BRO,"Brown & Brown, Inc.",72.05,-0.16627407510046355,1460187,24108675218.83054,Finance,Insurance Brokers/Services,NYSE,stock,common,5902000000
 GFS,GlobalFoundries Inc.,43.93,-1.7006041620049186,4066395,24106632341.235405,Electronic Technology,Semiconductors,NASDAQ,stock,common,6791000000
@@ -464,7 +465,6 @@ WST,"West Pharmaceutical Services, Inc.",338.65,-0.7211749875406867,482814,23832
 GPN,Global Payments Inc.,90.06,-1.0873146622734706,1921222,23831531893.308735,Finance,Finance/Rental/Leasing,NYSE,stock,common,7705878000
 FCNCA,"First Citizens BancShares, Inc. Class A",2141.16,-1.073738680465729,71584,23798498005.971928,Finance,Regional Banks,NASDAQ,stock,common,14468000000
 SW,Smurfit Westrock PLC,45.43,-3.1343283582089527,8187625,23754855318.568657,Process Industries,Containers/Packaging,NYSE,stock,common,31179000000.3409
-SMCI,"Super Micro Computer, Inc.",36.71,-1.5289699570815458,26862886,23746706532.15182,Electronic Technology,Computer Processing Hardware,NASDAQ,stock,common,39063072000
 AMRZ,Amrize Ltd,42.81,-2.036613272311214,3825930,23696903162.62792,Non-Energy Minerals,Construction Materials,NYSE,stock,common,11815000000
 VLTO,Veralto Corporation,97.05,-1.5420513340773017,1803033,23660144565.80958,Producer Manufacturing,Industrial Machinery,NYSE,stock,common,5503000000
 OMC,Omnicom Group Inc,86.09,-1.6451502342054127,1553256,23618444897.50943,Commercial Services,Advertising/Marketing Services,NYSE,stock,common,17271900000
@@ -798,7 +798,7 @@ PAYC,"Paycom Software, Inc.",237.95,-0.48097030531158746,721723,10537683153.2436
 AES,AES Corporation,14.77,0.20352781546810964,5605392,10537487938.627542,Utilities,Electric Utilities,NYSE,stock,common,12233000000
 TFII,TFI International Inc.,127.83,-4.739548401520232,266686,10506735261.31205,Transportation,Trucking,NYSE,stock,common,8022696373.772009
 ARW,"Arrow Electronics, Inc.",205.98,0.758205742797037,462000,10485498491.602015,Distribution Services,Electronics Distributors,NYSE,stock,common,30852935000
-ENLT,Enlight Renewable Energy Ltd,74.93,-4.101874960005117,240588,10477409169.376907,Utilities,Alternative Power Generation,NASDAQ,stock,common,528890887.513458
+ENLT,Enlight Renewable Energy Ltd,74.93,-4.101874960005117,240588,10477409169.376907,Utilities,Alternative Power Generation,NASDAQ,stock,common,528890887.5122874
 UMBF,UMB Financial Corporation,137.95,-2.5983195650639037,571107,10477306650.285604,Finance,Major Banks,NASDAQ,stock,common,4127853000
 RRX,Regal Rexnord Corporation,157.01,-0.9088040391290615,1321486,10455588607.465572,Producer Manufacturing,Electrical Products,NYSE,stock,common,5934500000
 GKOS,Glaukos Corp,176.7,-1.592782356872362,507237,10422461404.444197,Health Technology,Medical Specialties,NYSE,stock,common,507442000
@@ -1735,7 +1735,7 @@ LCLN,"Lincoln International, Inc. Class A",24.85,-1.545166402535646,491508,25394
 NEOG,Neogen Corp,11.64,0.6920415224913501,2019260,2538753964.8581314,Health Technology,Medical Specialties,NASDAQ,stock,common,870400000
 IVT,InvenTrust Properties Corp,32.53,0.6809037449705938,645686,2536638490.701021,Finance,Real Estate Investment Trusts,NYSE,stock,common,300206000
 PAGS,PagSeguro Digital Ltd. Class A,9.14,1.3303769401330487,3863714,2536503445.6031046,Commercial Services,Miscellaneous Commercial Services,NYSE,stock,common,3533949100.00439
-RUSHA,"Rush Enterprises, Inc. Class A",48.75,-4.822384045011888,728449,2535579957.48731,Retail Trade,Specialty Stores,NASDAQ,stock,common,7434195000
+RUSHA,"Rush Enterprises, Inc. Class A",48.75,-4.822384045011888,728449,2535578827.4111676,Retail Trade,Specialty Stores,NASDAQ,stock,common,7434195000
 FIGS,"FIGS, Inc. Class A",15.26,-0.521512385919166,1758050,2535300070.756193,Consumer Non-Durables,Apparel/Footwear,NYSE,stock,common,631098000
 BCRX,"BioCryst Pharmaceuticals, Inc.",9.92,2.268041237113409,3367135,2534908246.2020626,Health Technology,Biotechnology,NASDAQ,stock,common,874837000
 CDNA,"CareDx, Inc.",48.97,-2.2749950109758545,1247927,2533424902.723808,Health Technology,Medical Specialties,NASDAQ,stock,common,379805000
@@ -2064,7 +2064,7 @@ AI,"C3.ai, Inc. Class A",10.34,-4.4362292051756045,4783879,1571155508.7560072,Te
 SVV,Savers Value Village Inc.,10.15,-1.7424975798644697,1328397,1565699749.0755084,Retail Trade,Specialty Stores,NYSE,stock,common,1678954000
 SLBT,SL Science Holding Ltd,2.79,2.1978021978021998,7840,1564519758.3,Consumer Non-Durables,Household/Personal Care,NASDAQ,stock,common,0
 AVLN,Avalyn Pharma Inc,35.28,1.5836452634609972,183577,1564071590.228621,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
-HLX,Helix Energy Solutions Group Incorporated,10.6,2.9126213592232904,4086194,1562249199.9999995,,,NYSE,stock,common,1291474000
+HLX,Helix Energy Solutions Group Incorporated,10.6,2.9126213592232904,4086194,1562253959.7087376,,,NYSE,stock,common,1291474000
 SDGR,"Schrodinger, Inc.",20.84,6.871794871794871,1508067,1558949260.802051,Technology Services,Packaged Software,NASDAQ,stock,common,255869000
 TPB,Turning Point Brands Inc,77.72,-4.013832283561813,270037,1558202208.874892,Consumer Non-Durables,Tobacco,NYSE,stock,common,463062000
 PAHC,Phibro Animal Health Corporation Class A,38.37,1.6693163751987161,370174,1557883535.353736,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,1518093000
@@ -2721,6 +2721,7 @@ EOLS,"Evolus, Inc.",9.08,-0.11001100110010767,594023,599737986.609461,Health Tec
 ALTI,"AlTi Global, Inc. Class A",3.83,-1.794871794871791,61856,597263355.5589743,Finance,Investment Managers,NASDAQ,stock,common,256486000
 ENHA,Enhanced Group Inc. Class A,1.54,-4.347826086956525,613429,597227560.6956522,Finance,Financial Conglomerates,NYSE,stock,common,0
 CXII,Churchill Capital Corp XII Class A,10.75,-0.4629629629629695,14116,597162500.0000001,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+PSQL,Pasqal Holding SA,15.56,-10.057803468208093,1876509,596466620.1965318,Electronic Technology,Computer Processing Hardware,NASDAQ,stock,common,0
 NRGV,"Energy Vault Holdings, Inc.",3.27,-3.8235294117647025,3878567,594615407.3647059,Producer Manufacturing,Electrical Products,NYSE,stock,common,203671000
 STLN,Starling Oncology Inc.,5.94,0.5076142131979737,947280,593898606.9137056,Health Services,Medical/Nursing Services,NASDAQ,stock,common,502729000
 CEPF,"Cantor Equity Partners IV, Inc. Class A",10.39,0.19286403085825798,1966,593788509.0173578,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -2910,7 +2911,6 @@ GLAD,Gladstone Capital Corporation,19.93,-1.091811414392054,191145,450279857.900
 CPS,Cooper-Standard Holdings Inc.,25.25,-5.713218820014941,273828,448672488.5735623,Producer Manufacturing,Auto Parts: OEM,NYSE,stock,common,2740915000
 PHOE,Phoenix Asia Holdings Ltd.,20.75,-2.3988711194731964,6188,448200012.6881467,Industrial Services,Engineering & Construction,NASDAQ,stock,common,923327.058963337
 PBFS,"Pioneer Bancorp, Inc.",18.02,3.2073310423825814,11003,447646715.6769759,Finance,Regional Banks,NASDAQ,stock,common,126670000
-PSQL,Pasqal Holding SA,15.56,-10.057803468208093,1876509,447349980.21271676,Electronic Technology,Computer Processing Hardware,NASDAQ,stock,common,0
 CARL,"Carlsmed, Inc.",16.37,0.4910988336402815,87083,446945911.4818908,Technology Services,Information Technology Services,NASDAQ,stock,common,50511000
 IEAG,Infinite Eagle Acquisition Corp. Class A,10.2301,0.04987775061125231,11231,445213947.004834,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CBAN,"Colony Bankcorp, Inc.",20.97,-0.8510638297872328,94617,445003616.46808505,Finance,Regional Banks,NYSE,stock,common,190233000
@@ -3591,7 +3591,7 @@ PDD,PDD Holdings Inc. Sponsored ADR Class A,83.17,-0.988095238095236,5984397,119
 PBR.A,Petroleo Brasileiro SA Sponsored ADR Pfd,18.2,4.597701149425292,10081262,118076230993.105,Energy Minerals,Integrated Oil,NYSE,dr,,89058891021.9531
 PBR,Petroleo Brasileiro SA Sponsored ADR,20.33,5.064599483204118,31122462,118076230993.105,Energy Minerals,Integrated Oil,NYSE,dr,,89058891021.9531
 HDB,HDFC Bank Limited Sponsored ADR,22.95,1.1013215859030838,13077800,114684130689.2467,Finance,Major Banks,NYSE,dr,,56908611386.3974
-IBN,ICICI Bank Limited Sponsored ADR,30.19,-0.5599472990777278,3880701,109221762937.49606,Finance,Regional Banks,NYSE,dr,,35434316851.2179
+IBN,ICICI Bank Limited Sponsored ADR,30.19,-0.5599472990777278,3880701,109222506062.50394,Finance,Regional Banks,NYSE,dr,,35434316851.2179
 BP,BP PLC Sponsored ADR,44.47,3.732213669232567,16493579,107739247162.624,Energy Minerals,Integrated Oil,NYSE,dr,,189777451411.01898
 SNY,Sanofi SA Sponsored ADR,44.37,0.022542831379616796,2015192,107047494657.2205,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,49235341672.4791
 EQNR,Equinor ASA Sponsored ADR,44.23,3.3411214953271027,2512682,102199216508.84407,Energy Minerals,Integrated Oil,NYSE,dr,,106156082391.17
@@ -3758,8 +3758,8 @@ WRD,WeRide Inc. Sponsored ADR Class A,5.66,-1.736111111111105,1325473,1934548001
 MLCO,Melco Resorts & Entertainment Ltd. Sponsored ADR,5.07,-0.1968503937007832,2120159,1931639813,Consumer Services,Hotels/Resorts/Cruise lines,NASDAQ,dr,,5176954561.14273
 LKFT,Lakefront Biotherapeutics Sponsored ADR,28.55,0.17543859649123056,149042,1880375276.13065,Health Technology,Biotechnology,NASDAQ,dr,,1255258568.3888402
 IMCR,Immunocore Holdings Plc Shs Sponsored American Depositary Shares Repr 1 Sh,36.86,1.4867841409691607,790814,1870429754,Health Technology,Biotechnology,NASDAQ,dr,,400950785.663665
-PSNYW,Polestar Automotive Holding UK PLC Sponsored ADR Class C,5.1,-11.304347826086962,56993,1834300064,Consumer Durables,Motor Vehicles,NASDAQ,dr,,3058109000
 PSNY,Polestar Automotive Holding UK PLC Sponsored ADR Class A,12.12,-3.733121525019862,131931,1834300064,Consumer Durables,Motor Vehicles,NASDAQ,dr,,3058109000
+PSNYW,Polestar Automotive Holding UK PLC Sponsored ADR Class C,5.1,-11.304347826086962,56993,1834300064,Consumer Durables,Motor Vehicles,NASDAQ,dr,,3058109000
 CMPS,COMPASS Pathways Plc Sponsored ADR,13.24,-1.9985196150999227,1891540,1833608385,Health Technology,Biotechnology,NASDAQ,dr,,0
 VNET,"VNET Group, Inc. Sponsored ADR",6.22,2.640264026402643,4129057,1725231340,Technology Services,Data Processing Services,NASDAQ,dr,,1384062444.93488
 FOIL,"Londian Wason New Energy Tech, Inc. Unsponsored ADR",22.48,1.950113378684806,29437,1723393476,Non-Energy Minerals,Other Metals/Minerals,NYSE,dr,,1522178626.81931
