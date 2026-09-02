@@ -1,0 +1,86 @@
+name: One-off holdings loader diagnostic patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/holdings-runtime-diagnostic-once-20260902.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch only hldLoad catch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          python - <<'PY'
+          from pathlib import Path
+
+          files = [Path('build_dashboard.py'), Path('command-center.html')]
+          start_marker = 'function hldLoad(){'
+          end_marker = 'function hldSave('
+          old = 'catch(e){'
+          new = """catch(e){
+              try{
+                if(!window._hldDiagWarned){
+                  window._hldDiagWarned=1;
+                  var _hldDiagMsg='HLD LOAD ERROR\\nname: '+String(e&&e.name||'Error')+'\\nmessage: '+String(e&&e.message||e)+'\\nstack: '+String(e&&e.stack||'(none)');
+                  window._hldLastLoadError=_hldDiagMsg;
+                  alert(_hldDiagMsg);
+                }
+              }catch(_hldDiagErr){}
+          """
+
+          for path in files:
+              text = path.read_text(encoding='utf-8')
+              s = text.find(start_marker)
+              if s < 0:
+                  raise SystemExit(f'{path}: hldLoad start not found')
+              e = text.find(end_marker, s)
+              if e < 0:
+                  raise SystemExit(f'{path}: hldLoad end not found')
+              block = text[s:e]
+              if '_hldDiagWarned' in block:
+                  print(f'{path}: diagnostic already present')
+                  continue
+              i = block.find(old)
+              if i < 0:
+                  raise SystemExit(f'{path}: hldLoad catch not found')
+              block2 = block[:i] + new + block[i+len(old):]
+              text2 = text[:s] + block2 + text[e:]
+              if text2.count('_hldDiagWarned') != text.count('_hldDiagWarned') + 2:
+                  raise SystemExit(f'{path}: unexpected diagnostic insertion count')
+              path.write_text(text2, encoding='utf-8')
+              print(f'{path}: patched')
+          PY
+          rm -f .github/workflows/holdings-runtime-diagnostic-once-20260902.yml
+          python - <<'PY'
+          from pathlib import Path
+          for fn in ('build_dashboard.py','command-center.html'):
+              text=Path(fn).read_text(encoding='utf-8')
+              s=text.find('function hldLoad(){'); e=text.find('function hldSave(',s)
+              block=text[s:e]
+              assert block.count('_hldDiagWarned') == 2, (fn, block.count('_hldDiagWarned'))
+              assert "HLD LOAD ERROR\\nname:" in block, fn
+              print(fn, 'verified')
+          PY
+          git diff --check
+      - name: Commit diagnostic only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add build_dashboard.py command-center.html .github/workflows/holdings-runtime-diagnostic-once-20260902.yml
+          git commit -m 'Expose holdings loader runtime error'
+          git push origin HEAD:main
