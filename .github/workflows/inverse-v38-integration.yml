@@ -1,0 +1,44 @@
+name: Inverse V38 Integration
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_v38_integration.py
+      - .github/workflows/inverse-v38-integration.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests
+      - name: Download frozen V2 feature artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/v2
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9851768614/zip > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d inputs/v2
+          test -s inputs/v2/feature_state_v2.csv.gz
+      - name: Run integration comparison
+        run: |
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_v38_integration.py \
+            --features inputs/v2/feature_state_v2.csv.gz \
+            --output leadership/research/out/inverse_v38_integration
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-v38-integration
+          path: leadership/research/out/inverse_v38_integration/
+          if-no-files-found: warn
+          retention-days: 14
