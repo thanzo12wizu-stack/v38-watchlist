@@ -1,0 +1,60 @@
+name: Inverse Full V38 Robustness V4
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_full_v38_v4.py
+      - .github/workflows/inverse-full-v38-v4.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Download frozen inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/v2 inputs/g100 inputs/tqqq
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9851768614/zip > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d inputs/v2
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9763251012/zip > /tmp/g100.zip
+          unzip -q /tmp/g100.zip -d inputs/g100
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9649902954/zip > /tmp/tqqq.zip
+          unzip -q /tmp/tqqq.zip -d inputs/tqqq
+          test -s inputs/v2/feature_state_v2.csv.gz
+          test -s inputs/g100/gross100_final_reset_components/ordinary_PEAK30_PART25_R3_daily.csv.gz
+          test -s inputs/g100/gross100_final_reset_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
+          test -s inputs/tqqq/tqqq_stage56_daily.csv.gz
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_inverse_full_v38_v4.py
+      - name: Run full V38 inverse robustness
+        run: |
+          set -euo pipefail
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_full_v38_v4.py \
+            --features inputs/v2/feature_state_v2.csv.gz \
+            --gross100 inputs/g100 \
+            --tqqq inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --output leadership/research/out/inverse_full_v38_v4 \
+            --bootstrap-sims 2000
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-full-v38-v4
+          path: leadership/research/out/inverse_full_v38_v4/
+          retention-days: 30
+          if-no-files-found: warn
