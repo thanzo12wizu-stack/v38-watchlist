@@ -1,0 +1,44 @@
+name: Leadership Cycle Diagnostics 20260902
+
+on:
+  push:
+    branches:
+      - research/leadership-cycle-audit-20260902
+    paths:
+      - .github/workflows/leadership-cycle-diagnostics-20260902.yml
+      - leadership/research/audit_leadership_cycle_diagnostics.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: .:leadership/research
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/leadership-cycle-audit-20260902
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run red-transition and depth diagnostics
+        run: |
+          python leadership/research/audit_leadership_cycle_diagnostics.py \
+            --root . \
+            --output leadership_cycle_diagnostics \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-09-01 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leadership-cycle-diagnostics-20260902
+          path: leadership_cycle_diagnostics/
+          retention-days: 30
