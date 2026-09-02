@@ -11,6 +11,7 @@ PUBLIC_FILES = (
     "index.html",
     "command-center.html",
     "command-center-v38.html",
+    "v38-freshness.js",
     "command-center-unified.html",
     "command-center-unified.js",
     "command-center-unified-v2.js",
@@ -23,6 +24,7 @@ PUBLIC_FILES = (
     "rotation/index.html",
     "rotation/app.css",
     "rotation/app-v2.js",
+    "rotation/app-live.js",
     "rotation/app-theme56.js",
     "rotation/market-sync.js",
 )
