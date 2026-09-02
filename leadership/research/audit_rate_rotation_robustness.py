@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from audit_rate_rotation_etfs import download_close, attach_prior_rates, block_boot_mean
+from audit_rate_rotation_etfs import download_close, attach_prior_rates
 
 TOP = ["XLF", "XLE"]
 BOTTOM = ["XLRE", "XLV"]
@@ -32,13 +32,25 @@ def add_duration_horizons(r: pd.DataFrame) -> pd.DataFrame:
     return x
 
 
+def fast_block_boot_mean(x: pd.Series, block_ids: pd.Series, reps: int=5000, seed: int=38) -> dict:
+    z=pd.DataFrame({"x":pd.to_numeric(x,errors="coerce"),"b":block_ids}).dropna()
+    if z.empty: return {"n":0}
+    block=z.groupby("b",observed=True)["x"].agg(["sum","count"]).reset_index(drop=True)
+    sums=block["sum"].to_numpy(float); counts=block["count"].to_numpy(float)
+    nblocks=len(block); rng=np.random.default_rng(seed)
+    idx=rng.integers(0,nblocks,size=(reps,nblocks))
+    draws=sums[idx].sum(axis=1)/counts[idx].sum(axis=1)
+    lo,hi=np.quantile(draws,[.025,.975]); p=2*min(float((draws<=0).mean()),float((draws>=0).mean()))
+    return {"n":int(len(z)),"blocks":int(nblocks),"mean":float(z.x.mean()),"lo":float(lo),"hi":float(hi),"p_two":float(min(1,p))}
+
+
 def evaluate(g: pd.DataFrame, top: list[str], bottom: list[str], factor: str, cut: float, seed: int=38) -> dict:
     spread = g[top].mean(axis=1) - g[bottom].mean(axis=1)
     z = pd.to_numeric(g[factor], errors="coerce")
     signal = np.where(z>=cut,1.0,np.where(z<=-cut,-1.0,0.0))
     rot = pd.Series(spread.to_numpy()*signal, index=g.index)
     block_id = pd.Series(np.arange(len(g))//20, index=g.index)
-    boot = block_boot_mean(rot, block_id, reps=5000, seed=seed)
+    boot = fast_block_boot_mean(rot, block_id, reps=5000, seed=seed)
     tight = spread[z>=cut].dropna()
     easing = (-spread[z<=-cut]).dropna()
     active = pd.concat([tight,easing])
@@ -67,15 +79,12 @@ def main():
     periods={"HOLD_ALL":hold,"2022-2023":hold[hold.date<=pd.Timestamp("2023-12-31")].copy(),"2024-2026":hold[hold.date>=pd.Timestamp("2024-01-01")].copy()}
 
     rows=[]
-    # Frozen discovery group. Threshold sensitivity around the preregistered 0.75 cut.
     for pname,g in periods.items():
         for cut in (0.50,0.75,1.00,1.25):
             r=evaluate(g,TOP,BOTTOM,"duration_shock_z5",cut,100+int(cut*100)); r["period"]=pname; r["test"]="CUT_SENSITIVITY"; rows.append(r)
-        # Horizon sensitivity: same frozen group and same 0.75 state cut.
         for h in (5,10,20):
             r=evaluate(g,TOP,BOTTOM,f"duration_shock_z{h}",0.75,200+h); r["period"]=pname; r["test"]="HORIZON_SENSITIVITY"; rows.append(r)
 
-    # Leave-one-out / single-pair checks at the preregistered factor and cut.
     variants=[
         ("PAIR_PAIR",TOP,BOTTOM),
         ("XLF_PAIR",["XLF"],BOTTOM),
