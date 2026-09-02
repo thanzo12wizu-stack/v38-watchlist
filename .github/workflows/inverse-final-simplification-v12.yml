@@ -1,0 +1,56 @@
+name: Inverse Final Simplification V12
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_final_simplification_v12.py
+      - .github/workflows/inverse-final-simplification-v12.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Download audited inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/v9 inputs/v2 inputs/g100 inputs/tqqq
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9870035332/zip > /tmp/v9.zip
+          unzip -q /tmp/v9.zip -d inputs/v9
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9851768614/zip > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d inputs/v2
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9763251012/zip > /tmp/g100.zip
+          unzip -q /tmp/g100.zip -d inputs/g100
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9649902954/zip > /tmp/tqqq.zip
+          unzip -q /tmp/tqqq.zip -d inputs/tqqq
+      - name: Run final simplification stress
+        run: |
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_final_simplification_v12.py \
+            --events inputs/v9/adaptive_event_ledger.csv \
+            --v9-summary inputs/v9/summary_v9.json \
+            --v2-features inputs/v2/feature_state_v2.csv.gz \
+            --gross100 inputs/g100 \
+            --tqqq inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --output leadership/research/out/inverse_final_v12
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-final-v12
+          path: leadership/research/out/inverse_final_v12/
+          retention-days: 30
+          if-no-files-found: warn
