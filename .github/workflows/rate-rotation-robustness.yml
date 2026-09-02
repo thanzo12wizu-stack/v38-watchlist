@@ -1,0 +1,52 @@
+name: Rate Rotation Robustness Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rate-regime-audit-20260902
+    paths:
+      - leadership/research/audit_rate_rotation_robustness.py
+      - .github/workflows/rate-rotation-robustness.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_rate_rotation_etfs.py leadership/research/audit_rate_rotation_robustness.py
+      - name: Download frozen rate features
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/rates
+          gh run download 33627699450 -R "$GITHUB_REPOSITORY" -n rate-regime-audit -D inputs/rates
+          test -s inputs/rates/rate_features.csv.gz
+      - name: Run robustness audit
+        env:
+          PYTHONPATH: leadership/research
+        run: |
+          set -euo pipefail
+          python leadership/research/audit_rate_rotation_robustness.py \
+            --rates inputs/rates/rate_features.csv.gz \
+            --output leadership/research/out/rate_rotation_robustness
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rate-rotation-robustness-audit
+          path: leadership/research/out/rate_rotation_robustness/
+          if-no-files-found: warn
+          retention-days: 14
