@@ -1,0 +1,44 @@
+name: Leadership Warning Overlay 20260902
+
+on:
+  push:
+    branches:
+      - research/leadership-cycle-audit-20260902
+    paths:
+      - .github/workflows/leadership-warning-overlay-20260902.yml
+      - leadership/research/audit_leadership_warning_overlay.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  overlay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PYTHONPATH: .:leadership/research
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/leadership-cycle-audit-20260902
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run modern-exit leadership warning overlay audit
+        run: |
+          python leadership/research/audit_leadership_warning_overlay.py \
+            --root . \
+            --output leadership_warning_overlay \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leadership-warning-overlay-20260902
+          path: leadership_warning_overlay/
+          retention-days: 30
