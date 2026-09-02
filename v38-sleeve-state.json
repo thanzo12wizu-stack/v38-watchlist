@@ -511,11 +511,11 @@
     "tqqq_floor_pct": 80
   },
   "refresh": {
-    "status": "STALE / LAST_READY_PRESERVED",
-    "attempted_at_utc": "2026-09-02T09:14:20Z",
+    "status": "FRESH",
+    "attempted_at_utc": "2026-09-02T09:16:02Z",
     "attempted_asof": "2026-09-01",
     "last_successful_asof": "2026-09-01",
-    "preserved_previous_ready": true,
-    "error": "ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000"
+    "preserved_previous_ready": false,
+    "error": null
   }
 }
