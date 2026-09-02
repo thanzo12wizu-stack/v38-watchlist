@@ -2,11 +2,11 @@
 (async()=>{
   const boot=document.getElementById('boot');
   try{
-    const r=await fetch('command-center.html?unified_base=1',{cache:'no-store'});
+    const r=await fetch('command-center.html?unified_base=2',{cache:'no-store'});
     if(!r.ok) throw new Error('Command Center '+r.status);
     let html=await r.text();
     const stamp=Date.now();
-    const addon=`<script src="command-center-unified.js?v=${stamp}"><\/script>`;
+    const addon=`<script src="command-center-unified-v2.js?v=${stamp}"><\/script>`;
     if(/<\/body>\s*<\/html>\s*$/i.test(html)) html=html.replace(/<\/body>\s*<\/html>\s*$/i,addon+'</body></html>');
     else html+=addon;
     document.open();document.write(html);document.close();
