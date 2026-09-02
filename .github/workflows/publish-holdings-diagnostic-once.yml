@@ -1,0 +1,33 @@
+name: Publish holdings diagnostic once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-holdings-diagnostic-once.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  dispatch-and-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Dispatch existing public-site workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish-public-site.yml --ref main
+      - name: Remove one-off trigger
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --ff-only origin main
+          git rm .github/workflows/publish-holdings-diagnostic-once.yml
+          git commit -m "Remove one-off holdings diagnostic publish trigger"
+          git push origin HEAD:main
