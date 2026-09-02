@@ -52,7 +52,7 @@ jobs:
           print(f'TARGET_ASOF={target}')
           print(f'DOWNLOAD_END={end}')
           PY
-          echo "Rotation target: $TARGET_ASOF; yfinance exclusive end: $DOWNLOAD_END"
+          echo "Rotation production date prepared; TARGET_ASOF and DOWNLOAD_END are available to following steps"
 
       - name: Install isolated Rotation dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
