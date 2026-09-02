@@ -16,6 +16,7 @@ PUBLIC_FILES = (
     "command-center-unified-v2.js",
     "command-center-unified-guard.js",
     "command-center-unified-v2-fix.js",
+    "command-center-unified-v3.js",
     "v38-live-state.json",
     "swinote/index.html",
     "swinote/live.js",
