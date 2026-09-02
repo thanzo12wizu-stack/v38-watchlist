@@ -1,3 +1,4 @@
+import math
 import json
 from pathlib import Path
 
@@ -87,3 +88,11 @@ def test_sleeve_price_download_falls_back_after_empty_yfinance(monkeypatch):
     assert float(op.loc[pd.Timestamp("2026-08-31"), "SPY"]) == 101.0
     assert quality["fallback_requested"] == 1
     assert quality["fallback_recovered"] == 1
+
+
+def test_reset_wilder_rsi_matches_known_pine_reference():
+    from build_v38_sleeve_live import wilder_rsi
+    close = pd.DataFrame({"AAA": [44.34,44.09,44.15,43.61,44.33,44.83,45.1,45.42,45.84,46.08,45.89,46.03,45.61,46.28,46.28,46.0,46.03,46.41,46.22,45.64,46.21]})
+    rsi = wilder_rsi(close, 14)["AAA"]
+    assert math.isclose(float(rsi.iloc[14]), 70.46413502109705, rel_tol=0, abs_tol=1e-12)
+    assert math.isclose(float(rsi.iloc[-1]), 62.880718309962404, rel_tol=0, abs_tol=1e-12)

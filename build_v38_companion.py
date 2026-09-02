@@ -35,18 +35,6 @@ def _finite(value) -> bool:
         return False
 
 
-NORMAL_STOCK_BIOTECH_INDUSTRIES = frozenset({"Biotechnology", "Pharmaceuticals: Other"})
-
-
-def _normal_stock_biotech_excluded(industry) -> bool:
-    """Normal-stock sleeve: broadly exclude biotech-like clinical industries.
-
-    This is deliberately stricter than the legacy structural-small-biotech
-    helper retained in v38_rules for historical audit compatibility.
-    """
-    return str(industry or "").strip() in NORMAL_STOCK_BIOTECH_INDUSTRIES
-
-
 def _load_json(path: Path | None, default):
     if path is None or not path.is_file():
         return default
@@ -224,7 +212,6 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         if not _finite(revenue_value):
             revenue_value = _revenue_value(revenues, ticker)
         bio = clinical_biotech_exclusion(industry_value, market_cap_value, revenue_value)
-        normal_biotech_excluded = _normal_stock_biotech_excluded(industry_value)
         eligible = (
             _finite(row.get("px")) and float(row["px"]) >= 5
             and _finite(row.get("dvol")) and float(row["dvol"]) >= 10
@@ -233,7 +220,6 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             and _finite(row.get("rs189")) and float(row["rs189"]) >= 85
             and _finite(row.get("rs")) and float(row["rs"]) >= 85
             and not bio.excluded
-            and not normal_biotech_excluded
         )
         if not eligible:
             continue
@@ -257,12 +243,12 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
                 "close_gt_sma200": _finite(row.get("v200")) and float(row["v200"]) > 0,
                 "rs189_gte_85": _finite(row.get("rs189")) and float(row["rs189"]) >= 85,
                 "rs63_gte_85": _finite(row.get("rs")) and float(row["rs"]) >= 85,
-                "biotech_industry_excluded": normal_biotech_excluded,
+                "biotech_industry_excluded": bio.excluded,
             },
             "normal_biotech_policy": {
                 "industry": industry_value,
-                "excluded": normal_biotech_excluded,
-                "policy": "EXCLUDE_BIOTECHNOLOGY_AND_PHARMACEUTICALS_OTHER",
+                "excluded": bio.excluded,
+                "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open",
             },
             "rs189": row.get("rs189"),
             "rs63": row.get("rs"),
@@ -297,31 +283,37 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             },
             "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
         })
+    selective_order = sorted(candidates, key=lambda row: float(row["rs189"]), reverse=True)
+    for rank, row in enumerate(selective_order, 1):
+        row["selective_watch_rank"] = rank
+
     all_attack_watch_ready = bool(candidates) and all(
         row["attack_watch_score"] is not None for row in candidates
     )
+    attack_order = []
     if all_attack_watch_ready:
-        watch_order = sorted(
+        attack_order = sorted(
             candidates,
             key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])),
             reverse=True,
         )
-        for rank, row in enumerate(watch_order, 1):
+        for rank, row in enumerate(attack_order, 1):
             row["attack_watch_rank"] = rank
 
     all_attack_ready = mode.name == "ATTACK" and all_attack_watch_ready
-    if mode.name == "ATTACK" and all_attack_ready:
-        candidates.sort(key=lambda row: (float(row["attack_score"]), float(row["rs189"])), reverse=True)
-    elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:
-        candidates.sort(key=lambda row: (float(row["attack_watch_score"]), float(row["rs189"])), reverse=True)
-    else:
-        candidates.sort(key=lambda row: float(row["rs189"]), reverse=True)
     if mode.name == "SELECTIVE":
-        for rank, row in enumerate(candidates, 1):
-            row["final_rank"] = rank
+        candidates = selective_order
+        for row in candidates:
+            row["final_rank"] = row["selective_watch_rank"]
     elif mode.name == "ATTACK" and all_attack_ready:
-        for rank, row in enumerate(candidates, 1):
-            row["final_rank"] = rank
+        candidates = attack_order
+        for row in candidates:
+            row["attack_score"] = row["attack_watch_score"]
+            row["final_rank"] = row["attack_watch_rank"]
+    elif mode.name in {"STOP", "DEFENSE"} and all_attack_watch_ready:
+        candidates = attack_order
+    else:
+        candidates = selective_order
 
     current30 = tqqq_live.get("current30", {}) if tqqq_ready else {}
     underlying_pct = _pct(tqqq_live.get("underlying_target_pct")) if tqqq_ready else None
@@ -474,15 +466,19 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "missing_theme_policy": "NEUTRAL_50_AT_FINAL_SCORE_ONLY",
             "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
             "history_min_sessions": 21,
-            "normal_biotech_policy": "EXCLUDE Biotechnology / Pharmaceuticals: Other",
+            "normal_biotech_policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY (<10B cap AND <50M revenue; missing revenue fail-open)",
             "full_eligible_count": len(candidates),
             "display_limit_applied_after_full_sort": 50,
+            "selective_watch_status": "READY" if bool(candidates) else "DATA REQUIRED",
+            "selective_watch_semantics": "STOP/DEFENSE REOPEN TO SELECTIVE: RS189 ONLY; TOP4",
+            "selective_reopen_top4": [row["ticker"] for row in selective_order[:4]],
             "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
-            "attack_watch_semantics": "WATCH_ONLY_OUTSIDE_ATTACK; NEVER_OVERRIDES_MARKET_MODE",
+            "attack_watch_semantics": "STOP/DEFENSE REOPEN TO ATTACK: 70/30 STRICT LOO; TOP12",
+            "attack_reopen_top12": [row["ticker"] for row in attack_order[:12]] if all_attack_watch_ready else [],
             "strict_loo_live_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
             "strict_loo_source_status": "READY" if loo_live else "DATA REQUIRED",
         },
-        "candidates": candidates[:50],
+        "candidates": candidates,
         "panic_reset": {
             "status": ("READY / LIVE" if sleeve_ready and reset_sleeve.get("status") == "READY" else "DATA REQUIRED"),
             "separate_sleeve": True, "strategy": "RS63_TOP3_RISE30_SIGTOP3",

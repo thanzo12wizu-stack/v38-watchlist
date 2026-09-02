@@ -171,6 +171,35 @@ def test_private_source_cache_roundtrip_preserves_daily_and_intraday_timezone(tm
     assert loaded["mc57"].iloc[-1] == series.iloc[-1]
 
 
+def test_yahoo_utc_cache_roundtrip_builds_correct_new_york_rth_slots(tmp_path):
+    utc_index = pd.date_range("2026-08-28 13:30", "2026-08-28 19:55", freq="5min", tz="UTC")
+    values = np.linspace(100, 101, len(utc_index))
+    intraday = pd.DataFrame({"Open": values, "High": values + .1, "Low": values - .1, "Close": values}, index=utc_index)
+    daily_index = pd.date_range("2026-08-27", periods=2, freq="B")
+    daily = pd.DataFrame({"Open": [100., 101.], "High": [102., 103.], "Low": [99., 100.], "Close": [101., 102.], "Volume": [1000., 1100.]}, index=daily_index)
+    payload = {
+        "schema": CACHE_SCHEMA, "fetched_at": "2026-08-28T21:00:00+00:00",
+        "daily": {ticker: _frame_payload(daily) for ticker in ("QQQ", "TQQQ", "NQ=F", "^VIX")},
+        "mc57": {"index": [x.isoformat() for x in daily_index], "data": [50., 51.]},
+        "mc57_coverage": {"index": [x.isoformat() for x in daily_index], "data": [100., 100.]},
+        "qqq_5m": _frame_payload(intraday), "coverage": {},
+    }
+    path = tmp_path / "cache.json"
+    write_source_cache(path, payload)
+    loaded = load_source_cache(path)
+    assert str(loaded["qqq_5m"].index.tz) == "UTC"
+    bars = build_4h_bars(loaded["qqq_5m"])
+    assert list(bars["slot"]) == [0, 1]
+    assert list(bars["n"]) == [48, 30]
+
+
+def test_wilder_rsi_matches_known_sma_seed_reference():
+    close = np.array([44.34,44.09,44.15,43.61,44.33,44.83,45.1,45.42,45.84,46.08,45.89,46.03,45.61,46.28,46.28,46.0,46.03,46.41,46.22,45.64,46.21])
+    rsi = wilder_rsi(close, 14)
+    assert math.isclose(rsi[14], 70.46413502109705, rel_tol=0, abs_tol=1e-12)
+    assert math.isclose(rsi[-1], 62.880718309962404, rel_tol=0, abs_tol=1e-12)
+
+
 def test_dashboard_prefetches_tqqq_before_bulk_build_and_consumes_private_cache():
     workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
     prefetch = workflow.index("Prefetch dedicated TQQQ market inputs")

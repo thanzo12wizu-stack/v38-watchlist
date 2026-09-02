@@ -406,14 +406,29 @@ def advance_normal(previous: dict[str, Any], companion: dict[str, Any], asof: st
 
 
 def wilder_rsi(close: pd.DataFrame, n: int = 14) -> pd.DataFrame:
-    delta = close.diff()
-    gain = delta.clip(lower=0.0)
-    loss = -delta.clip(upper=0.0)
-    avg_gain = gain.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
-    avg_loss = loss.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
-    rs = avg_gain / avg_loss.replace(0.0, np.nan)
-    out = 100.0 - 100.0 / (1.0 + rs)
-    out = out.where(avg_loss != 0.0, 100.0)
+    """TradingView/Pine-style Wilder RSI with an SMA seed per symbol."""
+    out = pd.DataFrame(np.nan, index=close.index, columns=close.columns, dtype=float)
+    for column in close.columns:
+        series = pd.to_numeric(close[column], errors="coerce").dropna()
+        if len(series) <= n:
+            continue
+        values = series.to_numpy(float)
+        delta = np.diff(values, prepend=np.nan)
+        gain = np.where(delta > 0, delta, 0.0)
+        loss = np.where(delta < 0, -delta, 0.0)
+        avg_gain = np.full(len(values), np.nan)
+        avg_loss = np.full(len(values), np.nan)
+        avg_gain[n] = np.mean(gain[1:n + 1])
+        avg_loss[n] = np.mean(loss[1:n + 1])
+        for i in range(n + 1, len(values)):
+            avg_gain[i] = (avg_gain[i - 1] * (n - 1) + gain[i]) / n
+            avg_loss[i] = (avg_loss[i - 1] * (n - 1) + loss[i]) / n
+        with np.errstate(divide="ignore", invalid="ignore"):
+            rs = avg_gain / avg_loss
+            result = 100.0 - 100.0 / (1.0 + rs)
+        result[(avg_loss == 0.0) & np.isfinite(avg_gain)] = 100.0
+        result[(avg_gain == 0.0) & (avg_loss == 0.0)] = 50.0
+        out.loc[series.index, column] = result
     return out
 
 

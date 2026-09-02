@@ -32,7 +32,7 @@ def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
     assert "M30_TOUCH30_F80_D10" in html
     assert "$Vol(M)" in html
     assert "50&gt;200" in html and "Price&gt;200" in html
-    assert "Biotechnology / Pharmaceuticals: Other は通常個別株候補から原則除外" in html
+    assert "構造的小型Clinical Biotechだけ除外" in html
     for element_id in ("mcEntry", "seedAge", "underlyingTarget", "requestedTarget",
                        "resetAllocation", "tqqqParts", "normalAllocation", "executableTarget"):
         assert f'id="{element_id}"' in html
@@ -227,7 +227,7 @@ def test_companion_structural_bio_filter_ignores_legacy_theme_label(tmp_path):
                         revenue_path=rev_path)
     got = {row["ticker"]: row for row in state["candidates"]}
     assert "SMALLBIO" not in got and "SMALLPHARMA" not in got
-    assert "BIGBIO" not in got and "MISSINGREV" not in got and "LABELONLY" in got
+    assert "BIGBIO" in got and "MISSINGREV" in got and "LABELONLY" in got
 
 
 def test_companion_uses_universe_csv_structural_clinical_fields(tmp_path):
@@ -251,7 +251,7 @@ def test_companion_uses_universe_csv_structural_clinical_fields(tmp_path):
     state = build_state(source, universe_path=universe)
     got = {row["ticker"]: row for row in state["candidates"]}
     assert "SMALLBIO" not in got and "SMALLPHARMA" not in got
-    assert "BIGBIO" not in got and "MISSINGREV" not in got
+    assert "BIGBIO" in got and "MISSINGREV" in got
 
 
 def test_attack_strict_loo_uses_s2t_memberships_and_full_universe_before_top50(tmp_path):
@@ -425,14 +425,15 @@ def test_tqqq_stale_route_is_data_required_and_not_used_for_gross(tmp_path):
 def test_audited_companion_leads_with_action_and_never_labels_stop_watchlist_as_buy():
     html = Path("command-center-v38.html").read_text(encoding="utf-8")
     assert "TODAY'S ACTION" in html
-    assert "今日は通常株を新規で買わない" in html
+    assert "今は買わない" in html
+    assert "復帰条件成立前は買いません" in html
     assert "再開時にまず見る銘柄" in html
-    assert "買い推奨ではありません" in html
+    assert "どちらも復帰条件成立前は買いシグナルではありません" in html
     assert "今は買わない" in html
     assert "Rotationは現時点では正式順位に加点しません" in html
     assert "ルール解説" in html
     assert "RSI30接近" in html
-    assert "今日の最終配分" in html
+    assert "戦略モデルの目標配分（実保有とは別）" in html
     assert "RS63_TOP3_RISE30_SIGTOP3" in html
     assert "表示帯は売買ルールではない" in html
 
@@ -522,3 +523,24 @@ def test_companion_selective_fill_uses_idle_cash_and_never_overrides_native_zero
     assert locked_gross["tqqq_allocated_pct"] == 0
     assert locked_gross["normal_stock_allocated_pct"] == 40
     assert locked_gross["gross_allocated_pct"] == 40
+
+
+def test_stop_state_precomputes_both_selective_and_attack_reopening_routes(tmp_path):
+    calc = {"asof": "2026-08-28", "color": "Yellow"}
+    det = {f"T{i}": eligible_row(rs189=99-i/10, rs=99-i/10, v50=5) for i in range(40)}
+    source = tmp_path / "legacy.html"
+    write_legacy(source, calc, det)
+    sector = tmp_path / "sector.json"
+    sector.write_text(json.dumps({"s2t": {ticker: [] for ticker in det}}), encoding="utf-8")
+    loo = tmp_path / "loo.json"
+    loo.write_text(json.dumps({
+        "status": "READY", "asof": "2026-08-28", "history_sessions": 21,
+        "history_has_exact_20_session_base": True, "candidates": {}
+    }), encoding="utf-8")
+    state = build_state(source, sector_snapshot_path=sector, strict_loo_path=loo)
+    assert state["market"]["mode"] == "STOP"
+    assert state["ranking"]["selective_reopen_top4"] == ["T0", "T1", "T2", "T3"]
+    assert len(state["ranking"]["attack_reopen_top12"]) == 12
+    rows = {row["ticker"]: row for row in state["candidates"]}
+    assert rows["T0"]["selective_watch_rank"] == 1
+    assert rows["T0"]["attack_watch_rank"] is not None

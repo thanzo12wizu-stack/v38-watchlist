@@ -856,7 +856,7 @@ def collect_live_sources() -> dict[str, Any]:
         "daily": {ticker: _frame_payload(frame) for ticker, frame in daily.items()},
         "mc57": _series_payload(mc57),
         "mc57_coverage": _series_payload(mc_coverage),
-        "qqq_5m": _frame_payload(_plain(qqq_5m)),
+        "qqq_5m": _frame_payload(qqq_5m),
         "coverage": {
             "daily_latest": {
                 ticker: str(pd.Timestamp(frame.index.max()).date()) for ticker, frame in daily.items()
