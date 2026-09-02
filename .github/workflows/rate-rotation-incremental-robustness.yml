@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p inputs/incremental
-          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9847296867/zip > /tmp/incremental.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9847553564/zip > /tmp/incremental.zip
           unzip -q /tmp/incremental.zip -d inputs/incremental
           test -s inputs/incremental/rate_rotation_incremental_panel.csv.gz
       - name: Run robustness audit
