@@ -1,0 +1,67 @@
+name: Rate Policy Neutral Follow-up
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/rate-regime-audit-20260902]
+    paths:
+      - leadership/research/audit_rate_policy_neutral_followup.py
+      - .github/workflows/rate-policy-neutral-followup.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Download frozen audited inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/{full,tqqq,gross,theme,spy}
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9848757773/zip > /tmp/full.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9649902954/zip > /tmp/tqqq.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9739833328/zip > /tmp/gross.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9629509751/zip > /tmp/theme.zip
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9742353237/zip > /tmp/spy.zip
+          unzip -q /tmp/full.zip -d inputs/full
+          unzip -q /tmp/tqqq.zip -d inputs/tqqq
+          unzip -q /tmp/gross.zip -d inputs/gross
+          unzip -q /tmp/theme.zip -d inputs/theme
+          unzip -q /tmp/spy.zip -d inputs/spy
+          test -s inputs/full/policy_target_history.csv
+          test -s inputs/tqqq/tqqq_stage56_daily.csv.gz
+          test -s inputs/gross/ordinary_PEAK30_PART25_R3_daily.csv.gz
+          test -s inputs/gross/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
+          test -s inputs/theme/economic_rows.csv.gz
+          test -s inputs/spy/rotation_proxy_panel.csv
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_rate_policy_neutral_followup.py
+      - name: Run follow-up
+        run: |
+          python leadership/research/audit_rate_policy_neutral_followup.py \
+            --policy inputs/full/policy_target_history.csv \
+            --tqqq inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --ordinary inputs/gross/ordinary_PEAK30_PART25_R3_daily.csv.gz \
+            --reset inputs/gross/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
+            --theme inputs/theme/economic_rows.csv.gz \
+            --spy-panel inputs/spy/rotation_proxy_panel.csv \
+            --output leadership/research/out/rate_policy_neutral
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rate-policy-neutral-followup
+          path: leadership/research/out/rate_policy_neutral/
+          if-no-files-found: warn
+          retention-days: 14
