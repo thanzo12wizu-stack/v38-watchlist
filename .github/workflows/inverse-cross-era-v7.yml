@@ -36,6 +36,7 @@ jobs:
       - name: Run cross-era guard audit
         run: |
           set -euo pipefail
+          sed -i 's/for hold in \[2,3,4\]:/for hold in [1,2,3,4]:/' leadership/research/audit_inverse_cross_era_guard_v7.py
           python leadership/research/audit_inverse_cross_era_guard_v7.py \
             --legacy-state inputs/v6/legacy_state_2011_2026.csv.gz \
             --v2-features inputs/v2/feature_state_v2.csv.gz \
@@ -48,4 +49,4 @@ jobs:
           path: leadership/research/out/inverse_cross_era_v7/
           retention-days: 30
           if-no-files-found: warn
-# trigger 2026-09-03
+# includes one-day hold sensitivity
