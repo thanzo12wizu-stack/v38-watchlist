@@ -1,7 +1,9 @@
 (() => {
   'use strict';
 
-  const MARKET_URL = 'dashboard-market.json';
+  const RAW_ROOT = 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/';
+  const LIVE_URL = `${RAW_ROOT}v38-live-state.json`;
+  const SHARE_URL = `${RAW_ROOT}command-center_share.html`;
   const $ = (id) => document.getElementById(id);
   const isNum = (v) => v !== null && v !== '' && Number.isFinite(Number(v));
   const shortDate = (s) => {
@@ -9,19 +11,21 @@
     return p.length === 3 ? `${p[0]}.${p[1]}.${p[2]}` : (s || '—');
   };
   const modeLabel = (m) => ({ATTACK:'攻撃',SELECTIVE:'選別',STOP:'新規停止',DEFENSE:'防御'})[String(m || '').toUpperCase()] || m || '—';
-  const crowdRating = (v) => {
-    if (!isNum(v)) return '—';
-    const n = Number(v);
-    if (n < 20) return '極端な恐怖';
-    if (n < 40) return '恐怖';
-    if (n < 60) return '中立';
-    if (n < 80) return '強欲';
-    return '極端な強欲';
-  };
 
   let snapshot = null;
   let applying = false;
   let observer = null;
+
+  function parseDashboardShare(html) {
+    const asof = html.match(/class=["']asof["'][^>]*>(\d{4}-\d{2}-\d{2})</i)?.[1] || null;
+    const crowd = html.match(/群衆温度計\s*<b>(\d+(?:\.\d+)?)/i)?.[1] || null;
+    const crowdLabel = html.match(/群衆温度計\s*<b>[^<]*（([^）]+)）/i)?.[1] || null;
+    return {
+      asof,
+      crowd_temperature: isNum(crowd) ? Number(crowd) : null,
+      crowd_label: crowdLabel,
+    };
+  }
 
   function actionText(mode) {
     if (mode === 'STOP') return '通常個別株の新規エントリーは停止';
@@ -49,15 +53,18 @@
     applying = true;
     if (observer) observer.disconnect();
     try {
-      const market = snapshot;
+      const {live, share} = snapshot;
+      const market = live?.market || {};
+      const panic = live?.panic_tqqq || {};
       const mode = String(market.mode || '').toUpperCase();
       const limit = market.new_entry_limit ?? '—';
       const breadth = market.breadth50;
       const nqsar = market.nqsar || '—';
-      const senti = market.crowd_temperature;
-      const vix = market.vix;
-      const mc57 = market.market_conditions;
-      const liveAsOf = market.v38_asof || market.crowd_asof || null;
+      const senti = share?.crowd_temperature;
+      const sentiLabel = share?.crowd_label || '—';
+      const vix = panic.vix_close;
+      const mc57 = panic.mc57;
+      const liveAsOf = live?.asof || share?.asof || null;
 
       setText('heroAction', actionText(mode));
       setText('permission', String(limit));
@@ -68,8 +75,8 @@
       setText('modeSub', `新規枠上限 ${limit}`);
       setText('breadth', isNum(breadth) ? `${Number(breadth).toFixed(1)}%` : '—');
       setText('nqsar', `NQSAR ${nqsar}`);
-      setText('fg', isNum(senti) ? Number(senti).toFixed(1) : '—');
-      setText('fgSub', isNum(senti) ? `${crowdRating(senti)} / 既存Dashboard` : '既存Dashboard 群衆温度計');
+      setText('fg', isNum(senti) ? String(Number(senti)) : '—');
+      setText('fgSub', isNum(senti) ? `${sentiLabel} / 既存Dashboard` : '既存Dashboard 群衆温度計');
 
       const macroTop = $('macroTop');
       if (macroTop) {
@@ -102,7 +109,7 @@
           liveFact.className = 'obs';
           facts.prepend(liveFact);
         }
-        liveFact.textContent = `既存Dashboard最新値（${shortDate(liveAsOf)}）：Market Conditions ${isNum(mc57) ? Number(mc57).toFixed(1) : '—'} / NQSAR ${nqsar} / Breadth ${isNum(breadth) ? Number(breadth).toFixed(2) + '%' : '—'} / 群衆温度計 ${isNum(senti) ? Number(senti).toFixed(1) : '—'} / VIX ${isNum(vix) ? Number(vix).toFixed(2) : '—'}`;
+        liveFact.textContent = `既存Dashboard最新値（${shortDate(liveAsOf)}）：Market Conditions ${isNum(mc57) ? Number(mc57).toFixed(1) : '—'} / NQSAR ${nqsar} / Breadth ${isNum(breadth) ? Number(breadth).toFixed(2) + '%' : '—'} / 群衆温度計 ${isNum(senti) ? Number(senti) : '—'} / VIX ${isNum(vix) ? Number(vix).toFixed(2) : '—'}`;
       }
 
       const hypotheses = $('hypotheses');
@@ -143,11 +150,17 @@
     }
   }
 
-  fetch(MARKET_URL, {cache:'no-store'}).then((r) => {
-    if (!r.ok) throw new Error(`dashboard-market HTTP ${r.status}`);
-    return r.json();
-  }).then((market) => {
-    snapshot = market;
+  Promise.all([
+    fetch(LIVE_URL, {cache:'no-store'}).then((r) => {
+      if (!r.ok) throw new Error(`v38-live-state HTTP ${r.status}`);
+      return r.json();
+    }),
+    fetch(SHARE_URL, {cache:'no-store'}).then((r) => {
+      if (!r.ok) throw new Error(`command-center_share HTTP ${r.status}`);
+      return r.text();
+    })
+  ]).then(([live, shareHtml]) => {
+    snapshot = {live, share: parseDashboardShare(shareHtml)};
     observer = new MutationObserver(() => {
       if (!applying) queueMicrotask(applySnapshot);
     });
