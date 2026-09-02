@@ -1,0 +1,269 @@
+name: Rotation Theme56 live build
+
+on:
+  workflow_run:
+    workflows: ["V38 live build"]
+    types: [completed]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-theme56-live-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Tokyo
+      RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Load current production as-of
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git show origin/main:state.json > /tmp/state.json
+          git show origin/main:v38-live-state.json > /tmp/v38-live-state.json
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from datetime import date, timedelta
+          from pathlib import Path
+          state=json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
+          live=json.loads(Path('/tmp/v38-live-state.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          v38=str(live.get('asof') or '')
+          if not target or target != v38:
+              raise SystemExit(f'production date mismatch: Command Center={target!r} V38={v38!r}')
+          end=(date.fromisoformat(target)+timedelta(days=1)).isoformat()
+          print(f'TARGET_ASOF={target}')
+          print(f'DOWNLOAD_END={end}')
+          PY
+          echo "Rotation target: $TARGET_ASOF; yfinance exclusive end: $DOWNLOAD_END"
+
+      - name: Install isolated Rotation dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
+
+      - name: Syntax check production producers
+        run: |
+          python -m py_compile leadership/research/rotation_theme56_price_snapshot.py
+          python -m py_compile leadership/research/rotation_theme56_etfcom_flow.py
+          python -m py_compile leadership/research/rotation_theme56_fullstack_snapshot.py
+          python -m py_compile leadership/research/rotation_theme56_fullstack_dram_overlay.py
+          python -m py_compile leadership/research/rotation_theme56_public_brief.py
+
+      - name: Build current Theme56 price layer
+        run: |
+          rm -rf leadership/research/rotation_theme56_live
+          python leadership/research/rotation_theme56_price_snapshot.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --output leadership/research/rotation_theme56_live \
+            --download-start 2025-01-01 \
+            --download-end "$DOWNLOAD_END"
+
+      - name: Refresh validated ETF.com actual Fund Flow
+        run: |
+          rm -rf leadership/research/rotation_theme56_etfcom_flow
+          python leadership/research/rotation_theme56_etfcom_flow.py \
+            --output leadership/research/rotation_theme56_etfcom_flow
+
+      - name: Merge current holdings supplements
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          paths=[
+              Path('leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv'),
+              Path('leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv'),
+          ]
+          frames=[pd.read_csv(p) for p in paths if p.exists()]
+          if not frames:
+              raise SystemExit('no Theme56 holdings supplement available')
+          out=pd.concat(frames,ignore_index=True)
+          out['sector_etf']=out['sector_etf'].astype(str).str.upper()
+          out['symbol']=out['symbol'].astype(str).str.upper()
+          out=out.drop_duplicates(['sector_etf','symbol'],keep='last')
+          out.to_csv('/tmp/theme56_exact_holdings_supplements.csv',index=False)
+          print({'rows':len(out),'themes':out['sector_etf'].nunique()})
+          PY
+
+      - name: Build current Theme56 full stack
+        run: |
+          rm -rf leadership/research/rotation_theme56_fullstack
+          python leadership/research/rotation_theme56_fullstack_snapshot.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --price-json leadership/research/rotation_theme56_live/theme56_price.json \
+            --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --holdings-expansion /tmp/theme56_exact_holdings_supplements.csv \
+            --holdings-fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
+            --issuer-flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
+            --etfcom-flows leadership/research/rotation_theme56_etfcom_flow/theme56_etfcom_daily_flows.csv \
+            --etfcom-flow-qa leadership/research/rotation_theme56_etfcom_flow/etfcom_flow_qa.json \
+            --output leadership/research/rotation_theme56_fullstack \
+            --download-start 2025-10-01 \
+            --download-end "$DOWNLOAD_END"
+          python leadership/research/rotation_theme56_fullstack_dram_overlay.py \
+            --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
+            --price leadership/research/rotation_theme56_live/theme56_price.json \
+            --dram-supplement leadership/research/rotation_theme56_dram_supplement/dram_supplement.json \
+            --dram-holdings leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv \
+            --download-start 2025-10-01 \
+            --download-end "$DOWNLOAD_END"
+
+      - name: Build current public Theme56 brief
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          live=json.loads(Path('/tmp/v38-live-state.json').read_text(encoding='utf-8'))
+          target=str(live.get('asof') or '')
+          market=live.get('market') if isinstance(live.get('market'),dict) else {}
+          base={
+              'schema': 4,
+              'research_only': True,
+              'deterministic_formatter': True,
+              'asof': target,
+              'market_when': market,
+              'v38_action': {
+                  'market_mode': market.get('mode'),
+                  'normal_entry_limit': market.get('new_entry_limit'),
+                  'rotation_forced_exit': False,
+                  'normal_entry': 'Rotation is context only; formal V38 live state controls entries.',
+              },
+              'observations': {},
+              'macro_why': {
+                  'facts': [],
+                  'hypotheses': [],
+                  'missing': ['Production Theme56 layer does not infer macro WHY from stale research inputs.'],
+              },
+              'theme_stock': {
+                  'formal_v38_context': [],
+                  'leadership_context': {'status':'DATA REQUIRED'},
+              },
+              'limitations': [
+                  'Theme56 Rotation is descriptive context, not a V38 Gate or stock score.',
+                  'Formal V38 market state is read from the current isolated V38 live output.',
+              ],
+              'guardrails': [
+                  'Rotation contributes zero points to V38 ranking and never forces an exit.'
+              ],
+          }
+          Path('/tmp/rotation-base.json').write_text(json.dumps(base,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+          rm -rf /tmp/rotation-public
+          python leadership/research/rotation_theme56_public_brief.py \
+            --base-brief /tmp/rotation-base.json \
+            --fullstack leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json \
+            --output /tmp/rotation-public
+
+      - name: Validate production freshness and coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          price=json.loads(Path('leadership/research/rotation_theme56_live/theme56_price.json').read_text(encoding='utf-8'))
+          full=json.loads(Path('leadership/research/rotation_theme56_fullstack/theme56_fullstack_snapshot.json').read_text(encoding='utf-8'))
+          brief=json.loads(Path('/tmp/rotation-public/rotation_theme56_public_brief.json').read_text(encoding='utf-8'))
+          for name,obj in [('price',price),('fullstack',full),('public_brief',brief)]:
+              if str(obj.get('asof') or '') != target:
+                  raise SystemExit(f'{name} stale: {obj.get("asof")} != {target}')
+          align=brief.get('input_alignment') or {}
+          if align.get('same_asof') is not True or str(align.get('v38_asof') or '') != target:
+              raise SystemExit(f'public brief V38 alignment failed: {align}')
+          rows=[]
+          for values in ((brief.get('observations') or {}).get('rotation_buckets') or {}).values():
+              if isinstance(values,list): rows.extend(values)
+          if len(rows) != 56 or len({str(x.get('ticker')) for x in rows}) != 56:
+              raise SystemExit(f'Theme56 row mismatch: {len(rows)}')
+          status=brief.get('theme56_data_status') or {}
+          if int(status.get('price_ready_count') or 0) < 55:
+              raise SystemExit(f'price coverage low: {status}')
+          if int(status.get('internal_measured_count') or 0) < 55:
+              raise SystemExit(f'internal coverage low: {status}')
+          if int(status.get('measured_full_stack_count') or 0) < 50:
+              raise SystemExit(f'full-stack coverage low: {status}')
+          print(json.dumps({'asof':target,'theme56':len(rows),'status':status},ensure_ascii=False,indent=2))
+          PY
+
+      - name: Prepare public Rotation artifacts
+        run: |
+          mkdir -p /tmp/rotation-data
+          cp /tmp/rotation-public/rotation_theme56_public_brief.json /tmp/rotation-data/rotation-theme56.json
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          brief=json.loads(Path('/tmp/rotation-data/rotation-theme56.json').read_text(encoding='utf-8'))
+          status={
+              'schema':'rotation-live-status-1',
+              'status':'READY',
+              'asof':os.environ['TARGET_ASOF'],
+              'v38_asof':(brief.get('input_alignment') or {}).get('v38_asof'),
+              'generated_at':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
+              'source':'isolated production Theme56 workflow',
+          }
+          Path('/tmp/rotation-data/status.json').write_text(json.dumps(status,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+
+      - name: Commit only sanitized production Rotation data
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            current="$(git show origin/main:v38-live-state.json | python -c 'import json,sys; print(json.load(sys.stdin).get("asof") or "")')"
+            if [[ "$current" != "$TARGET_ASOF" ]]; then
+              echo "::error::V38 advanced during Rotation build: $current != $TARGET_ASOF"
+              exit 1
+            fi
+            git reset --hard origin/main
+            mkdir -p rotation/data
+            cp /tmp/rotation-data/rotation-theme56.json rotation/data/rotation-theme56.json
+            cp /tmp/rotation-data/status.json rotation/data/status.json
+            git add rotation/data/rotation-theme56.json rotation/data/status.json
+            if git diff --staged --quiet; then
+              echo "Production Rotation data already current"
+              exit 0
+            fi
+            git commit -m "Refresh isolated Rotation Theme56 live data"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "::warning::Rotation persistence raced with main; retry $attempt/3"
+            sleep $((attempt * 2))
+          done
+          echo "Rotation production persistence failed after retries"
+          exit 1
+
+      - name: Upload Rotation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-live-diagnostics
+          path: |
+            leadership/research/rotation_theme56_live/
+            leadership/research/rotation_theme56_etfcom_flow/
+            leadership/research/rotation_theme56_fullstack/
+            /tmp/rotation-public/
+          if-no-files-found: warn
+          retention-days: 7
