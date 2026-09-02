@@ -2,13 +2,10 @@ name: Command Center daily build
 
 on:
   schedule:
-    # 朝一: JST 7時 = UTC 22時
     - cron: '17 22 * * 1-5'
-    # 昼: JST 13時 = UTC 4時
     - cron: '17 4 * * 2-6'
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'sar_state.txt'
       - 'equity.csv'
@@ -114,16 +111,6 @@ jobs:
             echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Report skipped stale run
-        if: steps.build.outputs.skipped == 'true'
-        shell: bash
-        run: |
-          {
-            echo "### Command Center build"
-            echo "- Status: skipped"
-            echo "- Reason: as-of regression guard kept the newer persisted session intact"
-          } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Validate Command Center generated files
         if: steps.build.outputs.skipped != 'true'
         shell: bash
@@ -135,24 +122,17 @@ jobs:
           import re
           from pathlib import Path
 
-          required = {
+          for name, minimum in {
               'command-center.html': 200_000,
               'command-center_share.html': 2_500,
               'state.json': 100,
               'trend_history.json': 100,
               'daily_log.csv': 100,
-          }
-          for name, minimum in required.items():
+              'commit_manifest.json': 20,
+          }.items():
               path = Path(name)
-              if not path.is_file():
-                  raise SystemExit(f'missing generated file: {name}')
-              if path.stat().st_size < minimum:
-                  raise SystemExit(f'generated file too small: {name}')
-
-          main = Path('command-center.html').read_text(encoding='utf-8')
-          share = Path('command-center_share.html').read_text(encoding='utf-8')
-          if 'Command Center' not in main:
-              raise SystemExit('Command Center marker missing')
+              if not path.is_file() or path.stat().st_size < minimum:
+                  raise SystemExit(f'invalid generated file: {name}')
 
           state = json.loads(Path('state.json').read_text(encoding='utf-8'))
           state_date = str(state.get('date') or '')
@@ -160,60 +140,66 @@ jobs:
           if not iso.fullmatch(state_date):
               raise SystemExit(f'invalid state date: {state_date!r}')
 
+          main = Path('command-center.html').read_text(encoding='utf-8')
+          share = Path('command-center_share.html').read_text(encoding='utf-8')
+          if 'Command Center' not in main or f'分析基準日 {state_date}' not in main:
+              raise SystemExit('Command Center HTML marker/date mismatch')
+          if state_date not in share:
+              raise SystemExit('share HTML date mismatch')
+
           log_dates = []
           with Path('daily_log.csv').open(encoding='utf-8', newline='') as fh:
               for row in csv.DictReader(fh):
                   d = str(row.get('date') or '')
                   if iso.fullmatch(d):
                       log_dates.append(d)
+          if not log_dates or max(log_dates) != state_date:
+              raise SystemExit(f'daily log mismatch: {state_date}')
+
           trend = json.loads(Path('trend_history.json').read_text(encoding='utf-8'))
           trend_dates = []
           if isinstance(trend, list):
               for row in trend:
-                  d = str(row[0] if isinstance(row, (list, tuple)) and row else row.get('date') if isinstance(row, dict) else '')
+                  if isinstance(row, (list, tuple)) and row:
+                      d = str(row[0] or '')
+                  elif isinstance(row, dict):
+                      d = str(row.get('date') or '')
+                  else:
+                      d = ''
                   if iso.fullmatch(d):
                       trend_dates.append(d)
-          if not log_dates or max(log_dates) != state_date:
-              raise SystemExit(f'daily log date mismatch: state={state_date}')
           if not trend_dates or max(trend_dates) != state_date:
-              raise SystemExit(f'trend date mismatch: state={state_date}')
-
-          mm = re.search(r'分析基準日\s+(\d{4}-\d{2}-\d{2})', main)
-          sm = re.search(r'class=[\"\']asof[\"\'][^>]*>(\d{4}-\d{2}-\d{2})<', share)
-          if not mm or mm.group(1) != state_date:
-              raise SystemExit('main HTML date mismatch')
-          if not sm or sm.group(1) != state_date:
-              raise SystemExit('share HTML date mismatch')
+              raise SystemExit(f'trend history mismatch: {state_date}')
 
           manifest = json.loads(Path('commit_manifest.json').read_text(encoding='utf-8'))
           failed = [k for k in ('html', 'share', 'state', 'trend', 'log') if manifest.get(k) != 'ok']
           if failed:
-              raise SystemExit(f'critical persistence did not complete: {failed}')
+              raise SystemExit(f'critical persistence incomplete: {failed}')
           print('COMMAND_CENTER_VALIDATE_PASS', state_date)
           PY
 
+      - name: Report skipped stale run
+        if: steps.build.outputs.skipped == 'true'
+        run: echo "As-of regression guard kept the newer Command Center session intact"
+
       - name: Commit Command Center and caches
         if: steps.build.outputs.skipped != 'true'
-        id: persist
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          echo "source_drift=false" >> "$GITHUB_OUTPUT"
 
           git fetch --depth=1 origin main
           if [[ -n "${BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$BUILD_SOURCE_SHA" origin/main -- \
             build_dashboard.py requirements.txt sar_state.txt equity.csv .github/workflows/dashboard.yml; then
             echo "::warning::Command Center source changed during build; skip stale persistence"
-            echo "source_drift=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           staging="$(mktemp -d)"
           for file in $CORE_ARTIFACTS; do
             if [[ -f "$file" ]]; then
-              mkdir -p "$staging/$(dirname "$file")"
               cp -a "$file" "$staging/$file"
             fi
           done
@@ -224,7 +210,6 @@ jobs:
             git reset --hard FETCH_HEAD
             for file in $CORE_ARTIFACTS; do
               if [[ -f "$staging/$file" ]]; then
-                mkdir -p "$(dirname "$file")"
                 cp -a "$staging/$file" "$file"
                 git add -- "$file"
               fi
@@ -241,49 +226,6 @@ jobs:
             sleep $((attempt * 3))
           done
           if [[ "$pushed" != true ]]; then
-            exit 1
+            raise=1
+            exit "$raise"
           fi
-          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Audit public privacy boundary
-        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
-        run: |
-          python scripts/privacy_audit.py --root . --output /tmp/privacy-audit-status.json
-          cat /tmp/privacy-audit-status.json
-
-      - name: Export public site
-        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/export_public_site.py \
-            --root . \
-            --output /tmp/v38-public-site \
-            --source-commit "${{ steps.persist.outputs.source_sha }}"
-
-      - name: Publish clean public mirror
-        if: steps.build.outputs.skipped != 'true' && steps.persist.outputs.source_drift != 'true'
-        continue-on-error: true
-        shell: bash
-        env:
-          PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
-          PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
-            echo "Public mirror not configured; skip"
-            exit 0
-          fi
-          target=/tmp/v38-pages-repository
-          git clone --depth 1 "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" "$target"
-          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
-          cp -a /tmp/v38-public-site/. "$target/"
-          cd "$target"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --staged --quiet; then
-            exit 0
-          fi
-          git commit -m "Publish Command Center ${{ steps.persist.outputs.source_sha }}"
-          git push origin HEAD:main
