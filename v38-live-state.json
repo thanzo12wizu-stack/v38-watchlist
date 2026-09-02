@@ -1,10 +1,10 @@
 {
   "schema": "v38-live-state-1",
-  "source": "command-center.html",
+  "source": "command-center.html / ⚠ Sleeve更新失敗・前回READY継続(2026-09-01)",
   "asof": "2026-09-01",
   "market": {
     "nqsar": "Yellow",
-    "breadth50": 46.64,
+    "breadth50": 46.62,
     "breadth_valid": 3752,
     "breadth_universe": 3752,
     "coverage": 1.0,
@@ -39,13 +39,13 @@
     "required_route": "tqqq-panic-state.json",
     "asof_match_required": true,
     "vix_close": 16.34000015258789,
-    "qqq_sma50_atr_deviation": -0.32860587173899564,
+    "qqq_sma50_atr_deviation": -0.3286058717237121,
     "qqq_drawdown10": -0.018679495467751717,
     "seed_age_sessions": 106,
     "rsi4h": 48.70903101460771,
     "prior_rsi4h": 50.15754810952827,
     "touch30_today": false,
-    "mc57": 42.7,
+    "mc57": 51.2,
     "active": false,
     "held_sessions": 0,
     "underlying_target_pct": 30.0,
@@ -87,9 +87,9 @@
     {
       "ticker": "ARCT",
       "price": 16.23,
-      "daily_dollar_volume_m": 24.1,
+      "daily_dollar_volume_m": 23.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 112.7,
+      "close_vs_sma200_pct": 112.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -143,7 +143,7 @@
     {
       "ticker": "INSW",
       "price": 99.76,
-      "daily_dollar_volume_m": 53.3,
+      "daily_dollar_volume_m": 53.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.7,
       "eligibility_checks": {
@@ -199,7 +199,7 @@
     {
       "ticker": "NAT",
       "price": 6.91,
-      "daily_dollar_volume_m": 22.0,
+      "daily_dollar_volume_m": 23.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 37.7,
       "eligibility_checks": {
@@ -255,7 +255,7 @@
     {
       "ticker": "ECO",
       "price": 67.96,
-      "daily_dollar_volume_m": 40.8,
+      "daily_dollar_volume_m": 41.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 56.0,
       "eligibility_checks": {
@@ -311,7 +311,7 @@
     {
       "ticker": "FRO",
       "price": 44.32,
-      "daily_dollar_volume_m": 99.0,
+      "daily_dollar_volume_m": 97.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 38.3,
       "eligibility_checks": {
@@ -367,9 +367,9 @@
     {
       "ticker": "RNG",
       "price": 70.77,
-      "daily_dollar_volume_m": 109.8,
+      "daily_dollar_volume_m": 110.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 81.4,
+      "close_vs_sma200_pct": 81.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -423,9 +423,9 @@
     {
       "ticker": "CLMT",
       "price": 51.52,
-      "daily_dollar_volume_m": 66.2,
+      "daily_dollar_volume_m": 65.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 65.5,
+      "close_vs_sma200_pct": 65.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -535,7 +535,7 @@
     {
       "ticker": "LFST",
       "price": 12.6,
-      "daily_dollar_volume_m": 56.6,
+      "daily_dollar_volume_m": 55.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 54.9,
       "eligibility_checks": {
@@ -591,7 +591,7 @@
     {
       "ticker": "LPG",
       "price": 50.86,
-      "daily_dollar_volume_m": 27.4,
+      "daily_dollar_volume_m": 27.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 47.4,
       "eligibility_checks": {
@@ -647,9 +647,9 @@
     {
       "ticker": "NESR",
       "price": 34.72,
-      "daily_dollar_volume_m": 76.3,
+      "daily_dollar_volume_m": 76.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 50.2,
+      "close_vs_sma200_pct": 50.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -703,9 +703,9 @@
     {
       "ticker": "PBF",
       "price": 74.99,
-      "daily_dollar_volume_m": 211.5,
+      "daily_dollar_volume_m": 211.2,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 73.0,
+      "close_vs_sma200_pct": 73.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -759,7 +759,7 @@
     {
       "ticker": "OII",
       "price": 51.32,
-      "daily_dollar_volume_m": 44.0,
+      "daily_dollar_volume_m": 45.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.1,
       "eligibility_checks": {
@@ -815,7 +815,7 @@
     {
       "ticker": "VLO",
       "price": 361.99,
-      "daily_dollar_volume_m": 875.6,
+      "daily_dollar_volume_m": 877.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 54.0,
       "eligibility_checks": {
@@ -871,7 +871,7 @@
     {
       "ticker": "CHEF",
       "price": 115.52,
-      "daily_dollar_volume_m": 77.1,
+      "daily_dollar_volume_m": 74.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 50.7,
       "eligibility_checks": {
@@ -927,7 +927,7 @@
     {
       "ticker": "DHT",
       "price": 19.69,
-      "daily_dollar_volume_m": 66.3,
+      "daily_dollar_volume_m": 67.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 29.8,
       "eligibility_checks": {
@@ -983,7 +983,7 @@
     {
       "ticker": "DINO",
       "price": 103.97,
-      "daily_dollar_volume_m": 260.9,
+      "daily_dollar_volume_m": 261.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 62.2,
       "eligibility_checks": {
@@ -1039,9 +1039,9 @@
     {
       "ticker": "MPC",
       "price": 383.0,
-      "daily_dollar_volume_m": 990.0,
+      "daily_dollar_volume_m": 1011.1,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 61.3,
+      "close_vs_sma200_pct": 61.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1095,9 +1095,9 @@
     {
       "ticker": "ERAS",
       "price": 16.76,
-      "daily_dollar_volume_m": 56.4,
+      "daily_dollar_volume_m": 57.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 32.6,
+      "close_vs_sma200_pct": 32.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1151,9 +1151,9 @@
     {
       "ticker": "ETON",
       "price": 60.43,
-      "daily_dollar_volume_m": 41.4,
+      "daily_dollar_volume_m": 41.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 118.7,
+      "close_vs_sma200_pct": 118.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1209,7 +1209,7 @@
       "price": 52.09,
       "daily_dollar_volume_m": 24.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 121.8,
+      "close_vs_sma200_pct": 121.7,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1319,7 +1319,7 @@
     {
       "ticker": "DK",
       "price": 73.34,
-      "daily_dollar_volume_m": 115.9,
+      "daily_dollar_volume_m": 115.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 66.1,
       "eligibility_checks": {
@@ -1375,7 +1375,7 @@
     {
       "ticker": "PSX",
       "price": 252.02,
-      "daily_dollar_volume_m": 718.1,
+      "daily_dollar_volume_m": 726.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 49.4,
       "eligibility_checks": {
@@ -1431,7 +1431,7 @@
     {
       "ticker": "MAN",
       "price": 61.19,
-      "daily_dollar_volume_m": 53.1,
+      "daily_dollar_volume_m": 52.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 78.1,
       "eligibility_checks": {
@@ -1487,9 +1487,9 @@
     {
       "ticker": "CDNA",
       "price": 48.97,
-      "daily_dollar_volume_m": 53.6,
+      "daily_dollar_volume_m": 53.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 99.5,
+      "close_vs_sma200_pct": 99.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1543,7 +1543,7 @@
     {
       "ticker": "BFLY",
       "price": 8.18,
-      "daily_dollar_volume_m": 42.0,
+      "daily_dollar_volume_m": 42.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 61.2,
       "eligibility_checks": {
@@ -1599,9 +1599,9 @@
     {
       "ticker": "DFTX",
       "price": 38.5,
-      "daily_dollar_volume_m": 86.1,
+      "daily_dollar_volume_m": 85.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 57.0,
+      "close_vs_sma200_pct": 56.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1655,9 +1655,9 @@
     {
       "ticker": "ORKA",
       "price": 92.11,
-      "daily_dollar_volume_m": 74.1,
+      "daily_dollar_volume_m": 74.2,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 61.0,
+      "close_vs_sma200_pct": 60.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1711,7 +1711,7 @@
     {
       "ticker": "SYRE",
       "price": 88.5,
-      "daily_dollar_volume_m": 92.6,
+      "daily_dollar_volume_m": 92.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 45.0,
       "eligibility_checks": {
@@ -1767,9 +1767,9 @@
     {
       "ticker": "IMMX",
       "price": 14.01,
-      "daily_dollar_volume_m": 21.7,
+      "daily_dollar_volume_m": 22.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 67.6,
+      "close_vs_sma200_pct": 67.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1879,7 +1879,7 @@
     {
       "ticker": "NMM",
       "price": 88.91,
-      "daily_dollar_volume_m": 12.9,
+      "daily_dollar_volume_m": 13.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 32.2,
       "eligibility_checks": {
@@ -1935,9 +1935,9 @@
     {
       "ticker": "AMLX",
       "price": 33.81,
-      "daily_dollar_volume_m": 130.7,
+      "daily_dollar_volume_m": 131.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 104.3,
+      "close_vs_sma200_pct": 104.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1991,7 +1991,7 @@
     {
       "ticker": "TDW",
       "price": 96.11,
-      "daily_dollar_volume_m": 58.5,
+      "daily_dollar_volume_m": 58.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 32.0,
       "eligibility_checks": {
@@ -2047,7 +2047,7 @@
     {
       "ticker": "SENEA",
       "price": 204.04,
-      "daily_dollar_volume_m": 19.3,
+      "daily_dollar_volume_m": 18.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 41.7,
       "eligibility_checks": {
@@ -2103,7 +2103,7 @@
     {
       "ticker": "CRNX",
       "price": 84.95,
-      "daily_dollar_volume_m": 241.3,
+      "daily_dollar_volume_m": 241.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 67.7,
       "eligibility_checks": {
@@ -2159,9 +2159,9 @@
     {
       "ticker": "BLZE",
       "price": 13.53,
-      "daily_dollar_volume_m": 43.0,
+      "daily_dollar_volume_m": 43.1,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 76.2,
+      "close_vs_sma200_pct": 76.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2215,9 +2215,9 @@
     {
       "ticker": "QMCO",
       "price": 24.17,
-      "daily_dollar_volume_m": 58.4,
+      "daily_dollar_volume_m": 58.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 156.0,
+      "close_vs_sma200_pct": 155.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2271,7 +2271,7 @@
     {
       "ticker": "ACRS",
       "price": 6.02,
-      "daily_dollar_volume_m": 11.2,
+      "daily_dollar_volume_m": 11.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.7,
       "eligibility_checks": {
@@ -2327,7 +2327,7 @@
     {
       "ticker": "SLN",
       "price": 14.74,
-      "daily_dollar_volume_m": 28.4,
+      "daily_dollar_volume_m": 28.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 95.0,
       "eligibility_checks": {
@@ -2383,9 +2383,9 @@
     {
       "ticker": "PARR",
       "price": 80.03,
-      "daily_dollar_volume_m": 82.7,
+      "daily_dollar_volume_m": 82.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 44.3,
+      "close_vs_sma200_pct": 44.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2439,7 +2439,7 @@
     {
       "ticker": "NUTX",
       "price": 187.34,
-      "daily_dollar_volume_m": 32.3,
+      "daily_dollar_volume_m": 32.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 34.0,
       "eligibility_checks": {
@@ -2495,9 +2495,9 @@
     {
       "ticker": "MEI",
       "price": 18.32,
-      "daily_dollar_volume_m": 11.6,
+      "daily_dollar_volume_m": 11.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 82.3,
+      "close_vs_sma200_pct": 82.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2551,7 +2551,7 @@
     {
       "ticker": "NEOG",
       "price": 11.64,
-      "daily_dollar_volume_m": 19.2,
+      "daily_dollar_volume_m": 19.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 25.4,
       "eligibility_checks": {
@@ -2607,7 +2607,7 @@
     {
       "ticker": "TNK",
       "price": 88.3,
-      "daily_dollar_volume_m": 40.9,
+      "daily_dollar_volume_m": 42.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 27.2,
       "eligibility_checks": {
@@ -2663,7 +2663,7 @@
     {
       "ticker": "OPY",
       "price": 119.61,
-      "daily_dollar_volume_m": 13.9,
+      "daily_dollar_volume_m": 14.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 28.2,
       "eligibility_checks": {
@@ -2719,7 +2719,7 @@
     {
       "ticker": "CAKE",
       "price": 108.36,
-      "daily_dollar_volume_m": 195.2,
+      "daily_dollar_volume_m": 198.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 61.1,
       "eligibility_checks": {
@@ -2775,7 +2775,7 @@
     {
       "ticker": "HZO",
       "price": 52.12,
-      "daily_dollar_volume_m": 52.5,
+      "daily_dollar_volume_m": 51.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 65.3,
       "eligibility_checks": {
@@ -2831,9 +2831,9 @@
     {
       "ticker": "OKTA",
       "price": 166.43,
-      "daily_dollar_volume_m": 621.6,
+      "daily_dollar_volume_m": 720.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 65.5,
+      "close_vs_sma200_pct": 65.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -3384,7 +3384,7 @@
     }
   },
   "gross100_allocation": {
-    "status": "LIVE ALLOCATION READY",
+    "status": "LIVE ALLOCATION READY / LAST READY PRESERVED",
     "adoption_status": "ADOPTED_FINAL_SPEC_20260901",
     "priority": [
       "RSI_RESET",
@@ -3403,13 +3403,13 @@
     ],
     "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
     "sleeve_live_status": "READY",
-    "sleeve_live_reason": null,
-    "sleeve_refresh_status": "FRESH",
+    "sleeve_live_reason": "STALE / LAST_READY_PRESERVED: ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000",
+    "sleeve_refresh_status": "STALE / LAST_READY_PRESERVED",
     "sleeve_refresh_attempted_asof": "2026-09-01",
     "sleeve_last_successful_asof": "2026-09-01",
-    "sleeve_refresh_attempted_at_utc": "2026-09-02T00:10:14Z",
-    "sleeve_refresh_error": null,
-    "sleeve_preserved_previous_ready": false,
+    "sleeve_refresh_attempted_at_utc": "2026-09-02T00:25:04Z",
+    "sleeve_refresh_error": "ResetPriceCoverageError: RESET_PRICE_COVERAGE_INSUFFICIENT reason=INSUFFICIENT_SESSION_ROWS history=0.000 target=0.000 recent=0.000",
+    "sleeve_preserved_previous_ready": true,
     "normal_position_count": 10,
     "reset_position_count": 0,
     "note": "Reset -> protect native/Panic TQQQ to 80% under competition -> Normal Stock capped at 70% -> native TQQQ extra -> adopted Selective Fill from remaining cash only; native CURRENT30 zero is never overridden",
