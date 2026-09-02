@@ -11,7 +11,6 @@ on:
       - 'build_v38_companion.py'
       - 'build_v38_strict_loo_live.py'
       - 'build_v38_tqqq_live.py'
-      - 'v38-normal-sleeve-seed.json'
       - 'tests/test_v38_rules.py'
       - 'tests/test_v38_companion.py'
       - 'tests/test_v38_strict_loo_live.py'
@@ -180,7 +179,7 @@ jobs:
           git fetch --depth=1 origin main
           if [[ -n "${V38_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_SOURCE_SHA" origin/main -- \
             v38_rules.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py \
-            v38-normal-sleeve-seed.json state.json command-center.html universe.csv; then
+            state.json command-center.html universe.csv; then
             echo "::warning::V38 inputs changed during build; skip stale persistence"
             exit 1
           fi
