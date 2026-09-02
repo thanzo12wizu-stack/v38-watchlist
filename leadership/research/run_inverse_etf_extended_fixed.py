@@ -32,8 +32,25 @@ def fixed_fred_series(series: str, idx: pd.DatetimeIndex, lag_sessions: int) -> 
     return s
 
 
+def fixed_make_family_flags(feat: pd.DataFrame):
+    family, cap, thresholds = audit._original_make_family_flags(feat)
+    family['risk_rel'] = (
+        audit.flag_low(feat, 'qew_qqq_mom20', .33)
+        | audit.flag_low(feat, 'iwm_qqq_mom20', .33)
+        | audit.flag_low(feat, 'soxx_qqq_mom20', .33)
+    )
+    family['credit'] = (
+        audit.flag_low(feat, 'hyg_lqd_ext_mom5', .33)
+        | audit.flag_low(feat, 'hyg_lqd_ext_mom20', .33)
+        | audit.flag_low(feat, 'hyg_ret20', .33)
+    )
+    return family.fillna(False), cap.fillna(False), thresholds
+
+
 audit.norm_idx = fixed_norm_idx
 audit.fred_series = fixed_fred_series
+audit._original_make_family_flags = audit.make_family_flags
+audit.make_family_flags = fixed_make_family_flags
 
 if __name__ == '__main__':
     audit.main()
