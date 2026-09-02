@@ -11,7 +11,7 @@
   const pill=(t,cls='')=>`<span class="pill ${cls}">${esc(t)}</span>`;
   const card=(title,sub,body)=>`<div class="card"><h2>${title}</h2>${sub?`<div class="sub">${sub}</div>`:''}${body}</div>`;
   const table=(heads,rows)=>`<div style="overflow-x:auto"><table class="ptab"><thead><tr>${heads.map((h,i)=>`<th${i===0?' class="l"':''}>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${heads.length}">表示対象なし</td></tr>`}</tbody></table></div>`;
-  const alert=(text,bad=false)=>`<div style="margin:8px 0;padding:9px 11px;border:1px solid ${bad?'#C99A94':'#D5D1C6'};border-radius:10px;background:${bad?'#F1DED9':'#EEEBE3'};font-size:12px;line-height:1.5">${text}</div>`;
+  const alert=(text,bad=false)=>`<div class="${bad?'todayact ta-red':'skip-note'}">${text}</div>`;
 
   const nav=q('nav#tabs');
   const wrap=q('.wrap')||document.body;
@@ -136,7 +136,11 @@
     const seedValid=panicReady&&num(panic.seed_age_sessions)&&Number(panic.seed_age_sessions)<=30;
     const seedTxt=panicReady?(seedValid?'有効':'なし / 期限外'):'判定不可';
     const panicTxt=panicReady?(panic.active?'F80 ACTIVE':'非発動'):'判定不可';
-    const body=`<div class="grid4" style="margin-top:8px"><div class="mini"><span>現在のTQQQ目標</span><b>${esc(tqTarget)}</b></div><div class="mini"><span>Panic</span><b>${esc(panicTxt)}</b></div><div class="mini"><span>Seed</span><b>${esc(seedTxt)}</b></div><div class="mini"><span>QQQ 4H RSI14</span><b>${panicReady?fmt(panic.rsi4h,1):'—'}</b></div></div>`;
+    const body=table(['項目','現在'],
+      `<tr><td>現在のTQQQ目標</td><td><b>${esc(tqTarget)}</b></td></tr>`+
+      `<tr><td>Panic</td><td><b>${esc(panicTxt)}</b></td></tr>`+
+      `<tr><td>Seed</td><td><b>${esc(seedTxt)}</b></td></tr>`+
+      `<tr><td>QQQ 4H RSI14</td><td><b>${panicReady?fmt(panic.rsi4h,1):'—'}</b></td></tr>`);
     const condRows=`<tr><td>VIX Close ≥23</td><td>${panicReady?fmt(panic.vix_close,2):'—'}</td><td>${panicReady&&num(panic.vix_close)?(Number(panic.vix_close)>=23?'成立':'未成立'):'—'}</td></tr>`+
       `<tr><td>QQQ SMA50乖離 ≤−0.5ATR</td><td>${panicReady?fmt(panic.qqq_sma50_atr_deviation,2):'—'}</td><td>${panicReady&&num(panic.qqq_sma50_atr_deviation)?(Number(panic.qqq_sma50_atr_deviation)<=-0.5?'成立':'未成立'):'—'}</td></tr>`+
       `<tr><td>QQQ 10日DD ≤−2%</td><td>${panicReady&&num(panic.qqq_drawdown10)?pct(Number(panic.qqq_drawdown10)*100,2):'—'}</td><td>${panicReady&&num(panic.qqq_drawdown10)?(Number(panic.qqq_drawdown10)<=-0.02?'成立':'未成立'):'—'}</td></tr>`;
@@ -185,10 +189,10 @@
   function renderDetail(){
     detail.innerHTML=card('詳細','普段の運用判断には不要な観測情報。必要な時だけ開く。',
       `<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">`+
-      `<button class="btn" onclick="__unifiedV3OpenLegacy('t-today')">Setups｜EPS・VWAP・GEX・Patterns</button>`+
-      `<button class="btn" onclick="__unifiedV3OpenLegacy('t-movers')">Movers</button>`+
-      `<button class="btn" onclick="__unifiedV3OpenLegacy('t-rs')">RS</button>`+
-      `<button class="btn" onclick="__unifiedV3OpenLegacy('t-weekly')">Weekly</button>`+
+      `<button class="memx" onclick="__unifiedV3OpenLegacy('t-today')">Setups｜EPS・VWAP・GEX・Patterns</button>`+
+      `<button class="memx" onclick="__unifiedV3OpenLegacy('t-movers')">Movers</button>`+
+      `<button class="memx" onclick="__unifiedV3OpenLegacy('t-rs')">RS</button>`+
+      `<button class="memx" onclick="__unifiedV3OpenLegacy('t-weekly')">Weekly</button>`+
       `</div>`)+
       card('V38監査',`正式な計算状態・ルールを確認する場合。`,`<a href="command-center-v38.html" target="_blank" rel="noopener">監査版V38を開く →</a><div class="sub" style="margin-top:6px">戦略モデル配分や仮想保有は通常画面には出しません。</div>`);
   }
