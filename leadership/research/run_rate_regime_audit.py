@@ -28,7 +28,6 @@ def cached_series(series_id: str, start: str, end: str) -> pd.Series | None:
         s = df.dropna().set_index("date")["value"].sort_index()
         if s.empty:
             return None
-        # Only trust cache as full historical source when it spans essentially the requested window.
         if s.index.min() <= pd.Timestamp(start) + pd.Timedelta(days=14) and s.index.max() >= pd.Timestamp(end) - pd.Timedelta(days=14):
             print(f"RATE_SOURCE {series_id}=repo_cache rows={len(s)} {s.index.min().date()}..{s.index.max().date()}", flush=True)
             return s.rename(series_id)
@@ -45,7 +44,7 @@ def curl_fred(series_id: str, start: str, end: str) -> pd.Series:
         try:
             print(f"RATE_FETCH {series_id} attempt={attempt}", flush=True)
             cp = subprocess.run(
-                ["curl", "-fL", "--retry", "3", "--retry-all-errors", "--retry-delay", "3",
+                ["curl", "--http1.1", "-fL", "--retry", "3", "--retry-all-errors", "--retry-delay", "3",
                  "--connect-timeout", "20", "--max-time", "240", "-A", "Mozilla/5.0 V38-rate-audit", url],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=270,
             )
