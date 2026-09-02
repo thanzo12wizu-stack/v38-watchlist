@@ -200,14 +200,15 @@ def test_wilder_rsi_matches_known_sma_seed_reference():
     assert math.isclose(rsi[-1], 62.880718309962404, rel_tol=0, abs_tol=1e-12)
 
 
-def test_dashboard_prefetches_tqqq_before_bulk_build_and_consumes_private_cache():
-    workflow = Path(".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+def test_isolated_v38_workflow_prefetches_tqqq_before_producer_and_companion():
+    workflow = Path(".github/workflows/v38-live.yml").read_text(encoding="utf-8")
     prefetch = workflow.index("Prefetch dedicated TQQQ market inputs")
-    bulk = workflow.index("- name: Build dashboard")
     producer = workflow.index("- name: Build CURRENT30 and Stage56 TQQQ live state")
-    assert prefetch < bulk < producer
+    companion = workflow.index("- name: Build provisional audited V38 companion")
+    assert prefetch < producer < companion
     assert "--prefetch-cache v38-tqqq-live-source-cache.json" in workflow
     assert "--cache v38-tqqq-live-source-cache.json" in workflow
+    assert "build_dashboard.py" not in workflow
     assert "v38-tqqq-live-source-cache.json" not in Path(
         "scripts/export_public_site.py"
     ).read_text(encoding="utf-8")
