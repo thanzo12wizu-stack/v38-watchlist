@@ -1,0 +1,63 @@
+name: V38 RSI and reopening integrity fix retry once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v38-rsi-ranking-fix-retry-once-20260902.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  patch-test-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Apply only the seven audited fixes
+        run: python scripts/v38_rsi_ranking_fix_retry_20260902.py
+
+      - name: Install focused test dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: Run focused regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile build_v38_tqqq_live.py build_v38_sleeve_live.py build_v38_companion.py v38_rules.py
+          pytest -q tests/test_v38_tqqq_live.py tests/test_v38_sleeve_live.py tests/test_v38_companion.py tests/test_v38_rules.py
+          git diff --check
+
+      - name: Commit audited code and remove temporary patch machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f scripts/v38_rsi_ranking_fix_retry_20260902.py
+          rm -f .github/workflows/v38-rsi-ranking-fix-once-20260902.yml
+          rm -f .github/workflows/v38-rsi-ranking-fix-retry-once-20260902.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Fix RSI data path and reopening stock ranks'
+          git fetch --depth=20 origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Dispatch canonical dashboard rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run dashboard.yml --ref main
+          echo 'Dashboard rebuild dispatched from fixed main.'
