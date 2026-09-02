@@ -1,0 +1,117 @@
+name: One-off holdings init order fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/holdings-init-order-fix-once-20260902.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          sparse-checkout: |
+            build_dashboard.py
+            command-center.html
+            .github/workflows/holdings-init-order-fix-once-20260902.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Fix LEV_TICKERS initialization order and remove temporary diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          files = [Path('build_dashboard.py'), Path('command-center.html')]
+
+          lev_comment = '/* ---- 共通ティッカー辞書：個別株の全ユニバース＋運用対象レバETF ---- */'
+          lev_func = 'function _isLevTicker(t)'
+          nq_iife = "(function(){ try{\n  var s=JSON.parse(localStorage.getItem('nqManual'));"
+
+          diag = """    try{\n      if(!window._hldDiagWarned){\n        window._hldDiagWarned=1;\n        var _hldDiagMsg='HLD LOAD ERROR\\nname: '+String(e&&e.name||'Error')+'\\nmessage: '+String(e&&e.message||e)+'\\nstack: '+String(e&&e.stack||'(none)');\n        window._hldLastLoadError=_hldDiagMsg;\n        alert(_hldDiagMsg);\n      }\n    }catch(_hldDiagErr){}\n\n"""
+
+          for path in files:
+              text = path.read_text(encoding='utf-8')
+
+              # Remove the temporary hldLoad diagnostic, and only that diagnostic.
+              if text.count(diag) != 1:
+                  raise SystemExit(f'{path}: expected exactly one temporary diagnostic block, got {text.count(diag)}')
+              text = text.replace(diag, '', 1)
+
+              # Locate the single LEV_TICKERS initialization block.
+              c = text.find(lev_comment)
+              if c < 0:
+                  raise SystemExit(f'{path}: LEV_TICKERS comment not found')
+              f = text.find(lev_func, c)
+              if f < 0:
+                  raise SystemExit(f'{path}: _isLevTicker not found after LEV_TICKERS block')
+              block = text[c:f]
+              if block.count('var LEV_TICKERS=') != 1:
+                  raise SystemExit(f'{path}: unexpected LEV_TICKERS block')
+
+              # The NQ restore IIFE is the first top-level execution that can reach calcRun/hldLoad.
+              iife = text.find(nq_iife)
+              if iife < 0:
+                  raise SystemExit(f'{path}: nqManual restore IIFE not found')
+              if c < iife:
+                  raise SystemExit(f'{path}: LEV_TICKERS is already before the IIFE; refusing unexpected layout')
+
+              # Move only the data initialization block; keep _isLevTicker/_tickerData functions in place.
+              text = text[:c] + text[f:]
+              iife = text.find(nq_iife)
+              text = text[:iife] + block + '\n' + text[iife:]
+
+              # Static invariants.
+              if text.count('var LEV_TICKERS=') != 1:
+                  raise SystemExit(f'{path}: LEV_TICKERS definition count != 1')
+              if text.count(lev_func) != 1:
+                  raise SystemExit(f'{path}: _isLevTicker definition count != 1')
+              if '_hldDiagWarned' in text or 'HLD LOAD ERROR' in text or '_hldLastLoadError' in text:
+                  raise SystemExit(f'{path}: temporary diagnostic residue remains')
+              lev_pos = text.find('var LEV_TICKERS=')
+              iife_pos = text.find(nq_iife)
+              hld_pos = text.find('function hldLoad(){')
+              if not (lev_pos >= 0 and iife_pos >= 0 and lev_pos < iife_pos):
+                  raise SystemExit(f'{path}: LEV_TICKERS still initializes after NQ restore IIFE')
+              if hld_pos < 0:
+                  raise SystemExit(f'{path}: hldLoad missing')
+
+              path.write_text(text, encoding='utf-8')
+              print(f'{path}: fixed; LEV_TICKERS@{lev_pos} < nqIIFE@{iife_pos}; diagnostic removed')
+          PY
+
+          rm -f .github/workflows/holdings-init-order-fix-once-20260902.yml
+
+          python - <<'PY'
+          from pathlib import Path
+          for fn in ('build_dashboard.py','command-center.html'):
+              t=Path(fn).read_text(encoding='utf-8')
+              assert t.count('var LEV_TICKERS=') == 1
+              assert t.count('function _isLevTicker(t)') == 1
+              assert '_hldDiagWarned' not in t
+              assert 'HLD LOAD ERROR' not in t
+              assert '_hldLastLoadError' not in t
+              i=t.find("(function(){ try{\n  var s=JSON.parse(localStorage.getItem('nqManual'));")
+              l=t.find('var LEV_TICKERS=')
+              assert 0 <= l < i, (fn,l,i)
+              print(fn, 'verified')
+          PY
+          git diff --check
+
+      - name: Commit holdings fix only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'Fix holdings loader initialization order'
+          git push origin HEAD:main
