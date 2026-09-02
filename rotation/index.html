@@ -16,7 +16,7 @@
 <div class="card hero s12"><div class="hero-top"><div><div class="hero-kicker">今日の結論</div><div class="hero-action" id="heroAction">—</div><div class="hero-sentence" id="heroSentence">読み込み中</div></div><div class="hero-permission"><div class="permission-num" id="permission">—</div><div class="permission-label">通常個別株の新規枠上限</div><div class="sub" id="permissionSub"></div></div></div><div class="summary-grid"><div class="summary-box"><div class="summary-title">現在の強さ</div><div id="summaryStrong"></div></div><div class="summary-box"><div class="summary-title">観測中</div><div id="summaryWatch"></div></div><div class="summary-box"><div class="summary-title">警戒</div><div id="summaryRisk"></div></div></div></div>
 <div class="card metric s3"><div class="label">市場モード</div><div class="big" id="mode">—</div><div class="sub" id="modeSub"></div></div>
 <div class="card metric s3"><div class="label">50日線より上</div><div class="big" id="breadth">—</div><div class="sub" id="nqsar"></div></div>
-<div class="card metric s3"><div class="label">市場心理</div><div class="big" id="fg">—</div><div class="sub" id="fgSub"></div></div>
+<div class="card metric s3"><div class="label">群衆温度計</div><div class="big" id="fg">—</div><div class="sub" id="fgSub"></div></div>
 <div class="card metric s3"><div class="label">VIX / 米10年金利</div><div class="big" id="macroTop">—</div><div class="sub">恐怖指数 / 長期金利</div></div>
 
 <div class="card s8"><div class="section-head"><div><h2>テーマETF 56</h2><div class="sub">セクター温度マップと同じ粒度。Price / 構成銘柄Internal / Fund Flowで確認。</div></div></div><div id="sectorList" class="market-list"></div></div>
@@ -28,7 +28,7 @@
 
 <div class="card s12"><div class="section-head"><div><h2>資金循環マップ</h2><div class="sub">右＝価格が強い、上＝構成銘柄の内部参加が強い。Fund Flow取得済みでは円サイズに|20日Flow/AUM|を反映。</div></div></div><div class="matrix-grid"><div class="matrix-box"><div class="matrix-title">Theme56：Price × Internal</div><svg id="sectorMatrix" class="matrix" viewBox="0 0 720 400"></svg></div><div class="matrix-box"><div class="matrix-title">Fund Flow取得済みTheme</div><svg id="industryMatrix" class="matrix" viewBox="0 0 720 400"></svg></div></div><div class="legend"><span><i class="dot" style="background:var(--green)"></i>現在強い</span><span><i class="dot" style="background:var(--blue)"></i>内部先行・観測</span><span><i class="dot" style="background:var(--amber)"></i>改善/未追随</span><span><i class="dot" style="background:var(--red)"></i>弱い</span><span><i class="dot" style="background:#657281"></i>価格のみ/未取得</span></div></div>
 
-<div class="card s12"><div class="section-head"><div><h2>市場背景</h2><div class="sub">Rotationを説明できる材料だけを確認。因果モデルやV38 Gateには使いません。</div></div></div><div id="macroStrip" class="macro-strip"></div><details><summary>Fear & Greedの内部・未取得データを見る</summary><div class="details-inner"><div id="macroFacts"></div><h3>読み筋</h3><div id="hypotheses"></div><h3>未取得</h3><div id="missing" class="missing"></div></div></details></div>
+<div class="card s12"><div class="section-head"><div><h2>市場背景</h2><div class="sub">Rotationを説明できる材料だけを確認。因果モデルやV38 Gateには使いません。V38市場値は既存Dashboardを正本として表示します。</div></div></div><div id="macroStrip" class="macro-strip"></div><details><summary>外部参考：Fear & Greedの内部・未取得データを見る</summary><div class="details-inner"><div id="macroFacts"></div><h3>読み筋</h3><div id="hypotheses"></div><h3>未取得</h3><div id="missing" class="missing"></div></div></details></div>
 
 <div class="card s12"><div class="section-head"><div><h2>V38との接続</h2><div class="sub">WHEN＝市場モード、WHERE＝Rotation、WHAT＝正式V38候補。役割を混ぜない。</div></div></div><div id="v38Action"></div><details id="v38Details"><summary>市場再開時の正式V38候補を見る</summary><div class="details-inner"><div class="sub" style="margin-bottom:8px">攻撃時順位＝ATTACK時の正式順位（Stock RS189 70%＋strict LOO Theme 30%）。STOP中は買いではありません。</div><div id="stocks"></div></div></details></div>
 
@@ -38,5 +38,6 @@
 </div>
 <script src="app-theme56.js"></script>
 <script src="dram-addon.js"></script>
+<script src="market-sync.js"></script>
 </body>
 </html>
