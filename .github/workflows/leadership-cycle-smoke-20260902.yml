@@ -1,0 +1,43 @@
+name: Leadership Cycle Smoke 20260902
+
+on:
+  push:
+    branches:
+      - research/leadership-cycle-audit-20260902
+    paths:
+      - .github/workflows/leadership-cycle-smoke-20260902.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONPATH: .:leadership/research
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/leadership-cycle-audit-20260902
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run smoke event study
+        run: |
+          python leadership/research/audit_leadership_cycle.py \
+            --root . \
+            --output leadership_cycle_smoke \
+            --analysis-start 2019-01-02 \
+            --analysis-end 2026-08-31 \
+            --max-tickers 800 \
+            --batch-size 80
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leadership-cycle-smoke-20260902
+          path: leadership_cycle_smoke/
+          retention-days: 3
