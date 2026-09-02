@@ -1,8 +1,7 @@
 (() => {
   'use strict';
 
-  const LIVE_URL = '../v38-live-state.json';
-  const STATE_URL = '../state.json';
+  const MARKET_URL = 'dashboard-market.json';
   const $ = (id) => document.getElementById(id);
   const isNum = (v) => v !== null && v !== '' && Number.isFinite(Number(v));
   const shortDate = (s) => {
@@ -50,17 +49,15 @@
     applying = true;
     if (observer) observer.disconnect();
     try {
-      const { live, state } = snapshot;
-      const market = live?.market || {};
-      const panic = live?.panic_tqqq || {};
+      const market = snapshot;
       const mode = String(market.mode || '').toUpperCase();
       const limit = market.new_entry_limit ?? '—';
       const breadth = market.breadth50;
       const nqsar = market.nqsar || '—';
-      const senti = state?.senti;
-      const vix = panic.vix_close;
-      const mc57 = panic.mc57;
-      const liveAsOf = live?.asof || state?.date || null;
+      const senti = market.crowd_temperature;
+      const vix = market.vix;
+      const mc57 = market.market_conditions;
+      const liveAsOf = market.v38_asof || market.crowd_asof || null;
 
       setText('heroAction', actionText(mode));
       setText('permission', String(limit));
@@ -146,17 +143,11 @@
     }
   }
 
-  Promise.all([
-    fetch(LIVE_URL, {cache:'no-store'}).then((r) => {
-      if (!r.ok) throw new Error(`v38-live-state HTTP ${r.status}`);
-      return r.json();
-    }),
-    fetch(STATE_URL, {cache:'no-store'}).then((r) => {
-      if (!r.ok) throw new Error(`state HTTP ${r.status}`);
-      return r.json();
-    })
-  ]).then(([live, state]) => {
-    snapshot = {live, state};
+  fetch(MARKET_URL, {cache:'no-store'}).then((r) => {
+    if (!r.ok) throw new Error(`dashboard-market HTTP ${r.status}`);
+    return r.json();
+  }).then((market) => {
+    snapshot = market;
     observer = new MutationObserver(() => {
       if (!applying) queueMicrotask(applySnapshot);
     });
