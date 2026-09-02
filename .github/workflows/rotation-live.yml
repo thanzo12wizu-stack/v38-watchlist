@@ -4,6 +4,10 @@ on:
   workflow_run:
     workflows: ["V38 live build"]
     types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rotation-live.yml'
   workflow_dispatch: {}
 
 permissions:
