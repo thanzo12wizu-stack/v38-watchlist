@@ -18,6 +18,7 @@ PUBLIC_FILES = (
     "swinote/live.js",
     "rotation/index.html",
     "rotation/app.css",
+    "rotation/app-v2.js",
     "rotation/app-theme56.js",
     "rotation/market-sync.js",
 )
