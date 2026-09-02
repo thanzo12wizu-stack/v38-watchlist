@@ -44,7 +44,9 @@ jobs:
             --panic inputs/rates/tqqq_panic_episodes.csv \
             --output leadership/research/out/inverse_event_engine_v2 \
             --start 2016-01-04 \
-            --end 2026-03-20
+            --end 2026-03-20 \
+            --max-tickers 6000 \
+            --batch-size 75
       - name: Upload outputs
         if: always()
         uses: actions/upload-artifact@v4
