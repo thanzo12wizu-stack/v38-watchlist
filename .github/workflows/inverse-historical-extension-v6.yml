@@ -42,6 +42,9 @@ jobs:
       - name: Run historical extension
         run: |
           set -euo pipefail
+          # V6 source already derives Stage56 as target_M30 > target_CURRENT30.
+          # Use that derived series for overlap diagnostics rather than a nonexistent CSV column.
+          sed -i 's/st = tq\.stage56\.reindex(ov\.index)\.fillna(False)/st = legacy["stage56"].reindex(ov.index).fillna(False)/' leadership/research/audit_inverse_historical_extension_v6.py
           python leadership/research/audit_inverse_historical_extension_v6.py \
             --legacy-dir legacy \
             --v2-features inputs/v2/feature_state_v2.csv.gz \
