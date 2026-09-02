@@ -16,6 +16,8 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      PYTHONPATH: .:leadership/research
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,5 +67,3 @@ jobs:
           name: leadership-cycle-pit-audit-20260902
           path: leadership_cycle_output/
           retention-days: 30
-
-# trigger: 2026-09-02
