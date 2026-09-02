@@ -6,6 +6,7 @@ on:
     branches: [research/inverse-etf-regime-scan-20260902]
     paths:
       - leadership/research/audit_inverse_event_engine_v2.py
+      - leadership/research/audit_inverse_event_engine_v2_runner.py
       - .github/workflows/inverse-event-engine-v2.yml
 
 permissions:
@@ -34,11 +35,13 @@ jobs:
           test -s inputs/rates/rate_features.csv.gz
           test -s inputs/rates/tqqq_panic_episodes.csv
       - name: Syntax check
-        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_inverse_event_engine_v2.py
+        run: |
+          PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_inverse_event_engine_v2.py
+          PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_inverse_event_engine_v2_runner.py
       - name: Run inverse event engine v2
         run: |
           set -euo pipefail
-          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_event_engine_v2.py \
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_event_engine_v2_runner.py \
             --root . \
             --rates inputs/rates/rate_features.csv.gz \
             --panic inputs/rates/tqqq_panic_episodes.csv \
