@@ -93,7 +93,7 @@ const routes={
   stocks:{src:'command-center-v38.html',kind:'v38',inner:'ranking',label:'V38 ranking',copy:'<b>何を買うか</b>は正式V38候補ランキングを表示します。'},
   tqqq:{src:'command-center-v38.html',kind:'v38',inner:'today',focus:'tqqq',label:'V38 TQQQ',copy:'<b>TQQQ</b>の通常枠・Panic判定をV38正本から表示します。'},
   manage:{src:'command-center-v38.html',kind:'v38',inner:'resetwatch',label:'V38 sleeve',copy:'<b>RSI Reset / 保有管理</b>を切り替えて確認します。'},
-  detail:{src:'command-center.html',kind:'legacy',label:'Command Center detail',copy:'<b>詳細指標</b>は既存Command Centerをそのまま残します。'}
+  detail:{src:'command-center.html',kind:'legacy',focus:'detail',label:'Command Center detail',copy:'<b>詳細指標</b>は既存Command Center内のOptions / VWAP / EPS付近へ移動します。'}
 };
 
 function setError(message=''){
@@ -139,9 +139,14 @@ function activateRotation(doc){
   `);
   try{doc.defaultView.scrollTo(0,0)}catch(_){ }
 }
-function activateLegacy(doc){
-  // Command Centerはデザイン正本。ここでは見た目もロジックも変更しない。
+function activateLegacy(doc,focus){
+  // Command Centerはデザイン正本。CSSや判定ロジックは変更しない。
   try{doc.defaultView.scrollTo(0,0)}catch(_){ }
+  if(focus==='detail'){
+    const candidates=[...doc.querySelectorAll('h1,h2,h3,h4,summary,.title,.section-title,.card-title')];
+    const target=candidates.find(el=>/オプション|options|vwap|eps|決算/i.test((el.textContent||'').trim()));
+    if(target) setTimeout(()=>target.scrollIntoView({block:'start'}),60);
+  }
 }
 function configureFrame(){
   const route=routes[currentRoute];
@@ -150,7 +155,7 @@ function configureFrame(){
     if(!doc||!doc.documentElement) throw new Error('frame document unavailable');
     if(route.kind==='v38') activateV38(doc,currentRoute==='manage'?manageInner:route.inner,route.focus);
     else if(route.kind==='rotation') activateRotation(doc);
-    else activateLegacy(doc);
+    else activateLegacy(doc,route.focus);
     setError('');
   }catch(err){
     setError('統合表示の調整だけ適用できませんでした。元画面自体はそのまま表示しています。');
