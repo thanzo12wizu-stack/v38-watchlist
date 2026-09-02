@@ -56,10 +56,11 @@ def block_boot_active(series: pd.Series, calendar: pd.DatetimeIndex, reps: int=1
     return {"n":int(len(z)),"blocks":int(n),"mean":obs,"lo":float(lo),"hi":float(hi),"p_two":float(min(1,p))}
 
 
-def add_rrg(panel: pd.DataFrame) -> pd.DataFrame:
-    p=panel.copy()
-    epx=p.pivot(index="date",columns="sector",values="etf_close").sort_index()
-    spx=p.groupby("date",observed=True).spy_close.first().sort_index()
+def build_price_features(proxy: pd.DataFrame) -> pd.DataFrame:
+    p=proxy[proxy.sector.isin(GICS)].copy().sort_values(["date","sector"])
+    base=p[["date","sector","etf_close","spy_close","price_rs63_rank","price_rs189_rank"]].drop_duplicates(["date","sector"])
+    epx=base.pivot(index="date",columns="sector",values="etf_close").sort_index()
+    spx=base.groupby("date",observed=True).spy_close.first().sort_index()
     eret=epx.pct_change(fill_method=None); sret=spx.pct_change(fill_method=None)
     rel=np.log1p(eret.clip(lower=-.999999)).sub(np.log1p(sret.clip(lower=-.999999)),axis=0).fillna(0.0).cumsum()
     slow=rel.ewm(span=63,adjust=False,min_periods=30).mean()
@@ -68,13 +69,6 @@ def add_rrg(panel: pd.DataFrame) -> pd.DataFrame:
     mom=trend-trend.shift(5); accel=mom-mom.shift(5)
     rrg=pd.concat({"rrg_trend":trend.stack(),"rrg_momentum":mom.stack(),"rrg_accel":accel.stack()},axis=1).reset_index()
     rrg.columns=["date","sector","rrg_trend","rrg_momentum","rrg_accel"]
-    return p.merge(rrg,on=["date","sector"],how="left",validate="one_to_one")
-
-
-def add_outcomes(panel: pd.DataFrame) -> pd.DataFrame:
-    p=panel.copy()
-    epx=p.pivot(index="date",columns="sector",values="etf_close").sort_index()
-    spx=p.groupby("date",observed=True).spy_close.first().sort_index()
     ratio=epx.div(spx,axis=0)
     outs={
         "rel_fwd1":ratio.shift(-1)/ratio-1.0,
@@ -83,9 +77,9 @@ def add_outcomes(panel: pd.DataFrame) -> pd.DataFrame:
         "rel_fwd5_ratio":ratio.shift(-5)/ratio-1.0,
         "rel_fwd10_ratio":ratio.shift(-10)/ratio-1.0,
     }
-    z=pd.concat({k:v.stack() for k,v in outs.items()},axis=1).reset_index()
-    z.columns=["date","sector",*outs.keys()]
-    return p.merge(z,on=["date","sector"],how="left",validate="one_to_one")
+    oz=pd.concat({k:v.stack() for k,v in outs.items()},axis=1).reset_index()
+    oz.columns=["date","sector",*outs.keys()]
+    return base.merge(rrg,on=["date","sector"],how="left",validate="one_to_one").merge(oz,on=["date","sector"],how="left",validate="one_to_one")
 
 
 def build_panel(pit_path: str, proxy_path: str, rates_path: str) -> pd.DataFrame:
@@ -93,12 +87,13 @@ def build_panel(pit_path: str, proxy_path: str, rates_path: str) -> pd.DataFrame
     proxy=pd.read_csv(proxy_path,parse_dates=["date"])
     rates=pd.read_csv(rates_path,parse_dates=["date"])
     pit=pit[(pit.date<=END)&pit.sector.isin(GICS)].copy()
-    pure=proxy[["date","sector","etf_close","spy_close","price_rs63_rank","price_rs189_rank"]].drop_duplicates(["date","sector"])
+    # Warm the RRG-like vector and calculate forward price outcomes on the entire frozen
+    # price history before restricting to the PIT-internals overlap. This mirrors live use
+    # and avoids an artificial 2022-04-18 warm-up reset.
+    pure=build_price_features(proxy)
     p=pit.merge(pure,on=["date","sector"],how="left",validate="one_to_one")
     if p[["etf_close","spy_close","price_rs63_rank","price_rs189_rank"]].isna().any().any():
         raise RuntimeError("pure-price merge has missing values")
-    p=add_rrg(p)
-    p=add_outcomes(p)
     p=p.sort_values(["sector","date"])
     p["internal_delta20"]=p.groupby("sector",observed=True).internal_score.diff(20)
     rank_cols=["price_score","price_rs63_rank","price_rs189_rank","internal_score","internal_delta20","flow20_pct_aum","rrg_trend","rrg_momentum","rrg_accel"]
@@ -194,62 +189,45 @@ def main():
             b=block_boot_active(s,cal,reps=10000,seed=100+len(col))
             raw_leadlag[name][col]={**b,"mean_bps":float(s.mean()*1e4)}
 
-    # Does the rate signal work before/against the existing Rotation stack?
     hz=hold.dropna(subset=BASE_FEATURES+[outcome]).copy()
     hz["baseline_pred"]=design(hz,False)@b0
     actual=directional_series(hz,"rel_fwd1")
     pred=directional_series(hz,"baseline_pred")
-    al=pd.DataFrame({"actual":actual,"pred":pred}).dropna()
-    al["aligned"]=al.pred>0
+    al=pd.DataFrame({"actual":actual,"pred":pred}).dropna(); al["aligned"]=al.pred>0
     calh=pd.DatetimeIndex(sorted(hz.date.unique()))
     alignment={}
     for flag,label in [(False,"BASELINE_OPPOSED"),(True,"BASELINE_ALIGNED")]:
-        s=al.actual.where(al.aligned.eq(flag))
-        b=block_boot_active(s,calh,reps=10000,seed=501 if flag else 500)
+        s=al.actual.where(al.aligned.eq(flag)); b=block_boot_active(s,calh,reps=10000,seed=501 if flag else 500)
         alignment[label]={**b,"mean_bps":float(s.mean()*1e4)}
 
     yearly={}
     hz["residual"]=hz[outcome]-hz.baseline_pred
     for year,g in hz.groupby(hz.date.dt.year,observed=True):
-        s=directional_series(g,"residual"); cal=pd.DatetimeIndex(sorted(g.date.unique()))
-        b=block_boot_active(s,cal,reps=5000,seed=1000+int(year))
+        s=directional_series(g,"residual"); cal=pd.DatetimeIndex(sorted(g.date.unique())); b=block_boot_active(s,cal,reps=5000,seed=1000+int(year))
         yearly[str(int(year))]={**b,"mean_bps":float(s.mean()*1e4)}
 
     direction={}
     for state,label in [(1,"TIGHTENING"),(-1,"EASING")]:
-        g=hz[hz.shock_state.eq(state)].copy(); s=directional_series(g,"residual"); cal=pd.DatetimeIndex(sorted(g.date.unique()))
-        b=block_boot_active(s,cal,reps=5000,seed=2000+state)
+        g=hz[hz.shock_state.eq(state)].copy(); s=directional_series(g,"residual"); cal=pd.DatetimeIndex(sorted(g.date.unique())); b=block_boot_active(s,cal,reps=5000,seed=2000+state)
         direction[label]={**b,"mean_bps":float(s.mean()*1e4)}
 
     result={
         "status":"RESEARCH_ONLY_NO_RULE_CHANGE",
         "data":{
             "pit":"audited cov80 PIT panel: official SSGA shares-outstanding-derived flow + historical-GICS dynamic constituent internals",
-            "rrg":"independent RRG-like price-relative vector, same formula as validate_rrg_tail_system.py; not proprietary JdK formula",
+            "rrg":"independent RRG-like price-relative vector, same formula as validate_rrg_tail_system.py; warmed on full frozen proxy price history before PIT overlap; not proprietary JdK formula",
             "rate":"Duration Shock 5D = mean(z252 5d change in 10Y nominal, z252 5d change in 10Y real)",
             "signal_cut":CUT,
             "frozen_sector_loading":{"tightening_favor":TOP,"easing_favor":BOTTOM},
             "signal_timing":"date-t close information only; outcomes begin after date-t close",
         },
-        "train":"2022-04-18..2023-12-31",
-        "holdout":"2024-01-01..2026-03-20",
-        "baseline_features":BASE_FEATURES,
-        "primary_residual_test":residual_tests,
-        "lead_lag":raw_leadlag,
-        "baseline_alignment_holdout":alignment,
-        "feature_alignment_holdout":feature_alignment(hz),
-        "model_metrics":{
-            "train":model_metrics(train,outcome,b0,b1),
-            "holdout":model_metrics(hold,outcome,b0,b1),
-            "train_rate_overlay_coef_bps":float(b1[-1]*1e4),
-        },
-        "holdout_residual_by_year":yearly,
-        "holdout_residual_by_rate_direction":direction,
+        "train":"2022-04-18..2023-12-31","holdout":"2024-01-01..2026-03-20","baseline_features":BASE_FEATURES,
+        "primary_residual_test":residual_tests,"lead_lag":raw_leadlag,"baseline_alignment_holdout":alignment,"feature_alignment_holdout":feature_alignment(hz),
+        "model_metrics":{"train":model_metrics(train,outcome,b0,b1),"holdout":model_metrics(hold,outcome,b0,b1),"train_rate_overlay_coef_bps":float(b1[-1]*1e4)},
+        "holdout_residual_by_year":yearly,"holdout_residual_by_rate_direction":direction,
         "decision_rule":"Rate overlay is incremental only if holdout residual signed spread remains positive with 20-day block-bootstrap support and is not confined to baseline-aligned dates. No production adoption from this audit alone.",
     }
     (out/"summary.json").write_text(json.dumps(safe(result),ensure_ascii=False,indent=2),encoding="utf-8")
-    print("===RATE_ROTATION_INCREMENTAL===")
-    print(json.dumps(safe(result),ensure_ascii=False,separators=(",",":")))
-    print("===END===")
+    print("===RATE_ROTATION_INCREMENTAL==="); print(json.dumps(safe(result),ensure_ascii=False,separators=(",",":"))); print("===END===")
 
 if __name__=="__main__": main()
