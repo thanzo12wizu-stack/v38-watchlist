@@ -1,0 +1,45 @@
+name: Inverse Data Crosscheck V8
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_data_crosscheck_v8.py
+      - .github/workflows/inverse-data-crosscheck-v8.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Download frozen legacy state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p inputs/v6
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9868903361/zip > /tmp/v6.zip
+          unzip -q /tmp/v6.zip -d inputs/v6
+      - name: Run data crosscheck
+        run: |
+          python leadership/research/audit_inverse_data_crosscheck_v8.py \
+            --legacy-state inputs/v6/legacy_state_2011_2026.csv.gz \
+            --output leadership/research/out/inverse_data_v8
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-data-v8
+          path: leadership/research/out/inverse_data_v8/
+          retention-days: 30
+          if-no-files-found: warn
