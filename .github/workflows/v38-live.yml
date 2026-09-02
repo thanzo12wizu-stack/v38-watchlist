@@ -1,0 +1,200 @@
+name: V38 live build
+
+on:
+  workflow_run:
+    workflows: ["Command Center daily build"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'v38_rules.py'
+      - 'build_v38_companion.py'
+      - 'build_v38_strict_loo_live.py'
+      - 'build_v38_tqqq_live.py'
+      - 'v38-normal-sleeve-seed.json'
+      - 'tests/test_v38_rules.py'
+      - 'tests/test_v38_companion.py'
+      - 'tests/test_v38_strict_loo_live.py'
+      - 'tests/test_v38_tqqq_live.py'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v38-live-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      TZ: Asia/Tokyo
+      V38_LIVE_ARTIFACTS: >-
+        v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
+        v38-tqqq-live-source-cache.json
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          echo "V38_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: V38 live preflight
+        run: |
+          python -m py_compile \
+            v38_rules.py \
+            build_v38_companion.py \
+            build_v38_strict_loo_live.py \
+            build_v38_tqqq_live.py
+          pytest -q \
+            tests/test_v38_rules.py \
+            tests/test_v38_companion.py \
+            tests/test_v38_strict_loo_live.py \
+            tests/test_v38_tqqq_live.py
+
+      - name: Prefetch dedicated TQQQ market inputs
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          python build_v38_tqqq_live.py \
+            --prefetch-cache v38-tqqq-live-source-cache.json
+
+      - name: Prepare verified PIT taxonomy bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('v38-strict-loo-history.json')
+          if not path.is_file():
+              raise SystemExit(1)
+          try:
+              history = json.loads(path.read_text(encoding='utf-8'))
+          except (OSError, ValueError):
+              raise SystemExit(1)
+          expected = 'git:79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json'
+          expected_hash = 'dfa417586b4de5436cbfc64f2df5098ca9fd8081f235efe4b4f276b870b83e39'
+          found = any(
+              isinstance(row, dict)
+              and row.get('source') == expected
+              and row.get('effective_asof') == '2026-06-22'
+              and row.get('taxonomy_sha256') == expected_hash
+              and bool(row.get('s2t'))
+              for row in history.get('taxonomy_snapshots', [])
+          )
+          raise SystemExit(0 if found else 1)
+          PY
+          then
+            echo "Verified PIT taxonomy bootstrap already persisted"
+          else
+            git fetch --depth=1 origin 79073ffd9742102c2b6e9f72d349801a10e126db
+            git cat-file -e 79073ffd9742102c2b6e9f72d349801a10e126db:sector_snapshot.json
+          fi
+
+      - name: Build strict LOO PIT live state
+        run: |
+          python build_v38_strict_loo_live.py \
+            --state state.json \
+            --sector-snapshot sector_snapshot.json \
+            --history v38-strict-loo-history.json \
+            --out v38-strict-loo-live.json
+
+      - name: Build CURRENT30 and Stage56 TQQQ live state
+        run: |
+          python build_v38_tqqq_live.py \
+            --state state.json \
+            --cache v38-tqqq-live-source-cache.json \
+            --out tqqq-panic-state.json
+
+      - name: Build provisional audited V38 companion
+        run: |
+          python build_v38_companion.py \
+            --legacy command-center.html \
+            --universe universe.csv \
+            --strict-loo v38-strict-loo-live.json \
+            --tqqq-panic tqqq-panic-state.json \
+            --out v38-live-state.json
+
+      - name: Validate V38 live state
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path('state.json').read_text(encoding='utf-8'))
+          live = json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          loo = json.loads(Path('v38-strict-loo-live.json').read_text(encoding='utf-8'))
+          tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+          asof = str(state.get('date') or '')
+          if not asof:
+              raise SystemExit('state date missing')
+          if live.get('schema') != 'v38-live-state-1' or live.get('asof') != asof:
+              raise SystemExit(f'V38 companion mismatch: {live.get("asof")} != {asof}')
+          if loo.get('schema') != 'v38-strict-loo-live-1' or loo.get('asof') not in (None, asof):
+              raise SystemExit(f'strict LOO mismatch: {loo.get("asof")} != {asof}')
+          if tqqq.get('schema') != 'v38-tqqq-panic-state-1' or tqqq.get('asof') != asof:
+              raise SystemExit(f'TQQQ mismatch: {tqqq.get("asof")} != {asof}')
+          if tqqq.get('live_generation_status') == 'READY':
+              if tqqq.get('underlying_target_pct') is None or tqqq.get('requested_target_pct') is None:
+                  raise SystemExit('READY TQQQ targets missing')
+          print('V38_LIVE_VALIDATE_PASS', asof)
+          PY
+
+      - name: Commit V38 live states
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          staging="$(mktemp -d)"
+          for file in $V38_LIVE_ARTIFACTS; do
+            if [[ -f "$file" ]]; then
+              cp -a "$file" "$staging/$file"
+            fi
+          done
+
+          git fetch --depth=1 origin main
+          if [[ -n "${V38_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_SOURCE_SHA" origin/main -- \
+            v38_rules.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py \
+            v38-normal-sleeve-seed.json state.json command-center.html universe.csv; then
+            echo "::warning::V38 inputs changed during build; skip stale persistence"
+            exit 1
+          fi
+
+          git reset --hard origin/main
+          for file in $V38_LIVE_ARTIFACTS; do
+            if [[ -f "$staging/$file" ]]; then
+              cp -a "$staging/$file" "$file"
+              git add -- "$file"
+            fi
+          done
+          if git diff --staged --quiet; then
+            echo "No V38 live changes to commit"
+            exit 0
+          fi
+          git commit -m "Refresh isolated V38 live state"
+          git push origin HEAD:main
