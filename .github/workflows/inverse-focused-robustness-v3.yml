@@ -1,0 +1,50 @@
+name: Inverse Focused Robustness V3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_focused_robustness_v3.py
+      - .github/workflows/inverse-focused-robustness-v3.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests
+      - name: Download frozen V2 feature artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/v2
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9851768614/zip > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d inputs/v2
+          test -s inputs/v2/feature_state_v2.csv.gz
+      - name: Run focused robustness
+        run: |
+          set -euo pipefail
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_focused_robustness_v3.py \
+            --features inputs/v2/feature_state_v2.csv.gz \
+            --output leadership/research/out/inverse_focused_robustness_v3 \
+            --start 2016-01-04 \
+            --end 2026-03-20
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-focused-robustness-v3
+          path: leadership/research/out/inverse_focused_robustness_v3/
+          if-no-files-found: warn
+          retention-days: 14
