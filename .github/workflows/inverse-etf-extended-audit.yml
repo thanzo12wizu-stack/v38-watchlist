@@ -6,6 +6,7 @@ on:
     branches: [research/inverse-etf-regime-scan-20260902]
     paths:
       - leadership/research/audit_inverse_etf_extended.py
+      - leadership/research/run_inverse_etf_extended_fixed.py
       - .github/workflows/inverse-etf-extended-audit.yml
 
 permissions:
@@ -33,11 +34,13 @@ jobs:
           unzip -q /tmp/base.zip -d inputs/base
           test -s inputs/base/inverse_feature_state.csv.gz
       - name: Syntax check
-        run: python -m py_compile leadership/research/audit_inverse_etf_extended.py
+        run: |
+          python -m py_compile leadership/research/audit_inverse_etf_extended.py
+          python -m py_compile leadership/research/run_inverse_etf_extended_fixed.py
       - name: Run extended audit
         run: |
           set -euo pipefail
-          python leadership/research/audit_inverse_etf_extended.py \
+          PYTHONPATH=leadership/research python leadership/research/run_inverse_etf_extended_fixed.py \
             --base inputs/base/inverse_feature_state.csv.gz \
             --output leadership/research/out/inverse_etf_extended \
             --start 2016-01-04 \
