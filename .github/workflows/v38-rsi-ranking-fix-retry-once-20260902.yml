@@ -32,11 +32,15 @@ jobs:
           from pathlib import Path
           p = Path('tests/test_v38_companion.py')
           s = p.read_text(encoding='utf-8')
-          old = '    assert "今日は通常株を新規で買わない" in html\n'
-          new = '    assert "今は買わない" in html\n    assert "復帰条件成立前は買いません" in html\n'
-          if s.count(old) != 1:
-              raise SystemExit(f'UI regression assertion mismatch: {s.count(old)}')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          replacements = {
+              '    assert "今日は通常株を新規で買わない" in html\n': '    assert "今は買わない" in html\n    assert "復帰条件成立前は買いません" in html\n',
+              '    assert "買い推奨ではありません" in html\n': '    assert "どちらも復帰条件成立前は買いシグナルではありません" in html\n',
+          }
+          for old, new in replacements.items():
+              if s.count(old) != 1:
+                  raise SystemExit(f'UI regression assertion mismatch: {old!r} count={s.count(old)}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
           PY
 
       - name: Install focused test dependencies
