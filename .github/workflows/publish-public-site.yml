@@ -8,6 +8,9 @@ on:
       - 'scripts/privacy_audit.py'
       - 'tests/test_public_site_export.py'
       - 'tests/test_privacy_audit.py'
+      - 'command-center-v38.html'
+      - 'rotation/app-v2.js'
+      - 'rotation/data/**'
       - '.github/workflows/publish-public-site.yml'
   workflow_dispatch: {}
 
