@@ -424,7 +424,7 @@ def test_tqqq_stale_route_is_data_required_and_not_used_for_gross(tmp_path):
 
 def test_audited_companion_leads_with_action_and_never_labels_stop_watchlist_as_buy():
     html = Path("command-center-v38.html").read_text(encoding="utf-8")
-    assert "TODAY'S ACTION" in html
+    assert "TODAY'S PORTFOLIO" in html
     assert "今は買わない" in html
     assert "復帰条件成立前は買いません" in html
     assert "再開時にまず見る銘柄" in html
