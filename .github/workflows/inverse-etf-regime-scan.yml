@@ -1,0 +1,55 @@
+name: Inverse ETF Regime Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/inverse-etf-regime-scan-20260902]
+    paths:
+      - leadership/research/audit_inverse_etf_regime_scan.py
+      - .github/workflows/inverse-etf-regime-scan.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance requests
+      - name: Download frozen rate and panic inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/rates
+          gh api repos/$GITHUB_REPOSITORY/actions/artifacts/9845484500/zip > /tmp/rates.zip
+          unzip -q /tmp/rates.zip -d inputs/rates
+          test -s inputs/rates/rate_features.csv.gz
+          test -s inputs/rates/tqqq_panic_episodes.csv
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_inverse_etf_regime_scan.py
+      - name: Run broad inverse ETF regime scan
+        run: |
+          set -euo pipefail
+          PYTHONPATH=.:leadership/research python leadership/research/audit_inverse_etf_regime_scan.py \
+            --root . \
+            --rates inputs/rates/rate_features.csv.gz \
+            --panic inputs/rates/tqqq_panic_episodes.csv \
+            --output leadership/research/out/inverse_etf_regime_scan \
+            --start 2016-01-04 \
+            --end 2026-03-20
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inverse-etf-regime-scan
+          path: leadership/research/out/inverse_etf_regime_scan/
+          if-no-files-found: warn
+          retention-days: 14
