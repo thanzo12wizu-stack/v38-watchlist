@@ -9,11 +9,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-widt
 </style>
 </head>
 <body>
-<h1>保有データ読み込み診断</h1>
-<div class="mut">読み取り専用です。localStorage の追加・変更・削除は行いません。現行 command-center.html のロード処理も読み取りだけで確認します。</div>
+<h1>保有データ読み込み診断 v3</h1>
+<div class="mut">読み取り専用です。localStorage の追加・変更・削除は行いません。現行 command-center.html のロード処理と依存関数の定義順だけを確認します。</div>
 <div id="summary" class="card">診断中…</div>
 <div id="current" class="card"></div>
 <div id="previous" class="card"></div>
+<div id="deps" class="card"><b>実物 _hldNormalize 依存関数診断</b><div id="depStatus" class="mut">command-center.html を読み取り中…</div><pre id="depText"></pre></div>
 <div id="source" class="card"><b>現行ローダーコード確認</b><div id="sourceStatus" class="mut">command-center.html を読み取り中…</div><pre id="sourceText"></pre></div>
 <div class="card"><button id="copy">診断結果をコピー</button><pre id="report"></pre></div>
 <script>
@@ -88,13 +89,75 @@ function text(x){
   return l.join('\n');
 }
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-function sourceWindow(src,needle,before,after){var i=src.indexOf(needle);if(i<0)return '';return src.slice(Math.max(0,i-before),Math.min(src.length,i+after));}
 function collectSource(src){
   var parts=[],seen={};
-  ['function hldLoad','hldLoad=function','hldLoad = function','_hldNormalize','v38_holdings_prev','v38_holdings'].forEach(function(term){
+  ['function hldLoad','hldLoad=function','hldLoad = function','function _hldNormalize','_isLevTicker','v38_holdings_prev','v38_holdings'].forEach(function(term){
     var i=src.indexOf(term);if(i<0)return;var a=Math.max(0,i-1800),b=Math.min(src.length,i+6500),key=a+':'+b;if(seen[key])return;seen[key]=1;parts.push('===== '+term+' @ '+i+' =====\n'+src.slice(a,b));
   });
   return parts.join('\n\n');
+}
+function extractFunction(src,name){
+  var start=src.indexOf('function '+name+'(');if(start<0)return null;
+  var open=src.indexOf('{',start);if(open<0)return null;
+  var depth=0,quote=null,escp=false,line=false,block=false;
+  for(var i=open;i<src.length;i++){
+    var c=src[i],d=src[i+1];
+    if(line){if(c==='\n')line=false;continue;}
+    if(block){if(c==='*'&&d==='/'){block=false;i++;}continue;}
+    if(quote){if(escp){escp=false;continue;}if(c==='\\'){escp=true;continue;}if(c===quote)quote=null;continue;}
+    if(c==='/'&&d==='/'){line=true;i++;continue;}if(c==='/'&&d==='*'){block=true;i++;continue;}
+    if(c==='"'||c==="'"||c==='`'){quote=c;continue;}
+    if(c==='{')depth++;else if(c==='}'){depth--;if(depth===0)return {start:start,end:i+1,text:src.slice(start,i+1)};}
+  }
+  return null;
+}
+function indexes(src,needle){var out=[],p=0;while((p=src.indexOf(needle,p))>=0){out.push(p);p+=needle.length;}return out;}
+function ctx(src,pos,r){r=r||120;return src.slice(Math.max(0,pos-r),Math.min(src.length,pos+r)).replace(/\s+/g,' ');}
+function definitionInfo(src,name){
+  var pats=[
+    {kind:'function declaration (hoisted)',needle:'function '+name+'('},
+    {kind:'var function',needle:'var '+name+'=function'},
+    {kind:'var function',needle:'var '+name+' = function'},
+    {kind:'let function',needle:'let '+name+'=function'},
+    {kind:'const function',needle:'const '+name+'='},
+    {kind:'assignment',needle:name+'=function'},
+    {kind:'window assignment',needle:'window.'+name+'='}
+  ];
+  var best=null;
+  pats.forEach(function(p){var i=src.indexOf(p.needle);if(i>=0&&(!best||i<best.pos))best={kind:p.kind,pos:i,needle:p.needle};});
+  return best;
+}
+function dependencyAnalysis(src){
+  var fn=extractFunction(src,'_hldNormalize'),lines=[];
+  lines.push('command-center.html bytes: '+src.length);
+  if(!fn){lines.push('ERROR: function _hldNormalize を抽出できません');return lines.join('\n');}
+  lines.push('_hldNormalize: '+fn.start+'..'+fn.end);
+  var names={},re=/\b(_(?:hld[A-Za-z0-9_]*|isLevTicker))\s*\(/g,m;
+  while((m=re.exec(fn.text))){if(m[1]!=='_hldNormalize')names[m[1]]=1;}
+  var deps=Object.keys(names).sort();
+  lines.push('依存関数: '+deps.join(', '));
+  var missing=[];
+  deps.forEach(function(name){
+    var def=definitionInfo(src,name),uses=indexes(src,name+'(');
+    if(!def){missing.push(name);lines.push('[MISSING] '+name+' : 定義を検出できない / call occurrences='+uses.length);return;}
+    var tag=def.kind.indexOf('function declaration')===0?'OK/HOISTED':'CHECK ORDER';
+    lines.push('['+tag+'] '+name+' : '+def.kind+' @ '+def.pos+' / occurrences='+uses.length);
+    lines.push('  def: '+ctx(src,def.pos,95));
+  });
+  lines.push('');
+  var lev=definitionInfo(src,'_isLevTicker'),levUses=indexes(src,'_isLevTicker(');
+  lines.push('重点確認 _isLevTicker: '+(lev?(lev.kind+' @ '+lev.pos):'MISSING'));
+  levUses.slice(0,8).forEach(function(p,i){lines.push('  occurrence '+(i+1)+' @ '+p+': '+ctx(src,p,130));});
+  lines.push('');
+  var hl=indexes(src,'hldLoad(');
+  lines.push('hldLoad( occurrences: '+hl.length);
+  hl.slice(0,18).forEach(function(p,i){lines.push('  '+(i+1)+' @ '+p+': '+ctx(src,p,125));});
+  lines.push('');
+  if(missing.length)lines.push('STATIC VERDICT: 依存関数未定義候補 = '+missing.join(', '));
+  else if(lev&&lev.kind.indexOf('function declaration')===0)lines.push('STATIC VERDICT: _isLevTicker は function declaration なので、単純な「定義位置が後だから未定義」説は否定。次は実行時例外そのものを捕捉すべき。');
+  else if(lev)lines.push('STATIC VERDICT: _isLevTicker は hoist されない形式。初回 hldLoad 実行タイミングとの順序確認が必要。');
+  else lines.push('STATIC VERDICT: _isLevTicker 定義なし。最有力原因。');
+  return lines.join('\n');
 }
 var cur=inspect('v38_holdings'),prev=inspect('v38_holdings_prev');
 var cause='';
@@ -103,26 +166,31 @@ else if(!cur.present)cause='現行キー v38_holdings が存在しない';
 else if(!cur.parseOk)cause='現行 v38_holdings の JSON が破損';
 else if(!cur.arrayOk)cause='現行 v38_holdings のトップレベルが配列ではない';
 else if(cur.recordErrors.length)cause='現行配列内の保有レコード正規化で例外';
-else cause='現行データ本体と正規化は正常。hldLoad() 内の正規化後処理または別の読み込み経路を確認する必要あり';
+else cause='現行データ本体と簡易正規化は正常。実物 _hldNormalize の依存関数と実行順を確認中';
 var cls=(cur.present&&cur.parseOk&&cur.arrayOk&&!cur.recordErrors.length)?'ok':'bad';
 document.getElementById('summary').innerHTML='<b class="'+cls+'">判定: '+esc(cause)+'</b>';
 document.getElementById('current').innerHTML='<b>現行 v38_holdings</b><pre>'+esc(text(cur))+'</pre>';
 document.getElementById('previous').innerHTML='<b>直前バックアップ v38_holdings_prev</b><pre>'+esc(text(prev))+'</pre>';
-var loaderTrace='(取得中)';
+var loaderTrace='(取得中)',depTrace='(取得中)';
 function rebuildReport(){
-  var report='V38 Holdings Diagnostic v2\n判定: '+cause+'\n\n'+text(cur)+'\n\n'+text(prev)+'\n\n現行 command-center loader trace\n'+loaderTrace;
+  var report='V38 Holdings Diagnostic v3\n判定: '+cause+'\n\n'+text(cur)+'\n\n'+text(prev)+'\n\n実物 _hldNormalize 依存関数診断\n'+depTrace+'\n\n現行 command-center loader trace\n'+loaderTrace;
   document.getElementById('report').textContent=report;
   document.getElementById('copy').onclick=function(){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).then(function(){document.getElementById('copy').textContent='コピーしました';});}else window.prompt('診断結果をコピー',report);};
 }
 rebuildReport();
-fetch('./command-center.html?holdings_diag='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(src){
+fetch('./command-center.html?holdings_diag_v3='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(src){
+  depTrace=dependencyAnalysis(src);
   loaderTrace=collectSource(src);
   if(!loaderTrace)loaderTrace='hldLoad/_hldNormalize/v38_holdings の該当コードを検出できませんでした。HTML bytes='+src.length;
-  document.getElementById('sourceStatus').textContent='取得OK / command-center.html '+src.length+'文字。下に該当コード周辺を表示します。';
+  document.getElementById('depStatus').textContent='取得OK / 実物 _hldNormalize の依存関数を静的解析しました。';
+  document.getElementById('depText').textContent=depTrace;
+  document.getElementById('sourceStatus').textContent='取得OK / command-center.html '+src.length+'文字。';
   document.getElementById('sourceText').textContent=loaderTrace;
   rebuildReport();
 }).catch(function(e){
-  loaderTrace='SOURCE FETCH ERROR: '+String(e&&e.message||e);
+  depTrace=loaderTrace='SOURCE FETCH ERROR: '+String(e&&e.message||e);
+  document.getElementById('depStatus').textContent=depTrace;
+  document.getElementById('depText').textContent=depTrace;
   document.getElementById('sourceStatus').textContent=loaderTrace;
   document.getElementById('sourceText').textContent=loaderTrace;
   rebuildReport();
