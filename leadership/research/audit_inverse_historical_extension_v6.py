@@ -58,8 +58,10 @@ def main():
     ov["legacy_core"] = ov.nq_color_legacy.eq("Red") & (ov.qqq_dist_sma50_legacy < 0) & (ov.sma50_slope10_legacy < 0) & (ov.mc_chg5_legacy < -3)
     ov["v2_core"] = ov.nq_color_v2.eq("Red") & (ov.qqq_dist_sma50_v2 < 0) & (ov.sma50_slope10_v2 < 0) & (ov.mc_chg5_v2 < -3)
     ov["core_match"] = ov.legacy_core.eq(ov.v2_core)
-    v2guard = pd.to_numeric(ov.panic_episode, errors="coerce").fillna(0) > 0; st = tq.stage56.reindex(ov.index).fillna(False)
-    lev = cooldown(ov.legacy_core, 10) & ~(ov.panic_legacy | st); vev = cooldown(ov.v2_core, 10) & ~(v2guard | st)
+    v2guard = pd.to_numeric(ov.panic_episode, errors="coerce").fillna(0) > 0
+    st = legacy["stage56"].reindex(ov.index).fillna(False)
+    lev = cooldown(ov.legacy_core, 10) & ~(ov.panic | st)
+    vev = cooldown(ov.v2_core, 10) & ~(v2guard | st)
     ld = ov.index[lev]; vd = ov.index[vev]; exact = len(set(ld) & set(vd)); near = sum(any(abs((x - y).days) <= 2 for y in vd) for x in ld)
     comparison = {
         "overlap_days": len(ov), "nq_exact_match": float(ov.nq_match.mean()), "core_daily_match": float(ov.core_match.mean()),
