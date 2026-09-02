@@ -9,7 +9,10 @@ on:
       - 'tests/test_public_site_export.py'
       - 'tests/test_privacy_audit.py'
       - 'command-center-v38.html'
+      - 'v38-freshness.js'
+      - 'rotation/index.html'
       - 'rotation/app-v2.js'
+      - 'rotation/app-live.js'
       - 'rotation/data/**'
       - '.github/workflows/publish-public-site.yml'
   workflow_dispatch: {}
