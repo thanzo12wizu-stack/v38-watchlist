@@ -1,0 +1,79 @@
+# Research-only rate-regime audit. Never modifies main/dashboard outputs or adopted V38 rules.
+name: Rate Regime Audit
+
+on:
+  push:
+    branches:
+      - research/rate-regime-audit-20260902
+    paths:
+      - leadership/research/audit_rate_regimes.py
+      - .github/workflows/rate-regime-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_rate_regimes.py
+      - name: Download frozen V38 component artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p inputs/components inputs/tqqq inputs/theme
+          gh run download 33338433195 -R "$GITHUB_REPOSITORY" -n gross100-component-series -D inputs/components
+          gh run download 33080590798 -R "$GITHUB_REPOSITORY" -n tqqq-stage56-mandate-fx-tax -D inputs/tqqq
+          test -f inputs/components/ordinary_PEAK30_PART25_R3_daily.csv.gz
+          test -f inputs/components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
+          test -f inputs/tqqq/tqqq_stage56_daily.csv.gz
+      - name: Download latest post-ignition theme rows when available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          RUN_ID=$(gh run list -R "$GITHUB_REPOSITORY" --workflow post-ignition-economic-fast.yml --branch research/sector-stock-leadership-20260826 --status success --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || true)
+          if [ -n "${RUN_ID:-}" ]; then
+            echo "theme run=${RUN_ID}"
+            gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n post-ignition-economic-fast -D inputs/theme || true
+          else
+            echo "No successful theme artifact found; theme layer will be skipped."
+          fi
+      - name: Run rate-regime audit
+        run: |
+          set -euo pipefail
+          THEME_ROWS=$(find inputs/theme -name economic_rows.csv.gz -print -quit || true)
+          EXTRA=()
+          if [ -n "${THEME_ROWS:-}" ]; then
+            echo "Using theme rows: ${THEME_ROWS}"
+            EXTRA=(--theme-rows "$THEME_ROWS")
+          else
+            echo "Theme rows unavailable; continuing with TQQQ + ordinary + RSI Reset."
+          fi
+          python leadership/research/audit_rate_regimes.py \
+            --tqqq inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --ordinary inputs/components/ordinary_PEAK30_PART25_R3_daily.csv.gz \
+            --rsi inputs/components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
+            --output leadership/research/out/rate_regime_audit \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-03-20 \
+            "${EXTRA[@]}"
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rate-regime-audit
+          path: leadership/research/out/rate_regime_audit/
+          if-no-files-found: warn
+          retention-days: 14
