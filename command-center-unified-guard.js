@@ -21,25 +21,33 @@
   try{v=await fetch('v38-live-state.json?guard='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null)}catch(_){ }
   try{rot=await fetch('https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/research/rotation-exact-flow-internals-20260831/leadership/research/rotation_theme56_public_brief/rotation_theme56_public_brief.json',{cache:'no-store'}).then(r=>r.ok?r.json():null)}catch(_){ }
 
-  // 1) 実保有とモデル追跡をUI上でも完全に分離する。
+  // 1) 実保有とモデル追跡をUI上でも完全に分離する。読込失敗を0件に変換しない。
   const manageTab=q('#u-nav button[data-u="manage"]');
   if(manageTab)manageTab.textContent='実保有 / RSI';
+  let hldError=null,hldItems=null;
+  try{
+    if(typeof window.hldLoad!=='function')throw new Error('hldLoad unavailable');
+    hldItems=window.hldLoad().filter(x=>x&&x.status!=='closed');
+  }catch(e){hldError=e;}
   const actualPanel=q('#u-manage-body > .u-panel[data-m="actual"]');
   if(actualPanel){
     qa(':scope > .u-alert',actualPanel).forEach(el=>el.remove());
     const h2=q('.card h2',actualPanel);
     if(h2&&!/実保有/.test(h2.textContent||''))h2.textContent='実保有';
-    let hldError=null,hldItems=null;
-    try{
-      if(typeof window.hldLoad!=='function')throw new Error('hldLoad unavailable');
-      hldItems=window.hldLoad().filter(x=>x&&x.status!=='closed');
-    }catch(e){hldError=e;}
     const count=q('.card .u-grid .u-box b',actualPanel);
     if(hldError){
       if(count)count.textContent='取得エラー';
       const d=document.createElement('div');d.className='u-alert bad guard-holdings-error';d.innerHTML=`<b>実保有記録を読めません：</b>${esc(hldError.message||String(hldError))}。0件とは扱いません。`;
       actualPanel.insertBefore(d,actualPanel.firstChild);
     }else if(count&&Array.isArray(hldItems))count.textContent=`${hldItems.length}件`;
+  }
+  const todayHoldCard=qa('#u-today .card').find(c=>/実保有とモデルを分離/.test(q('h2',c)?.textContent||''));
+  if(todayHoldCard){
+    const actualBox=qa('.u-box',todayHoldCard).find(b=>/実保有記録/.test(q('span',b)?.textContent||''));
+    if(actualBox){const b=q('b',actualBox);if(b)b.textContent=hldError?'取得エラー':`${Array.isArray(hldItems)?hldItems.length:0}件`;}
+  }
+  if(hldError&&q('#u-today')&&!q('.guard-holdings-today',q('#u-today'))){
+    const d=document.createElement('div');d.className='u-alert bad guard-holdings-today';d.innerHTML='<b>実保有の読込エラー：</b>今日タブでも0件とは扱いません。実保有を前提にした空き枠判断は行わないでください。';q('#u-today').prepend(d);
   }
 
   // 2) 銘柄タブは「順位」と「次回注文予定」を混同しない。
@@ -77,13 +85,22 @@
       const d=document.createElement('div');d.className='u-alert bad guard-coverage';d.innerHTML='<b>Breadth coverage不足：</b>通常個別株の新規判断はfail-closedです。';market.prepend(d);
     }
 
-    // TQQQの取得失敗時に inactive/off と誤認させない。
+    // TQQQの取得失敗時に inactive/off と誤認させない。今日タブも同じ扱い。
     const tsec=q('#u-tqqq'),nstat=String(v.normal_tqqq?.status||''),pstat=String(v.panic_tqqq?.status||'');
     const tqqqBad=!/READY/i.test(nstat)||/DATA REQUIRED|ERROR|FAIL/i.test(nstat)||!/READY/i.test(pstat)||/DATA REQUIRED|ERROR|FAIL/i.test(pstat);
     if(tqqqBad&&tsec&&!q('.guard-tqqq-status',tsec)){
       const d=document.createElement('div');d.className='u-alert bad guard-tqqq-status';d.innerHTML=`<b>TQQQ判定データ不足：</b>Normal ${esc(nstat||'—')} / Panic ${esc(pstat||'—')}。inactive/offとは扱いません。`;tsec.prepend(d);
       const seedRow=qa('.u-row',tsec).find(r=>/Seedの有効期限/.test(q('.name',r)?.textContent||''));
       if(seedRow){const val=q('.val',seedRow);if(val)val.innerHTML=pill('判定不可','bad');}
+    }
+    if(tqqqBad){
+      const panicBox=todayHoldCard&&qa('.u-box',todayHoldCard).find(b=>/Panic TQQQ/.test(q('span',b)?.textContent||''));
+      if(panicBox){const b=q('b',panicBox),small=q('small',panicBox);if(b)b.textContent='判定不可';if(small)small.textContent=`Normal ${nstat||'—'} / Panic ${pstat||'—'}`;}
+      if(q('#u-today')&&!q('.guard-tqqq-today',q('#u-today'))){const d=document.createElement('div');d.className='u-alert bad guard-tqqq-today';d.innerHTML='<b>TQQQ判定データ不足：</b>今日タブでもinactive/offとは扱いません。';q('#u-today').prepend(d);}
+    }
+    const gaStatus=String(v.gross100_allocation?.status||'');
+    if(!/LIVE ALLOCATION READY/i.test(gaStatus)&&q('#u-today')&&!q('.guard-allocation-status',q('#u-today'))){
+      const d=document.createElement('div');d.className='u-alert bad guard-allocation-status';d.innerHTML=`<b>モデル配分を確定できません：</b>${esc(gaStatus||'DATA REQUIRED')}。欠損を0%として扱いません。`;q('#u-today').prepend(d);
     }
   }
 
