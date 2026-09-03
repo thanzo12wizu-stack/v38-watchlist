@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pandas as pd
-
 import audit_rs_horizon_leader_capture as audit
 import audit_ordinary_stock_market_mode_robustness as base
 import audit_core_emerging_leader_mix as cem
@@ -30,7 +28,19 @@ def corrected_build_rs(matrices):
     return out, struct.fillna(False), core_liq.fillna(False)
 
 
+# The audit only needs a reporting alias. Do not change metric calculations.
+_orig_metrics = audit.base.metrics
+
+def metrics_compat(eq):
+    m = _orig_metrics(eq)
+    if "max_drawdown" not in m:
+        m = dict(m)
+        m["max_drawdown"] = m.get("mdd")
+    return m
+
+
 audit.build_rs = corrected_build_rs
+audit.base.metrics = metrics_compat
 
 if __name__ == "__main__":
     audit.main()
