@@ -4,44 +4,36 @@ on:
   workflow_run:
     workflows: ["V38 live build"]
     types: [completed]
-  push:
-    branches: [main]
-    paths:
-      - 'build_v38_sleeve_live.py'
-      - 'build_v38_sleeve_refresh.py'
-      - 'v38-normal-sleeve-seed.json'
-      - 'tests/test_v38_sleeve_live.py'
-      - 'tests/test_v38_sleeve_refresh.py'
-      - '.github/workflows/v38-sleeve-refresh.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: v38-sleeve-live-refresh-main
+  group: v38-sleeve-live-refresh-pipeline
   cancel-in-progress: false
 
 jobs:
   refresh:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 50
     env:
       TZ: Asia/Tokyo
+      PIPELINE_BRANCH: pipeline-live
 
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: pipeline-live
           fetch-depth: 1
 
-      - name: Sync latest main
+      - name: Sync staged V38 snapshot
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --depth=1 origin main
-          git reset --hard origin/main
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          git reset --hard "origin/$PIPELINE_BRANCH"
           echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v7
@@ -199,24 +191,33 @@ jobs:
           print('V38_SLEEVE_REFRESH_READY', asof)
           PY
 
-      - name: Commit refreshed audited live states
+      - name: Commit refreshed audited live states to staging
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json
-          if git diff --cached --quiet; then
-            echo "No sleeve state changes to commit"
-            exit 0
-          fi
-          git commit -m "Refresh V38 live sleeves + Gross100 allocation"
-          git fetch --depth=1 origin main
-          if [ "$(git rev-parse origin/main)" != "$SOURCE_SHA" ]; then
-            echo "main advanced during sleeve refresh; rerun against latest state"
+          stage_dir="$(mktemp -d)"
+          cp v38-sleeve-state.json "$stage_dir/v38-sleeve-state.json"
+          cp tqqq-panic-state.json "$stage_dir/tqqq-panic-state.json"
+          cp v38-live-state.json "$stage_dir/v38-live-state.json"
+
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$SOURCE_SHA" ]]; then
+            echo "::error::Pipeline staging advanced during sleeve refresh; reject stale output"
             exit 1
           fi
-          git push origin HEAD:main
+          git reset --hard "origin/$PIPELINE_BRANCH"
+          cp "$stage_dir/v38-sleeve-state.json" v38-sleeve-state.json
+          cp "$stage_dir/tqqq-panic-state.json" tqqq-panic-state.json
+          cp "$stage_dir/v38-live-state.json" v38-live-state.json
+          git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json
+          if git diff --cached --quiet; then
+            echo "No sleeve staging changes to commit"
+            exit 0
+          fi
+          git commit -m "Stage V38 live sleeves + Gross100 allocation"
+          git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"
 
       - name: Hand off to Rotation
-        run: echo "Sleeve/RSI Reset READY; Rotation Theme56 live build is the next workflow stage"
+        run: echo "Sleeve/RSI Reset READY on staging; Rotation Theme56 live build is the next workflow stage"
