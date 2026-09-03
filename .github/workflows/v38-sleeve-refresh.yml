@@ -160,6 +160,9 @@ jobs:
               raise SystemExit('normal sleeve not READY')
           if sleeve.get('rsi_reset', {}).get('status') != 'READY':
               raise SystemExit('reset sleeve not READY')
+          reset = sleeve.get('rsi_reset', {})
+          if not isinstance(reset.get('monitor'), list):
+              raise SystemExit('RSI30 monitor output missing')
           if tqqq.get('sleeve_live_status') != 'READY':
               raise SystemExit(f'TQQQ sleeve merge not READY: {tqqq.get("sleeve_live_reason")}')
           gross = live.get('gross100_allocation', {})
@@ -182,7 +185,6 @@ jobs:
           mode = str(live.get('market', {}).get('mode') or '')
           if mode not in {'ATTACK', 'SELECTIVE'} and abs(float(selective_fill)) > 1e-9:
               raise SystemExit(f'Selective Fill active outside ATTACK/SELECTIVE: {mode}')
-          reset = sleeve.get('rsi_reset', {})
           quality = reset.get('download_quality')
           if reset.get('strategy') != 'RS63_TOP3_RISE30_SIGTOP3':
               raise SystemExit(f'unexpected Reset rule: {reset.get("strategy")}')
