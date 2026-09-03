@@ -4,25 +4,13 @@ on:
   workflow_run:
     workflows: ["Command Center daily build"]
     types: [completed]
-  push:
-    branches: [main]
-    paths:
-      - 'v38_rules.py'
-      - 'build_v38_companion.py'
-      - 'build_v38_strict_loo_live.py'
-      - 'build_v38_tqqq_live.py'
-      - 'tests/test_v38_rules.py'
-      - 'tests/test_v38_companion.py'
-      - 'tests/test_v38_strict_loo_live.py'
-      - 'tests/test_v38_tqqq_live.py'
-      - '.github/workflows/v38-live.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: v38-live-main
+  group: v38-live-pipeline
   cancel-in-progress: false
 
 jobs:
@@ -32,6 +20,7 @@ jobs:
     timeout-minutes: 50
     env:
       TZ: Asia/Tokyo
+      PIPELINE_BRANCH: pipeline-live
       V38_LIVE_ARTIFACTS: >-
         v38-live-state.json
         v38-strict-loo-history.json
@@ -42,15 +31,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: pipeline-live
           fetch-depth: 1
 
-      - name: Sync latest main
+      - name: Sync staged Command Center snapshot
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --depth=1 origin main
-          git reset --hard origin/main
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          git reset --hard "origin/$PIPELINE_BRANCH"
           echo "V38_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v7
@@ -236,7 +225,7 @@ jobs:
           print('V38_LIVE_VALIDATE_PASS', asof)
           PY
 
-      - name: Commit V38 live states
+      - name: Commit V38 live states to staging
         shell: bash
         run: |
           set -euo pipefail
@@ -250,15 +239,12 @@ jobs:
             fi
           done
 
-          git fetch --depth=1 origin main
-          if [[ -n "${V38_SOURCE_SHA:-}" ]] && ! git diff --quiet "$V38_SOURCE_SHA" origin/main -- \
-            v38_rules.py build_v38_companion.py build_v38_strict_loo_live.py build_v38_tqqq_live.py \
-            state.json command-center.html universe.csv; then
-            echo "::warning::V38 inputs changed during build; skip stale persistence"
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$V38_SOURCE_SHA" ]]; then
+            echo "::error::Pipeline staging advanced during V38 build; reject stale output"
             exit 1
           fi
-
-          git reset --hard origin/main
+          git reset --hard "origin/$PIPELINE_BRANCH"
           for file in $V38_LIVE_ARTIFACTS; do
             if [[ -f "$staging/$file" ]]; then
               cp -a "$staging/$file" "$file"
@@ -266,8 +252,8 @@ jobs:
             fi
           done
           if git diff --staged --quiet; then
-            echo "No V38 live changes to commit"
+            echo "No V38 staging changes to commit"
             exit 0
           fi
-          git commit -m "Refresh isolated V38 live state"
-          git push origin HEAD:main
+          git commit -m "Stage isolated V38 live state"
+          git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"
