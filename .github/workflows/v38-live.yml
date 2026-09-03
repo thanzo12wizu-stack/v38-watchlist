@@ -241,7 +241,7 @@ jobs:
 
           git fetch --depth=1 origin "$PIPELINE_BRANCH"
           if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$V38_SOURCE_SHA" ]]; then
-            echo "::error::Pipeline staging advanced during V38 build; reject stale output"
+            echo "::error::Pipeline staging advanced during V38 build; skip stale persistence and reject stale output"
             exit 1
           fi
           git reset --hard "origin/$PIPELINE_BRANCH"
