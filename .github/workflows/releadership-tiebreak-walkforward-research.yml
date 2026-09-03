@@ -1,0 +1,47 @@
+# Research-only audit. Does not modify main, Pages, or dashboard outputs.
+name: Re-Leadership Tie-break Walk-forward Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/audit_releadership_tiebreak_walkforward.py
+      - .github/workflows/releadership-tiebreak-walkforward-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_releadership_tiebreak_walkforward.py
+          python -m py_compile leadership/research/audit_core_releadership_volume_decomposition.py
+          python -m py_compile leadership/research/audit_core_releadership_priority.py
+      - name: Run Re-Leadership tie-break walk-forward audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_releadership_tiebreak_walkforward.py \
+            --root . \
+            --output leadership/research/releadership_tiebreak_walkforward \
+            --analysis-start 2020-01-02 \
+            --analysis-end 2026-09-02 \
+            --leader-start 2021-01-04 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: releadership-tiebreak-walkforward
+          path: leadership/research/releadership_tiebreak_walkforward/
+          retention-days: 14
