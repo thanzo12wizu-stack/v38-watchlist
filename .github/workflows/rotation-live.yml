@@ -4,17 +4,13 @@ on:
   workflow_run:
     workflows: ["V38 sleeve live refresh"]
     types: [completed]
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/rotation-live.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: rotation-theme56-live-main
+  group: rotation-theme56-live-pipeline
   cancel-in-progress: false
 
 jobs:
@@ -25,6 +21,29 @@ jobs:
     env:
       TZ: Asia/Tokyo
       RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
+      PIPELINE_BRANCH: pipeline-live
+      ATOMIC_PRODUCTION_FILES: >-
+        command-center.html
+        command-center_share.html
+        mktcap.json
+        trend_history.json
+        fred_cache.json
+        fmp_reference_cache.json
+        state.json
+        daily_log.csv
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
+        sector_snapshot.json
+        v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
+        v38-tqqq-live-source-cache.json
+        v38-sleeve-state.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -35,15 +54,18 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Load fully READY production as-of
+      - name: Load fully READY staged production as-of
         shell: bash
         run: |
           set -euo pipefail
           git fetch --depth=1 origin main
-          git show origin/main:state.json > /tmp/state.json
-          git show origin/main:v38-live-state.json > /tmp/v38-live-state.json
-          git show origin/main:tqqq-panic-state.json > /tmp/tqqq-panic-state.json
-          git show origin/main:v38-sleeve-state.json > /tmp/v38-sleeve-state.json
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          echo "PIPELINE_SOURCE_SHA=$(git rev-parse "origin/$PIPELINE_BRANCH")" >> "$GITHUB_ENV"
+          echo "MAIN_SOURCE_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+          git show "origin/$PIPELINE_BRANCH:state.json" > /tmp/state.json
+          git show "origin/$PIPELINE_BRANCH:v38-live-state.json" > /tmp/v38-live-state.json
+          git show "origin/$PIPELINE_BRANCH:tqqq-panic-state.json" > /tmp/tqqq-panic-state.json
+          git show "origin/$PIPELINE_BRANCH:v38-sleeve-state.json" > /tmp/v38-sleeve-state.json
           python - <<'PY' >> "$GITHUB_ENV"
           import json
           from datetime import date, timedelta
@@ -62,7 +84,7 @@ jobs:
           }
           bad={name:value for name,value in dates.items() if value != target}
           if not target or bad:
-              raise SystemExit(f'pre-Rotation as-of mismatch: expected={target!r} actual={bad!r}')
+              raise SystemExit(f'pre-Rotation staged as-of mismatch: expected={target!r} actual={bad!r}')
           if tqqq.get('live_generation_status') != 'READY':
               raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
           if (tqqq.get('current30') or {}).get('status') != 'READY':
@@ -86,7 +108,7 @@ jobs:
           print(f'TARGET_ASOF={target}')
           print(f'DOWNLOAD_END={end}')
           PY
-          echo "Rotation prerequisites READY; TARGET_ASOF and DOWNLOAD_END are available to following steps"
+          echo "Rotation prerequisites READY on staging; TARGET_ASOF and DOWNLOAD_END prepared"
 
       - name: Install isolated Rotation dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
@@ -252,47 +274,50 @@ jobs:
               'asof':os.environ['TARGET_ASOF'],
               'v38_asof':(brief.get('input_alignment') or {}).get('v38_asof'),
               'generated_at':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
-              'source':'isolated production Theme56 workflow',
+              'source':'atomic staged production Theme56 workflow',
           }
           Path('/tmp/rotation-data/status.json').write_text(json.dumps(status,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
 
-      - name: Commit only sanitized production Rotation data
+      - name: Promote one atomic production snapshot to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3; do
-            git fetch --depth=1 origin main
-            current="$(git show origin/main:v38-live-state.json | python -c 'import json,sys; print(json.load(sys.stdin).get("asof") or "")')"
-            if [[ "$current" != "$TARGET_ASOF" ]]; then
-              echo "::error::V38 advanced during Rotation build: $current != $TARGET_ASOF"
-              exit 1
-            fi
-            current_sleeve="$(git show origin/main:v38-sleeve-state.json | python -c 'import json,sys; x=json.load(sys.stdin); print((x.get("asof") or "") if x.get("status")=="READY" else "NOT_READY")')"
-            if [[ "$current_sleeve" != "$TARGET_ASOF" ]]; then
-              echo "::error::Sleeve advanced/staled during Rotation build: $current_sleeve != $TARGET_ASOF"
-              exit 1
-            fi
-            git reset --hard origin/main
-            mkdir -p rotation/data
-            cp /tmp/rotation-data/rotation-theme56.json rotation/data/rotation-theme56.json
-            cp /tmp/rotation-data/status.json rotation/data/status.json
-            git add rotation/data/rotation-theme56.json rotation/data/status.json
-            if git diff --staged --quiet; then
-              echo "Production Rotation data already current"
-              exit 0
-            fi
-            git commit -m "Refresh isolated Rotation Theme56 live data"
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-            echo "::warning::Rotation persistence raced with main; retry $attempt/3"
-            sleep $((attempt * 2))
-          done
-          echo "Rotation production persistence failed after retries"
-          exit 1
+
+          git fetch --depth=1 origin main
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$PIPELINE_SOURCE_SHA" ]]; then
+            echo "::error::Pipeline staging advanced during Rotation build; reject stale promotion"
+            exit 1
+          fi
+          if [[ "$(git rev-parse origin/main)" != "$MAIN_SOURCE_SHA" ]]; then
+            echo "::error::Public main advanced during Rotation build; reject stale promotion"
+            exit 1
+          fi
+
+          promote_dir="$(mktemp -d)"
+          git archive "origin/$PIPELINE_BRANCH" $ATOMIC_PRODUCTION_FILES | tar -x -C "$promote_dir"
+
+          git reset --hard origin/main
+          cp -a "$promote_dir"/. .
+          mkdir -p rotation/data
+          cp /tmp/rotation-data/rotation-theme56.json rotation/data/rotation-theme56.json
+          cp /tmp/rotation-data/status.json rotation/data/status.json
+
+          python scripts/validate_atomic_publish.py \
+            --root . \
+            --output /tmp/atomic-publish-status.json
+          cat /tmp/atomic-publish-status.json
+
+          git add -- $ATOMIC_PRODUCTION_FILES rotation/data/rotation-theme56.json rotation/data/status.json
+          if git diff --staged --quiet; then
+            echo "Public main already matches the complete atomic snapshot"
+            exit 0
+          fi
+          git commit -m "Publish atomic V38 live snapshot $TARGET_ASOF"
+          git push origin HEAD:main
 
       - name: Upload Rotation diagnostics
         if: always()
@@ -304,5 +329,6 @@ jobs:
             leadership/research/rotation_theme56_etfcom_flow/
             leadership/research/rotation_theme56_fullstack/
             /tmp/rotation-public/
+            /tmp/atomic-publish-status.json
           if-no-files-found: warn
           retention-days: 7
