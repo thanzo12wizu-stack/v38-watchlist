@@ -12,6 +12,7 @@ on:
       - 'v38-normal-sleeve-seed.json'
       - 'tests/test_v38_sleeve_live.py'
       - 'tests/test_v38_sleeve_refresh.py'
+      - '.github/workflows/v38-sleeve-refresh.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -78,17 +79,33 @@ jobs:
           cp v38-sleeve-state.json /tmp/v38-sleeve-state-before.json
           cp tqqq-panic-state.json /tmp/tqqq-panic-state-before.json
 
-      - name: Rebuild Normal Stock and RSI Reset sleeves
+      - name: Rebuild Normal Stock and RSI Reset sleeves with retries
         env:
           V38_RESET_CACHE_DIR: .cache/v38-reset-prices
+        shell: bash
         run: |
-          python build_v38_sleeve_refresh.py \
-            --companion v38-live-state.json \
-            --state v38-sleeve-state.json \
-            --seed v38-normal-sleeve-seed.json \
-            --strict-history v38-strict-loo-history.json \
-            --tqqq-state tqqq-panic-state.json \
-            --out v38-sleeve-state.json
+          set -euo pipefail
+          refreshed=false
+          for attempt in 1 2 3 4; do
+            echo "Sleeve/RSI Reset refresh attempt ${attempt}/4"
+            if python build_v38_sleeve_refresh.py \
+              --companion v38-live-state.json \
+              --state v38-sleeve-state.json \
+              --seed v38-normal-sleeve-seed.json \
+              --strict-history v38-strict-loo-history.json \
+              --tqqq-state tqqq-panic-state.json \
+              --out v38-sleeve-state.json; then
+              refreshed=true
+              break
+            fi
+            if [[ "$attempt" -lt 4 ]]; then
+              sleep $((attempt * 10))
+            fi
+          done
+          if [[ "$refreshed" != true ]]; then
+            echo "::error::Sleeve/RSI Reset refresh failed after 4 attempts"
+            exit 1
+          fi
 
       - name: Rebuild same Reset input from validated cache
         env:
@@ -143,6 +160,8 @@ jobs:
           asof = live.get('asof')
           if not asof or sleeve.get('asof') != asof or tqqq.get('asof') != asof:
               raise SystemExit(f'asof mismatch: live={asof} sleeve={sleeve.get("asof")} tqqq={tqqq.get("asof")}')
+          if tqqq.get('live_generation_status') != 'READY' or tqqq.get('current30', {}).get('status') != 'READY':
+              raise SystemExit(f'TQQQ/CURRENT30 not READY before sleeve merge: {tqqq.get("live_generation_status")} / {tqqq.get("current30", {}).get("status")}')
           if sleeve.get('status') != 'READY':
               raise SystemExit(f'sleeve not READY: {sleeve.get("reason")}')
           if sleeve.get('normal_stock', {}).get('status') != 'READY':
@@ -181,7 +200,6 @@ jobs:
           PY
 
       - name: Commit refreshed audited live states
-        id: persist
         shell: bash
         run: |
           set -euo pipefail
@@ -190,7 +208,6 @@ jobs:
           git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json
           if git diff --cached --quiet; then
             echo "No sleeve state changes to commit"
-            echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "Refresh V38 live sleeves + Gross100 allocation"
@@ -200,44 +217,6 @@ jobs:
             exit 1
           fi
           git push origin HEAD:main
-          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Audit public privacy boundary
-        run: |
-          python scripts/privacy_audit.py --root . --output /tmp/privacy-audit-status.json
-          cat /tmp/privacy-audit-status.json
-
-      - name: Export public site
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/export_public_site.py \
-            --root . \
-            --output /tmp/v38-public-site \
-            --source-commit "${{ steps.persist.outputs.source_sha }}"
-
-      - name: Publish clean public mirror
-        continue-on-error: true
-        shell: bash
-        env:
-          PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
-          PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
-            echo "Public mirror not configured; skip"
-            exit 0
-          fi
-          target=/tmp/v38-pages-repository
-          git clone --depth 1 "https://x-access-token:${PUBLIC_TOKEN}@github.com/${PUBLIC_REPOSITORY}.git" "$target"
-          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
-          cp -a /tmp/v38-public-site/. "$target/"
-          cd "$target"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --staged --quiet; then
-            exit 0
-          fi
-          git commit -m "Publish V38 sleeves ${{ steps.persist.outputs.source_sha }}"
-          git push origin HEAD:main
+      - name: Hand off to Rotation
+        run: echo "Sleeve/RSI Reset READY; Rotation Theme56 live build is the next workflow stage"
