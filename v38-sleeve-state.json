@@ -404,13 +404,13 @@
       "history_ready_symbols": 5022,
       "history_coverage_ratio": 0.9663267269578603,
       "target_date": "2026-09-02",
-      "target_valid_symbols": 5012,
-      "target_coverage_ratio": 0.9644025399268809,
+      "target_valid_symbols": 5009,
+      "target_coverage_ratio": 0.963825283817587,
       "recent_median_coverage_ratio": 0.9657494708485664,
       "window_rows": 119,
       "source": "CACHE_PLUS_BATCH_RETRY",
       "cache_hit": false,
-      "failed_batches": 12,
+      "failed_batches": 11,
       "retry_rounds": 0
     }
   },
@@ -424,7 +424,7 @@
   },
   "refresh": {
     "status": "FRESH",
-    "attempted_at_utc": "2026-09-03T05:39:41Z",
+    "attempted_at_utc": "2026-09-03T06:32:41Z",
     "attempted_asof": "2026-09-02",
     "last_successful_asof": "2026-09-02",
     "preserved_previous_ready": false,
