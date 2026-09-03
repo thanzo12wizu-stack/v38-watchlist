@@ -1,0 +1,47 @@
+# Research-only audit. Does not modify main or dashboard outputs.
+name: Leader Reentry True Emerging Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/audit_leader_reentry_true_emerging.py
+      - .github/workflows/leader-reentry-true-emerging-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_leader_reentry_true_emerging.py
+          python -m py_compile leadership/research/audit_five_year_leader_capture.py
+          python -m py_compile leadership/research/audit_ordinary_stock_exit_trail.py
+      - name: Run leader reentry and true Emerging diagnostic
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_leader_reentry_true_emerging.py \
+            --root . \
+            --output leadership/research/leader_reentry_true_emerging \
+            --analysis-start 2020-01-02 \
+            --analysis-end 2026-09-02 \
+            --leader-start 2021-01-04 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leader-reentry-true-emerging
+          path: leadership/research/leader_reentry_true_emerging/
+          retention-days: 14
