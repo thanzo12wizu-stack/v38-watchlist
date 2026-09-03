@@ -18,6 +18,7 @@ on:
       - 'build_v38_sleeve_live.py'
       - 'build_v38_sleeve_refresh.py'
       - 'v38-normal-sleeve-seed.json'
+      - 'command-center-tradingview-links.js'
       - 'scripts/validate_atomic_publish.py'
       - 'tests/test_v38_rules.py'
       - 'tests/test_v38_companion.py'
@@ -136,6 +137,25 @@ jobs:
             echo "skipped=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Add TradingView ticker links
+        if: steps.build.outputs.skipped != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('command-center.html')
+          html = path.read_text(encoding='utf-8')
+          tag = '<script src="command-center-tradingview-links.js?v=1"></script>'
+          if tag not in html:
+              if '</body>' not in html:
+                  raise SystemExit('command-center.html has no </body> for TradingView link injection')
+              html = html.replace('</body>', tag + '\n</body>', 1)
+              path.write_text(html, encoding='utf-8')
+          print('TRADINGVIEW_LINKS_INJECTED')
+          PY
+
       - name: Validate Command Center generated files
         if: steps.build.outputs.skipped != 'true'
         shell: bash
@@ -170,6 +190,10 @@ jobs:
           share = Path('command-center_share.html').read_text(encoding='utf-8')
           if 'Command Center' not in main or f'分析基準日 {state_date}' not in main:
               raise SystemExit('Command Center HTML marker/date mismatch')
+          if 'command-center-tradingview-links.js' not in main:
+              raise SystemExit('TradingView ticker link script missing from Command Center HTML')
+          if not Path('command-center-tradingview-links.js').is_file():
+              raise SystemExit('TradingView ticker link script file missing')
           if state_date not in share:
               raise SystemExit('share HTML date mismatch')
 
