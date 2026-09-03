@@ -59,7 +59,7 @@ def test_sleeve_refresh_runs_after_v38_on_staging_and_fails_closed_before_commit
     assert "Rebuild audited companion with live Gross100 inputs" in workflow
     assert "LIVE ALLOCATION READY" in workflow
     assert "sleeve.get('status') != 'READY'" in workflow
-    assert "RSI30 monitor output missing" in workflow
+    assert "Reset OHLC coverage not proven" in workflow
     assert "git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json" in workflow
     assert "Pipeline staging advanced during sleeve refresh; reject stale output" in workflow
     assert 'git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"' in workflow
