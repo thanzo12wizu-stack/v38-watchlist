@@ -11,14 +11,34 @@ on:
       - 'equity.csv'
       - 'build_dashboard.py'
       - 'requirements.txt'
+      - 'v38_rules.py'
+      - 'build_v38_companion.py'
+      - 'build_v38_strict_loo_live.py'
+      - 'build_v38_tqqq_live.py'
+      - 'build_v38_sleeve_live.py'
+      - 'build_v38_sleeve_refresh.py'
+      - 'v38-normal-sleeve-seed.json'
+      - 'scripts/validate_atomic_publish.py'
+      - 'tests/test_v38_rules.py'
+      - 'tests/test_v38_companion.py'
+      - 'tests/test_v38_strict_loo_live.py'
+      - 'tests/test_v38_tqqq_live.py'
+      - 'tests/test_v38_sleeve_live.py'
+      - 'tests/test_v38_sleeve_refresh.py'
+      - 'tests/test_atomic_publish_gate.py'
+      - 'tests/test_atomic_pipeline_workflows.py'
       - '.github/workflows/dashboard.yml'
+      - '.github/workflows/v38-live.yml'
+      - '.github/workflows/v38-sleeve-refresh.yml'
+      - '.github/workflows/rotation-live.yml'
+      - '.github/workflows/publish-public-site.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: command-center-build-main
+  group: command-center-build-pipeline
   cancel-in-progress: false
 
 jobs:
@@ -27,6 +47,7 @@ jobs:
     timeout-minutes: 45
     env:
       TZ: Asia/Tokyo
+      PIPELINE_BRANCH: pipeline-live
       CORE_ARTIFACTS: >-
         command-center.html
         command-center_share.html
@@ -42,10 +63,12 @@ jobs:
         universe.csv
         options_targets.json
         commit_manifest.json
+        sector_snapshot.json
 
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: main
           fetch-depth: 1
 
       - name: Sync latest main before build
@@ -65,11 +88,13 @@ jobs:
 
       - name: Command Center preflight tests
         run: |
-          python -m py_compile build_dashboard.py
+          python -m py_compile build_dashboard.py scripts/validate_atomic_publish.py
           pytest -q \
             tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
-            tests/test_eps_acceleration.py
+            tests/test_eps_acceleration.py \
+            tests/test_atomic_publish_gate.py \
+            tests/test_atomic_pipeline_workflows.py
 
       - name: Build Command Center
         id: build
@@ -129,6 +154,7 @@ jobs:
               'trend_history.json': 100,
               'daily_log.csv': 100,
               'commit_manifest.json': 20,
+              'sector_snapshot.json': 100,
           }.items():
               path = Path(name)
               if not path.is_file() or path.stat().st_size < minimum:
@@ -182,7 +208,7 @@ jobs:
         if: steps.build.outputs.skipped == 'true'
         run: echo "As-of regression guard kept the newer Command Center session intact"
 
-      - name: Commit Command Center and caches
+      - name: Stage Command Center and caches off public main
         if: steps.build.outputs.skipped != 'true'
         shell: bash
         run: |
@@ -190,42 +216,46 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git fetch --depth=1 origin main
-          if [[ -n "${BUILD_SOURCE_SHA:-}" ]] && ! git diff --quiet "$BUILD_SOURCE_SHA" origin/main -- \
-            build_dashboard.py requirements.txt sar_state.txt equity.csv .github/workflows/dashboard.yml; then
-            echo "::warning::Command Center source changed during build; skip stale persistence"
-            exit 0
-          fi
-
-          staging="$(mktemp -d)"
+          generated="$(mktemp -d)"
           for file in $CORE_ARTIFACTS; do
             if [[ -f "$file" ]]; then
-              cp -a "$file" "$staging/$file"
+              mkdir -p "$generated/$(dirname "$file")"
+              cp -a "$file" "$generated/$file"
             fi
           done
 
-          pushed=false
-          for attempt in 1 2 3; do
-            git fetch --depth=1 origin main
-            git reset --hard FETCH_HEAD
-            for file in $CORE_ARTIFACTS; do
-              if [[ -f "$staging/$file" ]]; then
-                cp -a "$staging/$file" "$file"
-                git add -- "$file"
-              fi
-            done
-            if git diff --staged --quiet; then
-              pushed=true
-              break
-            fi
-            git commit -m "Daily Command Center rebuild + cache refresh"
-            if git push origin HEAD:main; then
-              pushed=true
-              break
-            fi
-            sleep $((attempt * 3))
-          done
-          if [[ "$pushed" != true ]]; then
-            raise=1
-            exit "$raise"
+          git fetch --depth=1 origin main
+          if [[ "$(git rev-parse origin/main)" != "$BUILD_SOURCE_SHA" ]]; then
+            echo "::error::Public main advanced during Command Center build; reject stale staging snapshot"
+            exit 1
           fi
+
+          old_stage=""
+          if git fetch --depth=1 origin "$PIPELINE_BRANCH"; then
+            old_stage="$(git rev-parse "origin/$PIPELINE_BRANCH")"
+          fi
+
+          git reset --hard origin/main
+          for file in $CORE_ARTIFACTS; do
+            if [[ -f "$generated/$file" ]]; then
+              mkdir -p "$(dirname "$file")"
+              cp -a "$generated/$file" "$file"
+              git add -- "$file"
+            fi
+          done
+
+          if ! git diff --staged --quiet; then
+            git commit -m "Stage Command Center live snapshot"
+          fi
+
+          if [[ -n "$old_stage" ]]; then
+            git push \
+              --force-with-lease="refs/heads/$PIPELINE_BRANCH:$old_stage" \
+              origin "HEAD:refs/heads/$PIPELINE_BRANCH"
+          else
+            git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"
+          fi
+
+      - name: Hand off staged Command Center snapshot
+        if: steps.build.outputs.skipped != 'true'
+        run: echo "Command Center staged atomically; V38 live build is the next pipeline stage"
