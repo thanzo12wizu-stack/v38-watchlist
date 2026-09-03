@@ -73,6 +73,31 @@ jobs:
             tests/test_v38_strict_loo_live.py \
             tests/test_v38_tqqq_live.py
 
+      - name: Prefetch dedicated TQQQ market inputs
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fetched=false
+          rm -f v38-tqqq-live-source-cache.json
+          for attempt in 1 2 3 4; do
+            echo "TQQQ source prefetch attempt ${attempt}/4"
+            if python build_v38_tqqq_live.py \
+              --prefetch-cache v38-tqqq-live-source-cache.json; then
+              fetched=true
+              break
+            fi
+            rm -f v38-tqqq-live-source-cache.json
+            if [[ "$attempt" -lt 4 ]]; then
+              sleep $((attempt * 15))
+            fi
+          done
+          if [[ "$fetched" != true ]]; then
+            echo "::error::TQQQ source prefetch failed after 4 attempts"
+            exit 1
+          fi
+
       - name: Prepare verified PIT taxonomy bootstrap
         shell: bash
         run: |
@@ -114,7 +139,7 @@ jobs:
             --history v38-strict-loo-history.json \
             --out v38-strict-loo-live.json
 
-      - name: Refresh CURRENT30 and Stage56 TQQQ with retries
+      - name: Build CURRENT30 and Stage56 TQQQ live state
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         shell: bash
@@ -122,15 +147,13 @@ jobs:
           set -euo pipefail
           ready=false
           for attempt in 1 2 3 4; do
-            echo "CURRENT30/TQQQ refresh attempt ${attempt}/4"
-            rm -f v38-tqqq-live-source-cache.json tqqq-panic-state.json
-            if python build_v38_tqqq_live.py \
-              --prefetch-cache v38-tqqq-live-source-cache.json; then
-              python build_v38_tqqq_live.py \
-                --state state.json \
-                --cache v38-tqqq-live-source-cache.json \
-                --out tqqq-panic-state.json
-              if python - <<'PY'
+            echo "CURRENT30/TQQQ decision attempt ${attempt}/4"
+            rm -f tqqq-panic-state.json
+            python build_v38_tqqq_live.py \
+              --state state.json \
+              --cache v38-tqqq-live-source-cache.json \
+              --out tqqq-panic-state.json
+            if python - <<'PY'
           import json
           from pathlib import Path
           state=json.loads(Path('state.json').read_text(encoding='utf-8'))
@@ -159,17 +182,20 @@ jobs:
               )
           print('CURRENT30_TQQQ_READY', asof, tqqq.get('underlying_target_pct'), tqqq.get('requested_target_pct'))
           PY
-              then
-                ready=true
-                break
-              fi
+            then
+              ready=true
+              break
             fi
             if [[ "$attempt" -lt 4 ]]; then
+              echo "::warning::CURRENT30/TQQQ not current; reacquiring all dedicated market inputs"
+              rm -f v38-tqqq-live-source-cache.json
+              python build_v38_tqqq_live.py \
+                --prefetch-cache v38-tqqq-live-source-cache.json || true
               sleep $((attempt * 15))
             fi
           done
           if [[ "$ready" != true ]]; then
-            echo "::error::CURRENT30/TQQQ failed to become READY after 4 fresh acquisition attempts"
+            echo "::error::CURRENT30/TQQQ failed to become READY after 4 fresh acquisition/decision attempts"
             exit 1
           fi
 
