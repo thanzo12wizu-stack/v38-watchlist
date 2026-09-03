@@ -1,4 +1,5 @@
 # Research-only audit. Does not modify main, production data, or dashboard outputs.
+# Trigger commit after workflow creation so the research push is observable by Actions.
 name: Major Leader Entry Delay Audit
 
 on:
