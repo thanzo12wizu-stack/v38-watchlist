@@ -1,0 +1,46 @@
+# Research-only audit. Does not modify main, Pages, or dashboard outputs.
+name: RS63 Gate Follow-up Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/run_rs63_gate_followup.py
+      - .github/workflows/rs63-gate-followup-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/run_rs63_gate_followup.py
+          python -m py_compile leadership/research/audit_rs_horizon_leader_capture.py
+      - name: Run RS63-only gate follow-up
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/run_rs63_gate_followup.py \
+            --root . \
+            --output leadership/research/rs63_gate_followup \
+            --analysis-start 2020-01-02 \
+            --analysis-end 2026-09-02 \
+            --leader-start 2021-01-04 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rs63-gate-followup
+          path: leadership/research/rs63_gate_followup/
+          retention-days: 14
