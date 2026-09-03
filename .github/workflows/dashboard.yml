@@ -38,7 +38,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: command-center-build-pipeline
+  group: command-center-build-pipeline-v2
   cancel-in-progress: true
 
 jobs:
