@@ -1,0 +1,171 @@
+name: Recover next-leader prior research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - .github/workflows/recover-next-leader-prior-research.yml
+
+permissions:
+  contents: read
+
+jobs:
+  pioneer-final-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - run: python -m py_compile leadership/research/validate_pioneer_rule_replication.py
+      - name: Reproduce final disjoint holdout
+        run: |
+          python leadership/research/validate_pioneer_rule_replication.py \
+            --root . \
+            --output leadership/research/recover_pioneer_final \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --primary-max-tickers 3000 \
+            --replication-max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recover-pioneer-final
+          path: leadership/research/recover_pioneer_final/
+          retention-days: 14
+
+  dynamic-followthrough:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tranche: t1
+            exclude_first: 0
+          - tranche: t2
+            exclude_first: 1500
+          - tranche: t3
+            exclude_first: 3000
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - run: python -m py_compile leadership/research/validate_dynamic_pioneer_followthrough.py leadership/research/dynamic_followthrough_fast_patch.py
+      - name: Reproduce dynamic pioneer follow-through
+        run: |
+          python leadership/research/dynamic_followthrough_fast_patch.py \
+            --root . \
+            --output leadership/research/recover_dynamic_${{ matrix.tranche }} \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --exclude-first ${{ matrix.exclude_first }} \
+            --max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recover-dynamic-${{ matrix.tranche }}
+          path: leadership/research/recover_dynamic_${{ matrix.tranche }}/
+          retention-days: 14
+
+  ignition-entry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - run: python -m py_compile leadership/research/validate_ignition_entry.py leadership/research/validate_ignition_entry_fast.py
+      - name: Reproduce ignition entry
+        run: |
+          python leadership/research/validate_ignition_entry_fast.py \
+            --root . \
+            --output leadership/research/recover_ignition_entry \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recover-ignition-entry
+          path: leadership/research/recover_ignition_entry/
+          retention-days: 14
+
+  hidden-ignition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - run: python -m py_compile leadership/research/validate_ignition_quality.py leadership/research/validate_hidden_ignition_breakout.py
+      - name: Rebuild ignition quality rows
+        run: |
+          python leadership/research/validate_ignition_quality.py \
+            --root . \
+            --output leadership/research/recover_ignition_quality \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75 \
+            --min-members 3
+      - name: Reproduce hidden ignition breakout
+        run: |
+          python leadership/research/validate_hidden_ignition_breakout.py \
+            --root . \
+            --quality-rows leadership/research/recover_ignition_quality/ignition_quality_rows.csv.gz \
+            --output leadership/research/recover_hidden_ignition \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 1500 \
+            --batch-size 75
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recover-hidden-ignition
+          path: |
+            leadership/research/recover_ignition_quality/
+            leadership/research/recover_hidden_ignition/
+          retention-days: 14
+
+  post-ignition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - run: python -m py_compile leadership/research/validate_post_ignition_leaders.py leadership/research/validate_post_ignition_leaders_v2.py
+      - name: Reproduce full-universe post-ignition leaders
+        run: |
+          python leadership/research/validate_post_ignition_leaders_v2.py \
+            --root . \
+            --output leadership/research/recover_post_ignition \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-06-30 \
+            --max-tickers 6000 \
+            --batch-size 75 \
+            --min-members 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recover-post-ignition
+          path: leadership/research/recover_post_ignition/
+          retention-days: 14
