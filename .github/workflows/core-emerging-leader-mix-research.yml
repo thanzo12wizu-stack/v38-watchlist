@@ -1,0 +1,51 @@
+# Research-only. Does not modify main, production rules, or dashboard outputs.
+name: Core Emerging Leader Mix Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/audit_core_emerging_leader_mix.py
+      - leadership/research/audit_five_year_leader_capture.py
+      - .github/workflows/core-emerging-leader-mix-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_core_emerging_leader_mix.py
+          python -m py_compile leadership/research/audit_five_year_leader_capture.py
+          python -m py_compile leadership/research/audit_ordinary_stock_market_mode_robustness.py
+          python -m py_compile leadership/research/audit_ordinary_stock_theme_leave_one_out.py
+          python -m py_compile leadership/research/audit_ordinary_stock_exit_trail.py
+          python -m py_compile leadership/research/audit_ordinary_stock_exit_overlays.py
+      - name: Run five-year Core plus Emerging leader audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_core_emerging_leader_mix.py \
+            --root . \
+            --output leadership/research/core_emerging_leader_mix \
+            --analysis-start 2020-01-02 \
+            --analysis-end 2026-09-02 \
+            --leader-start 2021-01-04 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-emerging-leader-mix
+          path: leadership/research/core_emerging_leader_mix/
+          retention-days: 14
