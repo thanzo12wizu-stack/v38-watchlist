@@ -1,0 +1,48 @@
+# Research-only. Does not modify main, production rules, or dashboard outputs.
+name: Core Emerging Hybrid Refine Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/audit_core_emerging_hybrid_refine.py
+      - leadership/research/audit_core_emerging_leader_mix.py
+      - .github/workflows/core-emerging-hybrid-refine-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_core_emerging_hybrid_refine.py
+          python -m py_compile leadership/research/audit_core_emerging_leader_mix.py
+          python -m py_compile leadership/research/audit_five_year_leader_capture.py
+      - name: Run Core plus Emerging refinement
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_core_emerging_hybrid_refine.py \
+            --root . \
+            --output leadership/research/core_emerging_hybrid_refine \
+            --analysis-start 2020-01-02 \
+            --analysis-end 2026-09-02 \
+            --leader-start 2021-01-04 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-emerging-hybrid-refine
+          path: leadership/research/core_emerging_hybrid_refine/
+          retention-days: 14
