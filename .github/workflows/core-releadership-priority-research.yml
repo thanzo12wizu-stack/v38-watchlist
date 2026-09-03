@@ -1,0 +1,48 @@
+# Research-only audit. Does not modify main, Pages, or dashboard outputs.
+name: Core Re-Leadership Priority Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/audit_core_releadership_priority.py
+      - .github/workflows/core-releadership-priority-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_core_releadership_priority.py
+          python -m py_compile leadership/research/audit_core_returning_leader_priority.py
+          python -m py_compile leadership/research/audit_core_emerging_hybrid_refine.py
+          python -m py_compile leadership/research/audit_core_emerging_leader_mix.py
+      - name: Run Core Re-Leadership priority audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_core_releadership_priority.py \
+            --root . \
+            --output leadership/research/core_releadership_priority \
+            --analysis-start 2020-01-02 \
+            --analysis-end 2026-09-02 \
+            --leader-start 2021-01-04 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-releadership-priority
+          path: leadership/research/core_releadership_priority/
+          retention-days: 14
