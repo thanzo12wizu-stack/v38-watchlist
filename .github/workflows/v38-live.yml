@@ -15,6 +15,7 @@ on:
       - 'tests/test_v38_companion.py'
       - 'tests/test_v38_strict_loo_live.py'
       - 'tests/test_v38_tqqq_live.py'
+      - '.github/workflows/v38-live.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -28,7 +29,7 @@ jobs:
   build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 50
     env:
       TZ: Asia/Tokyo
       V38_LIVE_ARTIFACTS: >-
@@ -72,14 +73,6 @@ jobs:
             tests/test_v38_strict_loo_live.py \
             tests/test_v38_tqqq_live.py
 
-      - name: Prefetch dedicated TQQQ market inputs
-        continue-on-error: true
-        env:
-          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
-        run: |
-          python build_v38_tqqq_live.py \
-            --prefetch-cache v38-tqqq-live-source-cache.json
-
       - name: Prepare verified PIT taxonomy bootstrap
         shell: bash
         run: |
@@ -121,12 +114,64 @@ jobs:
             --history v38-strict-loo-history.json \
             --out v38-strict-loo-live.json
 
-      - name: Build CURRENT30 and Stage56 TQQQ live state
+      - name: Refresh CURRENT30 and Stage56 TQQQ with retries
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        shell: bash
         run: |
-          python build_v38_tqqq_live.py \
-            --state state.json \
-            --cache v38-tqqq-live-source-cache.json \
-            --out tqqq-panic-state.json
+          set -euo pipefail
+          ready=false
+          for attempt in 1 2 3 4; do
+            echo "CURRENT30/TQQQ refresh attempt ${attempt}/4"
+            rm -f v38-tqqq-live-source-cache.json tqqq-panic-state.json
+            if python build_v38_tqqq_live.py \
+              --prefetch-cache v38-tqqq-live-source-cache.json; then
+              python build_v38_tqqq_live.py \
+                --state state.json \
+                --cache v38-tqqq-live-source-cache.json \
+                --out tqqq-panic-state.json
+              if python - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+          asof=str(state.get('date') or '')
+          ok=(
+              bool(asof)
+              and tqqq.get('schema') == 'v38-tqqq-panic-state-1'
+              and tqqq.get('asof') == asof
+              and tqqq.get('live_generation_status') == 'READY'
+              and (tqqq.get('current30') or {}).get('status') == 'READY'
+              and tqqq.get('underlying_target_pct') is not None
+              and tqqq.get('requested_target_pct') is not None
+          )
+          if not ok:
+              raise SystemExit(
+                  'CURRENT30_TQQQ_NOT_READY ' + json.dumps({
+                      'expected_asof': asof,
+                      'actual_asof': tqqq.get('asof'),
+                      'status': tqqq.get('live_generation_status'),
+                      'current30_status': (tqqq.get('current30') or {}).get('status'),
+                      'reason': tqqq.get('reason'),
+                      'underlying_target_pct': tqqq.get('underlying_target_pct'),
+                      'requested_target_pct': tqqq.get('requested_target_pct'),
+                  }, ensure_ascii=False, sort_keys=True)
+              )
+          print('CURRENT30_TQQQ_READY', asof, tqqq.get('underlying_target_pct'), tqqq.get('requested_target_pct'))
+          PY
+              then
+                ready=true
+                break
+              fi
+            fi
+            if [[ "$attempt" -lt 4 ]]; then
+              sleep $((attempt * 15))
+            fi
+          done
+          if [[ "$ready" != true ]]; then
+            echo "::error::CURRENT30/TQQQ failed to become READY after 4 fresh acquisition attempts"
+            exit 1
+          fi
 
       - name: Build provisional audited V38 companion
         run: |
@@ -156,9 +201,12 @@ jobs:
               raise SystemExit(f'strict LOO mismatch: {loo.get("asof")} != {asof}')
           if tqqq.get('schema') != 'v38-tqqq-panic-state-1' or tqqq.get('asof') != asof:
               raise SystemExit(f'TQQQ mismatch: {tqqq.get("asof")} != {asof}')
-          if tqqq.get('live_generation_status') == 'READY':
-              if tqqq.get('underlying_target_pct') is None or tqqq.get('requested_target_pct') is None:
-                  raise SystemExit('READY TQQQ targets missing')
+          if tqqq.get('live_generation_status') != 'READY':
+              raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
+          if tqqq.get('current30', {}).get('status') != 'READY':
+              raise SystemExit(f'CURRENT30 not READY: {tqqq.get("current30", {}).get("status")}')
+          if tqqq.get('underlying_target_pct') is None or tqqq.get('requested_target_pct') is None:
+              raise SystemExit('READY TQQQ targets missing')
           print('V38_LIVE_VALIDATE_PASS', asof)
           PY
 
