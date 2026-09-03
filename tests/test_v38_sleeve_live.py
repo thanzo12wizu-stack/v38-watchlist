@@ -47,18 +47,23 @@ def test_same_session_normal_seed_marks_exposure_and_keeps_stop_mode_no_entries(
     assert state["pending"]["entry_cap"] == 0
 
 
-def test_sleeve_refresh_uses_fresh_runner_after_dashboard_and_fails_closed_before_commit():
+def test_sleeve_refresh_runs_after_v38_on_staging_and_fails_closed_before_commit():
     workflow = Path(".github/workflows/v38-sleeve-refresh.yml").read_text(encoding="utf-8")
-    assert 'workflows: ["Dashboard daily build"]' in workflow
+    assert 'workflows: ["V38 live build"]' in workflow
     assert "github.event.workflow_run.conclusion == 'success'" in workflow
-    assert "Rebuild Normal Stock and RSI Reset sleeves on fresh runner" in workflow
+    assert "PIPELINE_BRANCH: pipeline-live" in workflow
+    assert "ref: pipeline-live" in workflow
+    assert "Sync staged V38 snapshot" in workflow
+    assert "Rebuild Normal Stock and RSI Reset sleeves with retries" in workflow
     assert "build_v38_sleeve_live.py" in workflow
     assert "Rebuild audited companion with live Gross100 inputs" in workflow
     assert "LIVE ALLOCATION READY" in workflow
     assert "sleeve.get('status') != 'READY'" in workflow
     assert "RSI30 monitor output missing" in workflow
     assert "git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json" in workflow
-    assert "main advanced during sleeve refresh" in workflow
+    assert "Pipeline staging advanced during sleeve refresh; reject stale output" in workflow
+    assert 'git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"' in workflow
+    assert "HEAD:main" not in workflow
 
 
 def test_sleeve_price_download_falls_back_after_empty_yfinance(monkeypatch):
