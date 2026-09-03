@@ -2,7 +2,7 @@ name: Rotation Theme56 live build
 
 on:
   workflow_run:
-    workflows: ["V38 live build"]
+    workflows: ["V38 sleeve live refresh"]
     types: [completed]
   push:
     branches: [main]
@@ -35,28 +35,58 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Load current production as-of
+      - name: Load fully READY production as-of
         shell: bash
         run: |
           set -euo pipefail
           git fetch --depth=1 origin main
           git show origin/main:state.json > /tmp/state.json
           git show origin/main:v38-live-state.json > /tmp/v38-live-state.json
+          git show origin/main:tqqq-panic-state.json > /tmp/tqqq-panic-state.json
+          git show origin/main:v38-sleeve-state.json > /tmp/v38-sleeve-state.json
           python - <<'PY' >> "$GITHUB_ENV"
           import json
           from datetime import date, timedelta
           from pathlib import Path
           state=json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
           live=json.loads(Path('/tmp/v38-live-state.json').read_text(encoding='utf-8'))
+          tqqq=json.loads(Path('/tmp/tqqq-panic-state.json').read_text(encoding='utf-8'))
+          sleeve=json.loads(Path('/tmp/v38-sleeve-state.json').read_text(encoding='utf-8'))
           target=str(state.get('date') or '')
-          v38=str(live.get('asof') or '')
-          if not target or target != v38:
-              raise SystemExit(f'production date mismatch: Command Center={target!r} V38={v38!r}')
+          dates={
+              'V38': str(live.get('asof') or ''),
+              'TQQQ': str(tqqq.get('asof') or ''),
+              'Sleeve': str(sleeve.get('asof') or ''),
+              'Normal Stock': str((sleeve.get('normal_stock') or {}).get('asof') or ''),
+              'RSI Reset': str((sleeve.get('rsi_reset') or {}).get('asof') or ''),
+          }
+          bad={name:value for name,value in dates.items() if value != target}
+          if not target or bad:
+              raise SystemExit(f'pre-Rotation as-of mismatch: expected={target!r} actual={bad!r}')
+          if tqqq.get('live_generation_status') != 'READY':
+              raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
+          if (tqqq.get('current30') or {}).get('status') != 'READY':
+              raise SystemExit(f'CURRENT30 not READY: {(tqqq.get("current30") or {}).get("status")}')
+          if tqqq.get('sleeve_live_status') != 'READY':
+              raise SystemExit(f'TQQQ sleeve merge not READY: {tqqq.get("sleeve_live_status")}')
+          if sleeve.get('status') != 'READY':
+              raise SystemExit(f'Sleeve not READY: {sleeve.get("status")}')
+          if (sleeve.get('normal_stock') or {}).get('status') != 'READY':
+              raise SystemExit('Normal Stock not READY')
+          reset=sleeve.get('rsi_reset') or {}
+          if reset.get('status') != 'READY':
+              raise SystemExit('RSI Reset not READY')
+          quality=reset.get('download_quality') or {}
+          if quality.get('coverage_ok') is not True:
+              raise SystemExit(f'RSI Reset coverage not READY: {quality}')
+          gross=live.get('gross100_allocation') or {}
+          if 'LIVE ALLOCATION READY' not in str(gross.get('status') or ''):
+              raise SystemExit(f'Gross100 not READY: {gross.get("status")}')
           end=(date.fromisoformat(target)+timedelta(days=1)).isoformat()
           print(f'TARGET_ASOF={target}')
           print(f'DOWNLOAD_END={end}')
           PY
-          echo "Rotation production date prepared; TARGET_ASOF and DOWNLOAD_END are available to following steps"
+          echo "Rotation prerequisites READY; TARGET_ASOF and DOWNLOAD_END are available to following steps"
 
       - name: Install isolated Rotation dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
@@ -238,6 +268,11 @@ jobs:
             current="$(git show origin/main:v38-live-state.json | python -c 'import json,sys; print(json.load(sys.stdin).get("asof") or "")')"
             if [[ "$current" != "$TARGET_ASOF" ]]; then
               echo "::error::V38 advanced during Rotation build: $current != $TARGET_ASOF"
+              exit 1
+            fi
+            current_sleeve="$(git show origin/main:v38-sleeve-state.json | python -c 'import json,sys; x=json.load(sys.stdin); print((x.get("asof") or "") if x.get("status")=="READY" else "NOT_READY")')"
+            if [[ "$current_sleeve" != "$TARGET_ASOF" ]]; then
+              echo "::error::Sleeve advanced/staled during Rotation build: $current_sleeve != $TARGET_ASOF"
               exit 1
             fi
             git reset --hard origin/main
