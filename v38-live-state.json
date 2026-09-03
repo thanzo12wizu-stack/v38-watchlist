@@ -4,7 +4,7 @@
   "asof": "2026-09-02",
   "market": {
     "nqsar": "Red",
-    "breadth50": 50.92,
+    "breadth50": 51.45,
     "breadth_valid": 3761,
     "breadth_universe": 3761,
     "coverage": 1.0,
@@ -39,13 +39,13 @@
     "required_route": "tqqq-panic-state.json",
     "asof_match_required": true,
     "vix_close": 15.199999809265137,
-    "qqq_sma50_atr_deviation": -0.169035614214801,
+    "qqq_sma50_atr_deviation": -0.16903561422222516,
     "qqq_drawdown10": -0.01646072770910323,
     "seed_age_sessions": 107,
     "rsi4h": 44.28943074266479,
     "prior_rsi4h": 42.90837893194615,
     "touch30_today": false,
-    "mc57": 46.9,
+    "mc57": 40.0,
     "active": false,
     "held_sessions": 0,
     "underlying_target_pct": 30.0,
@@ -76,7 +76,7 @@
     "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
     "history_min_sessions": 21,
     "normal_biotech_policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY (<10B cap AND <50M revenue; missing revenue fail-open)",
-    "full_eligible_count": 126,
+    "full_eligible_count": 125,
     "display_limit_applied_after_full_sort": 50,
     "selective_watch_status": "READY",
     "selective_watch_semantics": "STOP/DEFENSE REOPEN TO SELECTIVE: RS189 ONLY; TOP4",
@@ -97,10 +97,10 @@
       "ECO",
       "RNG",
       "CLMT",
+      "PBF",
       "FET",
       "LPG",
-      "NESR",
-      "DHT"
+      "NESR"
     ],
     "strict_loo_live_status": "READY",
     "strict_loo_source_status": "READY"
@@ -109,7 +109,7 @@
     {
       "ticker": "MRNA",
       "price": 150.81,
-      "daily_dollar_volume_m": 4928.5,
+      "daily_dollar_volume_m": 4928.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 181.4,
       "eligibility_checks": {
@@ -166,9 +166,9 @@
     {
       "ticker": "ARCT",
       "price": 16.74,
-      "daily_dollar_volume_m": 25.7,
+      "daily_dollar_volume_m": 26.2,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 118.1,
+      "close_vs_sma200_pct": 118.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -218,12 +218,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 24
+      "selective_watch_rank": 23
     },
     {
       "ticker": "INSW",
       "price": 101.19,
-      "daily_dollar_volume_m": 55.5,
+      "daily_dollar_volume_m": 55.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.2,
       "eligibility_checks": {
@@ -275,12 +275,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 39
+      "selective_watch_rank": 40
     },
     {
       "ticker": "NAT",
       "price": 7.07,
-      "daily_dollar_volume_m": 24.3,
+      "daily_dollar_volume_m": 23.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 40.4,
       "eligibility_checks": {
@@ -332,12 +332,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 43
+      "selective_watch_rank": 44
     },
     {
       "ticker": "FRO",
       "price": 45.42,
-      "daily_dollar_volume_m": 99.4,
+      "daily_dollar_volume_m": 100.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 41.2,
       "eligibility_checks": {
@@ -389,12 +389,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 37
+      "selective_watch_rank": 38
     },
     {
       "ticker": "ECO",
       "price": 69.02,
-      "daily_dollar_volume_m": 39.5,
+      "daily_dollar_volume_m": 38.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 57.8,
       "eligibility_checks": {
@@ -446,12 +446,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 36
+      "selective_watch_rank": 37
     },
     {
       "ticker": "RNG",
       "price": 72.58,
-      "daily_dollar_volume_m": 110.8,
+      "daily_dollar_volume_m": 110.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 85.0,
       "eligibility_checks": {
@@ -508,7 +508,7 @@
     {
       "ticker": "CLMT",
       "price": 53.07,
-      "daily_dollar_volume_m": 67.9,
+      "daily_dollar_volume_m": 68.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 69.6,
       "eligibility_checks": {
@@ -526,7 +526,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 99.0,
-      "rs63": 93.0,
+      "rs63": 94.0,
       "peer_theme": "石油精製",
       "theme_memberships": [
         "10. エネルギー（化石燃料）",
@@ -563,9 +563,66 @@
       "selective_watch_rank": 12
     },
     {
+      "ticker": "PBF",
+      "price": 75.48,
+      "daily_dollar_volume_m": 209.6,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 73.4,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Oil Refining/Marketing",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 98.0,
+      "rs63": 99.0,
+      "peer_theme": "石油精製",
+      "theme_memberships": [
+        "10. エネルギー（化石燃料）",
+        "石油精製"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "石油精製",
+      "peer_theme_score": 78.4902161713756,
+      "theme_rs63": 94.94949494949495,
+      "theme_acceleration": 57.91245791245792,
+      "theme_breadth21": 82.6086956521739,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 92.14706485141267,
+      "attack_watch_rank": 9,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Oil Refining/Marketing",
+        "market_cap": 8947160859.7461,
+        "revenue_ttm": 29332300000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 31
+    },
+    {
       "ticker": "FET",
       "price": 82.22,
-      "daily_dollar_volume_m": 15.7,
+      "daily_dollar_volume_m": 15.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 55.0,
       "eligibility_checks": {
@@ -603,7 +660,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 91.7654573908095,
-      "attack_watch_rank": 9,
+      "attack_watch_rank": 10,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -617,12 +674,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 26
+      "selective_watch_rank": 25
     },
     {
       "ticker": "LPG",
       "price": 52.13,
-      "daily_dollar_volume_m": 27.9,
+      "daily_dollar_volume_m": 27.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 50.4,
       "eligibility_checks": {
@@ -660,7 +717,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 91.7654573908095,
-      "attack_watch_rank": 10,
+      "attack_watch_rank": 11,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -674,12 +731,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 28
+      "selective_watch_rank": 27
     },
     {
       "ticker": "NESR",
       "price": 34.74,
-      "daily_dollar_volume_m": 75.6,
+      "daily_dollar_volume_m": 75.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 49.6,
       "eligibility_checks": {
@@ -717,7 +774,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 91.7654573908095,
-      "attack_watch_rank": 11,
+      "attack_watch_rank": 12,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -731,12 +788,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 30
+      "selective_watch_rank": 29
     },
     {
       "ticker": "DHT",
       "price": 20.07,
-      "daily_dollar_volume_m": 66.5,
+      "daily_dollar_volume_m": 65.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 31.9,
       "eligibility_checks": {
@@ -774,7 +831,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 91.74946362853339,
-      "attack_watch_rank": 12,
+      "attack_watch_rank": 13,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -788,69 +845,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 82
-    },
-    {
-      "ticker": "PBF",
-      "price": 75.48,
-      "daily_dollar_volume_m": 209.1,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 73.4,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Oil Refining/Marketing",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 97.0,
-      "rs63": 99.0,
-      "peer_theme": "石油精製",
-      "theme_memberships": [
-        "10. エネルギー（化石燃料）",
-        "石油精製"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "石油精製",
-      "peer_theme_score": 78.4902161713756,
-      "theme_rs63": 94.94949494949495,
-      "theme_acceleration": 57.91245791245792,
-      "theme_breadth21": 82.6086956521739,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 91.44706485141268,
-      "attack_watch_rank": 13,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Oil Refining/Marketing",
-        "market_cap": 8947160859.7461,
-        "revenue_ttm": 29332300000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 45
+      "selective_watch_rank": 81
     },
     {
       "ticker": "OII",
       "price": 51.63,
-      "daily_dollar_volume_m": 44.3,
+      "daily_dollar_volume_m": 43.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.4,
       "eligibility_checks": {
@@ -902,12 +902,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 44
+      "selective_watch_rank": 45
     },
     {
       "ticker": "NMM",
       "price": 91.39,
-      "daily_dollar_volume_m": 13.7,
+      "daily_dollar_volume_m": 13.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 35.5,
       "eligibility_checks": {
@@ -959,12 +959,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 89
+      "selective_watch_rank": 88
     },
     {
       "ticker": "DINO",
       "price": 106.06,
-      "daily_dollar_volume_m": 261.3,
+      "daily_dollar_volume_m": 261.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 64.8,
       "eligibility_checks": {
@@ -1016,12 +1016,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 48
+      "selective_watch_rank": 47
     },
     {
       "ticker": "MPC",
       "price": 387.0,
-      "daily_dollar_volume_m": 1014.4,
+      "daily_dollar_volume_m": 993.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 62.4,
       "eligibility_checks": {
@@ -1073,12 +1073,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 50
+      "selective_watch_rank": 49
     },
     {
       "ticker": "VLO",
       "price": 366.09,
-      "daily_dollar_volume_m": 881.5,
+      "daily_dollar_volume_m": 879.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 55.1,
       "eligibility_checks": {
@@ -1130,14 +1130,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 54
+      "selective_watch_rank": 53
     },
     {
       "ticker": "ETON",
       "price": 61.96,
-      "daily_dollar_volume_m": 42.8,
+      "daily_dollar_volume_m": 43.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 122.3,
+      "close_vs_sma200_pct": 122.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1249,7 +1249,7 @@
     {
       "ticker": "PLSE",
       "price": 52.68,
-      "daily_dollar_volume_m": 26.2,
+      "daily_dollar_volume_m": 26.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 122.4,
       "eligibility_checks": {
@@ -1363,9 +1363,9 @@
     {
       "ticker": "TWST",
       "price": 131.0,
-      "daily_dollar_volume_m": 219.0,
+      "daily_dollar_volume_m": 219.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 105.3,
+      "close_vs_sma200_pct": 105.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1420,7 +1420,7 @@
     {
       "ticker": "TNK",
       "price": 90.75,
-      "daily_dollar_volume_m": 44.5,
+      "daily_dollar_volume_m": 43.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 30.4,
       "eligibility_checks": {
@@ -1472,14 +1472,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 103
+      "selective_watch_rank": 102
     },
     {
       "ticker": "BFLY",
       "price": 7.6,
-      "daily_dollar_volume_m": 39.0,
+      "daily_dollar_volume_m": 38.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 48.9,
+      "close_vs_sma200_pct": 49.0,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1534,9 +1534,9 @@
     {
       "ticker": "DFTX",
       "price": 38.9,
-      "daily_dollar_volume_m": 85.9,
+      "daily_dollar_volume_m": 86.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 57.6,
+      "close_vs_sma200_pct": 57.7,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1591,9 +1591,9 @@
     {
       "ticker": "ORKA",
       "price": 91.63,
-      "daily_dollar_volume_m": 74.0,
+      "daily_dollar_volume_m": 73.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 59.1,
+      "close_vs_sma200_pct": 59.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1705,9 +1705,9 @@
     {
       "ticker": "CDNA",
       "price": 49.6,
-      "daily_dollar_volume_m": 53.7,
+      "daily_dollar_volume_m": 53.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 100.6,
+      "close_vs_sma200_pct": 100.7,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1762,7 +1762,7 @@
     {
       "ticker": "IMMX",
       "price": 13.96,
-      "daily_dollar_volume_m": 22.1,
+      "daily_dollar_volume_m": 21.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 65.9,
       "eligibility_checks": {
@@ -1878,7 +1878,7 @@
       "price": 5.04,
       "daily_dollar_volume_m": 13.1,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 136.2,
+      "close_vs_sma200_pct": 136.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -1894,7 +1894,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 99.0,
-      "rs63": 99.0,
+      "rs63": 100.0,
       "peer_theme": "6. バイオ・ヘルスケア",
       "theme_memberships": [
         "6. バイオ・ヘルスケア",
@@ -1933,7 +1933,7 @@
     {
       "ticker": "RVMD",
       "price": 209.23,
-      "daily_dollar_volume_m": 396.2,
+      "daily_dollar_volume_m": 382.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 57.7,
       "eligibility_checks": {
@@ -1990,9 +1990,9 @@
     {
       "ticker": "TXG",
       "price": 61.65,
-      "daily_dollar_volume_m": 195.3,
+      "daily_dollar_volume_m": 195.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 116.4,
+      "close_vs_sma200_pct": 116.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2047,7 +2047,7 @@
     {
       "ticker": "TDW",
       "price": 100.61,
-      "daily_dollar_volume_m": 60.8,
+      "daily_dollar_volume_m": 60.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 37.8,
       "eligibility_checks": {
@@ -2099,12 +2099,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 77
+      "selective_watch_rank": 76
     },
     {
       "ticker": "PSX",
       "price": 256.09,
-      "daily_dollar_volume_m": 726.5,
+      "daily_dollar_volume_m": 717.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 51.2,
       "eligibility_checks": {
@@ -2122,7 +2122,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 94.0,
-      "rs63": 92.0,
+      "rs63": 93.0,
       "peer_theme": "石油精製",
       "theme_memberships": [
         "10. エネルギー（化石燃料）",
@@ -2156,7 +2156,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 69
+      "selective_watch_rank": 68
     },
     {
       "ticker": "ACRS",
@@ -2218,9 +2218,9 @@
     {
       "ticker": "AMLX",
       "price": 34.49,
-      "daily_dollar_volume_m": 134.6,
+      "daily_dollar_volume_m": 133.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 106.9,
+      "close_vs_sma200_pct": 107.0,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2275,7 +2275,7 @@
     {
       "ticker": "SLN",
       "price": 14.79,
-      "daily_dollar_volume_m": 28.4,
+      "daily_dollar_volume_m": 28.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 94.6,
       "eligibility_checks": {
@@ -2332,7 +2332,7 @@
     {
       "ticker": "CMBT",
       "price": 18.75,
-      "daily_dollar_volume_m": 20.7,
+      "daily_dollar_volume_m": 20.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.4,
       "eligibility_checks": {
@@ -2384,12 +2384,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 66
+      "selective_watch_rank": 65
     },
     {
       "ticker": "DK",
       "price": 71.45,
-      "daily_dollar_volume_m": 113.8,
+      "daily_dollar_volume_m": 113.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 61.2,
       "eligibility_checks": {
@@ -2441,7 +2441,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 75
+      "selective_watch_rank": 74
     },
     {
       "ticker": "UGP",
@@ -2498,12 +2498,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 80
+      "selective_watch_rank": 79
     },
     {
       "ticker": "CGEM",
       "price": 22.33,
-      "daily_dollar_volume_m": 15.7,
+      "daily_dollar_volume_m": 15.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 54.1,
       "eligibility_checks": {
@@ -2555,14 +2555,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 35
+      "selective_watch_rank": 36
     },
     {
       "ticker": "MRVI",
       "price": 7.38,
-      "daily_dollar_volume_m": 34.5,
+      "daily_dollar_volume_m": 35.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 65.1,
+      "close_vs_sma200_pct": 65.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2612,14 +2612,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 41
+      "selective_watch_rank": 42
     },
     {
       "ticker": "HNGE",
       "price": 91.85,
-      "daily_dollar_volume_m": 159.0,
+      "daily_dollar_volume_m": 168.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 63.1,
+      "close_vs_sma200_pct": 63.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2669,14 +2669,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 58
+      "selective_watch_rank": 57
     },
     {
       "ticker": "PAYS",
       "price": 12.53,
       "daily_dollar_volume_m": 10.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 91.5,
+      "close_vs_sma200_pct": 91.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2726,14 +2726,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 31
+      "selective_watch_rank": 30
     },
     {
       "ticker": "BLZE",
       "price": 13.2,
-      "daily_dollar_volume_m": 39.1,
+      "daily_dollar_volume_m": 39.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 70.9,
+      "close_vs_sma200_pct": 71.0,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2788,9 +2788,9 @@
     {
       "ticker": "AUGO",
       "price": 84.6,
-      "daily_dollar_volume_m": 77.9,
+      "daily_dollar_volume_m": 82.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 26.5,
+      "close_vs_sma200_pct": 26.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2845,9 +2845,9 @@
     {
       "ticker": "QMCO",
       "price": 22.78,
-      "daily_dollar_volume_m": 55.7,
+      "daily_dollar_volume_m": 55.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 139.2,
+      "close_vs_sma200_pct": 139.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -2902,7 +2902,7 @@
     {
       "ticker": "LFST",
       "price": 12.89,
-      "daily_dollar_volume_m": 57.0,
+      "daily_dollar_volume_m": 57.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 57.8,
       "eligibility_checks": {
@@ -2920,7 +2920,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 96.0,
-      "rs63": 98.0,
+      "rs63": 99.0,
       "peer_theme": "6. バイオ・ヘルスケア",
       "theme_memberships": [
         "6. バイオ・ヘルスケア",
@@ -2954,14 +2954,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 49
+      "selective_watch_rank": 48
     },
     {
       "ticker": "NEOG",
       "price": 11.81,
-      "daily_dollar_volume_m": 19.0,
+      "daily_dollar_volume_m": 19.1,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 26.8,
+      "close_vs_sma200_pct": 26.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -3011,12 +3011,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 51
+      "selective_watch_rank": 50
     },
     {
       "ticker": "CAKE",
       "price": 108.57,
-      "daily_dollar_volume_m": 197.6,
+      "daily_dollar_volume_m": 194.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 60.7,
       "eligibility_checks": {
@@ -3068,12 +3068,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 25
+      "selective_watch_rank": 24
     },
     {
       "ticker": "HZO",
       "price": 52.11,
-      "daily_dollar_volume_m": 53.4,
+      "daily_dollar_volume_m": 54.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 64.5,
       "eligibility_checks": {
@@ -3125,71 +3125,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 27
-    },
-    {
-      "ticker": "APH",
-      "price": 160.08,
-      "daily_dollar_volume_m": 1708.5,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 119.9,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Electronic Components",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 98.0,
-      "rs63": 100.0,
-      "peer_theme": "8. デジタルインフラ・先進テック",
-      "theme_memberships": [
-        "8. デジタルインフラ・先進テック",
-        "電子部品"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "電子部品",
-      "peer_theme_score": 62.13534839489037,
-      "theme_rs63": 97.97979797979798,
-      "theme_acceleration": 49.494949494949495,
-      "theme_breadth21": 38.93129770992366,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 87.24060451846711,
-      "attack_watch_rank": 54,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Electronic Components",
-        "market_cap": 197375993103.98135,
-        "revenue_ttm": 23094700000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 23
+      "selective_watch_rank": 26
     },
     {
       "ticker": "MEI",
       "price": 18.1,
-      "daily_dollar_volume_m": 11.3,
+      "daily_dollar_volume_m": 11.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 79.2,
+      "close_vs_sma200_pct": 79.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -3225,7 +3168,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.24060451846711,
-      "attack_watch_rank": 55,
+      "attack_watch_rank": 54,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3239,12 +3182,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 29
+      "selective_watch_rank": 28
     },
     {
       "ticker": "WT",
       "price": 23.74,
-      "daily_dollar_volume_m": 48.8,
+      "daily_dollar_volume_m": 50.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 41.4,
       "eligibility_checks": {
@@ -3282,7 +3225,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.18377982725808,
-      "attack_watch_rank": 56,
+      "attack_watch_rank": 55,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3301,7 +3244,7 @@
     {
       "ticker": "PARR",
       "price": 80.16,
-      "daily_dollar_volume_m": 76.1,
+      "daily_dollar_volume_m": 76.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.1,
       "eligibility_checks": {
@@ -3339,7 +3282,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.11238471673254,
-      "attack_watch_rank": 57,
+      "attack_watch_rank": 56,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3353,12 +3296,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 90
+      "selective_watch_rank": 89
     },
     {
       "ticker": "MRX",
       "price": 71.67,
-      "daily_dollar_volume_m": 46.6,
+      "daily_dollar_volume_m": 47.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 43.9,
       "eligibility_checks": {
@@ -3396,7 +3339,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.06221033868091,
-      "attack_watch_rank": 58,
+      "attack_watch_rank": 57,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3410,12 +3353,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 42
+      "selective_watch_rank": 43
     },
     {
       "ticker": "APGE",
       "price": 135.07,
-      "daily_dollar_volume_m": 189.9,
+      "daily_dollar_volume_m": 188.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 46.9,
       "eligibility_checks": {
@@ -3453,7 +3396,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.05452235957651,
-      "attack_watch_rank": 59,
+      "attack_watch_rank": 58,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3467,12 +3410,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 55
+      "selective_watch_rank": 54
     },
     {
       "ticker": "ATAI",
       "price": 7.35,
-      "daily_dollar_volume_m": 46.4,
+      "daily_dollar_volume_m": 46.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 58.7,
       "eligibility_checks": {
@@ -3510,7 +3453,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.05452235957651,
-      "attack_watch_rank": 60,
+      "attack_watch_rank": 59,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3524,12 +3467,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 56
+      "selective_watch_rank": 55
     },
     {
       "ticker": "KNSA",
       "price": 79.89,
-      "daily_dollar_volume_m": 33.4,
+      "daily_dollar_volume_m": 33.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 52.2,
       "eligibility_checks": {
@@ -3567,7 +3510,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.05452235957651,
-      "attack_watch_rank": 61,
+      "attack_watch_rank": 60,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3581,12 +3524,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 59
+      "selective_watch_rank": 58
     },
     {
       "ticker": "OMER",
       "price": 18.86,
-      "daily_dollar_volume_m": 46.7,
+      "daily_dollar_volume_m": 46.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 56.7,
       "eligibility_checks": {
@@ -3624,7 +3567,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.05452235957651,
-      "attack_watch_rank": 62,
+      "attack_watch_rank": 61,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3638,12 +3581,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 60
+      "selective_watch_rank": 59
     },
     {
       "ticker": "PRAX",
       "price": 357.5,
-      "daily_dollar_volume_m": 153.6,
+      "daily_dollar_volume_m": 154.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 16.7,
       "eligibility_checks": {
@@ -3681,7 +3624,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.05452235957651,
-      "attack_watch_rank": 63,
+      "attack_watch_rank": 62,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3695,14 +3638,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 61
+      "selective_watch_rank": 60
     },
     {
       "ticker": "TVTX",
       "price": 67.23,
-      "daily_dollar_volume_m": 90.6,
+      "daily_dollar_volume_m": 90.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 59.6,
+      "close_vs_sma200_pct": 59.7,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -3738,7 +3681,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 87.05452235957651,
-      "attack_watch_rank": 64,
+      "attack_watch_rank": 63,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3752,12 +3695,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 64
+      "selective_watch_rank": 63
     },
     {
       "ticker": "CHEF",
       "price": 113.43,
-      "daily_dollar_volume_m": 75.0,
+      "daily_dollar_volume_m": 77.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 47.5,
       "eligibility_checks": {
@@ -3775,7 +3718,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 94.0,
-      "rs63": 94.0,
+      "rs63": 95.0,
       "peer_theme": "加工食品",
       "theme_memberships": [
         "9. 消費者・小売りテーマ",
@@ -3795,7 +3738,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.93636363636364,
-      "attack_watch_rank": 65,
+      "attack_watch_rank": 64,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3809,12 +3752,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 65
+      "selective_watch_rank": 64
     },
     {
       "ticker": "HNST",
       "price": 5.72,
-      "daily_dollar_volume_m": 20.5,
+      "daily_dollar_volume_m": 20.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 74.8,
       "eligibility_checks": {
@@ -3852,7 +3795,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.92356902356902,
-      "attack_watch_rank": 66,
+      "attack_watch_rank": 65,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3866,12 +3809,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 38
+      "selective_watch_rank": 39
     },
     {
       "ticker": "PUBM",
       "price": 17.38,
-      "daily_dollar_volume_m": 15.2,
+      "daily_dollar_volume_m": 15.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 68.2,
       "eligibility_checks": {
@@ -3909,7 +3852,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.81168831168831,
-      "attack_watch_rank": 67,
+      "attack_watch_rank": 66,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3923,14 +3866,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 62
+      "selective_watch_rank": 61
     },
     {
       "ticker": "ATEX",
       "price": 86.61,
-      "daily_dollar_volume_m": 29.9,
+      "daily_dollar_volume_m": 29.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 63.4,
+      "close_vs_sma200_pct": 63.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -3966,7 +3909,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.75925925925927,
-      "attack_watch_rank": 68,
+      "attack_watch_rank": 67,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3985,7 +3928,7 @@
     {
       "ticker": "PSNL",
       "price": 16.73,
-      "daily_dollar_volume_m": 64.5,
+      "daily_dollar_volume_m": 62.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 70.9,
       "eligibility_checks": {
@@ -4023,7 +3966,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.70639730639729,
-      "attack_watch_rank": 69,
+      "attack_watch_rank": 68,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4037,12 +3980,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 87
+      "selective_watch_rank": 86
     },
     {
       "ticker": "MAN",
       "price": 60.27,
-      "daily_dollar_volume_m": 51.5,
+      "daily_dollar_volume_m": 52.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 74.6,
       "eligibility_checks": {
@@ -4080,7 +4023,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.43872053872053,
-      "attack_watch_rank": 70,
+      "attack_watch_rank": 69,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4094,12 +4037,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 40
+      "selective_watch_rank": 41
     },
     {
       "ticker": "RELY",
       "price": 26.82,
-      "daily_dollar_volume_m": 96.3,
+      "daily_dollar_volume_m": 98.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.4,
       "eligibility_checks": {
@@ -4137,7 +4080,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.36221033868091,
-      "attack_watch_rank": 71,
+      "attack_watch_rank": 70,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4151,14 +4094,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 53
+      "selective_watch_rank": 52
     },
     {
       "ticker": "VIR",
       "price": 11.5,
       "daily_dollar_volume_m": 21.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 34.8,
+      "close_vs_sma200_pct": 34.9,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -4194,7 +4137,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.3545223595765,
-      "attack_watch_rank": 72,
+      "attack_watch_rank": 71,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4208,14 +4151,71 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 71
+      "selective_watch_rank": 70
+    },
+    {
+      "ticker": "HALO",
+      "price": 109.66,
+      "daily_dollar_volume_m": 259.3,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 48.6,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Biotechnology",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 88.0,
+      "rs63": 97.0,
+      "peer_theme": "中堅製薬",
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "中堅製薬"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "バイオ",
+      "peer_theme_score": 81.25701459034792,
+      "theme_rs63": 78.78787878787878,
+      "theme_acceleration": 98.31649831649831,
+      "theme_breadth21": 66.66666666666667,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 85.97710437710437,
+      "attack_watch_rank": 72,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Biotechnology",
+        "market_cap": 12446190941.62848,
+        "revenue_ttm": 1396611000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "MARKET_CAP_GTE_10B_PASS",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 111
     },
     {
       "ticker": "OKTA",
       "price": 163.15,
-      "daily_dollar_volume_m": 723.7,
+      "daily_dollar_volume_m": 626.3,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 61.5,
+      "close_vs_sma200_pct": 61.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -4265,7 +4265,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 52
+      "selective_watch_rank": 51
     },
     {
       "ticker": "ACHV",
@@ -4288,7 +4288,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 93.0,
-      "rs63": 98.0,
+      "rs63": 99.0,
       "peer_theme": "6. バイオ・ヘルスケア",
       "theme_memberships": [
         "6. バイオ・ヘルスケア",
@@ -4322,12 +4322,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 72
+      "selective_watch_rank": 71
     },
     {
       "ticker": "TGTX",
       "price": 56.9,
-      "daily_dollar_volume_m": 112.1,
+      "daily_dollar_volume_m": 111.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 46.8,
       "eligibility_checks": {
@@ -4379,12 +4379,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 79
+      "selective_watch_rank": 78
     },
     {
       "ticker": "PRCH",
       "price": 17.74,
-      "daily_dollar_volume_m": 19.4,
+      "daily_dollar_volume_m": 19.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 70.1,
       "eligibility_checks": {
@@ -4436,69 +4436,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 68
-    },
-    {
-      "ticker": "HALO",
-      "price": 109.66,
-      "daily_dollar_volume_m": 257.5,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 48.6,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Biotechnology",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 87.0,
-      "rs63": 97.0,
-      "peer_theme": "中堅製薬",
-      "theme_memberships": [
-        "6. バイオ・ヘルスケア",
-        "中堅製薬"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "バイオ",
-      "peer_theme_score": 81.25701459034792,
-      "theme_rs63": 78.78787878787878,
-      "theme_acceleration": 98.31649831649831,
-      "theme_breadth21": 66.66666666666667,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 85.27710437710438,
-      "attack_watch_rank": 77,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Biotechnology",
-        "market_cap": 12446190941.62848,
-        "revenue_ttm": 1396611000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "MARKET_CAP_GTE_10B_PASS",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 116
+      "selective_watch_rank": 67
     },
     {
       "ticker": "CBRL",
       "price": 54.8,
-      "daily_dollar_volume_m": 40.3,
+      "daily_dollar_volume_m": 40.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 50.4,
       "eligibility_checks": {
@@ -4536,7 +4479,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 85.25217731443662,
-      "attack_watch_rank": 78,
+      "attack_watch_rank": 77,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4550,12 +4493,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 57
+      "selective_watch_rank": 56
     },
     {
       "ticker": "VCTR",
       "price": 111.37,
-      "daily_dollar_volume_m": 70.1,
+      "daily_dollar_volume_m": 68.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 40.4,
       "eligibility_checks": {
@@ -4593,7 +4536,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 85.0914653784219,
-      "attack_watch_rank": 79,
+      "attack_watch_rank": 78,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4607,12 +4550,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 70
+      "selective_watch_rank": 69
     },
     {
       "ticker": "DCTH",
       "price": 16.58,
-      "daily_dollar_volume_m": 12.2,
+      "daily_dollar_volume_m": 12.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 48.2,
       "eligibility_checks": {
@@ -4650,7 +4593,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.9545223595765,
-      "attack_watch_rank": 80,
+      "attack_watch_rank": 79,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4664,12 +4607,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 81
+      "selective_watch_rank": 80
     },
     {
       "ticker": "ITGR",
       "price": 125.31,
-      "daily_dollar_volume_m": 107.8,
+      "daily_dollar_volume_m": 108.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 38.8,
       "eligibility_checks": {
@@ -4707,7 +4650,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.9545223595765,
-      "attack_watch_rank": 81,
+      "attack_watch_rank": 80,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4721,12 +4664,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 84
+      "selective_watch_rank": 83
     },
     {
       "ticker": "GH",
       "price": 163.06,
-      "daily_dollar_volume_m": 330.4,
+      "daily_dollar_volume_m": 332.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 39.7,
       "eligibility_checks": {
@@ -4764,7 +4707,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.92087542087542,
-      "attack_watch_rank": 82,
+      "attack_watch_rank": 81,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4778,12 +4721,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 125
+      "selective_watch_rank": 123
     },
     {
       "ticker": "SENEA",
       "price": 207.3,
-      "daily_dollar_volume_m": 19.2,
+      "daily_dollar_volume_m": 19.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 43.5,
       "eligibility_checks": {
@@ -4821,7 +4764,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.8026936026936,
-      "attack_watch_rank": 83,
+      "attack_watch_rank": 82,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4835,12 +4778,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 92
+      "selective_watch_rank": 91
     },
     {
       "ticker": "DAVE",
       "price": 372.85,
-      "daily_dollar_volume_m": 164.8,
+      "daily_dollar_volume_m": 166.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 44.5,
       "eligibility_checks": {
@@ -4878,7 +4821,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.66300594598466,
-      "attack_watch_rank": 84,
+      "attack_watch_rank": 83,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4892,12 +4835,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 74
+      "selective_watch_rank": 73
     },
     {
       "ticker": "ZD",
       "price": 56.69,
-      "daily_dollar_volume_m": 34.7,
+      "daily_dollar_volume_m": 34.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 32.5,
       "eligibility_checks": {
@@ -4935,7 +4878,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.42436072436072,
-      "attack_watch_rank": 85,
+      "attack_watch_rank": 84,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4949,12 +4892,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 94
+      "selective_watch_rank": 93
     },
     {
       "ticker": "PTGX",
       "price": 146.08,
-      "daily_dollar_volume_m": 72.3,
+      "daily_dollar_volume_m": 73.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 38.5,
       "eligibility_checks": {
@@ -4992,7 +4935,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.26655605392067,
-      "attack_watch_rank": 86,
+      "attack_watch_rank": 85,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5006,12 +4949,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 91
+      "selective_watch_rank": 90
     },
     {
       "ticker": "SMTI",
       "price": 34.8,
-      "daily_dollar_volume_m": 11.0,
+      "daily_dollar_volume_m": 11.3,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 50.7,
       "eligibility_checks": {
@@ -5049,7 +4992,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.2545223595765,
-      "attack_watch_rank": 87,
+      "attack_watch_rank": 86,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5063,12 +5006,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 93
+      "selective_watch_rank": 92
     },
     {
       "ticker": "TGT",
       "price": 163.36,
-      "daily_dollar_volume_m": 810.0,
+      "daily_dollar_volume_m": 801.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 36.1,
       "eligibility_checks": {
@@ -5106,7 +5049,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.83934034396165,
-      "attack_watch_rank": 88,
+      "attack_watch_rank": 87,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5120,12 +5063,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 78
+      "selective_watch_rank": 77
     },
     {
       "ticker": "BHVN",
       "price": 15.69,
-      "daily_dollar_volume_m": 49.5,
+      "daily_dollar_volume_m": 47.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 34.8,
       "eligibility_checks": {
@@ -5163,7 +5106,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.55452235957651,
-      "attack_watch_rank": 89,
+      "attack_watch_rank": 88,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5177,12 +5120,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 96
+      "selective_watch_rank": 95
     },
     {
       "ticker": "GKOS",
       "price": 179.53,
-      "daily_dollar_volume_m": 111.8,
+      "daily_dollar_volume_m": 112.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 39.8,
       "eligibility_checks": {
@@ -5220,7 +5163,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.55452235957651,
-      "attack_watch_rank": 90,
+      "attack_watch_rank": 89,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5234,12 +5177,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 100
+      "selective_watch_rank": 99
     },
     {
       "ticker": "ENVA",
       "price": 226.89,
-      "daily_dollar_volume_m": 63.5,
+      "daily_dollar_volume_m": 64.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 28.6,
       "eligibility_checks": {
@@ -5277,7 +5220,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.3383632240775,
-      "attack_watch_rank": 91,
+      "attack_watch_rank": 90,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5291,12 +5234,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 83
+      "selective_watch_rank": 82
     },
     {
       "ticker": "MGNI",
       "price": 24.88,
-      "daily_dollar_volume_m": 74.5,
+      "daily_dollar_volume_m": 74.0,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 57.0,
       "eligibility_checks": {
@@ -5314,7 +5257,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 90.0,
-      "rs63": 98.0,
+      "rs63": 99.0,
       "peer_theme": "広告技術",
       "theme_memberships": [
         "8. デジタルインフラ・先進テック",
@@ -5334,7 +5277,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.3116883116883,
-      "attack_watch_rank": 92,
+      "attack_watch_rank": 91,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5348,12 +5291,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 101
+      "selective_watch_rank": 100
     },
     {
       "ticker": "CGAU",
       "price": 22.26,
-      "daily_dollar_volume_m": 35.2,
+      "daily_dollar_volume_m": 36.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 29.3,
       "eligibility_checks": {
@@ -5391,7 +5334,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.30784030784031,
-      "attack_watch_rank": 93,
+      "attack_watch_rank": 92,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5405,7 +5348,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 97
+      "selective_watch_rank": 96
     },
     {
       "ticker": "OSCR",
@@ -5448,7 +5391,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.24814814814815,
-      "attack_watch_rank": 94,
+      "attack_watch_rank": 93,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5462,14 +5405,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 76
+      "selective_watch_rank": 75
     },
     {
       "ticker": "SSRM",
       "price": 37.75,
-      "daily_dollar_volume_m": 102.7,
+      "daily_dollar_volume_m": 103.6,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 35.1,
+      "close_vs_sma200_pct": 35.2,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -5505,7 +5448,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.2068302068302,
-      "attack_watch_rank": 95,
+      "attack_watch_rank": 94,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5519,12 +5462,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 102
+      "selective_watch_rank": 101
     },
     {
       "ticker": "HTFL",
       "price": 50.0,
-      "daily_dollar_volume_m": 114.5,
+      "daily_dollar_volume_m": 114.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 68.3,
       "eligibility_checks": {
@@ -5562,7 +5505,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.18215488215488,
-      "attack_watch_rank": 96,
+      "attack_watch_rank": 95,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5576,12 +5519,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 106
+      "selective_watch_rank": 105
     },
     {
       "ticker": "SN",
       "price": 175.25,
-      "daily_dollar_volume_m": 287.7,
+      "daily_dollar_volume_m": 284.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 37.7,
       "eligibility_checks": {
@@ -5619,7 +5562,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.15217731443661,
-      "attack_watch_rank": 97,
+      "attack_watch_rank": 96,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5633,12 +5576,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 88
+      "selective_watch_rank": 87
     },
     {
       "ticker": "NSIT",
       "price": 152.06,
-      "daily_dollar_volume_m": 49.3,
+      "daily_dollar_volume_m": 49.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 56.9,
       "eligibility_checks": {
@@ -5676,7 +5619,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.13934034396163,
-      "attack_watch_rank": 98,
+      "attack_watch_rank": 97,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5690,12 +5633,66 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 86
+      "selective_watch_rank": 85
+    },
+    {
+      "ticker": "AYA",
+      "price": 28.35,
+      "daily_dollar_volume_m": 30.5,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 56.6,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Precious Metals",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 97.0,
+      "rs63": 94.0,
+      "peer_theme": null,
+      "theme_memberships": [],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "貴金属",
+      "peer_theme_score": null,
+      "theme_rs63": null,
+      "theme_acceleration": null,
+      "theme_breadth21": null,
+      "peer_only_status": "LOO_READY_NO_VALID_THEME",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 82.89999999999999,
+      "attack_watch_rank": 98,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Precious Metals",
+        "market_cap": 4083425697.2805343,
+        "revenue_ttm": 205639903.36845577,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 35
     },
     {
       "ticker": "CRL",
       "price": 291.76,
-      "daily_dollar_volume_m": 272.7,
+      "daily_dollar_volume_m": 269.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 46.7,
       "eligibility_checks": {
@@ -5747,14 +5744,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 104
+      "selective_watch_rank": 103
     },
     {
       "ticker": "STGW",
       "price": 8.81,
-      "daily_dollar_volume_m": 11.1,
+      "daily_dollar_volume_m": 10.8,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 36.0,
+      "close_vs_sma200_pct": 36.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -5804,68 +5801,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 109
-    },
-    {
-      "ticker": "AYA",
-      "price": 28.35,
-      "daily_dollar_volume_m": 30.4,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 56.5,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Precious Metals",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 96.0,
-      "rs63": 94.0,
-      "peer_theme": null,
-      "theme_memberships": [],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "貴金属",
-      "peer_theme_score": null,
-      "theme_rs63": null,
-      "theme_acceleration": null,
-      "theme_breadth21": null,
-      "peer_only_status": "LOO_READY_NO_VALID_THEME",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 82.19999999999999,
-      "attack_watch_rank": 101,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Precious Metals",
-        "market_cap": 4083425697.2805343,
-        "revenue_ttm": 205639903.36845577,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 47
+      "selective_watch_rank": 108
     },
     {
       "ticker": "SGMT",
       "price": 10.99,
-      "daily_dollar_volume_m": 13.8,
+      "daily_dollar_volume_m": 13.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 61.6,
+      "close_vs_sma200_pct": 61.7,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -5901,7 +5844,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 82.1545223595765,
-      "attack_watch_rank": 102,
+      "attack_watch_rank": 101,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5920,9 +5863,9 @@
     {
       "ticker": "XNCR",
       "price": 26.9,
-      "daily_dollar_volume_m": 36.8,
+      "daily_dollar_volume_m": 37.5,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 78.8,
+      "close_vs_sma200_pct": 79.0,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -5958,7 +5901,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 82.1545223595765,
-      "attack_watch_rank": 103,
+      "attack_watch_rank": 102,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5977,9 +5920,9 @@
     {
       "ticker": "RHI",
       "price": 42.9,
-      "daily_dollar_volume_m": 81.7,
+      "daily_dollar_volume_m": 81.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 47.2,
+      "close_vs_sma200_pct": 47.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6015,7 +5958,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.94983164983165,
-      "attack_watch_rank": 104,
+      "attack_watch_rank": 103,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6072,7 +6015,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.66026936026935,
-      "attack_watch_rank": 105,
+      "attack_watch_rank": 104,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6086,14 +6029,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 105
+      "selective_watch_rank": 104
     },
     {
       "ticker": "TRLV",
       "price": 11.69,
-      "daily_dollar_volume_m": 13.5,
+      "daily_dollar_volume_m": 13.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 45.8,
+      "close_vs_sma200_pct": 45.7,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6126,7 +6069,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.5,
-      "attack_watch_rank": 106,
+      "attack_watch_rank": 105,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6140,12 +6083,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 63
+      "selective_watch_rank": 62
     },
     {
       "ticker": "NUTX",
       "price": 192.0,
-      "daily_dollar_volume_m": 33.2,
+      "daily_dollar_volume_m": 33.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 36.9,
       "eligibility_checks": {
@@ -6183,7 +6126,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.45452235957652,
-      "attack_watch_rank": 107,
+      "attack_watch_rank": 106,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6197,12 +6140,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 119
+      "selective_watch_rank": 118
     },
     {
       "ticker": "VREX",
       "price": 18.47,
-      "daily_dollar_volume_m": 28.7,
+      "daily_dollar_volume_m": 28.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 50.7,
       "eligibility_checks": {
@@ -6240,7 +6183,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.45452235957652,
-      "attack_watch_rank": 108,
+      "attack_watch_rank": 107,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6254,71 +6197,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 120
-    },
-    {
-      "ticker": "ROKU",
-      "price": 157.7,
-      "daily_dollar_volume_m": 352.3,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 34.3,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Packaged Software",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 89.0,
-      "rs63": 87.0,
-      "peer_theme": "ストリーミング",
-      "theme_memberships": [
-        "9. 消費者・小売りテーマ",
-        "ストリーミング"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "パッケージソフト",
-      "peer_theme_score": 63.74859708193042,
-      "theme_rs63": 40.4040404040404,
-      "theme_acceleration": 84.17508417508418,
-      "theme_breadth21": 66.66666666666667,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 81.42457912457913,
-      "attack_watch_rank": 109,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Packaged Software",
-        "market_cap": 23405670962.555134,
-        "revenue_ttm": 4737251000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 108
+      "selective_watch_rank": 119
     },
     {
       "ticker": "MYE",
       "price": 30.85,
       "daily_dollar_volume_m": 10.4,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 29.3,
+      "close_vs_sma200_pct": 29.4,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6354,7 +6240,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.06502422599982,
-      "attack_watch_rank": 110,
+      "attack_watch_rank": 108,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6368,14 +6254,71 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 85
+      "selective_watch_rank": 84
+    },
+    {
+      "ticker": "NWL",
+      "price": 5.98,
+      "daily_dollar_volume_m": 40.8,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 38.1,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Industrial Machinery",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 89.0,
+      "rs63": 99.0,
+      "peer_theme": "9. 消費者・小売りテーマ",
+      "theme_memberships": [
+        "9. 消費者・小売りテーマ",
+        "生活必需品大手"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "産業機械",
+      "peer_theme_score": 62.46446781320551,
+      "theme_rs63": 92.92929292929293,
+      "theme_acceleration": 59.93265993265994,
+      "theme_breadth21": 34.53145057766367,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 81.03934034396164,
+      "attack_watch_rank": 109,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Industrial Machinery",
+        "market_cap": 2546881987.919192,
+        "revenue_ttm": 7204000000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 106
     },
     {
       "ticker": "URGN",
       "price": 44.42,
-      "daily_dollar_volume_m": 40.0,
+      "daily_dollar_volume_m": 40.1,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 58.2,
+      "close_vs_sma200_pct": 58.3,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6411,7 +6354,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 80.76655605392067,
-      "attack_watch_rank": 111,
+      "attack_watch_rank": 110,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6425,14 +6368,71 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 121
+      "selective_watch_rank": 120
+    },
+    {
+      "ticker": "ROKU",
+      "price": 157.7,
+      "daily_dollar_volume_m": 346.2,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 34.3,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Packaged Software",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 88.0,
+      "rs63": 87.0,
+      "peer_theme": "ストリーミング",
+      "theme_memberships": [
+        "9. 消費者・小売りテーマ",
+        "ストリーミング"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "パッケージソフト",
+      "peer_theme_score": 63.74859708193042,
+      "theme_rs63": 40.4040404040404,
+      "theme_acceleration": 84.17508417508418,
+      "theme_breadth21": 66.66666666666667,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 80.72457912457912,
+      "attack_watch_rank": 111,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Packaged Software",
+        "market_cap": 23405670962.555134,
+        "revenue_ttm": 4737251000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 112
     },
     {
       "ticker": "BJRI",
       "price": 60.71,
-      "daily_dollar_volume_m": 27.8,
+      "daily_dollar_volume_m": 27.7,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 30.2,
+      "close_vs_sma200_pct": 30.1,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6482,69 +6482,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 111
-    },
-    {
-      "ticker": "NWL",
-      "price": 5.98,
-      "daily_dollar_volume_m": 40.9,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 36.6,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Industrial Machinery",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 88.0,
-      "rs63": 99.0,
-      "peer_theme": "9. 消費者・小売りテーマ",
-      "theme_memberships": [
-        "9. 消費者・小売りテーマ",
-        "生活必需品大手"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "産業機械",
-      "peer_theme_score": 62.46446781320551,
-      "theme_rs63": 92.92929292929293,
-      "theme_acceleration": 59.93265993265994,
-      "theme_breadth21": 34.53145057766367,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 80.33934034396165,
-      "attack_watch_rank": 113,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Industrial Machinery",
-        "market_cap": 2546881987.919192,
-        "revenue_ttm": 7204000000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 112
+      "selective_watch_rank": 110
     },
     {
       "ticker": "NRIX",
       "price": 25.82,
-      "daily_dollar_volume_m": 28.8,
+      "daily_dollar_volume_m": 28.6,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 37.5,
       "eligibility_checks": {
@@ -6582,7 +6525,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 80.06655605392066,
-      "attack_watch_rank": 114,
+      "attack_watch_rank": 113,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6596,14 +6539,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 126
+      "selective_watch_rank": 124
     },
     {
       "ticker": "CON",
       "price": 34.03,
-      "daily_dollar_volume_m": 31.0,
+      "daily_dollar_volume_m": 30.9,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 36.4,
+      "close_vs_sma200_pct": 36.5,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6639,7 +6582,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.70033670033669,
-      "attack_watch_rank": 115,
+      "attack_watch_rank": 114,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6653,12 +6596,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 98
+      "selective_watch_rank": 97
     },
     {
       "ticker": "LTH",
       "price": 43.49,
-      "daily_dollar_volume_m": 125.3,
+      "daily_dollar_volume_m": 124.8,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 34.9,
       "eligibility_checks": {
@@ -6676,7 +6619,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 87.0,
-      "rs63": 91.0,
+      "rs63": 92.0,
       "peer_theme": "9. 消費者・小売りテーマ",
       "theme_memberships": [
         "9. 消費者・小売りテーマ",
@@ -6696,7 +6639,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.65217731443661,
-      "attack_watch_rank": 116,
+      "attack_watch_rank": 115,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6710,14 +6653,14 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 118
+      "selective_watch_rank": 117
     },
     {
       "ticker": "KMX",
-      "price": 61.0,
-      "daily_dollar_volume_m": 103.2,
+      "price": 61.43,
+      "daily_dollar_volume_m": 103.0,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 32.7,
+      "close_vs_sma200_pct": 33.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -6753,7 +6696,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.63934034396165,
-      "attack_watch_rank": 117,
+      "attack_watch_rank": 116,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6767,12 +6710,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 117
+      "selective_watch_rank": 116
     },
     {
       "ticker": "CLBK",
       "price": 11.65,
-      "daily_dollar_volume_m": 51.8,
+      "daily_dollar_volume_m": 51.5,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 33.7,
       "eligibility_checks": {
@@ -6810,7 +6753,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.24013383385017,
-      "attack_watch_rank": 118,
+      "attack_watch_rank": 117,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6829,7 +6772,7 @@
     {
       "ticker": "CTRN",
       "price": 67.5,
-      "daily_dollar_volume_m": 11.1,
+      "daily_dollar_volume_m": 11.2,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 33.2,
       "eligibility_checks": {
@@ -6867,7 +6810,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 78.25217731443661,
-      "attack_watch_rank": 119,
+      "attack_watch_rank": 118,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6881,12 +6824,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 123
+      "selective_watch_rank": 122
     },
     {
       "ticker": "ABNB",
       "price": 183.26,
-      "daily_dollar_volume_m": 1065.0,
+      "daily_dollar_volume_m": 1065.4,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 32.1,
       "eligibility_checks": {
@@ -6924,7 +6867,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 78.23934034396164,
-      "attack_watch_rank": 120,
+      "attack_watch_rank": 119,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6938,64 +6881,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 122
-    },
-    {
-      "ticker": "EAT",
-      "price": 231.0,
-      "daily_dollar_volume_m": 237.1,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 42.0,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Restaurants",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 85.0,
-      "rs63": 98.0,
-      "peer_theme": "9. 消費者・小売りテーマ",
-      "theme_memberships": [
-        "9. 消費者・小売りテーマ",
-        "レストラン"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "レストラン",
-      "peer_theme_score": 62.46446781320551,
-      "theme_rs63": 92.92929292929293,
-      "theme_acceleration": 59.93265993265994,
-      "theme_breadth21": 34.53145057766367,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 78.23934034396164,
-      "attack_watch_rank": 121,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Restaurants",
-        "market_cap": 9647717325.993675,
-        "revenue_ttm": 5807400000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 124
+      "selective_watch_rank": 121
     },
     {
       "ticker": "FIVN",
@@ -7038,7 +6924,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 77.21850079744816,
-      "attack_watch_rank": 122,
+      "attack_watch_rank": 120,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7052,12 +6938,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 99
+      "selective_watch_rank": 98
     },
     {
       "ticker": "GEO",
       "price": 30.56,
-      "daily_dollar_volume_m": 67.5,
+      "daily_dollar_volume_m": 69.7,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.8,
       "eligibility_checks": {
@@ -7095,7 +6981,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 76.9870585554796,
-      "attack_watch_rank": 123,
+      "attack_watch_rank": 121,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7109,12 +6995,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 67
+      "selective_watch_rank": 66
     },
     {
       "ticker": "CXW",
       "price": 32.61,
-      "daily_dollar_volume_m": 54.4,
+      "daily_dollar_volume_m": 56.1,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.5,
       "eligibility_checks": {
@@ -7132,7 +7018,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 93.0,
-      "rs63": 95.0,
+      "rs63": 96.0,
       "peer_theme": "13. 産業・資本財・輸送",
       "theme_memberships": [
         "13. 産業・資本財・輸送",
@@ -7152,7 +7038,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 76.2870585554796,
-      "attack_watch_rank": 124,
+      "attack_watch_rank": 122,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7166,12 +7052,69 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 73
+      "selective_watch_rank": 72
+    },
+    {
+      "ticker": "NSP",
+      "price": 50.52,
+      "daily_dollar_volume_m": 17.8,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 40.9,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Miscellaneous Commercial Services",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 85.0,
+      "rs63": 96.0,
+      "peer_theme": "アウトソーシング",
+      "theme_memberships": [
+        "13. 産業・資本財・輸送",
+        "アウトソーシング"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "商業サービス",
+      "peer_theme_score": 50.0,
+      "theme_rs63": 72.39057239057239,
+      "theme_acceleration": 27.609427609427613,
+      "theme_breadth21": 50.0,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 74.5,
+      "attack_watch_rank": 123,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Miscellaneous Commercial Services",
+        "market_cap": 1929625124.9276266,
+        "revenue_ttm": 6812000000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 125
     },
     {
       "ticker": "ZETA",
       "price": 30.44,
-      "daily_dollar_volume_m": 248.0,
+      "daily_dollar_volume_m": 246.9,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 52.6,
       "eligibility_checks": {
@@ -7209,7 +7152,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 73.52683982683982,
-      "attack_watch_rank": 125,
+      "attack_watch_rank": 124,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7223,12 +7166,12 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 95
+      "selective_watch_rank": 94
     },
     {
       "ticker": "WNC",
       "price": 14.22,
-      "daily_dollar_volume_m": 10.5,
+      "daily_dollar_volume_m": 10.4,
       "sma50_gt_sma200": true,
       "close_vs_sma200_pct": 42.5,
       "eligibility_checks": {
@@ -7266,7 +7209,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 73.461995898838,
-      "attack_watch_rank": 126,
+      "attack_watch_rank": 125,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7280,11 +7223,11 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 110
+      "selective_watch_rank": 109
     }
   ],
   "panic_reset": {
-    "status": "DATA REQUIRED",
+    "status": "READY / LIVE",
     "separate_sleeve": true,
     "strategy": "RS63_TOP3_RISE30_SIGTOP3",
     "slot_pct": 2.9,
@@ -7292,29 +7235,409 @@
     "max_theme_positions": 2,
     "hold_sessions": 20,
     "headline_620_723_pf471": "NOT REPRODUCED / NOT USED",
-    "desired_pct": null,
-    "position_count": null,
+    "desired_pct": 0.0,
+    "position_count": 0,
     "positions": [],
-    "monitor": [],
-    "monitor_summary": {},
-    "monitor_note": null,
-    "rebuild_policy": null,
-    "download_quality": null,
+    "monitor": [
+      {
+        "symbol": "RCL",
+        "theme": "クルーズ",
+        "status": "RSI30_TOUCHED_WAIT_RISE",
+        "monitor_band": "RSI30_OR_BELOW",
+        "current_rsi14": 25.812727574150955,
+        "distance_to_30": 0.0,
+        "day0_date": "2026-08-13",
+        "activation_age_sessions": 14,
+        "signal_window_days_left": 6,
+        "theme_rs_pct_day0": 80.8080808080808,
+        "theme_rank_improvement20_day0": 32.99663299663299,
+        "theme_breadth21_day0": 100.0,
+        "day0_rs63_rank": 3,
+        "touched_rsi30": true,
+        "touch_date": "2026-08-31",
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "VIK",
+        "theme": "クルーズ",
+        "status": "RSI30_TOUCHED_WAIT_RISE",
+        "monitor_band": "WITHIN_5PT",
+        "current_rsi14": 30.899426293610915,
+        "distance_to_30": 0.8994262936109152,
+        "day0_date": "2026-08-13",
+        "activation_age_sessions": 14,
+        "signal_window_days_left": 6,
+        "theme_rs_pct_day0": 80.8080808080808,
+        "theme_rank_improvement20_day0": 32.99663299663299,
+        "theme_breadth21_day0": 100.0,
+        "day0_rs63_rank": 1,
+        "touched_rsi30": true,
+        "touch_date": "2026-09-01",
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "DBGI",
+        "theme": "アパレル小売",
+        "status": "APPROACHING_RSI30",
+        "monitor_band": "WITHIN_5PT",
+        "current_rsi14": 33.20576986011619,
+        "distance_to_30": 3.2057698601161917,
+        "day0_date": "2026-08-10",
+        "activation_age_sessions": 17,
+        "signal_window_days_left": 3,
+        "theme_rs_pct_day0": 95.28619528619528,
+        "theme_rank_improvement20_day0": 62.962962962962955,
+        "theme_breadth21_day0": 80.76923076923077,
+        "day0_rs63_rank": 1,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "PRPL",
+        "theme": "家具",
+        "status": "APPROACHING_RSI30",
+        "monitor_band": "WITHIN_5PT",
+        "current_rsi14": 33.98978514608548,
+        "distance_to_30": 3.989785146085481,
+        "day0_date": "2026-08-12",
+        "activation_age_sessions": 15,
+        "signal_window_days_left": 5,
+        "theme_rs_pct_day0": 96.63299663299664,
+        "theme_rank_improvement20_day0": 66.32996632996634,
+        "theme_breadth21_day0": 60.0,
+        "day0_rs63_rank": 1,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "CCS",
+        "theme": "住宅ビルダー",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 36.46496064988524,
+        "distance_to_30": 6.464960649885242,
+        "day0_date": "2026-08-19",
+        "activation_age_sessions": 10,
+        "signal_window_days_left": 10,
+        "theme_rs_pct_day0": 81.48148148148148,
+        "theme_rank_improvement20_day0": 35.01683501683502,
+        "theme_breadth21_day0": 77.77777777777779,
+        "day0_rs63_rank": 2,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "MOG.B",
+        "theme": "防衛電子部品",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 37.368856165935895,
+        "distance_to_30": 7.368856165935895,
+        "day0_date": "2026-08-17",
+        "activation_age_sessions": 12,
+        "signal_window_days_left": 8,
+        "theme_rs_pct_day0": 83.83838383838383,
+        "theme_rank_improvement20_day0": 22.558922558922553,
+        "theme_breadth21_day0": 85.71428571428571,
+        "day0_rs63_rank": 2,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "FFAI",
+        "theme": "5. 宇宙・防衛・モビリティ",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 37.79123283681528,
+        "distance_to_30": 7.791232836815283,
+        "day0_date": "2026-08-14",
+        "activation_age_sessions": 13,
+        "signal_window_days_left": 7,
+        "theme_rs_pct_day0": 93.60269360269359,
+        "theme_rank_improvement20_day0": 72.05387205387204,
+        "theme_breadth21_day0": 67.3202614379085,
+        "day0_rs63_rank": 1,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "SIG",
+        "theme": "宝飾",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 38.102943243300295,
+        "distance_to_30": 8.102943243300295,
+        "day0_date": "2026-08-20",
+        "activation_age_sessions": 9,
+        "signal_window_days_left": 11,
+        "theme_rs_pct_day0": 80.47138047138047,
+        "theme_rank_improvement20_day0": 68.01346801346801,
+        "theme_breadth21_day0": 66.66666666666666,
+        "day0_rs63_rank": 3,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "VSEC",
+        "theme": "防衛電子部品",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 38.7766845406363,
+        "distance_to_30": 8.776684540636303,
+        "day0_date": "2026-08-17",
+        "activation_age_sessions": 12,
+        "signal_window_days_left": 8,
+        "theme_rs_pct_day0": 83.83838383838383,
+        "theme_rank_improvement20_day0": 22.558922558922553,
+        "theme_breadth21_day0": 85.71428571428571,
+        "day0_rs63_rank": 3,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "SHW",
+        "theme": "塗料/コーティング",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 39.34234785507091,
+        "distance_to_30": 9.342347855070912,
+        "day0_date": "2026-08-11",
+        "activation_age_sessions": 16,
+        "signal_window_days_left": 4,
+        "theme_rs_pct_day0": 80.13468013468014,
+        "theme_rank_improvement20_day0": 41.07744107744108,
+        "theme_breadth21_day0": 100.0,
+        "day0_rs63_rank": 3,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
+        "symbol": "DFNS",
+        "theme": "フィンテックSaaS",
+        "status": "NEAR_RSI30",
+        "monitor_band": "WITHIN_10PT",
+        "current_rsi14": 39.61517485311686,
+        "distance_to_30": 9.615174853116862,
+        "day0_date": "2026-08-14",
+        "activation_age_sessions": 13,
+        "signal_window_days_left": 7,
+        "theme_rs_pct_day0": 97.97979797979798,
+        "theme_rank_improvement20_day0": 77.10437710437711,
+        "theme_breadth21_day0": 60.0,
+        "day0_rs63_rank": 1,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      }
+    ],
+    "monitor_summary": {
+      "active_positions": 0,
+      "signal_today": 0,
+      "touched_wait_rise": 2,
+      "within_5pt": 4,
+      "within_10pt": 11,
+      "watch_count": 11
+    },
+    "monitor_note": "Display bands only; trading signal remains RSI14<=30 then first rise with Theme RS63 Top3 confirmation.",
+    "rebuild_policy": "FORWARD_PIT_TAXONOMY; ACTIVE_THEME_80_15_60; RS63_TOP3_DAY0_AND_SIGNAL; RSI30_RISE; H20",
+    "download_quality": {
+      "coverage_ok": true,
+      "reason": "READY",
+      "requested": 5197,
+      "downloaded": 5090,
+      "history_required_sessions": 84,
+      "history_ready_symbols": 5022,
+      "history_coverage_ratio": 0.9663267269578603,
+      "target_date": "2026-09-02",
+      "target_valid_symbols": 5012,
+      "target_coverage_ratio": 0.9644025399268809,
+      "recent_median_coverage_ratio": 0.9657494708485664,
+      "window_rows": 119,
+      "source": "CACHE_PLUS_BATCH_RETRY",
+      "cache_hit": false,
+      "failed_batches": 12,
+      "retry_rounds": 0
+    },
     "note": "Strict reproducible Reset is live. RSI30 proximity bands are monitor-only and do not change the entry rule; old headline metrics remain excluded."
   },
   "normal_stock_sleeve": {
-    "status": "DATA REQUIRED",
+    "status": "READY",
     "strategy": "PEAK30_PART25_R3",
-    "desired_pct": null,
-    "standalone_desired_pct": null,
-    "portfolio_desired_pct": null,
+    "desired_pct": 75.66440404337172,
+    "standalone_desired_pct": 75.66440404337172,
+    "portfolio_desired_pct": 70.0,
     "portfolio_max_pct": 70.0,
-    "position_count": null,
-    "positions": [],
-    "pending": {}
+    "position_count": 9,
+    "positions": [
+      {
+        "symbol": "BFLY",
+        "shares": 0.049002482107075605,
+        "entry_price": 8.180000305175781,
+        "entry_date": "2026-08-04",
+        "peak_close": 9.699999809265137,
+        "partial_done": false,
+        "close": 8.430000305175781
+      },
+      {
+        "symbol": "CAKE",
+        "shares": 0.003831869059897519,
+        "entry_price": 104.60699787089526,
+        "entry_date": "2026-08-04",
+        "peak_close": 117.29000091552734,
+        "partial_done": false,
+        "close": 112.06999969482422
+      },
+      {
+        "symbol": "CDNA",
+        "shares": 0.008528517416813814,
+        "entry_price": 47.0,
+        "entry_date": "2026-08-04",
+        "peak_close": 52.36000061035156,
+        "partial_done": false,
+        "close": 49.790000915527344
+      },
+      {
+        "symbol": "DELL",
+        "shares": 0.0008921837599700426,
+        "entry_price": 449.2799987792969,
+        "entry_date": "2026-08-04",
+        "peak_close": 494.510009765625,
+        "partial_done": false,
+        "close": 456.239990234375
+      },
+      {
+        "symbol": "GH",
+        "shares": 0.0024645863262082717,
+        "entry_price": 162.63999938964844,
+        "entry_date": "2026-08-04",
+        "peak_close": 170.9199981689453,
+        "partial_done": false,
+        "close": 161.5
+      },
+      {
+        "symbol": "LFST",
+        "shares": 0.030557637387610845,
+        "entry_price": 11.789999961853027,
+        "entry_date": "2026-08-11",
+        "peak_close": 12.890000343322754,
+        "partial_done": false,
+        "close": 12.3100004196167
+      },
+      {
+        "symbol": "RNG",
+        "shares": 0.00532607332822941,
+        "entry_price": 56.445005619670624,
+        "entry_date": "2026-08-04",
+        "peak_close": 72.58000183105469,
+        "partial_done": true,
+        "close": 69.37999725341797
+      },
+      {
+        "symbol": "SLS",
+        "shares": 0.027421911636263886,
+        "entry_price": 13.460000038146973,
+        "entry_date": "2026-08-19",
+        "peak_close": 15.460000038146973,
+        "partial_done": false,
+        "close": 13.210000038146973
+      },
+      {
+        "symbol": "TXG",
+        "shares": 0.0055401636933928265,
+        "entry_price": 58.61000061035156,
+        "entry_date": "2026-08-12",
+        "peak_close": 65.12000274658203,
+        "partial_done": false,
+        "close": 61.540000915527344
+      }
+    ],
+    "pending": {
+      "full_exits": [
+        {
+          "symbol": "BFLY",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "CAKE",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "CDNA",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "DELL",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "GH",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "LFST",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "RNG",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "SLS",
+          "reason": "NQSAR_RED"
+        },
+        {
+          "symbol": "TXG",
+          "reason": "NQSAR_RED"
+        }
+      ],
+      "partial25": [],
+      "entries": [],
+      "entry_cap": 0
+    }
   },
   "gross100_allocation": {
-    "status": "LIVE INPUT DATA REQUIRED",
+    "status": "LIVE ALLOCATION READY",
     "adoption_status": "ADOPTED_FINAL_SPEC_20260901",
     "priority": [
       "RSI_RESET",
@@ -7332,34 +7655,34 @@
       "2026-03-20"
     ],
     "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
-    "sleeve_live_status": null,
+    "sleeve_live_status": "READY",
     "sleeve_live_reason": null,
     "sleeve_refresh_status": "FRESH",
-    "sleeve_refresh_attempted_asof": "2026-09-01",
-    "sleeve_last_successful_asof": "2026-09-01",
-    "sleeve_refresh_attempted_at_utc": "2026-09-02T15:38:41Z",
+    "sleeve_refresh_attempted_asof": "2026-09-02",
+    "sleeve_last_successful_asof": "2026-09-02",
+    "sleeve_refresh_attempted_at_utc": "2026-09-03T05:39:41Z",
     "sleeve_refresh_error": null,
     "sleeve_preserved_previous_ready": false,
-    "normal_position_count": null,
-    "reset_position_count": null,
+    "normal_position_count": 9,
+    "reset_position_count": 0,
     "note": "Reset -> protect native/Panic TQQQ to 80% under competition -> Normal Stock capped at 70% -> native TQQQ extra -> adopted Selective Fill from remaining cash only; native CURRENT30 zero is never overridden",
-    "reset_desired_pct": null,
+    "reset_desired_pct": 0.0,
     "native_tqqq_target_pct": 30.0,
     "tqqq_desired_pct": 30.0,
-    "normal_stock_desired_pct": null,
-    "normal_stock_standalone_desired_pct": null,
-    "normal_stock_portfolio_desired_pct": null,
+    "normal_stock_desired_pct": 75.66440404337172,
+    "normal_stock_standalone_desired_pct": 75.66440404337172,
+    "normal_stock_portfolio_desired_pct": 70.0,
     "normal_stock_max_pct": 70.0,
-    "reset_allocated_pct": null,
-    "tqqq_protected_pct": null,
-    "normal_stock_allocated_pct": null,
-    "tqqq_extra_pct": null,
-    "base_gross_allocated_pct": null,
-    "selective_fill_eligible": null,
-    "tqqq_selective_fill_pct": null,
-    "tqqq_allocated_pct": null,
-    "gross_allocated_pct": null,
-    "remaining_capacity_pct": null
+    "reset_allocated_pct": 0.0,
+    "tqqq_protected_pct": 30.0,
+    "normal_stock_allocated_pct": 70.0,
+    "tqqq_extra_pct": 0.0,
+    "base_gross_allocated_pct": 100.0,
+    "selective_fill_eligible": false,
+    "tqqq_selective_fill_pct": 0.0,
+    "tqqq_allocated_pct": 30.0,
+    "gross_allocated_pct": 100.0,
+    "remaining_capacity_pct": 0.0
   },
   "rotation_intelligence": {
     "role": "WHERE_ONLY_NOT_A_TRADE_RULE",
