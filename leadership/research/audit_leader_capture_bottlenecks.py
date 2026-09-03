@@ -61,6 +61,16 @@ def day_masks(meta: dict[str, Any], idx: pd.DatetimeIndex) -> dict[str, pd.Serie
     }
 
 
+def structure_specific_rs63_high(close: pd.DataFrame, rs63: pd.DataFrame, mask: pd.DataFrame) -> pd.DataFrame:
+    """Rebuild the high-proximity percentile inside each structural population.
+    Important: do not reuse HIGH63 precomputed under TREND_FULL, or structure ablation is impossible.
+    """
+    prior63 = close.shift(1).rolling(63, min_periods=50).max()
+    high_raw = close / prior63
+    high_pct = (high_raw.where(mask).rank(axis=1, pct=True, method="average") * 100.0).astype(np.float32)
+    return (0.75 * rs63 + 0.25 * high_pct).astype(np.float32)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".")
@@ -105,13 +115,14 @@ def main() -> None:
     days = day_masks(meta, idx)
 
     result: dict[str, Any] = {
-        "status": "LEADER_CAPTURE_BOTTLENECK_AUDIT",
+        "status": "LEADER_CAPTURE_BOTTLENECK_AUDIT_V2",
         "analysis_window": {"start": args.analysis_start, "end": args.analysis_end, "leader_start": args.leader_start, "downloaded": int(meta["downloaded"])},
         "design": {
             "purpose": "Decompose early-leader recognition loss across market-mode gating and structural ranking population before changing the portfolio.",
             "primary": "Annual Top10 leader recognized in Top12 while <=20% through hindsight start-to-peak run.",
             "day_masks": ["CURRENT_NQ_AND_BREADTH", "NQ_ONLY", "BREADTH_ONLY", "ALL_DAYS"],
             "ranking_masks": ["TREND_FULL", "ABOVE200", "SMA50_GT_200", "BASE_POOL"],
+            "structural_fix": "HIGH63 percentile and RS63_HIGH score are rebuilt separately inside each structural population; no TREND_FULL-precomputed high component is reused.",
             "no_portfolio_change": True,
         },
         "factor_day_mask": {},
@@ -130,11 +141,13 @@ def main() -> None:
 
     print("AUDIT RS63_HIGH x structural population", flush=True)
     for mname in ("TREND_FULL", "ABOVE200", "SMA50_GT_200", "BASE_POOL"):
-        rankmat = disc.top_rank_matrix(factors["RS63_HIGH"], common[mname], maxk=20)
+        fmat = structure_specific_rs63_high(close, rs[63], common[mname])
+        rankmat = disc.top_rank_matrix(fmat, common[mname], maxk=20)
         result["rs63_high_structure_mask"][mname] = {}
         for dname, dmask in days.items():
             _, adf = disc.eval_factor_on_leaders("RS63_HIGH", rankmat, annual10, close, idx, dmask)
             _, rdf = disc.eval_factor_on_leaders("RS63_HIGH", rankmat, rolling, close, idx, dmask)
+            adf.to_csv(out / f"annual10_RS63_HIGH_STRUCT_{mname}_{dname}.csv", index=False)
             result["rs63_high_structure_mask"][mname][dname] = {"annual_top10": period_pack(adf), "rolling126": period_pack(rdf)}
 
     p = out / "summary_leader_capture_bottlenecks.json"
