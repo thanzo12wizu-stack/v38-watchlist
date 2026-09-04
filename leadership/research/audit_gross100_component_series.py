@@ -28,10 +28,15 @@ def _px(frame, date, sym, fallback=None):
     return fallback
 
 
-def simulate_ordinary(meta, matrices, peer_ctx):
-    """Exact PEAK30_PART25_R3 mechanics, with daily gross/exposure diagnostics added."""
+def simulate_ordinary(meta, matrices, peer_ctx, liquidity_floor: float = 10_000_000.0):
+    """Exact PEAK30_PART25_R3 mechanics plus an entry-only DDV floor.
+
+    The ranking universe remains the adopted >=$10M universe. A higher floor only
+    blocks a new entry after ranking and allows the next ranked liquid candidate to
+    fill the slot. Existing positions are not sold merely because DDV later falls.
+    """
     idx = meta["analysis_idx"]
-    opens, closes = matrices["open"], matrices["close"]
+    opens, closes, dvol = matrices["open"], matrices["close"], matrices["dvol"]
     breadth, nq = meta["breadth"], meta["nq"]
     cash = 1.0
     pos = {}
@@ -46,6 +51,9 @@ def simulate_ordinary(meta, matrices, peer_ctx):
     for i, d0 in enumerate(idx):
         d = pd.Timestamp(d0)
         prev = None if i == 0 else pd.Timestamp(idx[i - 1])
+        fill_allowed = False
+        market_color = ""
+        market_bucket = 0
         if prev is not None:
             color = str(nq.at[prev, "nq_color"]) if prev in nq.index and pd.notna(nq.at[prev, "nq_color"]) else ""
             red_run = red_run + 1 if color == "Red" else 0
@@ -80,8 +88,14 @@ def simulate_ordinary(meta, matrices, peer_ctx):
             bucket = base.breadth_bucket(b)
             bull = color in ("Blue", "Green")
             cap = base.N_PORT if bull and bucket == 2 else SELECTIVE_SLOTS if bull and bucket == 1 else 0
+            fill_allowed = bool(bull and np.isfinite(b) and b >= 50.0)
+            market_color = color
+            market_bucket = int(bucket)
+
             if (not red_force) and cap > 0 and len(pos) < cap:
-                candidates = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, base.N_PORT)
+                # Ask for a deeper ranked list so an excluded low-DDV top name does
+                # not artificially leave the account under-filled.
+                candidates = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, max(40, base.N_PORT))
                 nav_open = cash
                 for sym, p in pos.items():
                     opx = _px(opens, d, sym, _px(closes, prev, sym, p["entry_price"]))
@@ -92,6 +106,9 @@ def simulate_ordinary(meta, matrices, peer_ctx):
                     if len(pos) >= cap or cash <= 0:
                         break
                     if sym in pos:
+                        continue
+                    dv = _px(dvol, prev, sym, None)
+                    if dv is None or dv < float(liquidity_floor):
                         continue
                     opx = _px(opens, d, sym, _px(closes, prev, sym, None))
                     if opx is None:
@@ -107,6 +124,7 @@ def simulate_ordinary(meta, matrices, peer_ctx):
                         "peak_close": opx,
                         "sessions": 0,
                         "partial_done": False,
+                        "entry_dvol": dv,
                         **c,
                     }
 
@@ -120,8 +138,17 @@ def simulate_ordinary(meta, matrices, peer_ctx):
             mark = p["shares"] * cp
             gross += mark
             nav += mark
-        rows.append({"date": d, "nav": nav, "gross_value": gross,
-                     "gross_exposure": gross / nav if nav > 0 else np.nan, "positions": len(pos)})
+        rows.append({
+            "date": d,
+            "nav": nav,
+            "gross_value": gross,
+            "gross_exposure": gross / nav if nav > 0 else np.nan,
+            "positions": len(pos),
+            "selective_fill_allowed": bool(fill_allowed),
+            "market_color_prev": market_color,
+            "market_bucket_prev": market_bucket,
+            "liquidity_floor": float(liquidity_floor),
+        })
 
     out = pd.DataFrame(rows).set_index("date")
     out["return"] = out["nav"].pct_change(fill_method=None).fillna(0.0)
@@ -178,8 +205,13 @@ def simulate_reset(calendar, opens, closes, trades):
                     continue
                 cash -= amount * (1 + RESET_COST)
                 turnover += amount
-                lots.append({"symbol": r.symbol, "theme": r.theme, "shares": amount / px,
-                             "entry_i": i, "exit_i": min(i + RESET_HOLD, len(calendar) - 1)})
+                lots.append({
+                    "symbol": r.symbol,
+                    "theme": r.theme,
+                    "shares": amount / px,
+                    "entry_i": i,
+                    "exit_i": min(i + RESET_HOLD, len(calendar) - 1),
+                })
 
         gross = 0.0
         nav = cash
@@ -189,9 +221,13 @@ def simulate_reset(calendar, opens, closes, trades):
                 mark = z["shares"] * cp
                 gross += mark
                 nav += mark
-        rows.append({"date": d, "nav": nav, "gross_value": gross,
-                     "gross_exposure": gross / nav if nav > 0 else np.nan,
-                     "positions": len(lots)})
+        rows.append({
+            "date": d,
+            "nav": nav,
+            "gross_value": gross,
+            "gross_exposure": gross / nav if nav > 0 else np.nan,
+            "positions": len(lots),
+        })
     out = pd.DataFrame(rows).set_index("date")
     out["return"] = out["nav"].pct_change(fill_method=None).fillna(0.0)
     return out.reset_index(), turnover
@@ -206,6 +242,7 @@ def main():
     ap.add_argument("--analysis-end", default="2026-03-20")
     ap.add_argument("--max-tickers", type=int, default=6000)
     ap.add_argument("--batch-size", type=int, default=75)
+    ap.add_argument("--liquidity-floor", type=float, default=10_000_000.0)
     args = ap.parse_args()
     root = Path(args.root)
     out = Path(args.output)
@@ -213,7 +250,7 @@ def main():
 
     meta, matrices = ex.build_inputs_ext(root, args.analysis_start, args.analysis_end, args.max_tickers, args.batch_size)
     peer_ctx = loo.build_leave_one_out_scores(root, matrices)
-    ordinary = simulate_ordinary(meta, matrices, peer_ctx)
+    ordinary = simulate_ordinary(meta, matrices, peer_ctx, args.liquidity_floor)
     cal = pd.DatetimeIndex(meta["analysis_idx"])
     reset_trades = prepare_reset_trades(Path(args.reset_trades), cal, matrices["close"].columns)
     reset, reset_turnover = simulate_reset(cal, matrices["open"], matrices["close"], reset_trades)
@@ -226,6 +263,7 @@ def main():
         "days": int(len(ordinary)),
         "ordinary_avg_gross": float(ordinary.gross_exposure.mean()),
         "ordinary_max_gross": float(ordinary.gross_exposure.max()),
+        "ordinary_liquidity_floor": float(args.liquidity_floor),
         "reset_avg_gross": float(reset.gross_exposure.mean()),
         "reset_max_gross": float(reset.gross_exposure.max()),
         "reset_max_positions": int(reset.positions.max()),
