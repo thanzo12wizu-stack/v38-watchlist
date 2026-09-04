@@ -1,4 +1,4 @@
-name: Validate restored production chain once
+name: Validate downstream production chain once
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: validate-restored-production-chain-once
+  group: validate-downstream-production-chain-once
   cancel-in-progress: false
 
 jobs:
@@ -39,11 +39,11 @@ jobs:
             tests/test_atomic_publish_gate.py \
             tests/test_public_site_export.py
 
-      - name: Dispatch Command Center once
+      - name: Dispatch downstream chain once
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          gh workflow run dashboard.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo 'Command Center dispatched. Downstream must now start only from its successful workflow_run.'
+          gh workflow run production-downstream-chain.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo 'Downstream production chain dispatched for end-to-end verification.'
