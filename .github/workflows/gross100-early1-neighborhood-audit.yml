@@ -1,0 +1,65 @@
+name: Gross100 Early1 neighborhood audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/leader-entry-delay-audit-20260904]
+    paths:
+      - 'leadership/research/audit_gross100_early1_neighborhood.py'
+      - '.github/workflows/gross100-early1-neighborhood-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: gross100-early1-neighborhood-research
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy scipy yfinance
+      - name: Download final reproducible RSI Reset signals
+        uses: actions/download-artifact@v4
+        with:
+          name: rsi-strong-stock-threshold-interaction-audit
+          path: leadership/research/early1_neighborhood_input/reset
+          github-token: ${{ github.token }}
+          run-id: 33130536827
+      - name: Download frozen TQQQ Stage56 daily series
+        uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: leadership/research/early1_neighborhood_input/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+      - name: Syntax and strict inputs
+        run: |
+          PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_gross100_early1_neighborhood.py
+          test -s leadership/research/early1_neighborhood_input/reset/threshold_trade_rows.csv.gz
+          test -s leadership/research/early1_neighborhood_input/tqqq/tqqq_stage56_daily.csv.gz
+      - name: Run Early1 neighborhood audit
+        run: |
+          PYTHONPATH=.:leadership/research python leadership/research/audit_gross100_early1_neighborhood.py \
+            --root . \
+            --reset-trades leadership/research/early1_neighborhood_input/reset/threshold_trade_rows.csv.gz \
+            --tqqq-daily leadership/research/early1_neighborhood_input/tqqq/tqqq_stage56_daily.csv.gz \
+            --output leadership/research/gross100_early1_neighborhood \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-03-20
+      - name: Upload Early1 neighborhood audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gross100-early1-neighborhood-audit
+          path: leadership/research/gross100_early1_neighborhood/
+          retention-days: 30
+          if-no-files-found: warn
