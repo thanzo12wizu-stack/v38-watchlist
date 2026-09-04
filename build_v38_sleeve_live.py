@@ -809,7 +809,7 @@ def main() -> None:
                                             row.get("symbol") or ""))
         reset["monitor"] = reset_monitor[:100]
         reset["monitor_summary"] = {
-            "active_positions": sum(row.get("status") == "ACTIVE_POSITION" for row in reset_monitor),
+            "active_positions": len(reset.get("positions", [])),
             "signal_today": sum(row.get("status") == "SIGNAL_TODAY_NEXT_OPEN" for row in reset_monitor),
             "touched_wait_rise": sum(row.get("status") == "RSI30_TOUCHED_WAIT_RISE" for row in reset_monitor),
             "within_5pt": sum(row.get("monitor_band") in {"RSI30_OR_BELOW", "WITHIN_5PT"} for row in reset_monitor),
