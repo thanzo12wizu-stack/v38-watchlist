@@ -37,7 +37,7 @@ def simulate_ordinary_mode(
     """Exact adopted ordinary-stock mechanics with one isolated DDV implementation switch.
 
     VACANCY_TOP12: build adopted Top12 first; a DDV failure leaves the slot vacant.
-    REFILL_TOP40: rank Top40 first; apply DDV entry filter; refill from rank 13+ until cap is filled.
+    REFILL_TOP40: rank Top40 first; apply DDV entry filter; then take the same market-mode cap. This refills only DDV-rejected ranks, not vacancies caused by already-held names.
 
     Existing positions are never sold only because DDV later falls.
     """
@@ -53,6 +53,7 @@ def simulate_ordinary_mode(
     red_run = 0
     entry_count = 0
     refill_beyond12_entries = 0
+    refill_beyond_cap_entries = 0
     blocked_top12_candidates = 0
 
     def close_position(sym: str, price: float) -> None:
@@ -107,15 +108,25 @@ def simulate_ordinary_mode(
 
             if (not red_force) and cap > 0 and len(pos) < cap:
                 depth = base.N_PORT if mode == "VACANCY_TOP12" else 40
-                candidates = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, depth)
+                candidates_raw = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, depth)
 
                 if float(liquidity_floor) > 10_000_000.0:
-                    for raw_rank, (sym0, _info0) in enumerate(candidates[: base.N_PORT], start=1):
+                    for raw_rank, (sym0, _info0) in enumerate(candidates_raw[: base.N_PORT], start=1):
                         if sym0 in pos:
                             continue
                         dv0 = _px(dvol, prev, sym0, None)
                         if dv0 is None or dv0 < float(liquidity_floor):
                             blocked_top12_candidates += 1
+
+                if mode == "VACANCY_TOP12":
+                    candidates = [(rank, sym, info) for rank, (sym, info) in enumerate(candidates_raw, start=1)]
+                else:
+                    liquid = []
+                    for raw_rank, (sym, info) in enumerate(candidates_raw, start=1):
+                        dv = _px(dvol, prev, sym, None)
+                        if dv is not None and dv >= float(liquidity_floor):
+                            liquid.append((raw_rank, sym, info))
+                    candidates = liquid[:cap]
 
                 nav_open = cash
                 for sym, p in pos.items():
@@ -124,7 +135,7 @@ def simulate_ordinary_mode(
                         nav_open += p["shares"] * opx
                 slot_cash = nav_open / base.N_PORT
 
-                for raw_rank, (sym, c) in enumerate(candidates, start=1):
+                for raw_rank, sym, c in candidates:
                     if len(pos) >= cap or cash <= 0:
                         break
                     if sym in pos:
@@ -151,8 +162,11 @@ def simulate_ordinary_mode(
                         **c,
                     }
                     entry_count += 1
-                    if mode == "REFILL_TOP40" and raw_rank > base.N_PORT:
-                        refill_beyond12_entries += 1
+                    if mode == "REFILL_TOP40":
+                        if raw_rank > base.N_PORT:
+                            refill_beyond12_entries += 1
+                        if raw_rank > cap:
+                            refill_beyond_cap_entries += 1
 
         gross = 0.0
         nav = cash
@@ -186,6 +200,8 @@ def simulate_ordinary_mode(
         "blocked_top12_candidates": int(blocked_top12_candidates),
         "refill_beyond12_entries": int(refill_beyond12_entries),
         "refill_beyond12_share": float(refill_beyond12_entries / entry_count) if entry_count else 0.0,
+        "refill_beyond_cap_entries": int(refill_beyond_cap_entries),
+        "refill_beyond_cap_share": float(refill_beyond_cap_entries / entry_count) if entry_count else 0.0,
         "avg_positions": float(out["positions"].mean()),
         "avg_gross": float(out["gross_exposure"].mean()),
         "max_gross": float(out["gross_exposure"].max()),
@@ -386,7 +402,7 @@ def main() -> None:
         },
         "modes": {
             "VACANCY_TOP12": "Rank adopted Top12 first; DDV failures create vacancies; never reach rank 13+.",
-            "REFILL_TOP40": "Rank Top40 first; filter by DDV; refill from rank 13+ until market-mode cap is filled.",
+            "REFILL_TOP40": "Rank Top40 first; filter by DDV; then take the same market-mode cap. Already-held names can still leave vacancies, matching the single-stock DDV audit structure.",
         },
         "guardrails": [
             "No main/UI/live changes.",
