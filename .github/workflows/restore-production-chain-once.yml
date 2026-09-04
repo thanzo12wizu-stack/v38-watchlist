@@ -1,0 +1,143 @@
+name: Restore production chain once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-production-chain-once.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: restore-production-chain-once
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Restore independent schedule and downstream workflow_run chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'expected block missing in {path}: {old!r}')
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected block is not unique in {path}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              '.github/workflows/dashboard.yml',
+              'on:\n  workflow_dispatch: {}\n',
+              "on:\n  schedule:\n    - cron: '17 22 * * 1-5'\n    - cron: '17 4 * * 2-6'\n  workflow_dispatch: {}\n",
+          )
+
+          chain = [
+              ('.github/workflows/v38-live.yml', 'Command Center daily build', '  build:'),
+              ('.github/workflows/v38-sleeve-refresh.yml', 'V38 live build', '  refresh:'),
+              ('.github/workflows/rotation-live.yml', 'V38 sleeve live refresh', '  build:'),
+              ('.github/workflows/publish-public-site.yml', 'Rotation Theme56 live build', '  publish:'),
+          ]
+          for path, upstream, job_header in chain:
+              replace_once(
+                  path,
+                  'on:\n  workflow_dispatch: {}\n',
+                  'on:\n'
+                  '  workflow_dispatch: {}\n'
+                  '  workflow_run:\n'
+                  f'    workflows: ["{upstream}"]\n'
+                  '    types: [completed]\n'
+                  '    branches: [main]\n',
+              )
+              replace_once(
+                  path,
+                  f'jobs:\n{job_header}\n    runs-on:',
+                  f"jobs:\n{job_header}\n    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'\n    runs-on:",
+              )
+
+          options = Path('.github/workflows/options.yml')
+          text = options.read_text(encoding='utf-8')
+          dispatch = '            gh workflow run dashboard.yml --ref main || true\n'
+          if text.count(dispatch) != 2:
+              raise SystemExit(f'expected exactly two Options -> Dashboard dispatches, found {text.count(dispatch)}')
+          options.write_text(text.replace(dispatch, ''), encoding='utf-8')
+
+          test_path = Path('tests/test_atomic_pipeline_workflows.py')
+          test = test_path.read_text(encoding='utf-8')
+          old = '''def test_manual_validation_phase_has_no_automatic_chain():\n    for name in (\n        "dashboard.yml",\n        "v38-live.yml",\n        "v38-sleeve-refresh.yml",\n        "rotation-live.yml",\n        "publish-public-site.yml",\n    ):\n        text = _workflow(name)\n        assert "workflow_dispatch:" in text\n        assert "workflow_run:" not in text\n        assert "schedule:" not in text\n\n\n'''
+          new = '''def test_production_schedule_and_automatic_chain_are_restored():\n    dashboard = _workflow("dashboard.yml")\n    assert "workflow_dispatch:" in dashboard\n    assert "- cron: '17 22 * * 1-5'" in dashboard\n    assert "- cron: '17 4 * * 2-6'" in dashboard\n    assert "workflow_run:" not in dashboard\n\n    chain = [\n        ("v38-live.yml", "Command Center daily build"),\n        ("v38-sleeve-refresh.yml", "V38 live build"),\n        ("rotation-live.yml", "V38 sleeve live refresh"),\n        ("publish-public-site.yml", "Rotation Theme56 live build"),\n    ]\n    for name, upstream in chain:\n        text = _workflow(name)\n        assert "workflow_dispatch:" in text\n        assert "workflow_run:" in text\n        assert f'workflows: ["{upstream}"]' in text\n        assert "types: [completed]" in text\n        assert "branches: [main]" in text\n        assert "github.event.workflow_run.conclusion == 'success'" in text\n\n    options = _workflow("options.yml")\n    assert "gh workflow run dashboard.yml" not in options\n\n\n'''
+          if old not in test:
+              raise SystemExit('manual-validation test block not found')
+          test = test.replace(old, new, 1)
+          test = test.replace(
+              '    assert "ref: pipeline-live" in text\n',
+              '    assert "ref: main" in text\n',
+              1,
+          )
+          test_path.write_text(test, encoding='utf-8')
+          PY
+
+      - name: Validate ownership and trigger wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile tests/test_atomic_pipeline_workflows.py
+          python -m pip install --disable-pip-version-check pytest
+          pytest -q \
+            tests/test_atomic_pipeline_workflows.py \
+            tests/test_atomic_publish_gate.py \
+            tests/test_public_site_export.py
+          grep -F "- cron: '17 22 * * 1-5'" .github/workflows/dashboard.yml
+          grep -F "- cron: '17 4 * * 2-6'" .github/workflows/dashboard.yml
+          ! grep -F "gh workflow run dashboard.yml" .github/workflows/options.yml
+
+      - name: Commit production wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/dashboard.yml \
+            .github/workflows/v38-live.yml \
+            .github/workflows/v38-sleeve-refresh.yml \
+            .github/workflows/rotation-live.yml \
+            .github/workflows/publish-public-site.yml \
+            .github/workflows/options.yml \
+            tests/test_atomic_pipeline_workflows.py
+          git diff --cached --check
+          git diff --cached --name-only
+          if git diff --cached --quiet; then
+            echo 'Production wiring already restored'
+          else
+            git commit -m 'Restore automatic V38 production chain'
+            git push origin HEAD:main
+          fi
+
+      - name: Dispatch Command Center to prove real workflow_run chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run dashboard.yml --ref main
+          echo 'Command Center dispatched; downstream stages must now be started only by workflow_run.'
