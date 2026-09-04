@@ -1,4 +1,4 @@
-name: V38 final publish once
+name: V38 manual pipeline validation once
 
 on:
   push:
@@ -9,18 +9,142 @@ permissions:
   contents: read
   actions: write
 
+concurrency:
+  group: v38-manual-pipeline-validation-once
+  cancel-in-progress: false
+
 jobs:
-  dispatch:
+  validate:
     runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PIPELINE_BRANCH: pipeline-live
+      COMMAND_CENTER_OWNED_FILES: >-
+        command-center.html
+        command-center_share.html
+        state.json
+        trend_history.json
+        daily_log.csv
+        mktcap.json
+        fred_cache.json
+        fmp_reference_cache.json
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
+
     steps:
-      - name: Dispatch canonical Dashboard workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Dispatch and wait for each isolated workflow
         shell: bash
         run: |
           set -euo pipefail
-          gh api --method POST \
-            -H "Accept: application/vnd.github+json" \
-            repos/${GITHUB_REPOSITORY}/actions/workflows/dashboard.yml/dispatches \
-            -f ref=main
-          echo "Dashboard workflow dispatched"
+
+          dispatch_and_wait() {
+            local workflow="$1"
+            local label="$2"
+            local before run_id
+            before="$(gh run list \
+              --workflow "$workflow" \
+              --event workflow_dispatch \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId // 0')"
+
+            gh workflow run "$workflow" --ref main
+            run_id=""
+            for _ in $(seq 1 30); do
+              run_id="$(gh run list \
+                --workflow "$workflow" \
+                --event workflow_dispatch \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId // 0')"
+              if [[ -n "$run_id" && "$run_id" != "0" && "$run_id" != "$before" ]]; then
+                break
+              fi
+              sleep 2
+            done
+            if [[ -z "$run_id" || "$run_id" == "0" || "$run_id" == "$before" ]]; then
+              echo "::error::Could not identify dispatched run for $workflow"
+              exit 1
+            fi
+
+            echo "$label run: $run_id"
+            echo "- $label run: [$run_id](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
+            gh run watch "$run_id" --exit-status --interval 15
+          }
+
+          assert_command_center_unchanged() {
+            local after="$1"
+            git fetch --depth=1 origin main
+            if ! git diff --quiet "$COMMAND_CENTER_BASE" origin/main -- $COMMAND_CENTER_OWNED_FILES; then
+              echo "::error::Command Center-owned files changed after $after"
+              git diff --name-status "$COMMAND_CENTER_BASE" origin/main -- $COMMAND_CENTER_OWNED_FILES
+              exit 1
+            fi
+            echo "COMMAND_CENTER_NO_REVERSE_WRITE_AFTER_${after^^}=PASS"
+          }
+
+          echo "### Isolated manual workflow runs" >> "$GITHUB_STEP_SUMMARY"
+
+          dispatch_and_wait dashboard.yml "Command Center"
+          git fetch --depth=1 origin main
+          COMMAND_CENTER_BASE="$(git rev-parse origin/main)"
+          export COMMAND_CENTER_BASE
+
+          git show "origin/main:state.json" > /tmp/state.json
+          git show "origin/main:trend_history.json" > /tmp/trend_history.json
+          git show "origin/main:daily_log.csv" > /tmp/daily_log.csv
+          python - <<'PY'
+          import csv
+          import json
+          import re
+          from pathlib import Path
+
+          iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+          state = json.loads(Path("/tmp/state.json").read_text(encoding="utf-8"))
+          asof = str(state.get("date") or "")
+          trend = json.loads(Path("/tmp/trend_history.json").read_text(encoding="utf-8"))
+          trend_dates = []
+          for row in trend if isinstance(trend, list) else []:
+              value = row[0] if isinstance(row, (list, tuple)) and row else row.get("date") if isinstance(row, dict) else ""
+              if iso.fullmatch(str(value or "")):
+                  trend_dates.append(str(value))
+          with Path("/tmp/daily_log.csv").open(encoding="utf-8", newline="") as handle:
+              log_dates = [str(row.get("date") or "") for row in csv.DictReader(handle)]
+          log_dates = [value for value in log_dates if iso.fullmatch(value)]
+          prior = sorted({value for value in trend_dates + log_dates if value < asof})
+          prevday = state.get("prevday") if isinstance(state.get("prevday"), dict) else {}
+          if not asof or max(trend_dates, default="") != asof or max(log_dates, default="") != asof:
+              raise SystemExit(f"Command Center chronology mismatch: state={asof} trend={max(trend_dates, default='')} log={max(log_dates, default='')}")
+          if prior and str(prevday.get("date") or "") != prior[-1]:
+              raise SystemExit(f"Command Center comparison baseline mismatch: prevday={prevday.get('date')} expected={prior[-1]}")
+          print("COMMAND_CENTER_CHRONOLOGY_PASS", asof, prevday.get("date"))
+          PY
+
+          dispatch_and_wait v38-live.yml "V38 / TQQQ / CURRENT30"
+          assert_command_center_unchanged v38
+
+          dispatch_and_wait v38-sleeve-refresh.yml "Sleeve / RSI Reset"
+          assert_command_center_unchanged sleeve
+
+          dispatch_and_wait rotation-live.yml "Rotation Theme56"
+          assert_command_center_unchanged rotation
+
+          dispatch_and_wait publish-public-site.yml "Public mirror"
+          assert_command_center_unchanged public_mirror
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Reverse-flow audit" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Command Center baseline commit: $COMMAND_CENTER_BASE" >> "$GITHUB_STEP_SUMMARY"
+          echo "- V38 after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Sleeve after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Rotation after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Public mirror after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
