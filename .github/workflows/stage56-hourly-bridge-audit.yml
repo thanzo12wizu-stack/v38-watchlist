@@ -1,0 +1,42 @@
+name: Stage56 hourly bridge audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/leader-entry-delay-audit-20260904]
+    paths:
+      - 'leadership/research/audit_stage56_hourly_bridge.py'
+      - '.github/workflows/stage56-hourly-bridge-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage56-hourly-bridge-research
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas numpy yfinance
+      - name: Syntax
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_stage56_hourly_bridge.py
+      - name: Run Stage56 hourly bridge validation
+        run: |
+          PYTHONPATH=.:leadership/research python leadership/research/audit_stage56_hourly_bridge.py \
+            --output leadership/research/stage56_hourly_bridge
+      - name: Upload bridge audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage56-hourly-bridge-audit
+          path: leadership/research/stage56_hourly_bridge/
+          retention-days: 30
+          if-no-files-found: warn
