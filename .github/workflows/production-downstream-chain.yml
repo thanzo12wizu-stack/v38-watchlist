@@ -1,0 +1,136 @@
+name: V38 production downstream chain
+
+on:
+  workflow_run:
+    workflows: ["Command Center daily build"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: v38-production-downstream-chain
+  cancel-in-progress: false
+
+jobs:
+  chain:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      DASHBOARD_OWNED: >-
+        command-center.html
+        command-center_share.html
+        state.json
+        trend_history.json
+        daily_log.csv
+        mktcap.json
+        fred_cache.json
+        fmp_reference_cache.json
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Record upstream Command Center snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          git rev-parse HEAD | tee /tmp/command-center-main-sha.txt
+          : > /tmp/dashboard-owned-before.txt
+          for file in $DASHBOARD_OWNED; do
+            git rev-parse "HEAD:$file" >> /tmp/dashboard-owned-before.txt
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          asof=str(state.get('date') or '')
+          if not asof:
+              raise SystemExit('Command Center state has no as-of')
+          print('COMMAND_CENTER_CHAIN_INPUT', asof)
+          PY
+
+      - name: Run downstream stages serially
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_stage() {
+            workflow="$1"
+            label="$2"
+            before="$(gh run list --repo "$REPO" --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            gh workflow run "$workflow" --repo "$REPO" --ref main
+            run_id=""
+            for attempt in $(seq 1 30); do
+              candidate="$(gh run list --repo "$REPO" --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+              if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+                run_id="$candidate"
+                break
+              fi
+              sleep 2
+            done
+            if [[ -z "$run_id" ]]; then
+              echo "::error::Could not resolve dispatched run for $label"
+              exit 1
+            fi
+            echo "$label run_id=$run_id"
+            gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+            echo "$label SUCCESS run_id=$run_id"
+          }
+
+          run_stage v38-live.yml "V38/TQQQ/CURRENT30"
+          run_stage v38-sleeve-refresh.yml "Sleeve/RSI Reset"
+          run_stage rotation-live.yml "Rotation"
+          run_stage publish-public-site.yml "Public mirror"
+
+      - name: Prove no downstream reverse write into Command Center
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          : > /tmp/dashboard-owned-after.txt
+          for file in $DASHBOARD_OWNED; do
+            git rev-parse "HEAD:$file" >> /tmp/dashboard-owned-after.txt
+          done
+          if ! cmp -s /tmp/dashboard-owned-before.txt /tmp/dashboard-owned-after.txt; then
+            echo "::error::A downstream stage modified Command Center-owned artifacts"
+            diff -u /tmp/dashboard-owned-before.txt /tmp/dashboard-owned-after.txt || true
+            exit 1
+          fi
+          echo "DOWNSTREAM_REVERSE_WRITE_CHECK_PASS"
+
+      - name: Validate final atomic production snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate_atomic_publish.py --root . --output /tmp/atomic-publish-status.json
+          cat /tmp/atomic-publish-status.json
+
+      - name: Report production chain
+        if: always()
+        shell: bash
+        run: |
+          echo '### V38 production downstream chain' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Upstream: Command Center daily build (main)' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Order: V38/TQQQ/CURRENT30 → Sleeve/RSI Reset → Rotation → Public mirror' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Command Center ownership: read-only for every downstream stage' >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f /tmp/atomic-publish-status.json ]]; then
+            echo '- Atomic publish validation: completed' >> "$GITHUB_STEP_SUMMARY"
+          fi
