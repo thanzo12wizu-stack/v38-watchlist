@@ -7,6 +7,7 @@ on:
       - research/rotation-validation-20260905-work
     paths:
       - leadership/research/validate_rotation_analysis_gaps.py
+      - leadership/research/validate_rotation_analysis_gaps_v2.py
       - .github/workflows/rotation-analysis-gap-validation.yml
 
 jobs:
@@ -32,7 +33,7 @@ jobs:
           test -s /tmp/pit/distribution_pit_panel_cov90.csv
       - name: Run validation
         run: |
-          python leadership/research/validate_rotation_analysis_gaps.py \
+          python leadership/research/validate_rotation_analysis_gaps_v2.py \
             --panel60 /tmp/pit/distribution_pit_panel_cov60.csv \
             --panel80 /tmp/pit/distribution_pit_panel_cov80.csv \
             --panel90 /tmp/pit/distribution_pit_panel_cov90.csv \
@@ -42,7 +43,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rotation-analysis-gap-validation
+          name: rotation-analysis-gap-validation-v2
           path: leadership/research/rotation_gap_validation_outputs/
           if-no-files-found: warn
           retention-days: 14
