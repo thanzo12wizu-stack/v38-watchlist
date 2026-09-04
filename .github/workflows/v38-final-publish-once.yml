@@ -1,7 +1,7 @@
 name: V38 manual pipeline validation once
 
-# Retry marker: verified 2026-09-03 Command Center is now the main last-known-good;
-# same-session READY TQQQ fallback is enabled for temporary provider lag.
+# Retry marker: 2026-09-04 Normal Stock target-session OHLC fallback enabled;
+# rerun isolated Command Center -> V38 -> Sleeve -> Rotation -> public mirror validation.
 
 on:
   push:
