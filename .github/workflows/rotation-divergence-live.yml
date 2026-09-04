@@ -1,0 +1,158 @@
+name: Rotation divergence live build
+
+on:
+  workflow_dispatch: {}
+  workflow_run:
+    workflows: ["Rotation Theme56 live build"]
+    types: [completed]
+  push:
+    paths:
+      - .github/workflows/rotation-divergence-live.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-divergence-live
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Load current production Rotation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git show origin/main:rotation/data/rotation-theme56.json > /tmp/rotation-theme56.json
+          git show origin/main:rotation/data/status.json > /tmp/rotation-status.json
+          git show origin/main:state.json > /tmp/state.json
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from datetime import date, timedelta
+          from pathlib import Path
+          brief=json.loads(Path('/tmp/rotation-theme56.json').read_text(encoding='utf-8'))
+          status=json.loads(Path('/tmp/rotation-status.json').read_text(encoding='utf-8'))
+          state=json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          if not target or str(brief.get('asof') or '') != target or str(status.get('asof') or '') != target or status.get('status') != 'READY':
+              raise SystemExit(f'Rotation not same-asof READY: target={target} brief={brief.get("asof")} status={status}')
+          d=date.fromisoformat(target)
+          print(f'TARGET_ASOF={target}')
+          print(f'DOWNLOAD_START={(d-timedelta(days=100)).isoformat()}')
+          print(f'DOWNLOAD_END={(d+timedelta(days=1)).isoformat()}')
+          PY
+
+      - name: Install isolated diagnostics dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+
+      - name: Syntax check diagnostics producer
+        run: python -m py_compile leadership/research/rotation_theme56_divergence_diagnostics.py
+
+      - name: Merge the same current Theme56 exact holdings supplements
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          paths=[
+              Path('leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv'),
+              Path('leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv'),
+          ]
+          frames=[pd.read_csv(p) for p in paths if p.exists()]
+          if not frames:
+              raise SystemExit('no Theme56 holdings supplement available')
+          out=pd.concat(frames,ignore_index=True)
+          out['sector_etf']=out['sector_etf'].astype(str).str.upper()
+          out['symbol']=out['symbol'].astype(str).str.upper()
+          # Preserve a row with an actual holding weight when duplicate sources exist.
+          if 'weight_pct' in out.columns:
+              out['_has_weight']=pd.to_numeric(out['weight_pct'],errors='coerce').notna().astype(int)
+              out=out.sort_values(['sector_etf','symbol','_has_weight'],ascending=[True,True,False]).drop(columns=['_has_weight'])
+          out=out.drop_duplicates(['sector_etf','symbol'],keep='first')
+          out.to_csv('/tmp/theme56_exact_holdings_supplements.csv',index=False)
+          print({'rows':len(out),'themes':out['sector_etf'].nunique()})
+          PY
+
+      - name: Build ETF vs constituent divergence diagnostics
+        run: |
+          python leadership/research/rotation_theme56_divergence_diagnostics.py \
+            --brief /tmp/rotation-theme56.json \
+            --base-holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --supplement-holdings /tmp/theme56_exact_holdings_supplements.csv \
+            --fallback-holdings leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
+            --download-start "$DOWNLOAD_START" \
+            --download-end "$DOWNLOAD_END" \
+            --output /tmp/rotation-theme56-divergence.json
+
+      - name: Validate diagnostics contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          obj=json.loads(Path('/tmp/rotation-theme56-divergence.json').read_text(encoding='utf-8'))
+          if str(obj.get('asof') or '') != os.environ['TARGET_ASOF']:
+              raise SystemExit(f'diagnostics stale: {obj.get("asof")}')
+          if int(obj.get('theme_count') or 0) != 56:
+              raise SystemExit(f'expected 56 themes: {obj.get("theme_count")}')
+          if int(obj.get('ready_count') or 0) < 50:
+              raise SystemExit(f'diagnostics coverage too low: {obj.get("ready_count")}')
+          themes=obj.get('themes') or []
+          if len({str(x.get('ticker')) for x in themes}) != 56:
+              raise SystemExit('duplicate/missing Theme56 diagnostics')
+          for row in themes:
+              if row.get('status') != 'READY':
+                  continue
+              if 'divergence_cause' not in row or 'early_phase' not in row or 'horizons' not in row or 'concentration' not in row:
+                  raise SystemExit(f'incomplete diagnostics: {row.get("ticker")}')
+          print({'asof':obj.get('asof'),'ready':obj.get('ready_count'),'themes':obj.get('theme_count')})
+          PY
+
+      - name: Publish only Rotation-owned divergence diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            mkdir -p rotation/data
+            cp /tmp/rotation-theme56-divergence.json rotation/data/rotation-theme56-divergence.json
+            git add -- rotation/data/rotation-theme56-divergence.json
+            unexpected="$(git diff --cached --name-only | grep -v '^rotation/data/rotation-theme56-divergence.json$' || true)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::unexpected staged files"
+              echo "$unexpected"
+              exit 1
+            fi
+            if git diff --cached --quiet; then
+              echo "Divergence diagnostics already current"
+              exit 0
+            fi
+            git commit -m "Publish Rotation divergence diagnostics $TARGET_ASOF"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "main advanced during diagnostics publish; retry $attempt"
+            sleep $((attempt * 2))
+          done
+          echo "::error::unable to publish Rotation divergence diagnostics after retries"
+          exit 1
