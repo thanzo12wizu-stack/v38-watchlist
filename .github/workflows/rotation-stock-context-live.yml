@@ -1,0 +1,242 @@
+name: Rotation strong-stock context live build
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rotation-stock-context-live.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-strong-stock-context-live
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: Asia/Tokyo
+      RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/rotation-exact-flow-internals-20260831
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install isolated context dependencies
+        run: python -m pip install --disable-pip-version-check pandas requests
+
+      - name: Load same-day Rotation and Leadership models
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git show origin/main:state.json > /tmp/state.json
+          git show origin/main:rotation/data/rotation-theme56.json > /tmp/rotation-theme56.json
+          git show origin/main:leadership/index.html > /tmp/leadership-index.html
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          import re
+          from pathlib import Path
+
+          state=json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
+          rotation=json.loads(Path('/tmp/rotation-theme56.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          rotation_asof=str(rotation.get('asof') or '')
+          if not target or rotation_asof != target:
+              raise SystemExit(f'Rotation context prerequisite stale: state={target!r} rotation={rotation_asof!r}')
+
+          html=Path('/tmp/leadership-index.html').read_text(encoding='utf-8')
+          match=re.search(r'<script id="payload" type="application/json">(.*?)</script>', html, flags=re.S)
+          if not match:
+              raise SystemExit('Leadership payload JSON not found in public entrypoint')
+          leadership=json.loads(match.group(1))
+          coverage=leadership.get('coverage') if isinstance(leadership.get('coverage'),dict) else {}
+          market=leadership.get('market') if isinstance(leadership.get('market'),dict) else {}
+          leadership_asof=str(coverage.get('market_asof') or market.get('asof') or '')
+          if leadership_asof != target:
+              raise SystemExit(f'Leadership context prerequisite stale: target={target!r} leadership={leadership_asof!r}')
+          if coverage.get('universe_exact') is not True:
+              raise SystemExit(f'Leadership universe is not exact: {coverage}')
+
+          Path('/tmp/leadership.json').write_text(json.dumps(leadership,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          rows=[]
+          for values in ((rotation.get('observations') or {}).get('rotation_buckets') or {}).values():
+              if isinstance(values,list):
+                  rows.extend(x for x in values if isinstance(x,dict))
+          if len(rows) != 56 or len({str(x.get('ticker') or '') for x in rows}) != 56:
+              raise SystemExit(f'Rotation Theme56 row mismatch: {len(rows)}')
+          synthetic=[]
+          for row in rows:
+              synthetic.append({
+                  'ticker': row.get('ticker'),
+                  'state': row.get('state'),
+                  'price_score_56': row.get('price_score'),
+                  'internal_score_56': row.get('internal_score'),
+                  'internal_delta20_56': row.get('internal_delta20'),
+                  'flow_20d_pct_aum': row.get('flow_20d_pct_aum'),
+                  'flow_provider': row.get('flow_provider'),
+                  'flow_quality': row.get('flow_quality'),
+                  'holdings_quality': row.get('holdings_quality'),
+                  'quality': row.get('quality'),
+              })
+          Path('/tmp/context-fullstack.json').write_text(json.dumps({'asof':target,'rows':synthetic},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(f'TARGET_ASOF={target}')
+          PY
+
+      - name: Merge the same Theme56 holdings supplements
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          paths=[
+              Path('leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv'),
+              Path('leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv'),
+          ]
+          frames=[pd.read_csv(p) for p in paths if p.exists()]
+          if not frames:
+              raise SystemExit('no Theme56 holdings supplement available')
+          out=pd.concat(frames,ignore_index=True)
+          out['sector_etf']=out['sector_etf'].astype(str).str.upper()
+          out['symbol']=out['symbol'].astype(str).str.upper()
+          out=out.drop_duplicates(['sector_etf','symbol'],keep='last')
+          out.to_csv('/tmp/theme56_exact_holdings_supplements.csv',index=False)
+          print({'rows':len(out),'themes':out['sector_etf'].nunique()})
+          PY
+
+      - name: Join current ETF membership to existing Leadership
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile leadership/research/rotation_theme_stock_context.py
+          python -m py_compile leadership/research/rotation_theme56_stock_context.py
+          rm -rf /tmp/rotation-stock-context
+          python leadership/research/rotation_theme56_stock_context.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --leadership /tmp/leadership.json \
+            --fullstack /tmp/context-fullstack.json \
+            --holdings leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --holdings-expansion /tmp/theme56_exact_holdings_supplements.csv \
+            --holdings-fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
+            --output /tmp/rotation-stock-context
+
+      - name: Publish only strong stocks and validate policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          target=os.environ['TARGET_ASOF']
+          path=Path('/tmp/rotation-stock-context/rotation_theme56_stock_context.json')
+          report=json.loads(path.read_text(encoding='utf-8'))
+          coverage=report.get('leadership_coverage') if isinstance(report.get('leadership_coverage'),dict) else {}
+          if str(coverage.get('market_asof') or '') != target:
+              raise SystemExit(f'Leadership context as-of mismatch: {coverage.get("market_asof")} != {target}')
+          items=report.get('industry_context') if isinstance(report.get('industry_context'),list) else []
+          if len(items) != 56:
+              raise SystemExit(f'Context Theme56 count mismatch: {len(items)}')
+
+          roles={'PIONEER','LEADER'}
+          phases={'EMERGING','LEADING'}
+          visible_themes=0
+          visible_stocks=0
+          for item in items:
+              source=item.get('existing_emerging_or_leading_leaders_in_full_intersection') or item.get('existing_emerging_or_leading_leaders_in_top15_intersection') or []
+              strong=[x for x in source if str(x.get('role') or '') in roles and str(x.get('group_phase') or '') in phases][:5]
+              item['existing_emerging_or_leading_leaders_in_full_intersection']=strong
+              item['existing_emerging_or_leading_leaders_in_top15_intersection']=strong
+              if strong:
+                  visible_themes += 1
+                  visible_stocks += len(strong)
+              for stock in strong:
+                  if str(stock.get('role') or '') not in roles or str(stock.get('group_phase') or '') not in phases:
+                      raise SystemExit(f'non-strong stock entered public context: {stock}')
+
+          report['research_only']=False
+          report['status']='READY'
+          report['asof']=target
+          report['themes_with_leaders']=visible_themes
+          report['visible_strong_stock_count']=visible_stocks
+          report['display_policy']='Existing Leadership PIONEER/LEADER in EMERGING/LEADING groups only; preserve existing Leadership order; maximum 5 stocks per Theme.'
+          report.setdefault('guardrails',[]).append('Production output contains no ordinary ETF constituents; only existing Leadership strong-stock roles are exposed.')
+          out=Path('/tmp/rotation-theme56-stock-context.json')
+          out.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'asof':target,'themes':len(items),'themes_with_visible_strong_stocks':visible_themes,'visible_strong_stocks':visible_stocks},ensure_ascii=False,indent=2))
+          PY
+
+      - name: Persist only Rotation strong-stock context to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated=/tmp/rotation-theme56-stock-context.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          rotation=json.loads(Path('rotation/data/rotation-theme56.json').read_text(encoding='utf-8'))
+          if str(state.get('date') or '') != target or str(rotation.get('asof') or '') != target:
+              raise SystemExit('Production as-of advanced while strong-stock context was building')
+          html=Path('leadership/index.html').read_text(encoding='utf-8')
+          match=re.search(r'<script id="payload" type="application/json">(.*?)</script>', html, flags=re.S)
+          if not match:
+              raise SystemExit('Leadership payload missing at publish gate')
+          leadership=json.loads(match.group(1))
+          coverage=leadership.get('coverage') if isinstance(leadership.get('coverage'),dict) else {}
+          market=leadership.get('market') if isinstance(leadership.get('market'),dict) else {}
+          asof=str(coverage.get('market_asof') or market.get('asof') or '')
+          if asof != target:
+              raise SystemExit(f'Leadership as-of advanced/mismatched at publish gate: {asof} != {target}')
+          PY
+            mkdir -p rotation/data
+            cp "$generated" rotation/data/rotation-theme56-stock-context.json
+            git add -- rotation/data/rotation-theme56-stock-context.json
+            unexpected="$(git diff --cached --name-only | grep -v '^rotation/data/rotation-theme56-stock-context.json$' || true)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::Strong-stock context attempted to stage files outside Rotation ownership: $unexpected"
+              exit 1
+            fi
+            if git diff --staged --quiet; then
+              echo 'Rotation strong-stock context already current'
+              exit 0
+            fi
+            git commit -m "Publish Rotation strong-stock context $TARGET_ASOF"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "::warning::Main changed concurrently; retry $attempt/3"
+            sleep $((attempt * 2))
+          done
+
+          echo 'Rotation strong-stock context persistence failed after retries'
+          exit 1
+
+      - name: Upload context diagnostics
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: rotation-strong-stock-context-live
+          path: |
+            /tmp/rotation-stock-context/
+            /tmp/rotation-theme56-stock-context.json
+          if-no-files-found: warn
+          retention-days: 7
