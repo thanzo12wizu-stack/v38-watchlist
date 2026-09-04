@@ -1,4 +1,4 @@
-name: Command Center daily build
+name: Dashboard daily build
 
 on:
   schedule:
@@ -11,45 +11,26 @@ on:
       - 'equity.csv'
       - 'build_dashboard.py'
       - 'requirements.txt'
-      - 'v38_rules.py'
-      - 'build_v38_companion.py'
-      - 'build_v38_strict_loo_live.py'
-      - 'build_v38_tqqq_live.py'
-      - 'build_v38_sleeve_live.py'
-      - 'build_v38_sleeve_refresh.py'
-      - 'v38-normal-sleeve-seed.json'
-      - 'command-center-tradingview-links.js'
-      - 'scripts/validate_atomic_publish.py'
-      - 'tests/test_v38_rules.py'
-      - 'tests/test_v38_companion.py'
-      - 'tests/test_v38_strict_loo_live.py'
-      - 'tests/test_v38_tqqq_live.py'
-      - 'tests/test_v38_sleeve_live.py'
-      - 'tests/test_v38_sleeve_refresh.py'
-      - 'tests/test_atomic_publish_gate.py'
-      - 'tests/test_atomic_pipeline_workflows.py'
+      - 'tests/test_dashboard_build_regressions.py'
+      - 'tests/test_eps_acceleration.py'
       - '.github/workflows/dashboard.yml'
-      - '.github/workflows/v38-live.yml'
-      - '.github/workflows/v38-sleeve-refresh.yml'
-      - '.github/workflows/rotation-live.yml'
-      - '.github/workflows/publish-public-site.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: command-center-build-pipeline-v2
-  cancel-in-progress: true
+  group: dashboard-build-main
+  cancel-in-progress: false
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 70
     env:
       TZ: Asia/Tokyo
-      PIPELINE_BRANCH: pipeline-live
-      CORE_ARTIFACTS: >-
+      LAST_KNOWN_GOOD: f9bf67d815b8203d6caebf6680a126bc50cf3c06
+      DASHBOARD_ARTIFACTS: >-
         command-center.html
         command-center_share.html
         mktcap.json
@@ -62,14 +43,10 @@ jobs:
         inception_vwap.json
         industry_map.json
         universe.csv
-        options_targets.json
-        commit_manifest.json
-        sector_snapshot.json
 
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
           fetch-depth: 1
 
       - name: Sync latest main before build
@@ -78,7 +55,31 @@ jobs:
           set -euo pipefail
           git fetch --depth=1 origin main
           git reset --hard origin/main
-          echo "BUILD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "DASHBOARD_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Restore last known-good dashboard chronology when needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_date="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("state.json")
+          try:
+              print(str(json.loads(p.read_text(encoding="utf-8")).get("date") or ""))
+          except Exception:
+              print("")
+          PY
+          )"
+          if [[ -z "$current_date" || "$current_date" == "2026-09-02" ]]; then
+            git fetch --depth=1 origin "$LAST_KNOWN_GOOD"
+            for file in state.json trend_history.json daily_log.csv; do
+              git show "$LAST_KNOWN_GOOD:$file" > "$file"
+            done
+            echo "Restored known-good dashboard chronology from 2026-09-01"
+          else
+            echo "Using current dashboard chronology: $current_date"
+          fi
 
       - uses: actions/setup-python@v7
         with:
@@ -87,17 +88,51 @@ jobs:
       - name: Install dependencies
         run: pip install --disable-pip-version-check -r requirements.txt pytest
 
-      - name: Command Center preflight tests
+      - name: Dashboard preflight tests
         run: |
-          python -m py_compile build_dashboard.py scripts/validate_atomic_publish.py
+          python -m py_compile build_dashboard.py
           pytest -q \
             tests/test_dashboard_build_regressions.py \
-            tests/test_options_positioning_quality.py \
-            tests/test_eps_acceleration.py \
-            tests/test_atomic_publish_gate.py \
-            tests/test_atomic_pipeline_workflows.py
+            tests/test_eps_acceleration.py
 
-      - name: Build Command Center
+      - name: Determine latest completed QQQ session
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(python - <<'PY'
+          import datetime as dt
+          from zoneinfo import ZoneInfo
+          import yfinance as yf
+
+          now = dt.datetime.now(dt.timezone.utc).astimezone(ZoneInfo("America/New_York"))
+          cutoff = now.date()
+          if (now.hour, now.minute) < (16, 15):
+              cutoff -= dt.timedelta(days=1)
+
+          try:
+              df = yf.download(
+                  "QQQ",
+                  period="10d",
+                  interval="1d",
+                  auto_adjust=False,
+                  progress=False,
+                  threads=False,
+              )
+              dates = []
+              for x in df.index:
+                  d = getattr(x, "date", lambda: x)()
+                  if d <= cutoff:
+                      dates.append(d)
+              print(max(dates).isoformat() if dates else "")
+          except Exception:
+              print("")
+          PY
+          )"
+          echo "session=$target" >> "$GITHUB_OUTPUT"
+          echo "Latest completed QQQ session: ${target:-unknown}"
+
+      - name: Build dashboard
         id: build
         env:
           V38_UNIVERSE_CSV: universe.csv
@@ -130,33 +165,51 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python build_dashboard.py 2>&1 | tee build-dashboard.log
-          if grep -q "::warning::as-of regression:" build-dashboard.log; then
-            echo "skipped=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skipped=false" >> "$GITHUB_OUTPUT"
-          fi
+          target="${{ steps.target.outputs.session }}"
+          final_log=build-dashboard.log
 
-      - name: Add TradingView ticker links
-        if: steps.build.outputs.skipped != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
+          for attempt in 1 2; do
+            echo "Dashboard build attempt $attempt"
+            python build_dashboard.py 2>&1 | tee "$final_log"
 
-          path = Path('command-center.html')
-          html = path.read_text(encoding='utf-8')
-          tag = '<script src="command-center-tradingview-links.js?v=1"></script>'
-          if tag not in html:
-              if '</body>' not in html:
-                  raise SystemExit('command-center.html has no </body> for TradingView link injection')
-              html = html.replace('</body>', tag + '\n</body>', 1)
-              path.write_text(html, encoding='utf-8')
-          print('TRADINGVIEW_LINKS_INJECTED')
+            if grep -q "::warning::as-of regression:" "$final_log"; then
+              echo "skipped=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            candidate="$(python - <<'PY'
+          import json
+          print(str(json.load(open("state.json", encoding="utf-8")).get("date") or ""))
           PY
+            )"
+            echo "Dashboard candidate session: $candidate"
 
-      - name: Validate Command Center generated files
+            if [[ -z "$target" || "$candidate" == "$target" ]]; then
+              echo "skipped=false" >> "$GITHUB_OUTPUT"
+              echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [[ "$candidate" > "$target" ]]; then
+              echo "::error::Dashboard candidate is ahead of QQQ completed session: candidate=$candidate target=$target"
+              exit 1
+            fi
+
+            if [[ "$attempt" -lt 2 ]]; then
+              echo "::warning::Dashboard lagged QQQ session ($candidate < $target); retry once"
+              sleep 20
+              final_log=build-dashboard-retry.log
+            fi
+          done
+
+          echo "::error::Dashboard could not reach latest completed QQQ session after retry"
+          exit 1
+
+      - name: Report skipped stale run
+        if: steps.build.outputs.skipped == 'true'
+        run: echo "As-of regression guard kept the newer public Dashboard intact"
+
+      - name: Validate dashboard generated files
         if: steps.build.outputs.skipped != 'true'
         shell: bash
         run: |
@@ -167,72 +220,66 @@ jobs:
           import re
           from pathlib import Path
 
-          for name, minimum in {
-              'command-center.html': 200_000,
-              'command-center_share.html': 2_500,
-              'state.json': 100,
-              'trend_history.json': 100,
-              'daily_log.csv': 100,
-              'commit_manifest.json': 20,
-              'sector_snapshot.json': 100,
-          }.items():
-              path = Path(name)
-              if not path.is_file() or path.stat().st_size < minimum:
-                  raise SystemExit(f'invalid generated file: {name}')
+          required = {
+              "command-center.html": 200_000,
+              "command-center_share.html": 2_500,
+              "state.json": 100,
+              "trend_history.json": 100,
+              "daily_log.csv": 100,
+          }
+          for name, minimum in required.items():
+              p = Path(name)
+              if not p.is_file() or p.stat().st_size < minimum:
+                  raise SystemExit(f"invalid dashboard artifact: {name}")
 
-          state = json.loads(Path('state.json').read_text(encoding='utf-8'))
-          state_date = str(state.get('date') or '')
-          iso = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-          if not iso.fullmatch(state_date):
-              raise SystemExit(f'invalid state date: {state_date!r}')
-
-          main = Path('command-center.html').read_text(encoding='utf-8')
-          share = Path('command-center_share.html').read_text(encoding='utf-8')
-          if 'Command Center' not in main or f'分析基準日 {state_date}' not in main:
-              raise SystemExit('Command Center HTML marker/date mismatch')
-          if 'command-center-tradingview-links.js' not in main:
-              raise SystemExit('TradingView ticker link script missing from Command Center HTML')
-          if not Path('command-center-tradingview-links.js').is_file():
-              raise SystemExit('TradingView ticker link script file missing')
-          if state_date not in share:
-              raise SystemExit('share HTML date mismatch')
+          state = json.loads(Path("state.json").read_text(encoding="utf-8"))
+          state_date = str(state.get("date") or "")
+          if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state_date):
+              raise SystemExit(f"invalid state date: {state_date!r}")
 
           log_dates = []
-          with Path('daily_log.csv').open(encoding='utf-8', newline='') as fh:
+          with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
               for row in csv.DictReader(fh):
-                  d = str(row.get('date') or '')
-                  if iso.fullmatch(d):
+                  d = str(row.get("date") or "")
+                  if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
                       log_dates.append(d)
           if not log_dates or max(log_dates) != state_date:
-              raise SystemExit(f'daily log mismatch: {state_date}')
+              raise SystemExit(f"daily_log mismatch: state={state_date} log={max(log_dates) if log_dates else None}")
 
-          trend = json.loads(Path('trend_history.json').read_text(encoding='utf-8'))
+          trend = json.loads(Path("trend_history.json").read_text(encoding="utf-8"))
           trend_dates = []
           if isinstance(trend, list):
-              for row in trend:
-                  if isinstance(row, (list, tuple)) and row:
-                      d = str(row[0] or '')
-                  elif isinstance(row, dict):
-                      d = str(row.get('date') or '')
+              for item in trend:
+                  if isinstance(item, (list, tuple)) and item:
+                      d = str(item[0] or "")
+                  elif isinstance(item, dict):
+                      d = str(item.get("date") or "")
                   else:
-                      d = ''
-                  if iso.fullmatch(d):
+                      d = ""
+                  if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
                       trend_dates.append(d)
           if not trend_dates or max(trend_dates) != state_date:
-              raise SystemExit(f'trend history mismatch: {state_date}')
+              raise SystemExit(f"trend mismatch: state={state_date} trend={max(trend_dates) if trend_dates else None}")
 
-          manifest = json.loads(Path('commit_manifest.json').read_text(encoding='utf-8'))
-          failed = [k for k in ('html', 'share', 'state', 'trend', 'log') if manifest.get(k) != 'ok']
-          if failed:
-              raise SystemExit(f'critical persistence incomplete: {failed}')
-          print('COMMAND_CENTER_VALIDATE_PASS', state_date)
+          main = Path("command-center.html").read_text(encoding="utf-8")
+          m = re.search(r"分析基準日\s+(\d{4}-\d{2}-\d{2})", main)
+          if not m or m.group(1) != state_date:
+              raise SystemExit(f"main HTML date mismatch: state={state_date} html={m.group(1) if m else None}")
+
+          share = Path("command-center_share.html").read_text(encoding="utf-8")
+          m = re.search(r"class=[\"']asof[\"'][^>]*>(\d{4}-\d{2}-\d{2})<", share)
+          if not m or m.group(1) != state_date:
+              raise SystemExit(f"share HTML date mismatch: state={state_date} share={m.group(1) if m else None}")
+
+          prev = state.get("prevday") if isinstance(state.get("prevday"), dict) else {}
+          prev_date = str(prev.get("date") or "")
+          if prev_date and prev_date >= state_date:
+              raise SystemExit(f"invalid comparison baseline: prevday={prev_date} state={state_date}")
+
+          print(f"DASHBOARD_VALIDATE_PASS {state_date} comparison={prev_date or 'none'}")
           PY
 
-      - name: Report skipped stale run
-        if: steps.build.outputs.skipped == 'true'
-        run: echo "As-of regression guard kept the newer Command Center session intact"
-
-      - name: Stage Command Center and caches off public main
+      - name: Publish dashboard only to main
         if: steps.build.outputs.skipped != 'true'
         shell: bash
         run: |
@@ -240,46 +287,38 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          generated="$(mktemp -d)"
-          for file in $CORE_ARTIFACTS; do
+          staging="$(mktemp -d)"
+          for file in $DASHBOARD_ARTIFACTS; do
             if [[ -f "$file" ]]; then
-              mkdir -p "$generated/$(dirname "$file")"
-              cp -a "$file" "$generated/$file"
+              mkdir -p "$staging/$(dirname "$file")"
+              cp -a "$file" "$staging/$file"
             fi
           done
 
-          git fetch --depth=1 origin main
-          if [[ "$(git rev-parse origin/main)" != "$BUILD_SOURCE_SHA" ]]; then
-            echo "::error::Public main advanced during Command Center build; reject stale staging snapshot"
-            exit 1
-          fi
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
 
-          old_stage=""
-          if git fetch --depth=1 origin "$PIPELINE_BRANCH"; then
-            old_stage="$(git rev-parse "origin/$PIPELINE_BRANCH")"
-          fi
+            for file in $DASHBOARD_ARTIFACTS; do
+              if [[ -f "$staging/$file" ]]; then
+                mkdir -p "$(dirname "$file")"
+                cp -a "$staging/$file" "$file"
+                git add -- "$file"
+              fi
+            done
 
-          git reset --hard origin/main
-          for file in $CORE_ARTIFACTS; do
-            if [[ -f "$generated/$file" ]]; then
-              mkdir -p "$(dirname "$file")"
-              cp -a "$generated/$file" "$file"
-              git add -- "$file"
+            if git diff --staged --quiet; then
+              echo "Dashboard already current"
+              exit 0
             fi
+
+            asof="$(python -c 'import json; print(json.load(open("state.json", encoding="utf-8")).get("date",""))')"
+            git commit -m "Daily dashboard rebuild + cache refresh $asof"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
           done
 
-          if ! git diff --staged --quiet; then
-            git commit -m "Stage Command Center live snapshot"
-          fi
-
-          if [[ -n "$old_stage" ]]; then
-            git push \
-              --force-with-lease="refs/heads/$PIPELINE_BRANCH:$old_stage" \
-              origin "HEAD:refs/heads/$PIPELINE_BRANCH"
-          else
-            git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"
-          fi
-
-      - name: Hand off staged Command Center snapshot
-        if: steps.build.outputs.skipped != 'true'
-        run: echo "Command Center staged atomically; V38 live build is the next pipeline stage"
+          echo "::error::Dashboard publish failed after 3 attempts"
+          exit 1
