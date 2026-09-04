@@ -48,6 +48,13 @@ jobs:
             fi
           done
 
+          # Keep the previous same-session READY TQQQ result and its provider
+          # cache available as last-known-good fallbacks. Fresh acquisition is
+          # attempted first; these files are restored only when a provider is
+          # temporarily one session behind.
+          [[ -f tqqq-panic-state.json ]] && cp tqqq-panic-state.json /tmp/tqqq-panic-state-lkg.json
+          [[ -f v38-tqqq-live-source-cache.json ]] && cp v38-tqqq-live-source-cache.json /tmp/v38-tqqq-live-source-cache-lkg.json
+
           python - <<'PY'
           import json
           from pathlib import Path
@@ -98,8 +105,13 @@ jobs:
             fi
           done
           if [[ "$fetched" != true ]]; then
-            echo "::error::TQQQ source prefetch failed after 4 attempts"
-            exit 1
+            if [[ -s /tmp/v38-tqqq-live-source-cache-lkg.json ]]; then
+              cp /tmp/v38-tqqq-live-source-cache-lkg.json v38-tqqq-live-source-cache.json
+              echo "::warning::TQQQ source prefetch failed; restored last-known-good provider cache"
+            else
+              echo "::error::TQQQ source prefetch failed and no last-known-good provider cache exists"
+              exit 1
+            fi
           fi
 
       - name: Prepare verified PIT taxonomy bootstrap
@@ -149,15 +161,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ready=false
-          for attempt in 1 2 3 4; do
-            echo "CURRENT30/TQQQ decision attempt ${attempt}/4"
-            rm -f tqqq-panic-state.json
-            python build_v38_tqqq_live.py \
-              --state state.json \
-              --cache v38-tqqq-live-source-cache.json \
-              --out tqqq-panic-state.json
-            if python - <<'PY'
+          rm -f tqqq-panic-state.json
+          python build_v38_tqqq_live.py \
+            --state state.json \
+            --cache v38-tqqq-live-source-cache.json \
+            --out tqqq-panic-state.json
+
+          if python - <<'PY'
           import json
           from pathlib import Path
           state=json.loads(Path('state.json').read_text(encoding='utf-8'))
@@ -186,20 +196,39 @@ jobs:
               )
           print('CURRENT30_TQQQ_READY', asof, tqqq.get('underlying_target_pct'), tqqq.get('requested_target_pct'))
           PY
-            then
-              ready=true
-              break
+          then
+            exit 0
+          fi
+
+          # Do not turn a one-session provider delay into a pipeline failure or
+          # overwrite a newer READY result with DATA REQUIRED. The fallback is
+          # accepted only for the exact Command Center as-of.
+          if [[ -s /tmp/tqqq-panic-state-lkg.json ]] && python - <<'PY'
+          import json
+          from pathlib import Path
+          expected = str(json.loads(Path('state.json').read_text(encoding='utf-8')).get('date') or '')
+          prior = json.loads(Path('/tmp/tqqq-panic-state-lkg.json').read_text(encoding='utf-8'))
+          ok = (
+              bool(expected)
+              and prior.get('schema') == 'v38-tqqq-panic-state-1'
+              and prior.get('asof') == expected
+              and prior.get('live_generation_status') == 'READY'
+              and (prior.get('current30') or {}).get('status') == 'READY'
+              and prior.get('underlying_target_pct') is not None
+              and prior.get('requested_target_pct') is not None
+          )
+          if not ok:
+              raise SystemExit('TQQQ_LAST_KNOWN_GOOD_NOT_ELIGIBLE')
+          print('TQQQ_LAST_KNOWN_GOOD_READY', expected)
+          PY
+          then
+            cp /tmp/tqqq-panic-state-lkg.json tqqq-panic-state.json
+            if [[ -s /tmp/v38-tqqq-live-source-cache-lkg.json ]]; then
+              cp /tmp/v38-tqqq-live-source-cache-lkg.json v38-tqqq-live-source-cache.json
             fi
-            if [[ "$attempt" -lt 4 ]]; then
-              echo "::warning::CURRENT30/TQQQ not current; reacquiring all dedicated market inputs"
-              rm -f v38-tqqq-live-source-cache.json
-              python build_v38_tqqq_live.py \
-                --prefetch-cache v38-tqqq-live-source-cache.json || true
-              sleep $((attempt * 15))
-            fi
-          done
-          if [[ "$ready" != true ]]; then
-            echo "::error::CURRENT30/TQQQ failed to become READY after 4 fresh acquisition/decision attempts"
+            echo "::warning::CURRENT30 provider is temporarily behind; retained same-session READY last-known-good"
+          else
+            echo "::error::CURRENT30/TQQQ fresh inputs are not READY and no same-session READY last-known-good exists"
             exit 1
           fi
 

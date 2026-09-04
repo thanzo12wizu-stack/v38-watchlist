@@ -208,6 +208,9 @@ def test_isolated_v38_workflow_prefetches_tqqq_before_producer_and_companion():
     assert prefetch < producer < companion
     assert "--prefetch-cache v38-tqqq-live-source-cache.json" in workflow
     assert "--cache v38-tqqq-live-source-cache.json" in workflow
+    assert "TQQQ_LAST_KNOWN_GOOD_READY" in workflow
+    assert "retained same-session READY last-known-good" in workflow
+    assert "reacquiring all dedicated market inputs" not in workflow
     assert "build_dashboard.py" not in workflow
     assert "v38-tqqq-live-source-cache.json" not in Path(
         "scripts/export_public_site.py"
