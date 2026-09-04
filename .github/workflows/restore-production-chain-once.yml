@@ -1,4 +1,4 @@
-name: Validate downstream production chain once
+name: Fix RSI and site consistency once
 
 on:
   push:
@@ -8,17 +8,17 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
-  group: validate-downstream-production-chain-once
+  group: fix-rsi-site-consistency-once
   cancel-in-progress: false
 
 jobs:
-  validate-and-dispatch:
+  patch-test-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -29,21 +29,189 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Validate production ownership and wiring
+      - name: Patch RSI diagnostics and V38 production Rotation source
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check pytest
-          pytest -q \
-            tests/test_atomic_pipeline_workflows.py \
-            tests/test_atomic_publish_gate.py \
-            tests/test_public_site_export.py
+          python - <<'PY'
+          from pathlib import Path
+          import re
 
-      - name: Dispatch downstream chain once
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {text.count(old)}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # 1) RSI Reset diagnostic count must come from actual live positions,
+          # not from the current watch/monitor subset.
+          replace_once(
+              'build_v38_sleeve_live.py',
+              '            "active_positions": sum(row.get("status") == "ACTIVE_POSITION" for row in reset_monitor),',
+              '            "active_positions": len(reset.get("positions", [])),',
+          )
+
+          # 2) Expose the actual audited Reset holdings to the V38 UI.
+          replace_once(
+              'build_v38_companion.py',
+              '            "position_count": reset_sleeve.get("position_count") if sleeve_ready else None,',
+              '            "position_count": reset_sleeve.get("position_count") if sleeve_ready else None,\n'
+              '            "positions": [dict(p) for p in reset_sleeve.get("positions", []) if isinstance(p, dict)] if sleeve_ready else [],',
+          )
+
+          page = Path('command-center-v38.html')
+          html = page.read_text(encoding='utf-8')
+
+          old_open = '<section id="resetwatch" class="panel"><div class="card"><div class="hdr"><h2>正式Resetシグナル</h2>'
+          new_open = '''<section id="resetwatch" class="panel">
+          <div class="card"><div class="hdr"><h2>現在の正式Reset保有</h2><span class="badge" id="resetHoldingStatus">判定中</span></div><div class="explain" id="resetHoldingExplain">正式Resetの実保有を確認中。</div><div class="row"><div class="mini"><span>保有</span><b id="resetHoldingCount">—</b></div><div class="mini"><span>空き枠</span><b id="resetFreeSlots">—</b></div><div class="mini"><span>新規Signal</span><b id="resetNewSignalCount">—</b></div><div class="mini"><span>次に待つ</span><b id="resetNextWatch">—</b></div></div><div class="scroll"><table class="ranktable"><thead><tr><th>銘柄</th><th>Theme</th><th>Entry日</th><th>現在値</th><th>1枠</th><th>行動</th></tr></thead><tbody id="resetHoldingRows"></tbody></table></div></div>
+          <div class="card"><div class="hdr"><h2>正式Resetシグナル</h2>'''
+          if html.count(old_open) != 1:
+              raise SystemExit('command-center-v38.html: reset section anchor mismatch')
+          html = html.replace(old_open, new_open, 1)
+
+          old_const = "const KEY='v38_audited_positions_v1';const LIVE_HOLDINGS_KEY='v38_holdings';let STATE=null,TQQQ_STATE=null,ROT=null,ROTCTX=null;"
+          new_const = "const KEY='v38_audited_positions_v1';const LIVE_HOLDINGS_KEY='v38_holdings';let STATE=null,TQQQ_STATE=null,ROT=null;"
+          if html.count(old_const) != 1:
+              raise SystemExit('command-center-v38.html: state declaration mismatch')
+          html = html.replace(old_const, new_const, 1)
+
+          # Remove stock-level context sourced from an old research branch.
+          html, n = re.subn(
+              r"function rotationFor\(ticker\)\{.*?\}\nfunction rotationLabel\(x\)\{.*?\}",
+              "function rotationLabel(x){return'Rotation: 正式順位には未使用'}",
+              html,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('command-center-v38.html: rotation label function mismatch')
+
+          # Name the actual Reset holdings in the top-level decision instead of
+          # saying only '1 stock held'.
+          old_sub = "$('resetDecisionSub').textContent=resetCount?`${resetCount}銘柄保有中`:'現在の正式保有なし';"
+          new_sub = "let resetNames=(r.positions||[]).map(x=>x.symbol).filter(Boolean);$('resetDecisionSub').textContent=resetCount?(resetNames.length?`正式保有 ${resetNames.join(' / ')} (${resetCount}銘柄)`:`${resetCount}銘柄保有中`):'現在の正式保有なし';"
+          if html.count(old_sub) != 1:
+              raise SystemExit('command-center-v38.html: reset decision subtitle mismatch')
+          html = html.replace(old_sub, new_sub, 1)
+
+          reset_fn = r'''function renderResetWatch(){
+            let r=STATE?.panic_reset||{},sum=r.monitor_summary||{},rows=r.monitor||[],holdings=r.positions||[];
+            let holdingSymbols=new Set(holdings.map(x=>x.symbol));
+            let signals=rows.filter(x=>x.status==='SIGNAL_TODAY_NEXT_OPEN'&&!holdingSymbols.has(x.symbol));
+            let watch=rows.filter(x=>x.status!=='SIGNAL_TODAY_NEXT_OPEN'&&x.status!=='ACTIVE_POSITION'&&!holdingSymbols.has(x.symbol));
+            let maxPos=r.max_positions??4,free=Math.max(0,maxPos-holdings.length),themeCap=r.max_theme_positions??2;
+            let priority={RSI30_TOUCHED_WAIT_RISE:0,APPROACHING_RSI30:1,NEAR_RSI30:2,WATCHING:3,SIGNAL_OCCURRED:4};
+            let visible=[...watch].sort((a,b)=>(priority[a.status]??99)-(priority[b.status]??99)||(a.distance_to_30??999)-(b.distance_to_30??999)||String(a.symbol).localeCompare(String(b.symbol)));
+            let next=visible[0];
+            $('resetHoldingStatus').textContent=r.status==='READY / LIVE'?`${holdings.length}/${maxPos}枠`:'DATA REQUIRED';
+            $('resetHoldingCount').textContent=r.status==='READY / LIVE'?`${holdings.length}銘柄`:'—';
+            $('resetFreeSlots').textContent=r.status==='READY / LIVE'?`${free}枠`:'—';
+            $('resetNewSignalCount').textContent=r.status==='READY / LIVE'?`${signals.length}銘柄`:'—';
+            $('resetNextWatch').textContent=next?`${next.symbol} / ${resetStatusJa(next.status)}`:'なし';
+            $('resetHoldingExplain').textContent=r.status!=='READY / LIVE'?'Reset live stateが揃っていません。':holdings.length?`現在の正式保有は ${holdings.map(x=>x.symbol).join(' / ')}。最大${maxPos}枠・同一Theme最大${themeCap}枠。空き${free}枠があっても正式Signalがなければ追加買いしません。`:`現在の正式保有なし。空き${free}枠があっても正式Signalが出るまで買いません。`;
+            $('resetHoldingRows').innerHTML=holdings.map(x=>`<tr><td><b>${esc(x.symbol)}</b></td><td>${esc(x.theme||'—')}</td><td>${esc(x.entry_date||'—')}</td><td>${x.close==null?'—':'$'+fmt(x.close,2)}</td><td>${pct(r.slot_pct??2.9)}</td><td><b>保有継続（20営業日固定）</b></td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">現在の正式Reset保有はありません。</div></td></tr>';
+            $('resetSignalStatus').textContent=r.status==='READY / LIVE'?(signals.length?`正式Signal ${signals.length}銘柄`:'正式Signalなし'):'DATA REQUIRED';
+            $('resetSignalRows').innerHTML=signals.map(x=>`<tr><td><b>${esc(x.symbol)}</b></td><td>${esc(x.theme||'—')}</td><td>${x.current_rsi14==null?'—':fmt(x.current_rsi14,1)}</td><td>${esc(x.signal_date||STATE.asof||'—')}</td><td><b>${esc(resetStatusJa(x.status))}</b></td><td><b>翌営業日寄りEntry</b></td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">現在、正式Resetシグナルはありません。空き枠があっても追加買いしません。</div></td></tr>';
+            $('resetWatchStatus').textContent=r.status==='READY / LIVE'?'LIVE / '+watch.length+'銘柄':'DATA REQUIRED';
+            $('resetActiveCount').textContent=holdings.length??sum.active_positions??'—';
+            $('resetTouchedCount').textContent=watch.filter(x=>x.status==='RSI30_TOUCHED_WAIT_RISE').length;
+            $('resetNear5Count').textContent=watch.filter(x=>x.distance_to_30!=null&&x.distance_to_30<=5).length;
+            $('resetWatchCount').textContent=watch.length;
+            $('resetWatchRows').innerHTML=visible.map(x=>`<tr><td><b>${esc(resetStatusJa(x.status))}</b></td><td><b>${esc(x.symbol)}</b></td><td>${x.current_rsi14==null?'—':fmt(x.current_rsi14,1)}</td><td>${x.distance_to_30==null?'—':fmt(x.distance_to_30,1)+'pt'}</td><td>${esc(x.theme||'—')}</td><td>${x.theme_rs_pct_day0==null?'—':fmt(x.theme_rs_pct_day0,1)}</td><td>${x.theme_rank_improvement20_day0==null?'—':fmt(x.theme_rank_improvement20_day0,1)+'pt'}</td><td>${x.theme_breadth21_day0==null?'—':fmt(x.theme_breadth21_day0,1)+'%'}</td><td>${x.day0_rs63_rank==null?'—':'#'+x.day0_rs63_rank}</td><td>${x.current_theme_rs63_top3?'YES':'NO'}</td><td>${x.signal_window_days_left??'—'}</td></tr>`).join('')||'<tr><td colspan="11"><div class="empty">現在、正式Signal前のRSI30接近候補はありません。</div></td></tr>';
+          }'''
+          html, n = re.subn(
+              r"function renderResetWatch\(\)\{.*?\}\nfunction renderAllocation",
+              reset_fn + "\nfunction renderAllocation",
+              html,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('command-center-v38.html: reset renderer mismatch')
+
+          rotation_fn = r'''function renderRotation(){
+            if(!ROT){$('rotStrong').textContent=$('rotWatch').textContent=$('rotWeak').textContent='本番Rotationデータ取得失敗。正式V38順位には影響なし。';return}
+            let themes=ROT.observations?.rotation_buckets?.themes||[];
+            let strong=themes.filter(x=>x.state==='CURRENT_STRENGTH');
+            let watch=themes.filter(x=>String(x.state||'').includes('LEAD')||String(x.state||'').includes('WATCH')||String(x.state||'').includes('MIXED'));
+            let weak=themes.filter(x=>{let s=String(x.state||'');return s.includes('DIVERGENCE')||s.includes('DISTRIBUTION')||s.includes('WEAK')||s.includes('BREAKDOWN')});
+            let names=a=>(a||[]).slice(0,8).map(x=>`${x.label||x.ticker} (${x.ticker})`).join(' / ')||'なし';
+            $('rotStrong').textContent=names(strong)+'。本番Rotation Theme56の現在強い領域。買いシグナルではありません。';
+            $('rotWatch').textContent=names(watch)+'。本番Rotationの先行・監視Context。';
+            $('rotWeak').textContent=names(weak)+'。本番Rotationの乖離・警戒Context。Rotation単独で強制売却しません。';
+            if(STATE)renderRanking()
+          }'''
+          html, n = re.subn(
+              r"function renderRotation\(\)\{.*?\}\nasync function load",
+              rotation_fn + "\nasync function load",
+              html,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('command-center-v38.html: rotation renderer mismatch')
+
+          load_fn = r'''async function load(){
+            try{
+              STATE=await fetch('v38-live-state.json',{cache:'no-store'}).then(r=>r.json());
+              $('asof').textContent=`分析基準日 ${STATE.asof} ／ Source: ${STATE.source}`;
+              renderPositions();renderToday();renderTqqq();renderAllocation();renderResetWatch()
+            }catch{$('asof').textContent='V38 state DATA REQUIRED';return}
+            try{
+              ROT=await fetch('rotation/data/rotation-theme56.json',{cache:'no-store'}).then(r=>r.json());
+              if(ROT.asof!==STATE.asof)ROT=null
+            }catch{ROT=null}
+            renderRotation()
+          }'''
+          html, n = re.subn(
+              r"async function load\(\)\{.*?\}\nload\(\);",
+              load_fn + "\nload();",
+              html,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('command-center-v38.html: load function mismatch')
+
+          if 'research/rotation-exact-flow-internals' in html:
+              raise SystemExit('stale research Rotation dependency remains')
+          page.write_text(html, encoding='utf-8')
+
+          test = Path('tests/test_v38_site_consistency.py')
+          test.write_text('''from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\n\ndef test_reset_active_count_comes_from_positions():\n    text = (ROOT / "build_v38_sleeve_live.py").read_text(encoding="utf-8")\n    assert '\"active_positions\": len(reset.get(\"positions\", []))' in text\n\ndef test_companion_exposes_reset_positions():\n    text = (ROOT / "build_v38_companion.py").read_text(encoding="utf-8")\n    assert '\"positions\": [dict(p) for p in reset_sleeve.get(\"positions\", [])' in text\n\ndef test_v38_ui_uses_production_rotation_and_names_reset_holdings():\n    text = (ROOT / "command-center-v38.html").read_text(encoding="utf-8")\n    assert "rotation/data/rotation-theme56.json" in text\n    assert "research/rotation-exact-flow-internals" not in text\n    assert 'id="resetHoldingRows"' in text\n    assert 'id="resetFreeSlots"' in text\n    assert "正式保有 ${resetNames.join(' / ')}" in text\n    assert "空き枠があっても追加買いしません" in text\n''', encoding='utf-8')
+          PY
+
+      - name: Run targeted regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -r requirements.txt pytest
+          python -m py_compile build_v38_sleeve_live.py build_v38_companion.py
+          pytest -q \
+            tests/test_v38_site_consistency.py \
+            tests/test_v38_companion.py \
+            tests/test_v38_sleeve_live.py \
+            tests/test_v38_sleeve_refresh.py
+
+      - name: Commit display and consistency fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build_v38_sleeve_live.py build_v38_companion.py command-center-v38.html tests/test_v38_site_consistency.py
+          git diff --cached --check
+          git diff --cached --name-only
+          git commit -m 'Clarify RSI holdings and align V38 with production Rotation'
+          git push origin HEAD:main
+
+      - name: Dispatch full downstream verification
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           gh workflow run production-downstream-chain.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo 'Downstream production chain dispatched for end-to-end verification.'
+          echo 'Full V38 downstream chain dispatched after consistency fixes.'
