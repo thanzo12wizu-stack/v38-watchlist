@@ -1,6 +1,9 @@
 name: Command Center daily build
 
 on:
+  schedule:
+    - cron: '17 22 * * 1-5'
+    - cron: '17 4 * * 2-6'
   workflow_dispatch: {}
 
 permissions:
