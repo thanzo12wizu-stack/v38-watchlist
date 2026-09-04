@@ -52,6 +52,7 @@ jobs:
           python -m py_compile \
             build_v38_sleeve_live.py \
             build_v38_sleeve_refresh.py \
+            run_v38_sleeve_refresh_live.py \
             build_v38_companion.py \
             build_v38_strict_loo_live.py \
             v38_rules.py
@@ -76,7 +77,7 @@ jobs:
           refreshed=false
           for attempt in 1 2 3 4; do
             echo "Sleeve/RSI Reset refresh attempt ${attempt}/4"
-            if python build_v38_sleeve_refresh.py \
+            if python run_v38_sleeve_refresh_live.py \
               --companion v38-live-state.json \
               --state v38-sleeve-state.json \
               --seed v38-normal-sleeve-seed.json \
@@ -102,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           cp /tmp/tqqq-panic-state-before.json /tmp/tqqq-panic-state-repeat.json
-          python build_v38_sleeve_refresh.py \
+          python run_v38_sleeve_refresh_live.py \
             --companion v38-live-state.json \
             --state /tmp/v38-sleeve-state-before.json \
             --seed v38-normal-sleeve-seed.json \
