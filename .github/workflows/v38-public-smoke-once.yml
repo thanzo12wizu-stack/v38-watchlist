@@ -36,7 +36,6 @@ jobs:
           from selenium import webdriver
           from selenium.webdriver.chrome.options import Options
           from selenium.webdriver.common.by import By
-          from selenium.webdriver.support.ui import WebDriverWait
 
           url = 'https://thanzo12wizu-stack.github.io/v38-watchlist/command-center-v38.html'
           options = Options()
@@ -44,54 +43,42 @@ jobs:
           options.add_argument('--no-sandbox')
           options.add_argument('--disable-dev-shm-usage')
           options.add_argument('--window-size=1440,2400')
+          options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
 
-          last_error = None
-          result = None
-          for attempt in range(12):
-              driver = webdriver.Chrome(options=options)
-              try:
-                  driver.get(f'{url}?smoke={int(time.time())}-{attempt}')
-                  WebDriverWait(driver, 12).until(
-                      lambda d: d.find_element(By.ID, 'asof').text.strip() not in ('', 'データ読込中')
-                  )
-                  body = driver.find_element(By.TAG_NAME, 'body').text
-                  asof = driver.find_element(By.ID, 'asof').text.strip()
-                  reset_holding = driver.find_element(By.ID, 'resetHoldingCount').text.strip()
-                  reset_active = driver.find_element(By.ID, 'resetActiveCount').text.strip()
-                  rot_strong = driver.find_element(By.ID, 'rotStrong').text.strip()
-                  rot_watch = driver.find_element(By.ID, 'rotWatch').text.strip()
-                  rot_weak = driver.find_element(By.ID, 'rotWeak').text.strip()
+          driver = webdriver.Chrome(options=options)
+          try:
+              driver.get(f'{url}?smoke={int(time.time())}')
+              time.sleep(8)
+              def text(id_):
+                  try:
+                      return driver.find_element(By.ID, id_).text.strip()
+                  except Exception as e:
+                      return f'<missing:{type(e).__name__}>'
 
-                  if 'VIK' not in body:
-                      raise AssertionError('VIK is not visible in rendered public V38 page')
-                  if reset_holding != '1銘柄':
-                      raise AssertionError(f'resetHoldingCount={reset_holding!r}, expected 1銘柄')
-                  if reset_active != '1':
-                      raise AssertionError(f'resetActiveCount={reset_active!r}, expected 1')
-                  if asof == 'データ読込中' or '判定中' in asof:
-                      raise AssertionError(f'asof still placeholder: {asof!r}')
-                  if any(x in ('', '読込中', '判定中') for x in (rot_strong, rot_watch, rot_weak)):
-                      raise AssertionError(f'Rotation still placeholder: {(rot_strong, rot_watch, rot_weak)!r}')
+              body = driver.find_element(By.TAG_NAME, 'body').text
+              result = {
+                  'url': driver.current_url,
+                  'title': driver.title,
+                  'readyState': driver.execute_script('return document.readyState'),
+                  'asof': text('asof'),
+                  'resetHoldingCount': text('resetHoldingCount'),
+                  'resetActiveCount': text('resetActiveCount'),
+                  'rotStrong': text('rotStrong'),
+                  'rotWatch': text('rotWatch'),
+                  'rotWeak': text('rotWeak'),
+                  'vik_visible': 'VIK' in body,
+                  'browser_logs': driver.get_log('browser'),
+              }
+              print(json.dumps(result, ensure_ascii=False, indent=2))
 
-                  result = {
-                      'url': url,
-                      'asof': asof,
-                      'resetHoldingCount': reset_holding,
-                      'resetActiveCount': reset_active,
-                      'rotStrong': rot_strong,
-                      'rotWatch': rot_watch,
-                      'rotWeak': rot_weak,
-                      'vik_visible': True,
-                      'browser_smoke': 'PASS',
-                  }
-                  print(json.dumps(result, ensure_ascii=False, indent=2))
-                  break
-              except Exception as exc:
-                  last_error = repr(exc)
-                  print(f'attempt {attempt + 1}/12 failed: {last_error}')
-                  time.sleep(5)
-              finally:
-                  driver.quit()
-          if result is None:
-              raise SystemExit(f'public browser smoke failed: {last_error}')
+              assert result['asof'] not in ('', 'データ読込中'), result
+              assert result['resetHoldingCount'] == '1銘柄', result
+              assert result['resetActiveCount'] == '1', result
+              assert result['vik_visible'], result
+              assert all(x not in ('', '読込中', '判定中') for x in (result['rotStrong'], result['rotWatch'], result['rotWeak'])), result
+              severe = [x for x in result['browser_logs'] if x.get('level') == 'SEVERE']
+              assert not severe, severe
+              print('PUBLIC_BROWSER_SMOKE=PASS')
+          finally:
+              driver.quit()
           PY
