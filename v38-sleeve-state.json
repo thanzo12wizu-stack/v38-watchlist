@@ -197,6 +197,27 @@
         "display_band_is_trade_rule": false
       },
       {
+        "symbol": "SYRE",
+        "theme": "肥満治療/GLP-1",
+        "status": "APPROACHING_RSI30",
+        "monitor_band": "WITHIN_5PT",
+        "current_rsi14": 32.26957728597837,
+        "distance_to_30": 2.2695772859783716,
+        "day0_date": "2026-08-26",
+        "activation_age_sessions": 5,
+        "signal_window_days_left": 15,
+        "theme_rs_pct_day0": 93.60269360269359,
+        "theme_rank_improvement20_day0": 16.161616161616152,
+        "theme_breadth21_day0": 66.66666666666666,
+        "day0_rs63_rank": 2,
+        "touched_rsi30": false,
+        "touch_date": null,
+        "signal_date": null,
+        "signal_top3_confirmed": false,
+        "current_theme_rs63_top3": true,
+        "display_band_is_trade_rule": false
+      },
+      {
         "symbol": "DBGI",
         "theme": "アパレル小売",
         "status": "APPROACHING_RSI30",
@@ -390,9 +411,9 @@
       "active_positions": 0,
       "signal_today": 0,
       "touched_wait_rise": 2,
-      "within_5pt": 4,
-      "within_10pt": 11,
-      "watch_count": 11
+      "within_5pt": 5,
+      "within_10pt": 12,
+      "watch_count": 12
     },
     "monitor_note": "Display bands only; trading signal remains RSI14<=30 then first rise with Theme RS63 Top3 confirmation.",
     "download_quality": {
@@ -404,9 +425,9 @@
       "history_ready_symbols": 5022,
       "history_coverage_ratio": 0.9663267269578603,
       "target_date": "2026-09-02",
-      "target_valid_symbols": 5012,
-      "target_coverage_ratio": 0.9644025399268809,
-      "recent_median_coverage_ratio": 0.9657494708485664,
+      "target_valid_symbols": 5014,
+      "target_coverage_ratio": 0.9647873773330767,
+      "recent_median_coverage_ratio": 0.9663267269578603,
       "window_rows": 119,
       "source": "CACHE_PLUS_BATCH_RETRY",
       "cache_hit": false,
@@ -424,7 +445,7 @@
   },
   "refresh": {
     "status": "FRESH",
-    "attempted_at_utc": "2026-09-03T09:22:17Z",
+    "attempted_at_utc": "2026-09-04T00:31:58Z",
     "attempted_asof": "2026-09-02",
     "last_successful_asof": "2026-09-02",
     "preserved_previous_ready": false,
