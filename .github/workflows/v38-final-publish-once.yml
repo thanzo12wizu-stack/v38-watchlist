@@ -1,7 +1,7 @@
 name: V38 manual pipeline validation once
 
-# One-shot operational validation. This workflow runs only when this file
-# itself changes and only dispatches existing production workflows.
+# One-shot operational validation pass 2. This workflow runs only when this
+# file itself changes and only dispatches existing production workflows.
 
 on:
   push:
