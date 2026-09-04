@@ -1,0 +1,42 @@
+# Research-only QA smoke run. Final conclusions must use the full-universe audit.
+name: Staged Leader Liquidity Return Smoke
+
+on:
+  push:
+    branches:
+      - research/leader-entry-delay-audit-20260904
+    paths:
+      - .github/workflows/staged-leader-liquidity-return-smoke.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_staged_leader_liquidity_return.py
+      - name: Run smoke audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_staged_leader_liquidity_return.py \
+            --root . \
+            --output leadership/research/staged_leader_liquidity_return_smoke \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-09-02 \
+            --max-tickers 1500 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staged-leader-liquidity-return-smoke
+          path: leadership/research/staged_leader_liquidity_return_smoke/
+          retention-days: 3
