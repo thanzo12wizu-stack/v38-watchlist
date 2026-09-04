@@ -1,4 +1,5 @@
 from pathlib import Path
+import importlib
 import json
 import sys
 import types
@@ -133,6 +134,26 @@ def test_expiry_selection_keeps_swing_window_when_weeklies_are_dense():
     assert detailed[0] == "2026-08-21"
     assert "2026-09-04" in detailed  # DTE14を直近4本の外から拾う
     assert broad == ["2026-09-04"]
+
+
+def test_zero_quotes_do_not_erase_valid_open_interest():
+    tools_path = str(Path("tools").resolve())
+    sys.path.insert(0, tools_path)
+    try:
+        directional = importlib.import_module("build_options_positioning_directional")
+        df = pd.DataFrame({
+            "strike": [101, 102, 103, 104, 105, 106, 107, 108],
+            "openInterest": [100] * 8,
+            "impliedVolatility": [0.25] * 8,
+            "volume": [0] * 8,
+            "bid": [0] * 8,
+            "ask": [0] * 8,
+        })
+        cleaned = directional._clean_positioning_rows(df, "C")
+        assert len(cleaned) == 8
+        assert int(cleaned["openInterest"].sum()) == 800
+    finally:
+        sys.path.remove(tools_path)
 
 
 def test_options_workflow_runs_only_after_close_or_manual_dispatch():
