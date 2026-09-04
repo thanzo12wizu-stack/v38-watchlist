@@ -41,9 +41,10 @@
       ]);
       if (!contextResponse.ok || !statusResponse.ok) return null;
       const [context, status] = await Promise.all([contextResponse.json(), statusResponse.json()]);
-      const contextAsof = String(context.asof || '');
+      const contextAsof = String(context.asof || context.leadership_coverage?.market_asof || context.leadership_market?.asof || '');
       const rotationAsof = String(status.asof || '');
-      const ready = context.status === 'READY' && contextAsof && rotationAsof && contextAsof === rotationAsof;
+      const contextReady = context.status ? context.status === 'READY' : context.research_only === false;
+      const ready = contextReady && contextAsof && rotationAsof && contextAsof === rotationAsof;
       if (!ready) return null;
       return new Response(JSON.stringify(context), {status: 200, headers: {'Content-Type': 'application/json'}});
     } catch (_) {
