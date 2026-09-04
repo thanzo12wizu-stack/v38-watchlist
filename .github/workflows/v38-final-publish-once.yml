@@ -1,7 +1,8 @@
 name: V38 manual pipeline validation once
 
-# Retry marker: 2026-09-04 Normal Stock target-session OHLC fallback enabled;
-# rerun isolated Command Center -> V38 -> Sleeve -> Rotation -> public mirror validation.
+# Resume marker: Command Center #429 and V38 #29 are verified successful.
+# Continue isolated Sleeve -> Rotation -> public mirror validation after the
+# one-way upstream workflow test was aligned with the repaired architecture.
 
 on:
   push:
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 180
     env:
       GH_TOKEN: ${{ github.token }}
       PIPELINE_BRANCH: pipeline-live
@@ -44,7 +45,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Dispatch and wait for each isolated workflow
+      - name: Resume isolated validation from verified V38
         shell: bash
         run: |
           set -euo pipefail
@@ -53,22 +54,11 @@ jobs:
             local workflow="$1"
             local label="$2"
             local before run_id
-            before="$(gh run list \
-              --workflow "$workflow" \
-              --event workflow_dispatch \
-              --limit 1 \
-              --json databaseId \
-              --jq '.[0].databaseId // 0')"
-
+            before="$(gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
             gh workflow run "$workflow" --ref main
             run_id=""
             for _ in $(seq 1 30); do
-              run_id="$(gh run list \
-                --workflow "$workflow" \
-                --event workflow_dispatch \
-                --limit 1 \
-                --json databaseId \
-                --jq '.[0].databaseId // 0')"
+              run_id="$(gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
               if [[ -n "$run_id" && "$run_id" != "0" && "$run_id" != "$before" ]]; then
                 break
               fi
@@ -78,7 +68,6 @@ jobs:
               echo "::error::Could not identify dispatched run for $workflow"
               exit 1
             fi
-
             echo "$label run: $run_id"
             echo "- $label run: [$run_id](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
             gh run watch "$run_id" --exit-status --interval 15
@@ -95,16 +84,15 @@ jobs:
             echo "COMMAND_CENTER_NO_REVERSE_WRITE_AFTER_${after^^}=PASS"
           }
 
-          echo "### Isolated manual workflow runs" >> "$GITHUB_STEP_SUMMARY"
-
-          dispatch_and_wait dashboard.yml "Command Center"
           git fetch --depth=1 origin main
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
           COMMAND_CENTER_BASE="$(git rev-parse origin/main)"
           export COMMAND_CENTER_BASE
 
           git show "origin/main:state.json" > /tmp/state.json
           git show "origin/main:trend_history.json" > /tmp/trend_history.json
           git show "origin/main:daily_log.csv" > /tmp/daily_log.csv
+          git show "origin/$PIPELINE_BRANCH:v38-live-state.json" > /tmp/v38-live-state.json
           python - <<'PY'
           import csv
           import json
@@ -112,28 +100,32 @@ jobs:
           from pathlib import Path
 
           iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-          state = json.loads(Path("/tmp/state.json").read_text(encoding="utf-8"))
-          asof = str(state.get("date") or "")
-          trend = json.loads(Path("/tmp/trend_history.json").read_text(encoding="utf-8"))
+          state = json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
+          live = json.loads(Path('/tmp/v38-live-state.json').read_text(encoding='utf-8'))
+          asof = str(state.get('date') or '')
+          trend = json.loads(Path('/tmp/trend_history.json').read_text(encoding='utf-8'))
           trend_dates = []
           for row in trend if isinstance(trend, list) else []:
-              value = row[0] if isinstance(row, (list, tuple)) and row else row.get("date") if isinstance(row, dict) else ""
-              if iso.fullmatch(str(value or "")):
+              value = row[0] if isinstance(row, (list, tuple)) and row else row.get('date') if isinstance(row, dict) else ''
+              if iso.fullmatch(str(value or '')):
                   trend_dates.append(str(value))
-          with Path("/tmp/daily_log.csv").open(encoding="utf-8", newline="") as handle:
-              log_dates = [str(row.get("date") or "") for row in csv.DictReader(handle)]
+          with Path('/tmp/daily_log.csv').open(encoding='utf-8', newline='') as handle:
+              log_dates = [str(row.get('date') or '') for row in csv.DictReader(handle)]
           log_dates = [value for value in log_dates if iso.fullmatch(value)]
           prior = sorted({value for value in trend_dates + log_dates if value < asof})
-          prevday = state.get("prevday") if isinstance(state.get("prevday"), dict) else {}
-          if not asof or max(trend_dates, default="") != asof or max(log_dates, default="") != asof:
-              raise SystemExit(f"Command Center chronology mismatch: state={asof} trend={max(trend_dates, default='')} log={max(log_dates, default='')}")
-          if prior and str(prevday.get("date") or "") != prior[-1]:
-              raise SystemExit(f"Command Center comparison baseline mismatch: prevday={prevday.get('date')} expected={prior[-1]}")
-          print("COMMAND_CENTER_CHRONOLOGY_PASS", asof, prevday.get("date"))
+          prevday = state.get('prevday') if isinstance(state.get('prevday'), dict) else {}
+          if not asof or max(trend_dates, default='') != asof or max(log_dates, default='') != asof:
+              raise SystemExit('Command Center chronology mismatch')
+          if prior and str(prevday.get('date') or '') != prior[-1]:
+              raise SystemExit(f"Command Center comparison baseline mismatch: {prevday.get('date')} != {prior[-1]}")
+          if live.get('asof') != asof:
+              raise SystemExit(f"Verified V38 staging mismatch: command_center={asof} v38={live.get('asof')}")
+          print('RESUME_INPUTS_READY', asof, prevday.get('date'))
           PY
 
-          dispatch_and_wait v38-live.yml "V38 / TQQQ / CURRENT30"
-          assert_command_center_unchanged v38
+          echo "### Isolated manual workflow runs" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Command Center run: [33850910921](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/33850910921) — PASS (#429)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- V38 / TQQQ / CURRENT30 run: [33851690838](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/33851690838) — PASS (#29)" >> "$GITHUB_STEP_SUMMARY"
 
           dispatch_and_wait v38-sleeve-refresh.yml "Sleeve / RSI Reset"
           assert_command_center_unchanged sleeve
@@ -147,7 +139,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Reverse-flow audit" >> "$GITHUB_STEP_SUMMARY"
           echo "- Command Center baseline commit: $COMMAND_CENTER_BASE" >> "$GITHUB_STEP_SUMMARY"
-          echo "- V38 after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- V38 after-check: PASS (verified before resume)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Sleeve after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
           echo "- Rotation after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
           echo "- Public mirror after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
