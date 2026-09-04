@@ -209,7 +209,6 @@ jobs:
           [[ -d options_cache ]] && git add -A options_cache || true
           if git diff --staged --quiet; then
             echo "no options changes"
-            gh workflow run dashboard.yml --ref main || true
             exit 0
           fi
           git commit -m "Options positioning $(date +%F)"
@@ -224,4 +223,3 @@ jobs:
             sleep $((a*2))
           done
           [[ "$pushed" == true ]] || exit 1
-          gh workflow run dashboard.yml --ref main || true
