@@ -32,16 +32,32 @@
     }), {status: 200, headers: {'Content-Type': 'application/json'}});
   }
 
+  async function fetchReadyContext(init) {
+    try {
+      const [contextResponse, statusResponse] = await Promise.all([
+        nativeFetch(prodContext, {...(init || {}), cache: 'no-store'}),
+        nativeFetch(prodStatus, {cache: 'no-store'})
+      ]);
+      if (!contextResponse.ok || !statusResponse.ok) return null;
+      const [context, status] = await Promise.all([contextResponse.json(), statusResponse.json()]);
+      const contextAsof = String(context.asof || '');
+      const rotationAsof = String(status.asof || '');
+      const ready = context.status === 'READY' && contextAsof && rotationAsof && contextAsof === rotationAsof;
+      if (!ready) return null;
+      return new Response(JSON.stringify(context), {status: 200, headers: {'Content-Type': 'application/json'}});
+    } catch (_) {
+      return null;
+    }
+  }
+
   window.fetch = async function(input, init) {
     const url = requestUrl(input);
     if (url.includes(legacyBriefNeedle)) {
       return nativeFetch(prodData, {...(init || {}), cache: 'no-store'});
     }
     if (url.includes(legacyContextNeedle)) {
-      try {
-        const r = await nativeFetch(prodContext, {...(init || {}), cache: 'no-store'});
-        if (r.ok) return r;
-      } catch (_) {}
+      const ready = await fetchReadyContext(init);
+      if (ready) return ready;
       return contextFallback();
     }
     return nativeFetch(input, init);
@@ -91,18 +107,18 @@
     }
 
     try {
-      const ctx = await nativeFetch(prodContext, {cache: 'no-store'});
-      if (!ctx.ok) {
+      const ctx = await fetchReadyContext({cache: 'no-store'});
+      if (!ctx) {
         const scope = document.getElementById('leaderScope');
         const leaders = document.getElementById('leaders');
         if (scope) scope.textContent = 'Leadership照合 更新待ち';
-        if (leaders) leaders.innerHTML = '<div class="sub">古い研究用Leadership照合は表示していません。現在データの本番照合がREADYになるまで更新待ちです。</div>';
+        if (leaders) leaders.innerHTML = '<div class="sub">現在のRotationと同じ基準日のLeadership照合がREADYになるまで、強い株は表示しません。</div>';
       }
     } catch (_) {
       const scope = document.getElementById('leaderScope');
       const leaders = document.getElementById('leaders');
       if (scope) scope.textContent = 'Leadership照合 更新待ち';
-      if (leaders) leaders.innerHTML = '<div class="sub">古い研究用Leadership照合は表示していません。現在データの本番照合がREADYになるまで更新待ちです。</div>';
+      if (leaders) leaders.innerHTML = '<div class="sub">現在のRotationと同じ基準日のLeadership照合がREADYになるまで、強い株は表示しません。</div>';
     }
   }
 
