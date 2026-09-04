@@ -1,8 +1,7 @@
 name: V38 manual pipeline validation once
 
-# One-shot operational repair + validation. This workflow runs only when this
-# file itself changes. It patches the identified Options bug, then dispatches
-# the existing production workflows without changing their ownership model.
+# One-shot operational validation. This workflow runs only when this file
+# itself changes and only dispatches existing production workflows.
 
 on:
   push:
@@ -10,7 +9,7 @@ on:
     paths: ['.github/workflows/v38-final-publish-once.yml']
 
 permissions:
-  contents: write
+  contents: read
   actions: write
 
 concurrency:
@@ -45,56 +44,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Apply minimal Options repair
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --depth=1 origin main
-          git reset --hard origin/main
-
-          python - <<'PY'
-          from pathlib import Path
-
-          base = Path('tools/build_options_positioning.py')
-          text = base.read_text(encoding='utf-8')
-          old = '''    # bid=ask=0 かつ出来高なしは板が無い行。gammaを歪めるので落とす。\n    dead = (d["bid"].fillna(0) <= 0) & (d["ask"].fillna(0) <= 0) & (d["volume"].fillna(0) <= 0)\n    d = d[~dead]\n'''
-          new = '''    # OI×推定GammaはOIとIVを使う。寄り前/引け後はbid/ask/volumeが0になり得るため、\n    # quoteがゼロという理由だけで有効なOIを捨てない。\n'''
-          if old in text:
-              text = text.replace(old, new, 1)
-              base.write_text(text, encoding='utf-8')
-          elif new not in text:
-              raise SystemExit('Options _clean target block not found')
-
-          tests = Path('tests/test_options_positioning_quality.py')
-          t = tests.read_text(encoding='utf-8')
-          marker = 'def test_zero_quote_rows_keep_valid_oi_for_gex_proxy():'
-          if marker not in t:
-              t += '''\n\ndef test_zero_quote_rows_keep_valid_oi_for_gex_proxy():\n    calls = pd.DataFrame({\n        "strike": [101, 102, 103, 104, 105, 106, 107, 108],\n        "openInterest": [100] * 8,\n        "impliedVolatility": [0.25] * 8,\n        "volume": [0] * 8,\n        "bid": [0] * 8,\n        "ask": [0] * 8,\n    })\n    puts = pd.DataFrame({\n        "strike": [92, 93, 94, 95, 96, 97, 98, 99],\n        "openInterest": [100] * 8,\n        "impliedVolatility": [0.25] * 8,\n        "volume": [0] * 8,\n        "bid": [0] * 8,\n        "ask": [0] * 8,\n    })\n\n    rec = options.analyse_expiry(\n        calls, puts, 100.0, "2026-09-18", "2026-09-04T22:00:00+00:00"\n    )\n\n    assert rec is not None\n    assert rec["total_oi"] == 1600\n    assert rec["call_wall"] > 100\n    assert rec["put_wall"] < 100\n'''
-              tests.write_text(t, encoding='utf-8')
-
-          workflow = Path('.github/workflows/options.yml')
-          w = workflow.read_text(encoding='utf-8')
-          old_preflight = '''          import sys\n          import time\n          import yfinance as yf\n\n          refs = ("SPY", "QQQ", "IWM")\n          last = {}\n          for attempt in range(1, 4):\n              usable = {}\n              for ticker in refs:\n                  try:\n                      expiries = list(yf.Ticker(ticker).options or [])\n                  except Exception as exc:\n                      expiries = []\n                      print(f"[opt-preflight] {ticker} attempt={attempt} error={type(exc).__name__}: {exc}")\n                  usable[ticker] = len(expiries)\n              last = usable\n              print(f"[opt-preflight] attempt={attempt} expiries={usable}")\n              if any(count > 0 for count in usable.values()):\n                  print("[opt-preflight] provider ready")\n                  raise SystemExit(0)\n              if attempt < 3:\n                  time.sleep(attempt * 2)\n\n          print(f"[opt-preflight] provider unavailable for all references: {last}")\n          raise SystemExit(42)\n'''
-          new_preflight = '''          import time\n          import yfinance as yf\n          from tools import build_options_positioning as opt\n\n          refs = ("SPY", "QQQ", "IWM")\n          last = {}\n          for attempt in range(1, 4):\n              usable = {}\n              asof = opt._now()\n              for ticker in refs:\n                  try:\n                      rec = opt._build_record_once(yf, ticker, asof)\n                      usable[ticker] = len(rec.get("expiries") or {})\n                  except Exception as exc:\n                      usable[ticker] = 0\n                      print(f"[opt-preflight] {ticker} attempt={attempt} error={type(exc).__name__}: {exc}")\n              last = usable\n              print(f"[opt-preflight] attempt={attempt} usable_expiries={usable}")\n              if any(count > 0 for count in usable.values()):\n                  print("[opt-preflight] provider ready")\n                  raise SystemExit(0)\n              if attempt < 3:\n                  time.sleep(attempt * 2)\n\n          print(f"[opt-preflight] provider unavailable for all references: {last}")\n          raise SystemExit(42)\n'''
-          if old_preflight in w:
-              w = w.replace(old_preflight, new_preflight, 1)
-              workflow.write_text(w, encoding='utf-8')
-          elif new_preflight not in w:
-              raise SystemExit('Options preflight target block not found')
-          PY
-
-          python -m py_compile tools/build_options_positioning.py
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/build_options_positioning.py tests/test_options_positioning_quality.py .github/workflows/options.yml
-          if git diff --staged --quiet; then
-            echo "Options repair already present"
-          else
-            git commit -m "Fix premarket Options OI chain handling"
-            git push origin HEAD:main
-          fi
-
       - name: Run repaired pipeline end to end
         shell: bash
         run: |
@@ -114,7 +63,7 @@ jobs:
             before="$(latest_dispatch_id "$workflow")"
             gh workflow run "$workflow" --ref main "$@"
             run_id=""
-            for _ in $(seq 1 45); do
+            for _ in $(seq 1 60); do
               run_id="$(latest_dispatch_id "$workflow")"
               if [[ -n "$run_id" && "$run_id" != "0" && "$run_id" != "$before" ]]; then
                 break
@@ -135,7 +84,7 @@ jobs:
             local label="$2"
             local before="$3"
             local run_id=""
-            for _ in $(seq 1 60); do
+            for _ in $(seq 1 90); do
               run_id="$(latest_dispatch_id "$workflow")"
               if [[ -n "$run_id" && "$run_id" != "0" && "$run_id" != "$before" ]]; then
                 break
