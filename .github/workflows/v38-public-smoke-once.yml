@@ -1,0 +1,92 @@
+name: V38 public browser smoke once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/v38-public-smoke-once.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install Selenium
+        run: pip install --disable-pip-version-check selenium
+
+      - name: Browser smoke against public V38 page
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+
+          url = 'https://thanzo12wizu-stack.github.io/v38-watchlist/command-center-v38.html'
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,2400')
+
+          last_error = None
+          result = None
+          for attempt in range(12):
+              driver = webdriver.Chrome(options=options)
+              errors = []
+              try:
+                  driver.get(f'{url}?smoke={int(time.time())}-{attempt}')
+                  WebDriverWait(driver, 12).until(
+                      lambda d: d.find_element(By.ID, 'asof').text.strip() not in ('', 'データ読込中')
+                  )
+                  body = driver.find_element(By.TAG_NAME, 'body').text
+                  asof = driver.find_element(By.ID, 'asof').text.strip()
+                  reset_holding = driver.find_element(By.ID, 'resetHoldingCount').text.strip()
+                  reset_active = driver.find_element(By.ID, 'resetActiveCount').text.strip()
+                  rotation_state = driver.find_element(By.ID, 'rotationState').text.strip()
+                  if 'VIK' not in body:
+                      raise AssertionError('VIK is not visible in rendered public V38 page')
+                  if reset_holding != '1':
+                      raise AssertionError(f'resetHoldingCount={reset_holding!r}, expected 1')
+                  if reset_active != '1':
+                      raise AssertionError(f'resetActiveCount={reset_active!r}, expected 1')
+                  if asof == 'データ読込中' or '判定中' in asof:
+                      raise AssertionError(f'asof still placeholder: {asof!r}')
+                  if rotation_state in ('', '読込中', '判定中'):
+                      raise AssertionError(f'rotation state still placeholder: {rotation_state!r}')
+                  result = {
+                      'url': url,
+                      'asof': asof,
+                      'resetHoldingCount': reset_holding,
+                      'resetActiveCount': reset_active,
+                      'rotationState': rotation_state,
+                      'vik_visible': True,
+                      'browser_smoke': 'PASS',
+                  }
+                  print(json.dumps(result, ensure_ascii=False, indent=2))
+                  break
+              except Exception as exc:
+                  last_error = repr(exc)
+                  print(f'attempt {attempt + 1}/12 failed: {last_error}')
+                  time.sleep(5)
+              finally:
+                  driver.quit()
+          if result is None:
+              raise SystemExit(f'public browser smoke failed: {last_error}')
+          PY
