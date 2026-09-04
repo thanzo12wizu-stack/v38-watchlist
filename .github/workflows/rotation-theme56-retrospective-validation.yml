@@ -7,6 +7,7 @@ on:
       - research/rotation-validation-20260905-theme56
     paths:
       - leadership/research/validate_theme56_rotation_retrospective.py
+      - leadership/research/validate_theme56_rotation_retrospective_v2.py
       - .github/workflows/rotation-theme56-retrospective-validation.yml
 
 jobs:
@@ -21,10 +22,10 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy scipy statsmodels yfinance pyarrow
       - name: Syntax check
-        run: python -m py_compile leadership/research/validate_theme56_rotation_retrospective.py
+        run: python -m py_compile leadership/research/validate_theme56_rotation_retrospective.py leadership/research/validate_theme56_rotation_retrospective_v2.py
       - name: Run retrospective validation
         run: |
-          python leadership/research/validate_theme56_rotation_retrospective.py \
+          python leadership/research/validate_theme56_rotation_retrospective_v2.py \
             --config leadership/research/rotation_theme56_config.json \
             --base leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
             --expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
@@ -40,7 +41,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rotation-theme56-retrospective-validation
+          name: rotation-theme56-retrospective-validation-v2
           path: leadership/research/theme56_retrospective_outputs/
           if-no-files-found: warn
           retention-days: 14
