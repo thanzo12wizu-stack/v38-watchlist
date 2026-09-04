@@ -17,20 +17,47 @@ jobs:
     env:
       TZ: Asia/Tokyo
       PIPELINE_BRANCH: pipeline-live
+      STAGED_INPUTS: >-
+        v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
+        v38-sleeve-state.json
 
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: pipeline-live
+          ref: main
           fetch-depth: 1
 
-      - name: Sync staged V38 snapshot
+      - name: Load main code and Command Center with prior derivative state from staging
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --depth=1 origin main
           git fetch --depth=1 origin "$PIPELINE_BRANCH"
-          git reset --hard "origin/$PIPELINE_BRANCH"
-          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git reset --hard origin/main
+          echo "COMMAND_CENTER_SOURCE_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+          echo "SOURCE_SHA=$(git rev-parse "origin/$PIPELINE_BRANCH")" >> "$GITHUB_ENV"
+
+          # Code, Command Center HTML/JSON/CSV, universe and static seeds stay
+          # owned by main. Only derivative V38/Sleeve state is overlaid.
+          for file in $STAGED_INPUTS; do
+            if git cat-file -e "origin/$PIPELINE_BRANCH:$file" 2>/dev/null; then
+              git show "origin/$PIPELINE_BRANCH:$file" > "$file"
+            fi
+          done
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          cc = json.loads(Path('state.json').read_text(encoding='utf-8'))
+          live = json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          expected = str(cc.get('date') or '')
+          if not expected or live.get('asof') != expected:
+              raise SystemExit(f'SLEEVE_INPUT_ASOF_MISMATCH command_center={expected} v38={live.get("asof")}')
+          print('SLEEVE_UPSTREAM_READY', expected)
+          PY
 
       - uses: actions/setup-python@v7
         with:
