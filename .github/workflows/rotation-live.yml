@@ -76,7 +76,7 @@ jobs:
           if tqqq.get('live_generation_status') != 'READY':
               raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
           if (tqqq.get('current30') or {}).get('status') != 'READY':
-              raise SystemExit(f'TQQQ CURRENT30 not READY: {(tqqq.get("current30") or {}).get("status")}')
+              raise SystemExit(f'CURRENT30 not READY: {(tqqq.get("current30") or {}).get("status")}')
           if tqqq.get('sleeve_live_status') != 'READY':
               raise SystemExit(f'TQQQ sleeve merge not READY: {tqqq.get("sleeve_live_status")}')
           if sleeve.get('status') != 'READY':
