@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "research_policy": {
+    "purpose": "Rotationの表示解釈をバックテスト証拠の強さに合わせる。売買Gate・正式V38順位・強制Exitには接続しない。",
+    "evidence_order": [
+      "PIT_VALIDATED",
+      "PIT_PARTIAL",
+      "PIT_REJECTED_AS_SIGNAL",
+      "PRELIMINARY_BACKTEST",
+      "DESCRIPTIVE",
+      "INSUFFICIENT_DATA"
+    ],
+    "theme56_scope_rule": "11セクターPITの結果はTheme56へ直接検証済みとして移植しない。同型パターンの外挿Contextとしてのみ表示する。",
+    "short_horizon_rule": "5D/10D/20Dの短期変化は観測に使う。短期RS追加の予測優位が支持されていないため、単独で初動買いシグナルにしない。"
+  },
+  "sources": {
+    "pit_all_states": {
+      "workflow_run": 33351008515,
+      "artifact_id": 9743607847,
+      "artifact_name": "rotation-pit-state-fast-research",
+      "panel": "audited PIT cov80 panel",
+      "flow_quality": "EXACT_OFFICIAL_SSGA_SHARES_OUTSTANDING_DERIVED",
+      "internal_quality": "DYNAMIC_PIT_EQUAL_WEIGHT_SP500_WITH_HISTORICAL_GICS",
+      "period_start": "2022-04-18",
+      "confirmation_period": "2024_PLUS",
+      "sectors": 11,
+      "cooldown_sessions": 20,
+      "robustness": "27-neighbor grid + 20-session block bootstrap + sector-cluster bootstrap"
+    },
+    "pit_internal_delta": {
+      "workflow_run": 33352828281,
+      "artifact_id": 9744178104,
+      "artifact_name": "rotation-distribution-delta-pit-research",
+      "panel": "audited PIT cov80 Sector panel",
+      "sectors": 11
+    },
+    "short_rs_validation": {
+      "workflow_run": 32930248569,
+      "interpretation": "RS5/10/20/63を追加してもRS189に対する頑健な予測改善は確認されず。短期RSは観測用途。"
+    },
+    "early_rotation_preliminary": {
+      "scope": "current taxonomy applied retrospectively; preliminary only",
+      "interpretation": "Momentum条件全体には対SPYの予備的優位が見えたが、弱い親テーマからの独走は加点要素ではなく、5Dではむしろ劣後。"
+    }
+  },
+  "patterns": {
+    "DISTRIBUTION_TRAP_11SECTOR": {
+      "grade": "PIT_VALIDATED",
+      "scope": "11_SECTOR_ONLY",
+      "condition": "Price>=70; Internal<50; exact official 20D Flow/AUM<=0",
+      "decision": "PASS",
+      "confirmation_2024_plus": {
+        "n_20d": 46,
+        "mean_excess_20d_pct": -1.0207043405014523,
+        "median_excess_20d_pct": -1.289869412879395,
+        "negative_rate_20d": 0.6304347826086957,
+        "block20_ci95_20d_pct": [-2.004945749810575, -0.09574934789549229],
+        "sector_cluster_ci95_20d_pct": [-2.2599380411627012, -0.0031144371983054],
+        "n_40d": 44,
+        "mean_excess_40d_pct": -1.7245524916453505,
+        "median_excess_40d_pct": -1.88929251950923,
+        "negative_rate_40d": 0.6590909090909091,
+        "block20_ci95_40d_pct": [-3.207054482349878, -0.3271409433766275],
+        "sector_cluster_ci95_40d_pct": [-3.8306703457262566, -0.24404200811653505]
+      },
+      "grid_2024_plus": {
+        "configs": 27,
+        "fraction_negative_20d": 1.0,
+        "fraction_negative_40d": 1.0
+      },
+      "interpretation": "PITで将来の対SPY劣後を再現した警戒Context。売却Gateではない。"
+    },
+    "DISTRIBUTION_DETERIORATION_11SECTOR": {
+      "grade": "PIT_PARTIAL",
+      "scope": "11_SECTOR_ONLY",
+      "condition": "Price>=70; Internal 20-session change<=-20pt; exact official 20D Flow/AUM<=0",
+      "decision": "CONTEXT_CANDIDATE",
+      "confirmation_2024_plus": {
+        "n_20d": 46,
+        "mean_excess_20d_pct": -1.034057823333981,
+        "median_excess_20d_pct": -0.77790561709776,
+        "negative_rate_20d": 0.5434782608695652,
+        "block20_ci95_20d_pct": [-2.1145824391369132, 0.08694219556660323],
+        "sector_cluster_ci95_20d_pct": [-2.161732966346905, -0.2787462793046477],
+        "n_40d": 44,
+        "mean_excess_40d_pct": -2.170038722864492,
+        "median_excess_40d_pct": -2.413927024354565,
+        "negative_rate_40d": 0.6363636363636364,
+        "block20_ci95_40d_pct": [-3.8535222175497236, -0.634886738198796],
+        "sector_cluster_ci95_40d_pct": [-4.142634057766705, -0.8454236802145979]
+      },
+      "grid_2024_plus": {
+        "configs": 27,
+        "fraction_negative_20d": 1.0,
+        "fraction_negative_40d": 1.0
+      },
+      "interpretation": "40Dは強い支持。20Dはsector-cluster CI負だがblock CIが0を跨ぐため、厳格分配条件より一段弱い早期警戒Context。"
+    },
+    "CONFIRMED_ACCUMULATION_11SECTOR": {
+      "grade": "PIT_REJECTED_AS_SIGNAL",
+      "scope": "11_SECTOR_ONLY",
+      "condition": "Price>=70; Internal>=60; Flow>=0",
+      "decision": "FAIL",
+      "confirmation_2024_plus": {
+        "n_20d": 90,
+        "mean_excess_20d_pct": -0.1799744361662949,
+        "n_40d": 89,
+        "mean_excess_40d_pct": -0.8441717841558328
+      },
+      "grid_2024_plus": {
+        "configs": 27,
+        "fraction_expected_positive_20d": 0.3333333333333333,
+        "fraction_expected_positive_40d": 0.0
+      },
+      "interpretation": "現在強いことは有用な状態説明だが、将来Alphaの買いシグナルとしては不採用。"
+    },
+    "HIDDEN_ACCUMULATION_11SECTOR": {
+      "grade": "PIT_REJECTED_AS_SIGNAL",
+      "scope": "11_SECTOR_ONLY",
+      "condition": "Price<confirmed threshold; Internal>=60; Flow>=0",
+      "decision": "FAIL",
+      "confirmation_2024_plus": {
+        "n_20d": 90,
+        "mean_excess_20d_pct": -0.7165525678548733,
+        "n_40d": 85,
+        "mean_excess_40d_pct": -1.299143978981467
+      },
+      "grid_2024_plus": {
+        "configs": 27,
+        "fraction_expected_positive_20d": 0.0,
+        "fraction_expected_positive_40d": 0.0
+      },
+      "interpretation": "内部の強さだけで価格確認前に先回りする買いシグナルは不採用。"
+    },
+    "EARLY_ROTATION_11SECTOR": {
+      "grade": "PIT_REJECTED_AS_SIGNAL",
+      "scope": "11_SECTOR_ONLY",
+      "condition": "Price<60; Internal>=50; Internal delta>=+10; Flow>=0",
+      "decision": "FAIL",
+      "confirmation_2024_plus": {
+        "n_20d": 86,
+        "mean_excess_20d_pct": -0.6157006765906226,
+        "median_excess_20d_pct": -1.37558207470065,
+        "n_40d": 81,
+        "mean_excess_40d_pct": -0.795435056603306,
+        "median_excess_40d_pct": -2.11807613325369
+      },
+      "grid_2024_plus": {
+        "configs": 27,
+        "fraction_expected_positive_20d": 0.0,
+        "fraction_expected_positive_40d": 0.0
+      },
+      "interpretation": "内部改善＋Flow先行を早期買い候補にする仮説はPITで不採用。観測・追随待ちとしてのみ表示。"
+    },
+    "REDEMPTION_DIVERGENCE_11SECTOR": {
+      "grade": "DIAGNOSTIC",
+      "scope": "11_SECTOR_ONLY",
+      "condition": "Price>=60; Internal>=60; Flow<0",
+      "decision": "DIAGNOSTIC",
+      "confirmation_2024_plus": {
+        "n_20d": 84,
+        "mean_excess_20d_pct": -0.24050147131134273,
+        "n_40d": 81,
+        "mean_excess_40d_pct": -1.0565854811343414
+      },
+      "interpretation": "方向は負だったが頑健な売りシグナルとは確認されず。価格・内部が強い中のETF純流出として診断表示し、売り抜けと断定しない。"
+    }
+  }
+}
