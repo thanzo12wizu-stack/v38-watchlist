@@ -49,7 +49,6 @@ jobs:
           result = None
           for attempt in range(12):
               driver = webdriver.Chrome(options=options)
-              errors = []
               try:
                   driver.get(f'{url}?smoke={int(time.time())}-{attempt}')
                   WebDriverWait(driver, 12).until(
@@ -59,23 +58,29 @@ jobs:
                   asof = driver.find_element(By.ID, 'asof').text.strip()
                   reset_holding = driver.find_element(By.ID, 'resetHoldingCount').text.strip()
                   reset_active = driver.find_element(By.ID, 'resetActiveCount').text.strip()
-                  rotation_state = driver.find_element(By.ID, 'rotationState').text.strip()
+                  rot_strong = driver.find_element(By.ID, 'rotStrong').text.strip()
+                  rot_watch = driver.find_element(By.ID, 'rotWatch').text.strip()
+                  rot_weak = driver.find_element(By.ID, 'rotWeak').text.strip()
+
                   if 'VIK' not in body:
                       raise AssertionError('VIK is not visible in rendered public V38 page')
-                  if reset_holding != '1':
-                      raise AssertionError(f'resetHoldingCount={reset_holding!r}, expected 1')
+                  if reset_holding != '1銘柄':
+                      raise AssertionError(f'resetHoldingCount={reset_holding!r}, expected 1銘柄')
                   if reset_active != '1':
                       raise AssertionError(f'resetActiveCount={reset_active!r}, expected 1')
                   if asof == 'データ読込中' or '判定中' in asof:
                       raise AssertionError(f'asof still placeholder: {asof!r}')
-                  if rotation_state in ('', '読込中', '判定中'):
-                      raise AssertionError(f'rotation state still placeholder: {rotation_state!r}')
+                  if any(x in ('', '読込中', '判定中') for x in (rot_strong, rot_watch, rot_weak)):
+                      raise AssertionError(f'Rotation still placeholder: {(rot_strong, rot_watch, rot_weak)!r}')
+
                   result = {
                       'url': url,
                       'asof': asof,
                       'resetHoldingCount': reset_holding,
                       'resetActiveCount': reset_active,
-                      'rotationState': rotation_state,
+                      'rotStrong': rot_strong,
+                      'rotWatch': rot_watch,
+                      'rotWeak': rot_weak,
                       'vik_visible': True,
                       'browser_smoke': 'PASS',
                   }
