@@ -20,12 +20,11 @@ jobs:
           ref: main
           fetch-depth: 1
 
-      - name: Repair malformed rotationLabel and harden public gate
+      - name: Repair malformed rotationLabel
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-
           html = Path('command-center-v38.html')
           text = html.read_text(encoding='utf-8')
           bad = "function rotationLabel(x){return'Rotation: 正式順位には未使用'} / ${jp}`}"
@@ -33,15 +32,6 @@ jobs:
           if text.count(bad) != 1:
               raise SystemExit(f'expected exactly one malformed rotationLabel, found {text.count(bad)}')
           html.write_text(text.replace(bad, good), encoding='utf-8')
-
-          workflow = Path('.github/workflows/publish-public-site.yml')
-          w = workflow.read_text(encoding='utf-8')
-          marker = '      - name: Public export and atomic-gate tests\n'
-          gate = '''      - name: Validate V38 inline JavaScript syntax\n        shell: bash\n        run: |\n          python - <<'PY2'\n          from pathlib import Path\n          import re\n          text = Path('command-center-v38.html').read_text(encoding='utf-8')\n          scripts = re.findall(r'<script>(.*?)</script>', text, flags=re.S)\n          if len(scripts) != 1:\n              raise SystemExit(f'expected exactly one inline script, found {len(scripts)}')\n          Path('/tmp/command-center-v38-inline.js').write_text(scripts[0], encoding='utf-8')\n          PY2\n          node --check /tmp/command-center-v38-inline.js\n\n'''
-          if 'Validate V38 inline JavaScript syntax' not in w:
-              if marker not in w:
-                  raise SystemExit('publish workflow insertion marker not found')
-              workflow.write_text(w.replace(marker, gate + marker, 1), encoding='utf-8')
           PY
 
       - name: Verify repaired inline JavaScript parses
@@ -65,7 +55,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add command-center-v38.html .github/workflows/publish-public-site.yml
+          git add command-center-v38.html
           git commit -m "Fix V38 dashboard JavaScript parse failure"
           git push origin HEAD:main
 
