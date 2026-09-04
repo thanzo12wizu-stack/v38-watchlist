@@ -1,8 +1,8 @@
 name: V38 manual pipeline validation once
 
-# Resume marker: Command Center #429 and V38 #29 are verified successful.
-# Continue isolated Sleeve -> Rotation -> public mirror validation after the
-# one-way upstream workflow test was aligned with the repaired architecture.
+# One-shot operational validation. This file runs only when this workflow file
+# itself is changed. It dispatches the existing workflows without changing
+# their ownership boundaries or data logic.
 
 on:
   push:
@@ -20,7 +20,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 240
     env:
       GH_TOKEN: ${{ github.token }}
       PIPELINE_BRANCH: pipeline-live
@@ -45,20 +45,27 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Resume isolated validation from verified V38
+      - name: Run repaired pipeline end to end
         shell: bash
         run: |
           set -euo pipefail
 
+          latest_dispatch_id() {
+            local workflow="$1"
+            gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 \
+              --json databaseId --jq '.[0].databaseId // 0'
+          }
+
           dispatch_and_wait() {
             local workflow="$1"
             local label="$2"
+            shift 2
             local before run_id
-            before="$(gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
-            gh workflow run "$workflow" --ref main
+            before="$(latest_dispatch_id "$workflow")"
+            gh workflow run "$workflow" --ref main "$@"
             run_id=""
-            for _ in $(seq 1 30); do
-              run_id="$(gh run list --workflow "$workflow" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            for _ in $(seq 1 45); do
+              run_id="$(latest_dispatch_id "$workflow")"
               if [[ -n "$run_id" && "$run_id" != "0" && "$run_id" != "$before" ]]; then
                 break
               fi
@@ -66,6 +73,27 @@ jobs:
             done
             if [[ -z "$run_id" || "$run_id" == "0" || "$run_id" == "$before" ]]; then
               echo "::error::Could not identify dispatched run for $workflow"
+              exit 1
+            fi
+            echo "$label run: $run_id"
+            echo "- $label run: [$run_id](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
+            gh run watch "$run_id" --exit-status --interval 15
+          }
+
+          wait_for_new_dispatch() {
+            local workflow="$1"
+            local label="$2"
+            local before="$3"
+            local run_id=""
+            for _ in $(seq 1 60); do
+              run_id="$(latest_dispatch_id "$workflow")"
+              if [[ -n "$run_id" && "$run_id" != "0" && "$run_id" != "$before" ]]; then
+                break
+              fi
+              sleep 2
+            done
+            if [[ -z "$run_id" || "$run_id" == "0" || "$run_id" == "$before" ]]; then
+              echo "::error::Expected downstream dispatch did not appear for $workflow"
               exit 1
             fi
             echo "$label run: $run_id"
@@ -84,15 +112,23 @@ jobs:
             echo "COMMAND_CENTER_NO_REVERSE_WRITE_AFTER_${after^^}=PASS"
           }
 
+          echo "### Full repaired pipeline run" >> "$GITHUB_STEP_SUMMARY"
+
+          # Options owns only its own option artifacts. It already dispatches
+          # dashboard.yml at the end, including when a manual provider preflight
+          # safely retains the last-known-good option snapshot.
+          dashboard_before="$(latest_dispatch_id dashboard.yml)"
+          dispatch_and_wait options.yml "Options" -f force_full_refresh=true
+          wait_for_new_dispatch dashboard.yml "Command Center" "$dashboard_before"
+
           git fetch --depth=1 origin main
-          git fetch --depth=1 origin "$PIPELINE_BRANCH"
           COMMAND_CENTER_BASE="$(git rev-parse origin/main)"
           export COMMAND_CENTER_BASE
+          echo "- Command Center baseline commit: $COMMAND_CENTER_BASE" >> "$GITHUB_STEP_SUMMARY"
 
           git show "origin/main:state.json" > /tmp/state.json
           git show "origin/main:trend_history.json" > /tmp/trend_history.json
           git show "origin/main:daily_log.csv" > /tmp/daily_log.csv
-          git show "origin/$PIPELINE_BRANCH:v38-live-state.json" > /tmp/v38-live-state.json
           python - <<'PY'
           import csv
           import json
@@ -101,7 +137,6 @@ jobs:
 
           iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
           state = json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
-          live = json.loads(Path('/tmp/v38-live-state.json').read_text(encoding='utf-8'))
           asof = str(state.get('date') or '')
           trend = json.loads(Path('/tmp/trend_history.json').read_text(encoding='utf-8'))
           trend_dates = []
@@ -118,14 +153,11 @@ jobs:
               raise SystemExit('Command Center chronology mismatch')
           if prior and str(prevday.get('date') or '') != prior[-1]:
               raise SystemExit(f"Command Center comparison baseline mismatch: {prevday.get('date')} != {prior[-1]}")
-          if live.get('asof') != asof:
-              raise SystemExit(f"Verified V38 staging mismatch: command_center={asof} v38={live.get('asof')}")
-          print('RESUME_INPUTS_READY', asof, prevday.get('date'))
+          print('COMMAND_CENTER_READY', asof, prevday.get('date'))
           PY
 
-          echo "### Isolated manual workflow runs" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Command Center run: [33850910921](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/33850910921) — PASS (#429)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- V38 / TQQQ / CURRENT30 run: [33851690838](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/33851690838) — PASS (#29)" >> "$GITHUB_STEP_SUMMARY"
+          dispatch_and_wait v38-live.yml "V38 / TQQQ / CURRENT30"
+          assert_command_center_unchanged v38
 
           dispatch_and_wait v38-sleeve-refresh.yml "Sleeve / RSI Reset"
           assert_command_center_unchanged sleeve
@@ -136,10 +168,22 @@ jobs:
           dispatch_and_wait publish-public-site.yml "Public mirror"
           assert_command_center_unchanged public_mirror
 
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          git show "origin/$PIPELINE_BRANCH:v38-live-state.json" > /tmp/v38-live-state.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path('/tmp/state.json').read_text(encoding='utf-8'))
+          live = json.loads(Path('/tmp/v38-live-state.json').read_text(encoding='utf-8'))
+          asof = str(state.get('date') or '')
+          if live.get('asof') != asof:
+              raise SystemExit(f"Final V38 staging mismatch: command_center={asof} v38={live.get('asof')}")
+          print('FINAL_PIPELINE_ASOF_MATCH', asof)
+          PY
+
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Reverse-flow audit" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Command Center baseline commit: $COMMAND_CENTER_BASE" >> "$GITHUB_STEP_SUMMARY"
-          echo "- V38 after-check: PASS (verified before resume)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- V38 after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
           echo "- Sleeve after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
           echo "- Rotation after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
           echo "- Public mirror after-check: PASS" >> "$GITHUB_STEP_SUMMARY"
