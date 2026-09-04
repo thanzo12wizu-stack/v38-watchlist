@@ -96,7 +96,9 @@ jobs:
 
           run_stage v38-live.yml "V38/TQQQ/CURRENT30"
           run_stage v38-sleeve-refresh.yml "Sleeve/RSI Reset"
+          run_stage leadership-command.yml "Leadership"
           run_stage rotation-live.yml "Rotation"
+          run_stage rotation-stock-context-live.yml "Rotation strong stocks"
           run_stage publish-public-site.yml "Public mirror"
 
       - name: Prove no downstream reverse write into Command Center
@@ -129,7 +131,7 @@ jobs:
         run: |
           echo '### V38 production downstream chain' >> "$GITHUB_STEP_SUMMARY"
           echo '- Upstream: Command Center daily build (main)' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Order: V38/TQQQ/CURRENT30 → Sleeve/RSI Reset → Rotation → Public mirror' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Order: V38/TQQQ/CURRENT30 → Sleeve/RSI Reset → Leadership → Rotation → Rotation strong stocks → Public mirror' >> "$GITHUB_STEP_SUMMARY"
           echo '- Command Center ownership: read-only for every downstream stage' >> "$GITHUB_STEP_SUMMARY"
           if [[ -f /tmp/atomic-publish-status.json ]]; then
             echo '- Atomic publish validation: completed' >> "$GITHUB_STEP_SUMMARY"
