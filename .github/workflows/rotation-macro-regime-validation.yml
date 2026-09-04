@@ -7,6 +7,8 @@ on:
       - research/rotation-validation-20260905-work
     paths:
       - leadership/research/validate_rotation_macro_regimes_v2.py
+      - leadership/research/validate_rotation_macro_regimes_v3.py
+      - leadership/research/summarize_rotation_macro_regimes.py
       - .github/workflows/rotation-macro-regime-validation.yml
 
 jobs:
@@ -29,17 +31,20 @@ jobs:
           unzip -q /tmp/pit.zip -d /tmp/pit
           test -s /tmp/pit/distribution_pit_panel_cov80.csv
       - name: Syntax check
-        run: python -m py_compile leadership/research/validate_rotation_macro_regimes_v2.py
+        run: python -m py_compile leadership/research/validate_rotation_macro_regimes_v2.py leadership/research/validate_rotation_macro_regimes_v3.py leadership/research/summarize_rotation_macro_regimes.py
       - name: Run macro regime validation
         run: |
-          python leadership/research/validate_rotation_macro_regimes_v2.py \
+          python leadership/research/validate_rotation_macro_regimes_v3.py \
             --panel /tmp/pit/distribution_pit_panel_cov80.csv \
             --output leadership/research/rotation_macro_regime_outputs
+          python leadership/research/summarize_rotation_macro_regimes.py \
+            --report leadership/research/rotation_macro_regime_outputs/macro_regime_report.json \
+            --output leadership/research/rotation_macro_regime_outputs/macro_regime_eligible_summary.json
       - name: Upload outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rotation-macro-regime-validation
+          name: rotation-macro-regime-validation-v3
           path: leadership/research/rotation_macro_regime_outputs/
           if-no-files-found: warn
           retention-days: 14
