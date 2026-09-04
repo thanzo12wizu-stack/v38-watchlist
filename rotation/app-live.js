@@ -118,7 +118,7 @@
     return String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
   }
 
-  function finite(value) { return Number.isFinite(Number(value)); }
+  function finite(value) { return value !== null && value !== '' && Number.isFinite(Number(value)); }
   function fmt(value, digits = 1, signed = false) {
     const n = Number(value);
     if (!Number.isFinite(n)) return '—';
@@ -146,8 +146,8 @@
   }
 
   function trajectory(row) {
-    const current = Number(row?.internal_score);
-    const delta = Number(row?.internal_delta20);
+    const current = finite(row?.internal_score) ? Number(row.internal_score) : NaN;
+    const delta = finite(row?.internal_delta20) ? Number(row.internal_delta20) : NaN;
     if (!Number.isFinite(current) || !Number.isFinite(delta)) {
       return {key:'na', tone:'neutral', label:'方向未取得', current:Number.isFinite(current)?current:null, previous:null, delta:null, up:false, down:false, priority:99};
     }
@@ -464,7 +464,11 @@
     }).sort((a,b)=>trajectory(a.row).priority-trajectory(b.row).priority || Number(b.row.internal_delta20)-Number(a.row.internal_delta20));
     if (!candidates.length) return;
     const html = candidates.slice(0,4).map(x=>recoveryLeaderCard(x.item,x.row)).filter(Boolean).join('');
-    if (html) host.insertAdjacentHTML('beforeend',html);
+    if (html) {
+      const placeholder = host.querySelector(':scope > .sub');
+      if (placeholder) placeholder.remove();
+      host.insertAdjacentHTML('beforeend',html);
+    }
     const scope = document.getElementById('leaderScope');
     if (scope && !scope.textContent.includes('改善転換')) scope.textContent += ' ＋ 改善転換テーマ';
   }
