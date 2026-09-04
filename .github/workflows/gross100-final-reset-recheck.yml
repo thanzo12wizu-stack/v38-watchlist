@@ -1,11 +1,13 @@
-name: Gross100 final Reset recheck
+name: Gross100 final Reset liquidity integration
 
 on:
   workflow_dispatch:
   push:
-    branches: [research/sector-stock-leadership-20260826]
+    branches: [research/leader-entry-delay-audit-20260904]
     paths:
+      - 'leadership/research/audit_gross100_component_series.py'
       - 'leadership/research/audit_gross100_final_reset_component_series.py'
+      - 'leadership/research/audit_gross100_allocation.py'
       - '.github/workflows/gross100-final-reset-recheck.yml'
 
 permissions:
@@ -13,13 +15,13 @@ permissions:
   actions: read
 
 concurrency:
-  group: gross100-final-reset-recheck
+  group: gross100-final-reset-liquidity-integration
   cancel-in-progress: true
 
 jobs:
   audit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -43,40 +45,47 @@ jobs:
           run-id: 33080590798
       - name: Syntax and inputs
         run: |
-          PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_gross100_final_reset_component_series.py leadership/research/audit_gross100_allocation.py
+          PYTHONPATH=.:leadership/research python -m py_compile \
+            leadership/research/audit_gross100_component_series.py \
+            leadership/research/audit_gross100_final_reset_component_series.py \
+            leadership/research/audit_gross100_allocation.py
           test -s leadership/research/gross100_final_reset_input/reset/threshold_trade_rows.csv.gz
           test -s leadership/research/gross100_final_reset_input/tqqq/tqqq_stage56_daily.csv.gz
-      - name: Rebuild normal and final Reset component series
+      - name: Rebuild Normal DDV grid and final Reset
         run: |
           PYTHONPATH=.:leadership/research python leadership/research/audit_gross100_final_reset_component_series.py \
             --root . \
             --reset-trades leadership/research/gross100_final_reset_input/reset/threshold_trade_rows.csv.gz \
             --output leadership/research/gross100_final_reset_components \
             --analysis-start 2016-01-04 \
-            --analysis-end 2026-03-20
-      - name: Re-run Gross100 allocation audit
+            --analysis-end 2026-03-20 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Run final Gross100 DDV integration audit
         run: |
           python leadership/research/audit_gross100_allocation.py \
             --components-dir leadership/research/gross100_final_reset_components \
             --tqqq-daily leadership/research/gross100_final_reset_input/tqqq/tqqq_stage56_daily.csv.gz \
-            --output leadership/research/gross100_final_reset_allocation \
+            --output leadership/research/gross100_liquidity_integration \
             --tqqq-target target_M30_TOUCH30_F80_D10 \
             --bootstrap-sims 5000
-      - name: Upload final Reset Gross100 recheck
+      - name: Upload Gross100 liquidity integration outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gross100-final-reset-recheck
+          name: gross100-liquidity-integration-audit
           path: |
             leadership/research/gross100_final_reset_components/component_recheck_summary.json
-            leadership/research/gross100_final_reset_components/ordinary_PEAK30_PART25_R3_daily.csv.gz
+            leadership/research/gross100_final_reset_components/ordinary_PEAK30_PART25_R3_DDV10M_daily.csv.gz
+            leadership/research/gross100_final_reset_components/ordinary_PEAK30_PART25_R3_DDV20M_daily.csv.gz
+            leadership/research/gross100_final_reset_components/ordinary_PEAK30_PART25_R3_DDV50M_daily.csv.gz
+            leadership/research/gross100_final_reset_components/ordinary_PEAK30_PART25_R3_DDV100M_daily.csv.gz
             leadership/research/gross100_final_reset_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz
-            leadership/research/gross100_final_reset_allocation/gross100_summary.json
-            leadership/research/gross100_final_reset_allocation/gross100_variants.csv
-            leadership/research/gross100_final_reset_allocation/gross100_subperiods.csv
-            leadership/research/gross100_final_reset_allocation/gross100_rolling252.csv
-            leadership/research/gross100_final_reset_allocation/gross100_raw_overlap.csv
-            leadership/research/gross100_final_reset_allocation/gross100_pairwise_bootstrap.csv
-            leadership/research/gross100_final_reset_allocation/gross100_selected_daily.csv.gz
+            leadership/research/gross100_liquidity_integration/gross100_liquidity_summary.json
+            leadership/research/gross100_liquidity_integration/gross100_liquidity_variants.csv
+            leadership/research/gross100_liquidity_integration/gross100_liquidity_subperiods.csv
+            leadership/research/gross100_liquidity_integration/gross100_liquidity_rolling252.csv
+            leadership/research/gross100_liquidity_integration/gross100_liquidity_bootstrap.csv
+            leadership/research/gross100_liquidity_integration/gross100_liquidity_primary_daily.csv.gz
           retention-days: 30
           if-no-files-found: warn
