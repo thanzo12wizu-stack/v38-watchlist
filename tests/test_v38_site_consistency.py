@@ -18,3 +18,9 @@ def test_v38_ui_uses_production_rotation_and_names_reset_holdings():
     assert 'id="resetFreeSlots"' in text
     assert "正式保有 ${resetNames.join(' / ')}" in text
     assert "空き枠があっても追加買いしません" in text
+
+
+def test_reset_display_filter_preserves_actual_active_position_count():
+    text = (ROOT / "build_v38_sleeve_refresh.py").read_text(encoding="utf-8")
+    assert '"active_positions": len(reset.get("positions", []))' in text
+    assert 'sum(str(row.get("status") or "") == "ACTIVE_POSITION" for row in visible)' not in text

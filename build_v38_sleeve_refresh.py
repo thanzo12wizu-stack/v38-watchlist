@@ -432,7 +432,7 @@ def _filter_reset_monitor(path: Path) -> None:
     visible = [row for row in reset["monitor"] if isinstance(row, dict) and _reset_display_candidate(row)]
     reset["monitor"] = visible
     reset["monitor_summary"] = {
-        "active_positions": sum(str(row.get("status") or "") == "ACTIVE_POSITION" for row in visible),
+        "active_positions": len(reset.get("positions", [])),
         "signal_today": sum(str(row.get("status") or "") == "SIGNAL_TODAY_NEXT_OPEN" for row in visible),
         "touched_wait_rise": sum(str(row.get("status") or "") == "RSI30_TOUCHED_WAIT_RISE" for row in visible),
         "within_5pt": sum(

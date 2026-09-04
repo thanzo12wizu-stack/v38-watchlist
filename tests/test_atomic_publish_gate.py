@@ -24,6 +24,7 @@ def _atomic_fixture(root: Path, asof: str = "2026-09-02") -> None:
             "asof": asof,
             "market": {"mode": "DEFENSE", "new_entry_limit": 0},
             "gross100_allocation": {"status": "LIVE ALLOCATION READY"},
+            "panic_reset": {"position_count": 1, "positions": [{"symbol": "VIK"}]},
         },
     )
     _write(
@@ -48,6 +49,9 @@ def _atomic_fixture(root: Path, asof: str = "2026-09-02") -> None:
             "rsi_reset": {
                 "status": "READY",
                 "asof": asof,
+                "position_count": 1,
+                "positions": [{"symbol": "VIK"}],
+                "monitor_summary": {"active_positions": 1},
                 "download_quality": {"coverage_ok": True},
                 "pending": {"entries": []},
             },
@@ -105,4 +109,22 @@ def test_atomic_publish_gate_rejects_reset_download_gap(tmp_path: Path):
     sleeve["rsi_reset"]["download_quality"]["coverage_ok"] = False
     _write(tmp_path / "v38-sleeve-state.json", sleeve)
     with pytest.raises(AtomicPublishError, match="ATOMIC_PUBLISH_RSI_RESET_COVERAGE_NOT_READY"):
+        validate_atomic_live_snapshot(tmp_path)
+
+
+def test_atomic_publish_gate_rejects_reset_active_count_mismatch(tmp_path: Path):
+    _atomic_fixture(tmp_path)
+    sleeve = json.loads((tmp_path / "v38-sleeve-state.json").read_text(encoding="utf-8"))
+    sleeve["rsi_reset"]["monitor_summary"]["active_positions"] = 0
+    _write(tmp_path / "v38-sleeve-state.json", sleeve)
+    with pytest.raises(AtomicPublishError, match="ATOMIC_PUBLISH_RSI_RESET_POSITION_MISMATCH"):
+        validate_atomic_live_snapshot(tmp_path)
+
+
+def test_atomic_publish_gate_rejects_reset_v38_holding_mismatch(tmp_path: Path):
+    _atomic_fixture(tmp_path)
+    live = json.loads((tmp_path / "v38-live-state.json").read_text(encoding="utf-8"))
+    live["panic_reset"] = {"position_count": 1, "positions": [{"symbol": "RCL"}]}
+    _write(tmp_path / "v38-live-state.json", live)
+    with pytest.raises(AtomicPublishError, match="ATOMIC_PUBLISH_RSI_RESET_V38_MISMATCH"):
         validate_atomic_live_snapshot(tmp_path)

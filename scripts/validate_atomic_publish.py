@@ -150,6 +150,46 @@ def validate_atomic_live_snapshot(root: Path) -> dict[str, Any]:
         json.dumps(quality, ensure_ascii=False, sort_keys=True),
     )
 
+    reset_positions = [p for p in reset.get("positions", []) if isinstance(p, dict)]
+    reset_summary = reset.get("monitor_summary") if isinstance(reset.get("monitor_summary"), dict) else {}
+    reset_count = reset.get("position_count")
+    _require(
+        isinstance(reset_count, int)
+        and reset_count == len(reset_positions)
+        and reset_summary.get("active_positions") == len(reset_positions),
+        "ATOMIC_PUBLISH_RSI_RESET_POSITION_MISMATCH",
+        json.dumps(
+            {
+                "position_count": reset_count,
+                "positions": [p.get("symbol") for p in reset_positions],
+                "active_positions": reset_summary.get("active_positions"),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+    )
+
+    live_reset = live.get("panic_reset") if isinstance(live.get("panic_reset"), dict) else {}
+    live_reset_positions = [p for p in live_reset.get("positions", []) if isinstance(p, dict)]
+    reset_symbols = sorted(str(p.get("symbol") or "") for p in reset_positions if str(p.get("symbol") or ""))
+    live_reset_symbols = sorted(str(p.get("symbol") or "") for p in live_reset_positions if str(p.get("symbol") or ""))
+    _require(
+        live_reset.get("position_count") == len(live_reset_positions)
+        and live_reset.get("position_count") == reset_count
+        and live_reset_symbols == reset_symbols,
+        "ATOMIC_PUBLISH_RSI_RESET_V38_MISMATCH",
+        json.dumps(
+            {
+                "sleeve_count": reset_count,
+                "sleeve_symbols": reset_symbols,
+                "v38_count": live_reset.get("position_count"),
+                "v38_symbols": live_reset_symbols,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+    )
+
     gross = live.get("gross100_allocation") if isinstance(live.get("gross100_allocation"), dict) else {}
     _require(
         "LIVE ALLOCATION READY" in str(gross.get("status") or ""),
