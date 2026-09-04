@@ -1,0 +1,46 @@
+name: Rotation Theme56 retrospective validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-validation-20260905-theme56
+    paths:
+      - leadership/research/validate_theme56_rotation_retrospective.py
+      - .github/workflows/rotation-theme56-retrospective-validation.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy statsmodels yfinance pyarrow
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_theme56_rotation_retrospective.py
+      - name: Run retrospective validation
+        run: |
+          python leadership/research/validate_theme56_rotation_retrospective.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --base leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
+            --fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
+            --dram leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv \
+            --exact-flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
+            --etfcom-flows leadership/research/rotation_theme56_etfcom_flow/theme56_etfcom_daily_flows.csv \
+            --start 2022-01-01 \
+            --end 2026-09-04 \
+            --batch-size 80 \
+            --output leadership/research/theme56_retrospective_outputs
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-theme56-retrospective-validation
+          path: leadership/research/theme56_retrospective_outputs/
+          if-no-files-found: warn
+          retention-days: 14
