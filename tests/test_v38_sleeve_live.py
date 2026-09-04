@@ -47,14 +47,19 @@ def test_same_session_normal_seed_marks_exposure_and_keeps_stop_mode_no_entries(
     assert state["pending"]["entry_cap"] == 0
 
 
-def test_sleeve_refresh_runs_after_v38_on_staging_and_fails_closed_before_commit():
+def test_sleeve_refresh_reads_main_upstream_and_writes_only_derivative_staging():
     workflow = Path(".github/workflows/v38-sleeve-refresh.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in workflow
     assert "PIPELINE_BRANCH: pipeline-live" in workflow
-    assert "ref: pipeline-live" in workflow
-    assert "Sync staged V38 snapshot" in workflow
+    assert "ref: main" in workflow
+    assert "Load main code and Command Center with prior derivative state from staging" in workflow
+    assert "git reset --hard origin/main" in workflow
+    assert "STAGED_INPUTS:" in workflow
+    assert "v38-live-state.json" in workflow
+    assert "v38-sleeve-state.json" in workflow
+    assert "SLEEVE_INPUT_ASOF_MISMATCH" in workflow
     assert "Rebuild Normal Stock and RSI Reset sleeves with retries" in workflow
-    assert "build_v38_sleeve_live.py" in workflow
+    assert "run_v38_sleeve_refresh_live.py" in workflow
     assert "Rebuild audited companion with live Gross100 inputs" in workflow
     assert "LIVE ALLOCATION READY" in workflow
     assert "sleeve.get('status') != 'READY'" in workflow
@@ -62,6 +67,7 @@ def test_sleeve_refresh_runs_after_v38_on_staging_and_fails_closed_before_commit
     assert "git add v38-sleeve-state.json tqqq-panic-state.json v38-live-state.json" in workflow
     assert "Pipeline staging advanced during sleeve refresh; reject stale output" in workflow
     assert 'git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"' in workflow
+    assert "ref: pipeline-live" not in workflow
     assert "HEAD:main" not in workflow
 
 
