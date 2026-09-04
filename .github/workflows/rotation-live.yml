@@ -23,18 +23,6 @@ jobs:
       RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
       PIPELINE_BRANCH: pipeline-live
       ATOMIC_PRODUCTION_FILES: >-
-        command-center.html
-        command-center_share.html
-        mktcap.json
-        trend_history.json
-        fred_cache.json
-        fmp_reference_cache.json
-        state.json
-        daily_log.csv
-        earnings.json
-        inception_vwap.json
-        industry_map.json
-        universe.csv
         options_targets.json
         commit_manifest.json
         sector_snapshot.json
@@ -88,7 +76,7 @@ jobs:
           if tqqq.get('live_generation_status') != 'READY':
               raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
           if (tqqq.get('current30') or {}).get('status') != 'READY':
-              raise SystemExit(f'CURRENT30 not READY: {(tqqq.get("current30") or {}).get("status")}')
+              raise SystemExit(f'TQQQ CURRENT30 not READY: {(tqqq.get("current30") or {}).get("status")}')
           if tqqq.get('sleeve_live_status') != 'READY':
               raise SystemExit(f'TQQQ sleeve merge not READY: {tqqq.get("sleeve_live_status")}')
           if sleeve.get('status') != 'READY':
