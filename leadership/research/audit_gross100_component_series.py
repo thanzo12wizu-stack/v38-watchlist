@@ -31,9 +31,10 @@ def _px(frame, date, sym, fallback=None):
 def simulate_ordinary(meta, matrices, peer_ctx, liquidity_floor: float = 10_000_000.0):
     """Exact PEAK30_PART25_R3 mechanics plus an entry-only DDV floor.
 
-    The ranking universe remains the adopted >=$10M universe. A higher floor only
-    blocks a new entry after ranking and allows the next ranked liquid candidate to
-    fill the slot. Existing positions are not sold merely because DDV later falls.
+    Ranking and refill candidate depth remain exactly the adopted Top12 behavior.
+    A higher floor can only block a new entry among those same ranked candidates;
+    it does not reach down to rank 13+ to manufacture a refill. Existing positions
+    are not sold merely because DDV later falls.
     """
     idx = meta["analysis_idx"]
     opens, closes, dvol = matrices["open"], matrices["close"], matrices["dvol"]
@@ -93,9 +94,10 @@ def simulate_ordinary(meta, matrices, peer_ctx, liquidity_floor: float = 10_000_
             market_bucket = int(bucket)
 
             if (not red_force) and cap > 0 and len(pos) < cap:
-                # Ask for a deeper ranked list so an excluded low-DDV top name does
-                # not artificially leave the account under-filled.
-                candidates = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, max(40, base.N_PORT))
+                # Critical audit guardrail: preserve the historical Top12 candidate
+                # truncation exactly. Do not reach to rank 13+ when a higher DDV
+                # floor excludes a candidate or an already-held name occupies Top12.
+                candidates = ex.ranked_candidates(prev, matrices, peer_ctx, bucket, base.N_PORT)
                 nav_open = cash
                 for sym, p in pos.items():
                     opx = _px(opens, d, sym, _px(closes, prev, sym, p["entry_price"]))
