@@ -71,11 +71,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Manual runs are often started while Yahoo's option-chain endpoint is
-          # between updates/maintenance. When all three reference ETFs return no
-          # expiries, do not start a full-universe scan that is guaranteed to
-          # trip the provider circuit. Preserve the committed last-known-good
-          # snapshot and return success with an explicit warning instead.
+          # Manual runs can occur while Yahoo exposes expiry labels but not a
+          # usable OI/IV chain. Probe the same analysis path used by production
+          # before starting a full refresh. If all three reference ETFs are
+          # unusable, preserve the committed last-known-good snapshot and finish
+          # green so the rest of the site pipeline can continue safely.
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             set +e
             python - <<'PY'
@@ -83,35 +83,43 @@ jobs:
           import time
           import yfinance as yf
 
+          sys.path.insert(0, "tools")
+          import build_options_positioning_directional as directional
+
+          base = directional.base
           refs = ("SPY", "QQQ", "IWM")
           last = {}
           for attempt in range(1, 4):
               usable = {}
+              asof = base._now()
               for ticker in refs:
                   try:
-                      expiries = list(yf.Ticker(ticker).options or [])
+                      rec = base._build_record_once(yf, ticker, asof)
+                      usable[ticker] = len(rec.get("expiries") or {})
                   except Exception as exc:
-                      expiries = []
-                      print(f"[opt-preflight] {ticker} attempt={attempt} error={type(exc).__name__}: {exc}")
-                  usable[ticker] = len(expiries)
+                      usable[ticker] = 0
+                      print(
+                          f"[opt-preflight] {ticker} attempt={attempt} "
+                          f"error={type(exc).__name__}: {exc}"
+                      )
               last = usable
-              print(f"[opt-preflight] attempt={attempt} expiries={usable}")
+              print(f"[opt-preflight] attempt={attempt} usable_expiries={usable}")
               if any(count > 0 for count in usable.values()):
                   print("[opt-preflight] provider ready")
                   raise SystemExit(0)
               if attempt < 3:
                   time.sleep(attempt * 2)
 
-          print(f"[opt-preflight] provider unavailable for all references: {last}")
+          print(f"[opt-preflight] no usable reference chains: {last}")
           raise SystemExit(42)
           PY
             preflight_rc=$?
             set -e
             if [[ "$preflight_rc" == "42" ]]; then
-              echo "::warning::Yahoo option chains are not ready for SPY/QQQ/IWM. Keeping the previous committed Options snapshot; rerun after the provider recovers."
+              echo "::warning::Yahoo option chains are not currently usable for SPY/QQQ/IWM. Keeping the previous committed Options snapshot and continuing the site pipeline."
               echo "### Options positioning" >> "$GITHUB_STEP_SUMMARY"
               echo "- Status: retained last-known-good" >> "$GITHUB_STEP_SUMMARY"
-              echo "- Reason: Yahoo option chains unavailable for SPY / QQQ / IWM during manual run" >> "$GITHUB_STEP_SUMMARY"
+              echo "- Reason: no usable OI/IV chain for SPY / QQQ / IWM during manual run" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             if [[ "$preflight_rc" != "0" ]]; then
