@@ -1,9 +1,6 @@
 name: V38 live build
 
 on:
-  workflow_run:
-    workflows: ["Command Center daily build"]
-    types: [completed]
   workflow_dispatch: {}
 
 permissions:
@@ -15,7 +12,6 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     env:
@@ -31,16 +27,35 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: pipeline-live
+          ref: main
           fetch-depth: 1
 
-      - name: Sync staged Command Center snapshot
+      - name: Load Command Center from main and prior V38 state from staging
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --depth=1 origin main
           git fetch --depth=1 origin "$PIPELINE_BRANCH"
-          git reset --hard "origin/$PIPELINE_BRANCH"
-          echo "V38_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git reset --hard origin/main
+          echo "COMMAND_CENTER_SOURCE_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+          echo "PIPELINE_SOURCE_SHA=$(git rev-parse "origin/$PIPELINE_BRANCH")" >> "$GITHUB_ENV"
+
+          # Command Center files always come from main. Only prior V38-owned
+          # state/history is overlaid from the staging branch.
+          for file in $V38_LIVE_ARTIFACTS; do
+            if git cat-file -e "origin/$PIPELINE_BRANCH:$file" 2>/dev/null; then
+              git show "origin/$PIPELINE_BRANCH:$file" > "$file"
+            fi
+          done
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path("state.json").read_text(encoding="utf-8"))
+          if not state.get("date"):
+              raise SystemExit("main Command Center state has no data session")
+          print("COMMAND_CENTER_INPUT_READY", state["date"])
+          PY
 
       - uses: actions/setup-python@v7
         with:
@@ -240,11 +255,20 @@ jobs:
           done
 
           git fetch --depth=1 origin "$PIPELINE_BRANCH"
-          if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$V38_SOURCE_SHA" ]]; then
+          git fetch --depth=1 origin main
+          if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$PIPELINE_SOURCE_SHA" ]]; then
             echo "::error::Pipeline staging advanced during V38 build; skip stale persistence and reject stale output"
             exit 1
           fi
-          git reset --hard "origin/$PIPELINE_BRANCH"
+          if [[ "$(git rev-parse origin/main)" != "$COMMAND_CENTER_SOURCE_SHA" ]]; then
+            echo "::error::Command Center advanced during V38 build; reject stale downstream output"
+            exit 1
+          fi
+
+          # Recreate staging from the exact main snapshot, then overlay only
+          # V38-owned output files. A force-with-lease is safe here because
+          # pipeline-live is a disposable downstream staging branch.
+          git reset --hard origin/main
           for file in $V38_LIVE_ARTIFACTS; do
             if [[ -f "$staging/$file" ]]; then
               cp -a "$staging/$file" "$file"
@@ -256,4 +280,6 @@ jobs:
             exit 0
           fi
           git commit -m "Stage isolated V38 live state"
-          git push origin "HEAD:refs/heads/$PIPELINE_BRANCH"
+          git push \
+            --force-with-lease="refs/heads/$PIPELINE_BRANCH:$PIPELINE_SOURCE_SHA" \
+            origin "HEAD:refs/heads/$PIPELINE_BRANCH"

@@ -49,8 +49,7 @@ def test_same_session_normal_seed_marks_exposure_and_keeps_stop_mode_no_entries(
 
 def test_sleeve_refresh_runs_after_v38_on_staging_and_fails_closed_before_commit():
     workflow = Path(".github/workflows/v38-sleeve-refresh.yml").read_text(encoding="utf-8")
-    assert 'workflows: ["V38 live build"]' in workflow
-    assert "github.event.workflow_run.conclusion == 'success'" in workflow
+    assert "workflow_dispatch:" in workflow
     assert "PIPELINE_BRANCH: pipeline-live" in workflow
     assert "ref: pipeline-live" in workflow
     assert "Sync staged V38 snapshot" in workflow

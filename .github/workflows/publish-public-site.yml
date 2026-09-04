@@ -1,24 +1,6 @@
 name: Publish safe public site mirror
 
 on:
-  workflow_run:
-    workflows: ["Rotation Theme56 live build"]
-    types: [completed]
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/export_public_site.py'
-      - 'scripts/privacy_audit.py'
-      - 'scripts/validate_atomic_publish.py'
-      - 'tests/test_public_site_export.py'
-      - 'tests/test_privacy_audit.py'
-      - 'tests/test_atomic_publish_gate.py'
-      - 'command-center-v38.html'
-      - 'v38-freshness.js'
-      - 'rotation/index.html'
-      - 'rotation/app-v2.js'
-      - 'rotation/app-live.js'
-      - '.github/workflows/publish-public-site.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -30,7 +12,6 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

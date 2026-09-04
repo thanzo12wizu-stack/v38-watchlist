@@ -1,9 +1,6 @@
 name: Rotation Theme56 live build
 
 on:
-  workflow_run:
-    workflows: ["V38 sleeve live refresh"]
-    types: [completed]
   workflow_dispatch: {}
 
 permissions:
@@ -15,7 +12,6 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -23,15 +19,27 @@ jobs:
       RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
       PIPELINE_BRANCH: pipeline-live
       ATOMIC_PRODUCTION_FILES: >-
-        options_targets.json
-        commit_manifest.json
-        sector_snapshot.json
         v38-live-state.json
         v38-strict-loo-history.json
         v38-strict-loo-live.json
         tqqq-panic-state.json
         v38-tqqq-live-source-cache.json
         v38-sleeve-state.json
+      COMMAND_CENTER_OWNED_FILES: >-
+        command-center.html
+        command-center_share.html
+        state.json
+        trend_history.json
+        daily_log.csv
+        mktcap.json
+        fred_cache.json
+        fmp_reference_cache.json
+        earnings.json
+        inception_vwap.json
+        industry_map.json
+        universe.csv
+        options_targets.json
+        commit_manifest.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,7 +58,7 @@ jobs:
           git fetch --depth=1 origin "$PIPELINE_BRANCH"
           echo "PIPELINE_SOURCE_SHA=$(git rev-parse "origin/$PIPELINE_BRANCH")" >> "$GITHUB_ENV"
           echo "MAIN_SOURCE_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
-          git show "origin/$PIPELINE_BRANCH:state.json" > /tmp/state.json
+          git show "origin/main:state.json" > /tmp/state.json
           git show "origin/$PIPELINE_BRANCH:v38-live-state.json" > /tmp/v38-live-state.json
           git show "origin/$PIPELINE_BRANCH:tqqq-panic-state.json" > /tmp/tqqq-panic-state.json
           git show "origin/$PIPELINE_BRANCH:v38-sleeve-state.json" > /tmp/v38-sleeve-state.json
@@ -299,7 +307,25 @@ jobs:
             --output /tmp/atomic-publish-status.json
           cat /tmp/atomic-publish-status.json
 
+          # Rotation may promote downstream products, but it must never alter
+          # a Command Center-owned file copied from main.
+          if ! git diff --quiet origin/main -- $COMMAND_CENTER_OWNED_FILES; then
+            echo "::error::Rotation attempted to modify Command Center-owned artifacts"
+            git diff --name-only origin/main -- $COMMAND_CENTER_OWNED_FILES
+            exit 1
+          fi
+
           git add -- $ATOMIC_PRODUCTION_FILES rotation/data/rotation-theme56.json rotation/data/status.json
+          unexpected="$(git diff --cached --name-only | while IFS= read -r changed; do
+            case " $ATOMIC_PRODUCTION_FILES rotation/data/rotation-theme56.json rotation/data/status.json " in
+              *" $changed "*) ;;
+              *) echo "$changed" ;;
+            esac
+          done)"
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::Rotation staged files outside its ownership: $unexpected"
+            exit 1
+          fi
           if git diff --staged --quiet; then
             echo "Public main already matches the complete atomic snapshot"
             exit 0
@@ -309,7 +335,7 @@ jobs:
 
       - name: Upload Rotation diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: rotation-theme56-live-diagnostics
           path: |

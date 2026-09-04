@@ -41,7 +41,9 @@ def test_companion_ui_exposes_audited_semantics_and_keeps_legacy_dashboard():
 
 def test_workflow_isolates_v38_live_from_command_center_and_publication():
     workflow = Path(".github/workflows/v38-live.yml").read_text(encoding="utf-8")
-    assert 'workflows: ["Command Center daily build"]' in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "ref: main" in workflow
+    assert "Load Command Center from main and prior V38 state from staging" in workflow
     assert "Prepare verified PIT taxonomy bootstrap" in workflow
     assert "79073ffd9742102c2b6e9f72d349801a10e126db" in workflow
     assert "Build strict LOO PIT live state" in workflow
@@ -49,6 +51,8 @@ def test_workflow_isolates_v38_live_from_command_center_and_publication():
     assert "Build provisional audited V38 companion" in workflow
     assert "Validate V38 live state" in workflow
     assert "Commit V38 live states" in workflow
+    assert 'origin "HEAD:refs/heads/$PIPELINE_BRANCH"' in workflow
+    assert "git push origin HEAD:main" not in workflow
     assert "build_dashboard.py" not in workflow
     assert "Build Command Center" not in workflow
     assert "export_public_site.py" not in workflow

@@ -1,9 +1,6 @@
 name: V38 sleeve live refresh
 
 on:
-  workflow_run:
-    workflows: ["V38 live build"]
-    types: [completed]
   workflow_dispatch: {}
 
 permissions:
@@ -15,7 +12,6 @@ concurrency:
 
 jobs:
   refresh:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     env:
@@ -44,7 +40,7 @@ jobs:
         run: pip install --disable-pip-version-check -r requirements.txt pytest
 
       - name: Restore validated Reset OHLC cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .cache/v38-reset-prices
           key: ${{ runner.os }}-v38-reset-prices-${{ github.run_id }}
