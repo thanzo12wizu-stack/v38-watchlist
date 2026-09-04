@@ -77,8 +77,8 @@ jobs:
           options = Path('.github/workflows/options.yml')
           text = options.read_text(encoding='utf-8')
           dispatch = '            gh workflow run dashboard.yml --ref main || true\n'
-          if text.count(dispatch) != 2:
-              raise SystemExit(f'expected exactly two Options -> Dashboard dispatches, found {text.count(dispatch)}')
+          if text.count(dispatch) != 1:
+              raise SystemExit(f'expected exactly one Options -> Dashboard dispatch, found {text.count(dispatch)}')
           options.write_text(text.replace(dispatch, ''), encoding='utf-8')
 
           test_path = Path('tests/test_atomic_pipeline_workflows.py')
