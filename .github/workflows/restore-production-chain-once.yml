@@ -76,10 +76,11 @@ jobs:
 
           options = Path('.github/workflows/options.yml')
           text = options.read_text(encoding='utf-8')
-          dispatch = '            gh workflow run dashboard.yml --ref main || true\n'
-          if text.count(dispatch) != 1:
-              raise SystemExit(f'expected exactly one Options -> Dashboard dispatch, found {text.count(dispatch)}')
-          options.write_text(text.replace(dispatch, ''), encoding='utf-8')
+          lines = text.splitlines(keepends=True)
+          removed = [line for line in lines if line.strip() == 'gh workflow run dashboard.yml --ref main || true']
+          if len(removed) != 2:
+              raise SystemExit(f'expected exactly two legacy Options -> Dashboard dispatch lines, found {len(removed)}')
+          options.write_text(''.join(line for line in lines if line.strip() != 'gh workflow run dashboard.yml --ref main || true'), encoding='utf-8')
 
           test_path = Path('tests/test_atomic_pipeline_workflows.py')
           test = test_path.read_text(encoding='utf-8')
@@ -106,8 +107,8 @@ jobs:
             tests/test_atomic_pipeline_workflows.py \
             tests/test_atomic_publish_gate.py \
             tests/test_public_site_export.py
-          grep -F "- cron: '17 22 * * 1-5'" .github/workflows/dashboard.yml
-          grep -F "- cron: '17 4 * * 2-6'" .github/workflows/dashboard.yml
+          grep -F -- "- cron: '17 22 * * 1-5'" .github/workflows/dashboard.yml
+          grep -F -- "- cron: '17 4 * * 2-6'" .github/workflows/dashboard.yml
           ! grep -F "gh workflow run dashboard.yml" .github/workflows/options.yml
 
       - name: Commit production wiring
