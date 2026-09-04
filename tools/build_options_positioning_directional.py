@@ -16,6 +16,32 @@ import build_options_positioning as base
 _orig_analyse_expiry = base.analyse_expiry
 
 
+def _clean_positioning_rows(df, kind):
+    """Keep valid OI/IV rows even when premarket quotes are all zero.
+
+    The positioning proxy is calculated from open interest and implied
+    volatility. Yahoo can legitimately report bid=ask=volume=0 outside the
+    regular session, so quote inactivity alone must not erase valid OI.
+    """
+    if df is None or len(df) == 0:
+        return base.pd.DataFrame()
+    d = df.copy()
+    for c in ("strike", "openInterest", "impliedVolatility", "volume", "bid", "ask"):
+        if c not in d.columns:
+            d[c] = base.np.nan
+        d[c] = base.pd.to_numeric(d[c], errors="coerce")
+    d = d[(d["strike"] > 0) & (d["openInterest"].fillna(0) > 0)]
+    d = d[d["impliedVolatility"].between(base.MIN_IV, base.MAX_IV)]
+    d["kind"] = kind
+    return d[["strike", "openInterest", "impliedVolatility", "volume", "bid", "ask", "kind"]]
+
+
+# The workflow runs this directional wrapper. Patch the base module before its
+# original analyse_expiry executes so both detailed records and broad scans use
+# the same OI/IV-valid chain handling.
+base._clean = _clean_positioning_rows
+
+
 def _directional(rows, spot, side, n=3):
     vals = []
     field = "call" if side == "call" else "put"
