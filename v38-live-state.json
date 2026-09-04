@@ -3,16 +3,16 @@
   "source": "command-center.html",
   "asof": "2026-09-03",
   "market": {
-    "nqsar": "Yellow",
-    "breadth50": 53.18,
-    "breadth_valid": 3763,
-    "breadth_universe": 3763,
+    "nqsar": "Red",
+    "breadth50": 53.19,
+    "breadth_valid": 3762,
+    "breadth_universe": 3762,
     "coverage": 1.0,
     "coverage_ok": true,
-    "mode": "STOP",
-    "reason": "NQSAR YELLOW",
+    "mode": "DEFENSE",
+    "reason": "NQSAR RED",
     "new_entry_limit": 0,
-    "force_exit_next_open": false
+    "force_exit_next_open": true
   },
   "normal_tqqq": {
     "status": "READY",
@@ -39,11 +39,11 @@
     "required_route": "tqqq-panic-state.json",
     "asof_match_required": true,
     "vix_close": 14.319999694824219,
-    "qqq_sma50_atr_deviation": 0.6793729587779191,
+    "qqq_sma50_atr_deviation": 0.6793729587500091,
     "qqq_drawdown10": -0.004770426857602206,
     "seed_age_sessions": 108,
-    "rsi4h": 54.91431170204818,
-    "prior_rsi4h": 54.198590012834345,
+    "rsi4h": 54.91702421778186,
+    "prior_rsi4h": 54.20106779143736,
     "touch30_today": false,
     "mc57": 45.1,
     "active": false,
@@ -76,7 +76,7 @@
     "membership_source": "sector_snapshot.json:s2t (multiple memberships)",
     "history_min_sessions": 21,
     "normal_biotech_policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY (<10B cap AND <50M revenue; missing revenue fail-open)",
-    "full_eligible_count": 125,
+    "full_eligible_count": 124,
     "display_limit_applied_after_full_sort": 50,
     "selective_watch_status": "READY",
     "selective_watch_semantics": "STOP/DEFENSE REOPEN TO SELECTIVE: RS189 ONLY; TOP4",
@@ -583,7 +583,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 93.0,
-      "rs63": 89.0,
+      "rs63": 90.0,
       "peer_theme": "金鉱山",
       "theme_memberships": [
         "11. 素材・鉱業・化学",
@@ -1073,7 +1073,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 73
+      "selective_watch_rank": 72
     },
     {
       "ticker": "DINO",
@@ -2441,7 +2441,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 71
+      "selective_watch_rank": 70
     },
     {
       "ticker": "BFLY",
@@ -2464,7 +2464,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 99.0,
-      "rs63": 93.0,
+      "rs63": 94.0,
       "peer_theme": "6. バイオ・ヘルスケア",
       "theme_memberships": [
         "6. バイオ・ヘルスケア",
@@ -3182,7 +3182,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 55
+      "selective_watch_rank": 54
     },
     {
       "ticker": "PRCH",
@@ -3239,7 +3239,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 60
+      "selective_watch_rank": 59
     },
     {
       "ticker": "TDW",
@@ -3353,7 +3353,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 53
+      "selective_watch_rank": 52
     },
     {
       "ticker": "KNSA",
@@ -3695,7 +3695,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 91
+      "selective_watch_rank": 90
     },
     {
       "ticker": "PSNL",
@@ -3809,64 +3809,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 59
-    },
-    {
-      "ticker": "APGE",
-      "price": 135.07,
-      "daily_dollar_volume_m": 180.0,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 46.3,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Biotechnology",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 95.0,
-      "rs63": 96.0,
-      "peer_theme": "臨床段階・中小型バイオ",
-      "theme_memberships": [
-        "6. バイオ・ヘルスケア",
-        "臨床段階・中小型バイオ"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "バイオ",
-      "peer_theme_score": 66.29476047019907,
-      "theme_rs63": 94.94949494949495,
-      "theme_acceleration": 54.882154882154886,
-      "theme_breadth21": 49.05263157894737,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 86.38842814105972,
-      "attack_watch_rank": 66,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Biotechnology",
-        "market_cap": 10223143269.0,
-        "revenue_ttm": 0.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "MARKET_CAP_GTE_10B_PASS",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 52
+      "selective_watch_rank": 58
     },
     {
       "ticker": "TVTX",
@@ -3909,7 +3852,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 86.38842814105972,
-      "attack_watch_rank": 67,
+      "attack_watch_rank": 66,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -3923,7 +3866,64 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 61
+      "selective_watch_rank": 60
+    },
+    {
+      "ticker": "ENVA",
+      "price": 233.17,
+      "daily_dollar_volume_m": 65.5,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 31.8,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Finance/Rental/Leasing",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 93.0,
+      "rs63": 93.0,
+      "peer_theme": "7. フィンテック・デジタル金融",
+      "theme_memberships": [
+        "7. フィンテック・デジタル金融",
+        "AI貸付"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "金融・リース",
+      "peer_theme_score": 70.93153759820427,
+      "theme_rs63": 65.31986531986533,
+      "theme_acceleration": 82.82828282828282,
+      "theme_breadth21": 64.64646464646465,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 86.37946127946128,
+      "attack_watch_rank": 67,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Finance/Rental/Leasing",
+        "market_cap": 5805553060.999999,
+        "revenue_ttm": 3151653000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 73
     },
     {
       "ticker": "HZO",
@@ -4094,7 +4094,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 56
+      "selective_watch_rank": 55
     },
     {
       "ticker": "NEOG",
@@ -4151,7 +4151,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 57
+      "selective_watch_rank": 56
     },
     {
       "ticker": "ATAI",
@@ -4211,11 +4211,11 @@
       "selective_watch_rank": 62
     },
     {
-      "ticker": "ENVA",
-      "price": 233.17,
-      "daily_dollar_volume_m": 65.5,
+      "ticker": "VCTR",
+      "price": 113.46,
+      "daily_dollar_volume_m": 66.1,
       "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 31.8,
+      "close_vs_sma200_pct": 42.6,
       "eligibility_checks": {
         "price_gte_5": true,
         "dollar_volume_gte_10m": true,
@@ -4226,23 +4226,23 @@
         "biotech_industry_excluded": false
       },
       "normal_biotech_policy": {
-        "industry": "Finance/Rental/Leasing",
+        "industry": "Investment Managers",
         "excluded": false,
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
-      "rs189": 92.0,
-      "rs63": 93.0,
-      "peer_theme": "7. フィンテック・デジタル金融",
+      "rs189": 95.0,
+      "rs63": 87.0,
+      "peer_theme": "資産運用",
       "theme_memberships": [
-        "7. フィンテック・デジタル金融",
-        "AI貸付"
+        "12. 金融・銀行・保険",
+        "資産運用"
       ],
       "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "金融・リース",
-      "peer_theme_score": 70.93153759820427,
-      "theme_rs63": 65.31986531986533,
-      "theme_acceleration": 82.82828282828282,
-      "theme_breadth21": 64.64646464646465,
+      "legacy_theme_label": "資産運用",
+      "peer_theme_score": 63.68704970855509,
+      "theme_rs63": 49.831649831649834,
+      "theme_acceleration": 83.16498316498317,
+      "theme_breadth21": 58.064516129032256,
       "peer_only_status": "STRICT_LOO",
       "candidate_exclusion_required": true,
       "candidate_excluded_from_return": true,
@@ -4250,22 +4250,22 @@
       "candidate_excluded_from_breadth21": true,
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
-      "attack_watch_score": 85.67946127946126,
+      "attack_watch_score": 85.60611491256653,
       "attack_watch_rank": 73,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
       "clinical_biotech": {
-        "industry": "Finance/Rental/Leasing",
-        "market_cap": 5805553060.999999,
-        "revenue_ttm": 3151653000.0,
+        "industry": "Investment Managers",
+        "market_cap": 6978875877.999999,
+        "revenue_ttm": 1324606000.0,
         "excluded": false,
         "revenue_missing_fail_open": false,
         "reason": "INDUSTRY_NOT_TARGETED",
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 83
+      "selective_watch_rank": 61
     },
     {
       "ticker": "FIVN",
@@ -4436,7 +4436,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 69
+      "selective_watch_rank": 68
     },
     {
       "ticker": "SGMT",
@@ -4553,63 +4553,6 @@
       "selective_watch_rank": 78
     },
     {
-      "ticker": "VCTR",
-      "price": 113.46,
-      "daily_dollar_volume_m": 66.1,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 42.6,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Investment Managers",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 94.0,
-      "rs63": 87.0,
-      "peer_theme": "資産運用",
-      "theme_memberships": [
-        "12. 金融・銀行・保険",
-        "資産運用"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "資産運用",
-      "peer_theme_score": 63.68704970855509,
-      "theme_rs63": 49.831649831649834,
-      "theme_acceleration": 83.16498316498317,
-      "theme_breadth21": 58.064516129032256,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 84.90611491256652,
-      "attack_watch_rank": 79,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Investment Managers",
-        "market_cap": 6978875877.999999,
-        "revenue_ttm": 1324606000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 68
-    },
-    {
       "ticker": "CHEF",
       "price": 114.21,
       "daily_dollar_volume_m": 79.9,
@@ -4650,7 +4593,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.76896896896896,
-      "attack_watch_rank": 80,
+      "attack_watch_rank": 79,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4707,7 +4650,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.46575276575277,
-      "attack_watch_rank": 81,
+      "attack_watch_rank": 80,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4721,7 +4664,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 90
+      "selective_watch_rank": 89
     },
     {
       "ticker": "BHVN",
@@ -4764,7 +4707,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.32957646641856,
-      "attack_watch_rank": 82,
+      "attack_watch_rank": 81,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4778,7 +4721,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 70
+      "selective_watch_rank": 69
     },
     {
       "ticker": "ITGR",
@@ -4821,7 +4764,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.32957646641856,
-      "attack_watch_rank": 83,
+      "attack_watch_rank": 82,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4878,7 +4821,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.28842814105971,
-      "attack_watch_rank": 84,
+      "attack_watch_rank": 83,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4935,7 +4878,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.19225589225589,
-      "attack_watch_rank": 85,
+      "attack_watch_rank": 84,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -4992,7 +4935,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 84.15601803721245,
-      "attack_watch_rank": 86,
+      "attack_watch_rank": 85,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5006,7 +4949,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 54
+      "selective_watch_rank": 53
     },
     {
       "ticker": "DCTH",
@@ -5049,7 +4992,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 83.62957646641856,
-      "attack_watch_rank": 87,
+      "attack_watch_rank": 86,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5064,6 +5007,63 @@
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
       "selective_watch_rank": 82
+    },
+    {
+      "ticker": "ILMN",
+      "price": 221.66,
+      "daily_dollar_volume_m": 374.5,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 46.4,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Medical Specialties",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 92.0,
+      "rs63": 89.0,
+      "peer_theme": "6. バイオ・ヘルスケア",
+      "theme_memberships": [
+        "6. バイオ・ヘルスケア",
+        "ゲノミクス/シーケンシング"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "医療機器・専門",
+      "peer_theme_score": 64.09858822139523,
+      "theme_rs63": 91.91919191919192,
+      "theme_acceleration": 48.821548821548824,
+      "theme_breadth21": 51.55502392344498,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 83.62957646641856,
+      "attack_watch_rank": 87,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Medical Specialties",
+        "market_cap": 33470660553.000004,
+        "revenue_ttm": 4338000000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 83
     },
     {
       "ticker": "TGT",
@@ -5234,64 +5234,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 106
-    },
-    {
-      "ticker": "ILMN",
-      "price": 221.66,
-      "daily_dollar_volume_m": 374.5,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 46.4,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Medical Specialties",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 91.0,
-      "rs63": 89.0,
-      "peer_theme": "6. バイオ・ヘルスケア",
-      "theme_memberships": [
-        "6. バイオ・ヘルスケア",
-        "ゲノミクス/シーケンシング"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "医療機器・専門",
-      "peer_theme_score": 64.09858822139523,
-      "theme_rs63": 91.91919191919192,
-      "theme_acceleration": 48.821548821548824,
-      "theme_breadth21": 51.55502392344498,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 82.92957646641857,
-      "attack_watch_rank": 91,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Medical Specialties",
-        "market_cap": 33470660553.000004,
-        "revenue_ttm": 4338000000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 89
+      "selective_watch_rank": 105
     },
     {
       "ticker": "SMTI",
@@ -5334,7 +5277,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 82.92957646641857,
-      "attack_watch_rank": 92,
+      "attack_watch_rank": 91,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5388,7 +5331,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 82.89999999999999,
-      "attack_watch_rank": 93,
+      "attack_watch_rank": 92,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5403,6 +5346,63 @@
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
       "selective_watch_rank": 33
+    },
+    {
+      "ticker": "SENEA",
+      "price": 204.28,
+      "daily_dollar_volume_m": 19.0,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 41.0,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Food: Specialty/Candy",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 91.0,
+      "rs63": 94.0,
+      "peer_theme": "加工食品",
+      "theme_memberships": [
+        "9. 消費者・小売りテーマ",
+        "加工食品"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "食品（菓子・専門）",
+      "peer_theme_score": 63.11766311766311,
+      "theme_rs63": 62.96296296296296,
+      "theme_acceleration": 88.55218855218855,
+      "theme_breadth21": 37.83783783783784,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 82.63529893529893,
+      "attack_watch_rank": 93,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Food: Specialty/Candy",
+        "market_cap": 1389653061.0,
+        "revenue_ttm": 1659675000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 92
     },
     {
       "ticker": "MAN",
@@ -5687,64 +5687,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 108
-    },
-    {
-      "ticker": "SENEA",
-      "price": 204.28,
-      "daily_dollar_volume_m": 19.0,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 41.0,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Food: Specialty/Candy",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 90.0,
-      "rs63": 94.0,
-      "peer_theme": "加工食品",
-      "theme_memberships": [
-        "9. 消費者・小売りテーマ",
-        "加工食品"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "食品（菓子・専門）",
-      "peer_theme_score": 63.11766311766311,
-      "theme_rs63": 62.96296296296296,
-      "theme_acceleration": 88.55218855218855,
-      "theme_breadth21": 37.83783783783784,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 81.93529893529893,
-      "attack_watch_rank": 99,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Food: Specialty/Candy",
-        "market_cap": 1389653061.0,
-        "revenue_ttm": 1659675000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 101
+      "selective_watch_rank": 107
     },
     {
       "ticker": "MRK",
@@ -5787,7 +5730,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.64141414141413,
-      "attack_watch_rank": 100,
+      "attack_watch_rank": 99,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5801,7 +5744,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 123
+      "selective_watch_rank": 122
     },
     {
       "ticker": "BJRI",
@@ -5844,7 +5787,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.55993265993266,
-      "attack_watch_rank": 101,
+      "attack_watch_rank": 100,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5858,7 +5801,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 112
+      "selective_watch_rank": 111
     },
     {
       "ticker": "OSCR",
@@ -5901,7 +5844,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.51683501683502,
-      "attack_watch_rank": 102,
+      "attack_watch_rank": 101,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -5915,7 +5858,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 58
+      "selective_watch_rank": 57
     },
     {
       "ticker": "SN",
@@ -5958,7 +5901,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.36872451751739,
-      "attack_watch_rank": 103,
+      "attack_watch_rank": 102,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6015,7 +5958,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.35601803721244,
-      "attack_watch_rank": 104,
+      "attack_watch_rank": 103,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6072,7 +6015,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.35601803721244,
-      "attack_watch_rank": 105,
+      "attack_watch_rank": 104,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6086,7 +6029,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 92
+      "selective_watch_rank": 91
     },
     {
       "ticker": "CHYM",
@@ -6129,7 +6072,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 81.2567835214894,
-      "attack_watch_rank": 106,
+      "attack_watch_rank": 105,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6143,7 +6086,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 120
+      "selective_watch_rank": 119
     },
     {
       "ticker": "VREX",
@@ -6186,7 +6129,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 80.82957646641856,
-      "attack_watch_rank": 107,
+      "attack_watch_rank": 106,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6200,7 +6143,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 111
+      "selective_watch_rank": 110
     },
     {
       "ticker": "EAT",
@@ -6243,7 +6186,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 80.12626262626262,
-      "attack_watch_rank": 108,
+      "attack_watch_rank": 107,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6257,7 +6200,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 121
+      "selective_watch_rank": 120
     },
     {
       "ticker": "ZETA",
@@ -6300,7 +6243,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.8113997113997,
-      "attack_watch_rank": 109,
+      "attack_watch_rank": 108,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6357,7 +6300,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.45218855218855,
-      "attack_watch_rank": 110,
+      "attack_watch_rank": 109,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6371,7 +6314,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 116
+      "selective_watch_rank": 115
     },
     {
       "ticker": "CTRN",
@@ -6414,7 +6357,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.44141414141414,
-      "attack_watch_rank": 111,
+      "attack_watch_rank": 110,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6428,7 +6371,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 114
+      "selective_watch_rank": 113
     },
     {
       "ticker": "NRIX",
@@ -6471,7 +6414,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.40948077263866,
-      "attack_watch_rank": 112,
+      "attack_watch_rank": 111,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6485,7 +6428,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 124
+      "selective_watch_rank": 123
     },
     {
       "ticker": "KMX",
@@ -6528,7 +6471,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.25601803721244,
-      "attack_watch_rank": 113,
+      "attack_watch_rank": 112,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6542,7 +6485,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 109
+      "selective_watch_rank": 108
     },
     {
       "ticker": "CLBK",
@@ -6585,7 +6528,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 79.19407982674315,
-      "attack_watch_rank": 114,
+      "attack_watch_rank": 113,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6599,7 +6542,64 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 113
+      "selective_watch_rank": 112
+    },
+    {
+      "ticker": "RHI",
+      "price": 43.0,
+      "daily_dollar_volume_m": 82.0,
+      "sma50_gt_sma200": true,
+      "close_vs_sma200_pct": 47.0,
+      "eligibility_checks": {
+        "price_gte_5": true,
+        "dollar_volume_gte_10m": true,
+        "sma50_gt_sma200": true,
+        "close_gt_sma200": true,
+        "rs189_gte_85": true,
+        "rs63_gte_85": true,
+        "biotech_industry_excluded": false
+      },
+      "normal_biotech_policy": {
+        "industry": "Personnel Services",
+        "excluded": false,
+        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
+      },
+      "rs189": 90.0,
+      "rs63": 92.0,
+      "peer_theme": "人材派遣",
+      "theme_memberships": [
+        "13. 産業・資本財・輸送",
+        "人材派遣"
+      ],
+      "membership_source": "sector_snapshot.json:s2t",
+      "legacy_theme_label": "人材サービス",
+      "peer_theme_score": 52.967171717171716,
+      "theme_rs63": 69.36026936026936,
+      "theme_acceleration": 45.79124579124579,
+      "theme_breadth21": 43.75,
+      "peer_only_status": "STRICT_LOO",
+      "candidate_exclusion_required": true,
+      "candidate_excluded_from_return": true,
+      "candidate_excluded_from_acceleration": true,
+      "candidate_excluded_from_breadth21": true,
+      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
+      "missing_theme_neutral_score": 50,
+      "attack_watch_score": 78.8901515151515,
+      "attack_watch_rank": 114,
+      "attack_score": null,
+      "final_rank": null,
+      "eligibility": "ELIGIBLE",
+      "clinical_biotech": {
+        "industry": "Personnel Services",
+        "market_cap": 4401558762.0,
+        "revenue_ttm": 5378506000.0,
+        "excluded": false,
+        "revenue_missing_fail_open": false,
+        "reason": "INDUSTRY_NOT_TARGETED",
+        "metadata_source": "universe.csv"
+      },
+      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
+      "selective_watch_rank": 101
     },
     {
       "ticker": "CXW",
@@ -6656,7 +6656,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 72
+      "selective_watch_rank": 71
     },
     {
       "ticker": "LTH",
@@ -6713,7 +6713,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 115
+      "selective_watch_rank": 114
     },
     {
       "ticker": "UTZ",
@@ -6770,64 +6770,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 125
-    },
-    {
-      "ticker": "RHI",
-      "price": 43.0,
-      "daily_dollar_volume_m": 82.0,
-      "sma50_gt_sma200": true,
-      "close_vs_sma200_pct": 47.0,
-      "eligibility_checks": {
-        "price_gte_5": true,
-        "dollar_volume_gte_10m": true,
-        "sma50_gt_sma200": true,
-        "close_gt_sma200": true,
-        "rs189_gte_85": true,
-        "rs63_gte_85": true,
-        "biotech_industry_excluded": false
-      },
-      "normal_biotech_policy": {
-        "industry": "Personnel Services",
-        "excluded": false,
-        "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
-      },
-      "rs189": 89.0,
-      "rs63": 92.0,
-      "peer_theme": "人材派遣",
-      "theme_memberships": [
-        "13. 産業・資本財・輸送",
-        "人材派遣"
-      ],
-      "membership_source": "sector_snapshot.json:s2t",
-      "legacy_theme_label": "人材サービス",
-      "peer_theme_score": 52.967171717171716,
-      "theme_rs63": 69.36026936026936,
-      "theme_acceleration": 45.79124579124579,
-      "theme_breadth21": 43.75,
-      "peer_only_status": "STRICT_LOO",
-      "candidate_exclusion_required": true,
-      "candidate_excluded_from_return": true,
-      "candidate_excluded_from_acceleration": true,
-      "candidate_excluded_from_breadth21": true,
-      "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
-      "missing_theme_neutral_score": 50,
-      "attack_watch_score": 78.19015151515151,
-      "attack_watch_rank": 118,
-      "attack_score": null,
-      "final_rank": null,
-      "eligibility": "ELIGIBLE",
-      "clinical_biotech": {
-        "industry": "Personnel Services",
-        "market_cap": 4401558762.0,
-        "revenue_ttm": 5378506000.0,
-        "excluded": false,
-        "revenue_missing_fail_open": false,
-        "reason": "INDUSTRY_NOT_TARGETED",
-        "metadata_source": "universe.csv"
-      },
-      "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 105
+      "selective_watch_rank": 124
     },
     {
       "ticker": "CON",
@@ -6870,7 +6813,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 78.01683501683502,
-      "attack_watch_rank": 119,
+      "attack_watch_rank": 118,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6907,7 +6850,7 @@
         "policy": "STRUCTURAL_CLINICAL_BIOTECH_ONLY: targeted industry AND market_cap<10B AND revenue_ttm<50M; missing revenue fail-open"
       },
       "rs189": 86.0,
-      "rs63": 92.0,
+      "rs63": 93.0,
       "peer_theme": "9. 消費者・小売りテーマ",
       "theme_memberships": [
         "9. 消費者・小売りテーマ",
@@ -6927,7 +6870,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 77.85601803721244,
-      "attack_watch_rank": 120,
+      "attack_watch_rank": 119,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6941,7 +6884,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 117
+      "selective_watch_rank": 116
     },
     {
       "ticker": "FA",
@@ -6984,7 +6927,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 76.871632996633,
-      "attack_watch_rank": 121,
+      "attack_watch_rank": 120,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -6998,7 +6941,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 122
+      "selective_watch_rank": 121
     },
     {
       "ticker": "NSP",
@@ -7041,7 +6984,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 76.48425925925925,
-      "attack_watch_rank": 122,
+      "attack_watch_rank": 121,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7055,7 +6998,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 110
+      "selective_watch_rank": 109
     },
     {
       "ticker": "WNC",
@@ -7098,7 +7041,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 75.57946127946128,
-      "attack_watch_rank": 123,
+      "attack_watch_rank": 122,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7112,7 +7055,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 107
+      "selective_watch_rank": 106
     },
     {
       "ticker": "FRNM",
@@ -7152,7 +7095,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 75.19999999999999,
-      "attack_watch_rank": 124,
+      "attack_watch_rank": 123,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7166,7 +7109,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 118
+      "selective_watch_rank": 117
     },
     {
       "ticker": "FTDR",
@@ -7209,7 +7152,7 @@
       "theme_selection": "MAX_VALID_MEMBERSHIP_SCORE",
       "missing_theme_neutral_score": 50,
       "attack_watch_score": 73.47946127946128,
-      "attack_watch_rank": 125,
+      "attack_watch_rank": 124,
       "attack_score": null,
       "final_rank": null,
       "eligibility": "ELIGIBLE",
@@ -7223,7 +7166,7 @@
         "metadata_source": "universe.csv"
       },
       "entry_status": "NEXT_OPEN_WHEN_CAPACITY",
-      "selective_watch_rank": 119
+      "selective_watch_rank": 118
     }
   ],
   "panic_reset": {
@@ -7483,9 +7426,9 @@
       "target_coverage_ratio": 0.9632480277082932,
       "recent_median_coverage_ratio": 0.9659418895516644,
       "window_rows": 120,
-      "source": "CACHE_PLUS_BATCH_RETRY",
-      "cache_hit": false,
-      "failed_batches": 12,
+      "source": "VALIDATED_CACHE",
+      "cache_hit": true,
+      "failed_batches": 0,
       "retry_rounds": 0
     },
     "note": "Strict reproducible Reset is live. RSI30 proximity bands are monitor-only and do not change the entry rule; old headline metrics remain excluded."
@@ -7530,7 +7473,7 @@
     "sleeve_refresh_status": "FRESH",
     "sleeve_refresh_attempted_asof": "2026-09-03",
     "sleeve_last_successful_asof": "2026-09-03",
-    "sleeve_refresh_attempted_at_utc": "2026-09-04T08:21:28Z",
+    "sleeve_refresh_attempted_at_utc": "2026-09-04T09:06:36Z",
     "sleeve_refresh_error": null,
     "sleeve_preserved_previous_ready": false,
     "normal_position_count": 0,

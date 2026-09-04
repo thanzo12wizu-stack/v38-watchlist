@@ -4,19 +4,19 @@
   "deterministic_formatter": true,
   "asof": "2026-09-03",
   "market_when": {
-    "nqsar": "Yellow",
-    "breadth50": 53.18,
-    "breadth_valid": 3763,
-    "breadth_universe": 3763,
+    "nqsar": "Red",
+    "breadth50": 53.19,
+    "breadth_valid": 3762,
+    "breadth_universe": 3762,
     "coverage": 1.0,
     "coverage_ok": true,
-    "mode": "STOP",
-    "reason": "NQSAR YELLOW",
+    "mode": "DEFENSE",
+    "reason": "NQSAR RED",
     "new_entry_limit": 0,
-    "force_exit_next_open": false
+    "force_exit_next_open": true
   },
   "v38_action": {
-    "market_mode": "STOP",
+    "market_mode": "DEFENSE",
     "normal_entry_limit": 0,
     "rotation_forced_exit": false,
     "normal_entry": "Rotation is context only; formal V38 live state controls entries."
