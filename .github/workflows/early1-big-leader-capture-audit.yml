@@ -2,10 +2,16 @@ name: Early1 big leader capture audit
 
 on:
   workflow_dispatch:
+  push:
+    branches: [research/leader-entry-delay-audit-20260904]
+    paths:
+      - 'leadership/research/audit_early1_big_leader_capture.py'
+      - '.github/workflows/early1-big-leader-capture-audit.yml'
 
 permissions:
   contents: read
-  actions: read
+
+timeout-minutes: 120
 
 jobs:
   audit:
@@ -18,5 +24,29 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install pandas numpy scipy yfinance
-      - name: Placeholder
-        run: echo pending
+      - name: Syntax check
+        run: PYTHONPATH=.:leadership/research python -m py_compile leadership/research/audit_early1_big_leader_capture.py
+      - name: Run big-leader capture audit
+        run: |
+          PYTHONPATH=.:leadership/research python leadership/research/audit_early1_big_leader_capture.py \
+            --root . \
+            --output leadership/research/early1_big_leader_capture_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-09-02 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: early1-big-leader-capture-audit
+          path: |
+            leadership/research/early1_big_leader_capture_output/big_leader_capture_report.json
+            leadership/research/early1_big_leader_capture_output/big_leader_capture_summary.csv
+            leadership/research/early1_big_leader_capture_output/big_leader_event_details.csv
+            leadership/research/early1_big_leader_capture_output/big_leader_miss_reasons.csv
+            leadership/research/early1_big_leader_capture_output/core20_entries.csv
+            leadership/research/early1_big_leader_capture_output/early1_entries.csv
+            leadership/research/early1_big_leader_capture_output/early1_promotions.csv
+          retention-days: 14
+          if-no-files-found: warn
