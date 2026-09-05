@@ -91,6 +91,14 @@ def main() -> None:
 
     base.pl.download_ohlcv = cached_download
     base.parent_map = safe_parent_map
+
+    # The base script historically computed expensive cluster bootstraps while it was
+    # still building the panel/events. Robust overlap-safe inference is performed in
+    # postprocess_theme56_retrospective_robust.py immediately afterward, so suppress
+    # only this redundant bootstrap pass. Signal definitions, events, panel fields,
+    # matched controls, horizons and thresholds are unchanged.
+    base.boot_cluster = lambda *args, **kwargs: [None, None]
+
     sys.argv = [sys.argv[0], *rest]
     base.main()
 
