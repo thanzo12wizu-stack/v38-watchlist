@@ -41,6 +41,7 @@ const money = v => {
   });
 };
 const day = v => String(v || '').slice(0, 10);
+const boolish = v => v === true || ['1', 'true', 'yes', 'y'].includes(String(v || '').trim().toLowerCase());
 
 let universe = [];
 let universeMap = {};
@@ -331,14 +332,24 @@ function modeChoice(r, ticker) {
   return pickExpiry(r, activePeriod, ticker);
 }
 
-function histObs(r) {
+function histObs(r, source = 'HISTORY') {
   if (!r) return null;
+  const isScan = source === 'SCAN';
+  const em = {
+    expected_move: num(r.expected_move), expected_move_pct: num(r.expected_move_pct),
+    expected_move_method: r.expected_move_method || '', expected_low: num(r.expected_low), expected_high: num(r.expected_high)
+  };
   return {
-    date: day(r.date), price_session_date: day(r.date), expiry: r.expiry || '',
+    date: day(r.date), price_session_date: day(r.price_session_date || r.date),
+    expected_session_date: day(r.expected_session_date || (isScan ? r.date : '')),
+    history_session_date: day(r.history_session_date), price_source: r.price_source || '',
+    options_observed_at: r.observed_at || '', expiry: r.expiry || '',
     spot: num(r.spot), atr14: num(r.atr14), call_wall: num(r.call_wall), put_wall: num(r.put_wall),
     gamma_flip: num(r.gamma_flip), net_gex: num(r.net_gex), regime: r.regime || 'UNKNOWN',
     confidence: String(r.confidence || '').toUpperCase(), total_oi: num(r.total_oi), n_strikes: num(r.n_strikes),
-    detail: false, stale: false, session_consistent: false, expected_move: null
+    call_oi: num(r.call_oi), put_oi: num(r.put_oi), detail: false, stale: false,
+    session_consistent: isScan ? boolish(r.session_consistent) : false,
+    expected_move: Object.values(em).some(v => v !== null && v !== '') ? em : null
   };
 }
 function currentObs(r, asof, ticker) {
@@ -392,10 +403,15 @@ function sameHorizon(p, c) { return !!p && !!c && p.expiry && c.expiry && p.expi
 function crossedCall(p, c) { return sameHorizon(p, c) && p.spot !== null && p.call_wall !== null && c.spot !== null && p.spot < p.call_wall && c.spot > p.call_wall * 1.002; }
 function crossedPut(p, c) { return sameHorizon(p, c) && p.spot !== null && p.put_wall !== null && c.spot !== null && p.spot > p.put_wall && c.spot < p.put_wall * .998; }
 function timeQuality(cur, source, u) {
-  if (source !== 'DETAIL') return 'UNVERIFIED_HISTORY';
   if (!cur) return 'PERIOD_UNAVAILABLE';
   if (cur.refresh_failed || cur.stale) return 'STALE';
   const session = day(state.date), pday = cur.price_session_date;
+  if (source === 'SCAN') {
+    if (!session || !cur.session_consistent || pday !== session) return 'MISMATCH';
+    if (cur.spot === null || cur.confidence === 'LOW') return 'LOW_QUALITY';
+    return 'VERIFIED';
+  }
+  if (source !== 'DETAIL') return 'UNVERIFIED_HISTORY';
   if (cur.session_consistent && (!session || pday === session)) return 'VERIFIED';
   if (!cur.expected_session_date && session && pday === session && u?.price && cur.spot && Math.abs(cur.spot / u.price - 1) <= .003) return 'INFERRED_MATCH';
   return 'MISMATCH';
@@ -507,13 +523,16 @@ function rebuildRecords() {
       prev = histObs((dh[t] || [])[1]);
       source = 'DETAIL';
       periodUnavailable = !cur;
-    } else {
-      const p = sh[t] || dh[t];
-      if (!p) continue;
-      cur = histObs(p[0]);
-      prev = histObs(p[1]);
-      source = sh[t] ? 'SCAN' : 'HISTORY';
-    }
+} else {
+  // Broad daily scan is deliberately 7-21DTE only. Never reuse it for
+  // short/medium/multi/exact period rankings.
+  if (activePeriod !== 'swing') continue;
+  const p = sh[t];
+  if (!p) continue;
+  source = 'SCAN';
+  cur = histObs(p[0], source);
+  prev = histObs(p[1], source);
+}
     const u = universeMap[t] || {}, l = leaderFresh ? (leaderMap[t] || null) : null, m = multiConsensus(positioning[t]);
     const tq = timeQuality(cur, source, u), sig = localSignal(cur, prev, m, tq), dir = directionBias(cur, prev, m, u, l, tq);
     const rec = {

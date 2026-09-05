@@ -121,3 +121,37 @@ def test_price_context_prefers_upstream_completed_session_over_stale_yahoo(tmp_p
     assert out["price_session_date"] == "2026-09-04"
     assert out["history_session_date"] == "2026-09-03"
     assert out["session_consistent"] is True
+
+
+def test_same_session_scan_is_verified_and_preserves_expected_move():
+    row = {
+        "date": "2026-09-04", "price_session_date": "2026-09-04",
+        "session_consistent": "True", "spot": "100", "atr14": "4",
+        "call_wall": "110", "put_wall": "95", "gamma_flip": "98",
+        "net_gex": "1000000", "regime": "POSITIVE_GAMMA", "confidence": "MEDIUM",
+        "total_oi": "8000", "n_strikes": "30", "expected_move": "6.5",
+        "expected_move_pct": "0.065", "expected_move_method": "atm_iv_1sigma",
+        "expected_low": "93.5", "expected_high": "106.5",
+        "observed_at": "2026-09-05T07:55:28+00:00",
+    }
+    cur = intel._hist_obs(row, "SCAN")
+    assert cur["session_consistent"] is True
+    assert cur["price_session_date"] == "2026-09-04"
+    assert cur["expected_move"]["expected_move_pct"] == 0.065
+    assert intel._time_quality(cur, "2026-09-04", "SCAN") == "VERIFIED"
+
+
+def test_same_session_scan_low_quality_is_not_verified():
+    cur = intel._hist_obs({
+        "date": "2026-09-04", "price_session_date": "2026-09-04",
+        "session_consistent": "true", "spot": "100", "confidence": "LOW",
+    }, "SCAN")
+    assert intel._time_quality(cur, "2026-09-04", "SCAN") == "LOW_QUALITY"
+
+
+def test_scan_from_previous_session_is_blocked():
+    cur = intel._hist_obs({
+        "date": "2026-09-03", "price_session_date": "2026-09-03",
+        "session_consistent": "true", "spot": "100", "confidence": "HIGH",
+    }, "SCAN")
+    assert intel._time_quality(cur, "2026-09-04", "SCAN") == "MISMATCH"

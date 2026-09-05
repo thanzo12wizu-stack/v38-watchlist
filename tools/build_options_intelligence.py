@@ -48,6 +48,12 @@ def _day(v):
     return str(v or "")[:10]
 
 
+def _boolish(v):
+    if isinstance(v, bool):
+        return v
+    return str(v or "").strip().lower() in ("1", "true", "yes", "y")
+
+
 def _age_days(day: str, today: str):
     try:
         return max(0, (datetime.fromisoformat(today) - datetime.fromisoformat(day)).days)
@@ -140,14 +146,31 @@ def _leader_map():
     return out, meta
 
 
-def _hist_obs(row):
+def _hist_obs(row, source="HISTORY"):
     if not row: return None
-    return {"date": _day(row.get("date")), "price_session_date": _day(row.get("date")), "expiry": row.get("expiry"),
-            "spot": _f(row.get("spot")), "atr14": _f(row.get("atr14")), "call_wall": _f(row.get("call_wall")),
-            "put_wall": _f(row.get("put_wall")), "gamma_flip": _f(row.get("gamma_flip")), "net_gex": _f(row.get("net_gex")),
+    is_scan = source == "SCAN"
+    em = {
+        "expected_move": _f(row.get("expected_move")),
+        "expected_move_pct": _f(row.get("expected_move_pct")),
+        "expected_move_method": row.get("expected_move_method"),
+        "expected_low": _f(row.get("expected_low")),
+        "expected_high": _f(row.get("expected_high")),
+    }
+    return {"date": _day(row.get("date")),
+            "price_session_date": _day(row.get("price_session_date") or row.get("date")),
+            "expected_session_date": _day(row.get("expected_session_date") or (row.get("date") if is_scan else "")),
+            "history_session_date": _day(row.get("history_session_date")),
+            "price_source": row.get("price_source"), "options_observed_at": row.get("observed_at"),
+            "expiry": row.get("expiry"), "spot": _f(row.get("spot")), "atr14": _f(row.get("atr14")),
+            "call_wall": _f(row.get("call_wall")), "put_wall": _f(row.get("put_wall")),
+            "gamma_flip": _f(row.get("gamma_flip")), "net_gex": _f(row.get("net_gex")),
             "regime": str(row.get("regime") or "UNKNOWN"), "confidence": str(row.get("confidence") or "").upper(),
-            "total_oi": _f(row.get("total_oi")), "n_strikes": _f(row.get("n_strikes")), "detail": False,
-            "stale": False, "session_consistent": False, "time_quality": "UNVERIFIED_HISTORY", "expected_move": None}
+            "total_oi": _f(row.get("total_oi")), "n_strikes": _f(row.get("n_strikes")),
+            "call_oi": _f(row.get("call_oi")), "put_oi": _f(row.get("put_oi")),
+            "detail": False, "stale": False,
+            "session_consistent": _boolish(row.get("session_consistent")) if is_scan else False,
+            "time_quality": "SCAN_PENDING_VERIFY" if is_scan else "UNVERIFIED_HISTORY",
+            "expected_move": em if any(v not in (None, "") for v in em.values()) else None}
 
 
 def _current_obs(rec, asof):
@@ -230,12 +253,16 @@ def _classify(cur, prev=None, multi=None, age=None):
 
 
 def _time_quality(cur, session_date, source):
-    if source != "DETAIL": return "UNVERIFIED_HISTORY"
+    if not cur: return "PERIOD_UNAVAILABLE"
     if cur.get("refresh_failed") or cur.get("stale"): return "STALE"
-    pday=_day(cur.get("price_session_date")); expected=_day(cur.get("expected_session_date") or session_date)
+    if source not in ("DETAIL", "SCAN"): return "UNVERIFIED_HISTORY"
+    pday = _day(cur.get("price_session_date"))
+    expected = _day(cur.get("expected_session_date") or session_date)
     if not cur.get("session_consistent"): return "MISMATCH"
     if session_date and pday != session_date: return "MISMATCH"
     if expected and pday != expected: return "MISMATCH"
+    if source == "SCAN" and (cur.get("spot") is None or str(cur.get("confidence") or "").upper() == "LOW"):
+        return "LOW_QUALITY"
     return "VERIFIED"
 
 
@@ -337,7 +364,7 @@ def build():
         if detailed:
             cur=_current_obs(detailed,asof); prev=_hist_obs((dh.get(tk) or (None,None))[1]); source="DETAIL"
         else:
-            latest,previous=sh.get(tk) or dh.get(tk) or (None,None); cur=_hist_obs(latest); prev=_hist_obs(previous); source="SCAN" if tk in sh else "HISTORY"
+            latest,previous=sh.get(tk) or dh.get(tk) or (None,None); source="SCAN" if tk in sh else "HISTORY"; cur=_hist_obs(latest,source); prev=_hist_obs(previous,source)
         if not cur: continue
         age=_age_days(cur.get("price_session_date") or cur.get("date"),today); multi=_multi_expiry(detailed); tq=_time_quality(cur,session_date,source)
         signal,score,reasons=_classify(cur,prev,multi,age)
