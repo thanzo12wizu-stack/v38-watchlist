@@ -1,225 +1,54 @@
 (() => {
 'use strict';
 
-const SAME={
-  pos:'./options_positioning.json',
-  dh:'./options_history.csv',
-  sh:'./options_scan_history.csv',
-  uni:'./universe.csv',
-  leaders:'./rotation/data/rotation-theme56-stock-context.json'
-};
-const RAW={
-  pos:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_positioning.json',
-  dh:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_history.csv',
-  sh:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_scan_history.csv',
-  uni:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/universe.csv',
-  leaders:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/rotation/data/rotation-theme56-stock-context.json'
-};
-
-const $=s=>document.querySelector(s);
-const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+const SAME={intel:'./options_intelligence.json',pos:'./options_positioning.json',dh:'./options_history.csv',sh:'./options_scan_history.csv',uni:'./universe.csv',leaders:'./rotation/data/rotation-theme56-stock-context.json',state:'./state.json'};
+const RAW={intel:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_intelligence.json',pos:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_positioning.json',dh:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_history.csv',sh:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_scan_history.csv',uni:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/universe.csv',leaders:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/rotation/data/rotation-theme56-stock-context.json',state:'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/state.json'};
+const $=s=>document.querySelector(s); const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const num=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=v=>{const n=num(v);if(n===null)return'—';const d=n>=100?0:2;return'$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:2})};
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const money=v=>{const n=num(v);if(n===null)return'—';return'$'+n.toLocaleString('en-US',{minimumFractionDigits:n>=100?0:2,maximumFractionDigits:2})};
+let universe=[],universeMap={},leaderMap={},records=[],optionMap={},positioning={},state={},intelMeta={};let activeSuggestion=-1;
 
-let universe=[],universeMap={},optionMap={},positioning={},leaderMap={},leaderMeta={},records=[];
-let activeSuggestion=-1;
-
-async function getText(key){
-  let last;
-  for(const url of [SAME[key],RAW[key]]){
-    try{const r=await fetch(url+'?v='+Date.now(),{cache:'no-store'});if(r.ok)return await r.text();last=new Error(`${key}:${r.status}`)}catch(e){last=e}
-  }
-  throw last||new Error(`${key} unavailable`);
-}
-async function getJson(key){return JSON.parse(await getText(key));}
-function parseCsv(text){
-  const rows=[];let row=[],cell='',q=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i],n=text[i+1];
-    if(q){if(c==='"'&&n==='"'){cell+='"';i++}else if(c==='"')q=false;else cell+=c}
-    else{if(c==='"')q=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell=''}else if(c!=='\r')cell+=c}
-  }
-  if(cell||row.length){row.push(cell);rows.push(row)}
-  if(rows.length<2)return[];
-  const h=rows[0];
-  return rows.slice(1).filter(r=>r.some(x=>x!=='')).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??''])));
-}
-function latestTwo(rows){
-  const m={};
-  for(const r of rows){const t=String(r.ticker||'').trim().toUpperCase();if(!t)continue;(m[t]??=[]).push(r)}
-  for(const t of Object.keys(m)){
-    const byDate={};for(const r of m[t])byDate[String(r.date||'').slice(0,10)]=r;
-    const a=Object.values(byDate).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
-    m[t]=[a.at(-1)||null,a.length>1?a.at(-2):null];
-  }
-  return m;
-}
-function obs(r){
-  if(!r)return null;
-  return {date:String(r.date||'').slice(0,10),expiry:r.expiry||'',spot:num(r.spot),atr14:num(r.atr14),call_wall:num(r.call_wall),put_wall:num(r.put_wall),gamma_flip:num(r.gamma_flip),net_gex:num(r.net_gex),regime:r.regime||'UNKNOWN',confidence:String(r.confidence||'').toUpperCase(),total_oi:num(r.total_oi),n_strikes:num(r.n_strikes),detail:false,stale:false};
-}
-function currentObs(r,asof){
-  const k=r.selected_expiry||r.nearest,e=(r.expiries||{})[k]||{};
-  return {date:String(r.asof||asof||'').slice(0,10),expiry:k||'',spot:num(r.spot),atr14:num(r.atr14),call_wall:num(r.call_wall&&r.call_wall.px),put_wall:num(r.put_wall&&r.put_wall.px),gamma_flip:num(r.gamma_flip&&r.gamma_flip.px),net_gex:num(r.net_gex),regime:r.regime||'UNKNOWN',confidence:String(r.confidence||'').toUpperCase(),total_oi:num(e.total_oi),n_strikes:num(e.n_strikes),call_oi:num(e.call_oi),put_oi:num(e.put_oi),call_wall_share:num(e.call_wall_share),put_wall_share:num(e.put_wall_share),call_wall_vs_second:num(e.call_wall_vs_second),put_wall_vs_second:num(e.put_wall_vs_second),detail:true,stale:!!r.stale};
-}
-function ageDays(s){
-  if(!s)return null;const d=new Date(s+'T00:00:00Z');if(!Number.isFinite(d.getTime()))return null;return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));
-}
-function regime(spot,gf,atr){if(spot===null||gf===null)return'UNKNOWN';if(atr&&Math.abs(spot-gf)/atr<=1)return'NEAR_FLIP';return spot>gf?'POSITIVE_GAMMA':'NEGATIVE_GAMMA'}
+async function getText(k){let last;for(const u of [SAME[k],RAW[k]]){try{const r=await fetch(`${u}?v=${Date.now()}`,{cache:'no-store'});if(r.ok)return await r.text();last=new Error(`${k}:${r.status}`)}catch(e){last=e}}throw last||new Error(`${k} unavailable`)}
+async function getJson(k){return JSON.parse(await getText(k))}
+function parseCsv(text){const rows=[];let row=[],cell='',q=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(q){if(c==='"'&&n==='"'){cell+='"';i++}else if(c==='"')q=false;else cell+=c}else{if(c==='"')q=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell=''}else if(c!=='\r')cell+=c}}if(cell||row.length){row.push(cell);rows.push(row)}if(rows.length<2)return[];const h=rows[0];return rows.slice(1).filter(r=>r.some(x=>x!=='')).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??''])))}
+function latestTwo(rows){const m={};for(const r of rows){const t=String(r.ticker||'').trim().toUpperCase();if(!t)continue;(m[t]??=[]).push(r)}for(const t in m){const d={};for(const r of m[t])d[String(r.date||'').slice(0,10)]=r;const a=Object.values(d).sort((x,y)=>String(x.date).localeCompare(String(y.date)));m[t]=[a.at(-1)||null,a.length>1?a.at(-2):null]}return m}
+function parseUniverse(rows){universe=[];universeMap={};for(const r of rows){const ticker=String(r['シンボル']||r.ticker||'').trim().toUpperCase();if(!ticker)continue;const u={ticker,name:r['名称']||'',sector:r['セクター']||'',industry:r['業種']||'',type:String(r['証券種別']||'').toLowerCase(),price:num(r['価格']),changePct:num(r['価格変動 %, 1日']),volume:num(r['出来高, 1日'])};universe.push(u);universeMap[ticker]=u}}
+function scoreLeader(x){const n=(k,d=50)=>num(x[k])??d,acc=num(x.slow_acceleration)??num(x.acceleration)??0;let s=.36*n('strength')+.25*n('rs189')+.20*n('rs63')+.11*n('rs21')+.08*clamp(50+acc,0,100);if(String(x.role||'').toUpperCase()==='LEADER')s+=3;if(['LEADING','EMERGING'].includes(String(x.group_phase||'').toUpperCase()))s+=3;if(String(x.breakout_status||'').toUpperCase().includes('BREAKOUT'))s+=3;return clamp(Math.round(s),0,100)}
+function collectLeaders(root){const out={};function walk(node,ctx={}){if(Array.isArray(node)){node.forEach(v=>walk(v,ctx));return}if(!node||typeof node!=='object')return;const next={...ctx};if(node.etf)next.etf=node.etf;if(node.label)next.theme=node.label;if(typeof node.symbol==='string'&&(node.role||node.strength!=null||node.rs189!=null||node.stock_rank_within_group!=null)){const t=node.symbol.trim().toUpperCase(),c={...node,ticker:t,theme:next.theme||'',etf:next.etf||'',leaderScore:scoreLeader(node)};if(!out[t]||c.leaderScore>out[t].leaderScore)out[t]=c}for(const [k,v] of Object.entries(node)){if(!['symbol','name'].includes(k)&&v&&typeof v==='object')walk(v,next)}}walk(root);return out}
+function histObs(r){if(!r)return null;return{date:String(r.date||'').slice(0,10),price_session_date:String(r.date||'').slice(0,10),expiry:r.expiry||'',spot:num(r.spot),atr14:num(r.atr14),call_wall:num(r.call_wall),put_wall:num(r.put_wall),gamma_flip:num(r.gamma_flip),net_gex:num(r.net_gex),regime:r.regime||'UNKNOWN',confidence:String(r.confidence||'').toUpperCase(),total_oi:num(r.total_oi),n_strikes:num(r.n_strikes),detail:false,stale:false,session_consistent:false,expected_move:null}}
+function currentObs(r,asof){const k=r.selected_expiry||r.nearest,e=(r.expiries||{})[k]||{},em=r.expected_move||{expected_move:e.expected_move,expected_move_pct:e.expected_move_pct,expected_move_method:e.expected_move_method,expected_low:e.expected_low,expected_high:e.expected_high,atm_iv:e.atm_iv};return{date:String(r.price_session_date||r.asof||asof||'').slice(0,10),price_session_date:String(r.price_session_date||r.asof||asof||'').slice(0,10),expected_session_date:String(r.expected_session_date||'').slice(0,10),history_session_date:String(r.history_session_date||'').slice(0,10),tech_session_date:String(r.tech_session_date||'').slice(0,10),session_consistent:r.session_consistent===true,price_source:r.price_source||r.source||'',options_observed_at:r.options_observed_at||r.asof||asof||'',oi_basis:r.oi_basis||'',expiry:k||'',spot:num(r.spot),atr14:num(r.atr14),call_wall:num(r.call_wall&&r.call_wall.px),put_wall:num(r.put_wall&&r.put_wall.px),gamma_flip:num(r.gamma_flip&&r.gamma_flip.px),net_gex:num(r.net_gex),regime:r.regime||'UNKNOWN',confidence:String(r.confidence||'').toUpperCase(),total_oi:num(e.total_oi),n_strikes:num(e.n_strikes),call_oi:num(e.call_oi),put_oi:num(e.put_oi),call_wall_share:num(e.call_wall_share),put_wall_share:num(e.put_wall_share),call_wall_vs_second:num(e.call_wall_vs_second),put_wall_vs_second:num(e.put_wall_vs_second),call_walls:e.call_walls||[],put_walls:e.put_walls||[],tech:r.tech||{},detail:true,stale:!!r.stale,refresh_failed:!!r.refresh_failed,expected_move:em,upstream_change_pct:num(r.upstream_change_pct)}}
 function datr(level,spot,atr){return level!==null&&spot!==null&&atr&&atr>0?(level-spot)/atr:null}
-function multi(r){
-  if(!r)return null;const spot=num(r.spot),atr=num(r.atr14),a=Object.values(r.expiries||{}).map(e=>regime(spot,num(e.gamma_flip),atr));if(!a.length)return null;
-  const count=x=>a.filter(v=>v===x).length;return{count:a.length,positive:count('POSITIVE_GAMMA'),near:count('NEAR_FLIP'),negative:count('NEGATIVE_GAMMA')};
-}
-function crossed(prev,cur){return !!prev&&prev.spot!==null&&prev.call_wall!==null&&cur.spot!==null&&prev.spot<prev.call_wall&&cur.spot>prev.call_wall*1.002}
-function classify(cur,prev,m,age){
-  if(!cur||cur.spot===null||cur.stale||cur.confidence==='LOW'||(age!==null&&age>18))return{signal:'DATA LOW',score:0,reasons:['データ量/鮮度不足']};
-  const ca=datr(cur.call_wall,cur.spot,cur.atr14),pa=datr(cur.put_wall,cur.spot,cur.atr14);let s=50,why=[];const reg=cur.regime||regime(cur.spot,cur.gamma_flip,cur.atr14);
-  if(reg==='POSITIVE_GAMMA'){s+=18;why.push('Gamma Flip上')}else if(reg==='NEGATIVE_GAMMA'){s-=28;why.push('Gamma Flip下')}else if(reg==='NEAR_FLIP'){s-=4;why.push('Gamma Flip近辺')}
-  if(pa!==null&&pa<0&&Math.abs(pa)<=2.2){s+=10;why.push('Put支持候補が近い')}
-  if(ca!==null){if(ca>0&&ca<=1.2){s+=5;why.push('Call Wall接近')}else if(ca>1.2){s+=8;why.push('上側Wallまで余地')}}
-  if(cur.net_gex!==null&&cur.net_gex>0){s+=5;why.push('Net GEXプラス')}
-  if(['HIGH','OK','MEDIUM'].includes(cur.confidence))s+=4;
-  if(m&&m.positive>m.negative){s+=6;why.push('複数満期も上側優勢')}
-  const br=crossed(prev,cur);if(br){s+=18;why.push('前回Call Wall突破')}
-  s=clamp(Math.round(s),0,100);
-  let signal='NEUTRAL';if(br&&reg!=='NEGATIVE_GAMMA')signal='ACCELERATION';else if(reg==='NEGATIVE_GAMMA')signal='HEADWIND';else if(['POSITIVE_GAMMA','NEAR_FLIP'].includes(reg)&&ca!==null&&ca>0&&ca<=1.2)signal='BREAKOUT WATCH';else if(reg==='POSITIVE_GAMMA')signal='SUPPORTIVE';
-  return{signal,score:s,reasons:why};
-}
-function plan(c,sig){
-  const s=c.spot,cw=c.call_wall,pw=c.put_wall,gf=c.gamma_flip;let entry;
-  if(sig==='ACCELERATION')entry='突破済みWallが支持へ変わるか確認。高値追いより初押し優先。';
-  else if(sig==='BREAKOUT WATCH'&&cw!==null)entry=`Call Wall ${money(cw)} を終値突破し、次の足でも維持なら加速候補。`;
-  else if(sig==='SUPPORTIVE')entry=gf!==null&&gf<s?`Gamma Flip ${money(gf)} 付近の反発確認を優先。`:pw!==null?`Put Wall ${money(pw)} 付近の反発確認を優先。`:'押し目反発を優先。';
-  else if(sig==='HEADWIND')entry=gf!==null?`Gamma Flip ${money(gf)} の奪回待ち。`:'新規追随は見送り。';
-  else entry='Gamma Flipから方向が離れるまで待つ。';
-  let invalid='明確な無効化水準なし';
-  if(gf!==null&&s!==null&&gf<s){invalid=`${money(gf)} 終値割れで構造悪化`;if(pw!==null&&pw<s)invalid+=`、${money(pw)} 割れで支持失効`}
-  else if(gf!==null&&s!==null&&gf>s)invalid=`${money(gf)} 奪回まで上方向は保留`;
-  else if(pw!==null&&s!==null&&pw<s)invalid=`${money(pw)} 終値割れで支持失効`;
-  return{entry,invalid};
-}
-function signalView(r){
-  if(!r)return{label:'Options未取得',cls:'bLow'};
-  if(r.signal==='ACCELERATION')return{label:'加速候補',cls:'bAccel'};
-  if(r.signal==='HEADWIND')return{label:'上値注意',cls:'bHead'};
-  if(r.signal==='DATA LOW')return{label:'データ古い/不足',cls:'bLow'};
-  if(r.signal==='BREAKOUT WATCH')return{label:'上抜け監視',cls:'bBreak'};
-  if(r.score>=82)return{label:'強い上方向',cls:'bStrong'};
-  if(r.score>=68)return{label:'上方向優位',cls:'bBull'};
-  return{label:'中立',cls:'bNeutral'};
-}
-function thesis(r){
-  if(!r)return'Optionsの有効観測がまだない。';
-  switch(r.signal){case'ACCELERATION':return'前回Call Wallを突破。突破済み水準が支持へ変われば、次の上側水準まで加速余地。';case'BREAKOUT WATCH':return'上側Call Wallが近い。突破前は抵抗、終値突破後は加速候補。';case'SUPPORTIVE':return r.score>=82?'Flip上・下側支持・上側余地が揃った強い配置。':'Gamma Flip上で、下側支持と上側余地の位置関係が良い。';case'HEADWIND':return'Gamma Flip下の増幅側推定。追いかけ買いよりFlip奪回待ち。';case'DATA LOW':return'観測が古いかデータ量不足。売買根拠には使わない。';default:return'方向優位はまだ弱い。支持/抵抗どちらが先に機能するか待つ。'}
-}
-function distText(level,c){if(level===null||c.spot===null)return'';const p=(level/c.spot-1)*100,a=datr(level,c.spot,c.atr14);return`${p>=0?'+':''}${p.toFixed(1)}%${a!==null?' / '+Math.abs(a).toFixed(1)+'ATR':''}`}
-
-function parseUniverse(rows){
-  universe=[];universeMap={};
-  for(const r of rows){const ticker=String(r['シンボル']||r.ticker||'').trim().toUpperCase();if(!ticker)continue;const u={ticker,name:r['名称']||'',sector:r['セクター']||'',industry:r['業種']||'',type:String(r['証券種別']||'').toLowerCase(),price:num(r['価格'])};universe.push(u);universeMap[ticker]=u;}
-}
-function scoreLeader(x){
-  const strength=num(x.strength)??50,rs189=num(x.rs189)??50,rs63=num(x.rs63)??50,rs21=num(x.rs21)??50,acc=num(x.slow_acceleration)??num(x.acceleration)??0;
-  let s=.36*strength+.25*rs189+.20*rs63+.11*rs21+.08*clamp(50+acc,0,100);
-  if(String(x.role||'').toUpperCase()==='LEADER')s+=3;
-  if(['LEADING','EMERGING'].includes(String(x.group_phase||'').toUpperCase()))s+=3;
-  if(String(x.breakout_status||'').includes('BREAKOUT'))s+=3;
-  return clamp(Math.round(s),0,100);
-}
-function collectLeaders(root){
-  const out={};
-  function walk(node,ctx={}){
-    if(Array.isArray(node)){for(const v of node)walk(v,ctx);return}
-    if(!node||typeof node!=='object')return;
-    const next={...ctx};if(node.etf)next.etf=node.etf;if(node.label)next.theme=node.label;
-    if(typeof node.symbol==='string'&&(node.role||node.strength!=null||node.rs189!=null||node.stock_rank_within_group!=null)){
-      const t=node.symbol.trim().toUpperCase(),candidate={...node,ticker:t,theme:next.theme||'',etf:next.etf||'',leaderScore:scoreLeader(node)};
-      const prev=out[t];if(!prev||candidate.leaderScore>prev.leaderScore)out[t]=candidate;
-    }
-    for(const [k,v] of Object.entries(node)){if(['symbol','name'].includes(k))continue;if(v&&typeof v==='object')walk(v,next)}
-  }
-  walk(root);return out;
-}
-function buildOptionMap(p,dhRows,shRows){
-  positioning=p.tickers||{};const dh=latestTwo(dhRows),sh=latestTwo(shRows);optionMap={};records=[];
-  const all=new Set([...Object.keys(positioning),...Object.keys(dh),...Object.keys(sh)]);
-  for(const t of all){let cur=null,prev=null,source='';if(positioning[t]){cur=currentObs(positioning[t],p.asof);prev=obs((dh[t]||[])[1]);source='DETAIL'}else{const pair=sh[t]||dh[t];if(pair){cur=obs(pair[0]);prev=obs(pair[1]);source=sh[t]?'SCAN':'HISTORY'}}if(!cur)continue;const age=ageDays(cur.date),m=multi(positioning[t]),cl=classify(cur,prev,m,age),u=universeMap[t]||{};const rec={ticker:t,name:u.name||'',sector:u.sector||'',industry:u.industry||'',source,age_days:age,current:cur,previous:prev,multi_expiry:m,...cl,plan:plan(cur,cl.signal)};optionMap[t]=rec;records.push(rec)}
-}
-
-function buildLeaderRows(){
-  const arr=[];for(const [t,l] of Object.entries(leaderMap)){const o=optionMap[t]||null;const fresh=o&&o.age_days!==null&&o.age_days<=4&&o.signal!=='DATA LOW';const combined=fresh?Math.round(.62*l.leaderScore+.38*o.score):Math.round(l.leaderScore*.78);arr.push({ticker:t,leader:l,option:o,fresh,combined})}
-  const preferred=arr.filter(x=>x.fresh&&['ACCELERATION','SUPPORTIVE','BREAKOUT WATCH'].includes(x.option.signal)).sort((a,b)=>b.combined-a.combined);
-  const rest=arr.filter(x=>!preferred.includes(x)).sort((a,b)=>b.leader.leaderScore-a.leader.leaderScore);
-  return [...preferred,...rest].slice(0,8);
-}
-function buildBullishRows(){
-  return records.filter(r=>r.age_days!==null&&r.age_days<=4&&r.signal!=='DATA LOW'&&r.signal!=='HEADWIND'&&r.score>=65&&String((universeMap[r.ticker]||{}).type||'stock')==='stock').sort((a,b)=>b.score-a.score).slice(0,10);
-}
-function leaderBadge(l){return l?`<span class="badge bLeader">主導株 ${l.leaderScore}</span>`:''}
-function miniCard(ticker,o,l,combined){
-  const u=universeMap[ticker]||{},sv=signalView(o),c=o&&o.current;const meta=l?`${esc(l.group||l.theme||u.industry||'')} · RS189 ${num(l.rs189)??'—'} / RS63 ${num(l.rs63)??'—'}`:`${esc(u.sector||'')} · ${esc(u.industry||'')}`;
-  const levels=c?`<div class="miniLevels"><div class="miniLv"><span>現在</span><b>${money(c.spot)}</b></div><div class="miniLv"><span>支持候補</span><b>${money(c.put_wall??c.gamma_flip)}</b></div><div class="miniLv"><span>上値壁</span><b>${money(c.call_wall)}</b></div></div>`:'';
-  return `<article class="miniCard" data-ticker="${esc(ticker)}"><div class="miniHead"><div class="ticker">${esc(ticker)}</div><div class="company">${esc(u.name||l?.name||'')}</div><div class="score">${combined!=null?combined:(o?o.score:'—')}</div></div><div class="badges">${leaderBadge(l)}<span class="badge ${sv.cls}">${sv.label}</span></div><div class="miniThesis">${esc(l&&o?`主導株 × ${thesis(o)}`:l?'Leadership上位。Options配置は未取得または鮮度不足。':thesis(o))}</div>${levels}<div class="miniMeta">${esc(meta)}${o?` · Options ${esc(o.current.date||'—')}`:''}</div></article>`;
-}
-function renderLeaders(){const rows=buildLeaderRows();$('#leaders').innerHTML=rows.length?rows.map(x=>miniCard(x.ticker,x.option,x.leader,x.combined)).join(''):'<div class="empty">Leadershipデータから対象を作れませんでした。</div>';bindCards($('#leaders'))}
-function renderBullish(){const rows=buildBullishRows();$('#bullish').innerHTML=rows.length?rows.map(r=>miniCard(r.ticker,r,leaderMap[r.ticker]||null,r.score)).join(''):'<div class="empty">4日以内の観測で「上方向が強い配置」に該当する銘柄はありません。</div>';bindCards($('#bullish'))}
-function renderAll(){const arr=[...records].sort((a,b)=>b.score-a.score).slice(0,120);$('#allRecords').innerHTML=arr.map(r=>{const u=universeMap[r.ticker]||{},sv=signalView(r);return`<div class="allRow" data-ticker="${esc(r.ticker)}"><strong>${esc(r.ticker)}</strong><span>${esc(u.name||'')}</span><em class="${sv.cls}">${esc(sv.label)}</em><b>${r.score}</b></div>`}).join('');bindCards($('#allRecords'))}
-function bindCards(root){for(const el of root.querySelectorAll('[data-ticker]'))el.addEventListener('click',()=>selectTicker(el.dataset.ticker,true))}
-
-function detailMetrics(o){const c=o.current,m=o.multi_expiry;return`<div class="detailGrid"><div class="detailMetric"><span>Options score</span><b>${o.score}/100</b></div><div class="detailMetric"><span>Net GEX</span><b>${c.net_gex===null?'—':(c.net_gex/1e6).toFixed(0)+'M'}</b></div><div class="detailMetric"><span>OI</span><b>${c.total_oi===null?'—':Math.round(c.total_oi).toLocaleString()}</b></div><div class="detailMetric"><span>複数満期</span><b>${m?`${m.positive}↑ / ${m.negative}↓`:'—'}</b></div></div>`}
-function selectedHtml(ticker){
-  const u=universeMap[ticker],o=optionMap[ticker],l=leaderMap[ticker];if(!u&&!o&&!l)return'<div class="noData"><strong>銘柄が見つかりません</strong>ユニバースに存在するTickerまたは会社名で検索してください。</div>';
-  const name=u?.name||l?.name||o?.name||'',sector=u?.sector||l?.group_sector||'',industry=u?.industry||l?.group||'',leaderStats=l?`<div class="leaderStats"><span class="statPill">Leader<b>${l.leaderScore}</b></span><span class="statPill">RS189<b>${num(l.rs189)??'—'}</b></span><span class="statPill">RS63<b>${num(l.rs63)??'—'}</b></span><span class="statPill">RS21<b>${num(l.rs21)??'—'}</b></span><span class="statPill">Group<b>${esc(l.group_phase||'—')}</b></span></div>`:'';
-  if(!o){return`<article class="selectedCard"><div class="selectedTop"><div><div class="selectedTicker">${esc(ticker)}</div><div class="selectedName">${esc(name)} · ${esc(sector)} · ${esc(industry)}</div></div><div class="selectedPrice"><b>${u?.price?money(u.price):'—'}</b><span>Universe price</span></div></div><div class="selectedBadges">${leaderBadge(l)}<span class="badge bLow">Options未取得</span></div>${leaderStats}<div class="noData"><strong>銘柄は存在します。</strong>この銘柄の有効なOptions観測はまだありません。検索失敗ではありません。次回の広域スキャンまたは詳細取得対象に入った後、支持・Flip・Call Wallを表示します。</div></article>`}
-  const c=o.current,sv=signalView(o),decision=l?`Leadership上位。${thesis(o)}`:thesis(o);const reasons=(o.reasons||[]).map(x=>`<span class="reason">${esc(x)}</span>`).join('');
-  return`<article class="selectedCard"><div class="selectedTop"><div><div class="selectedTicker">${esc(ticker)}</div><div class="selectedName">${esc(name)} · ${esc(sector)} · ${esc(industry)}</div></div><div class="selectedPrice"><b>${money(c.spot)}</b><span>Options観測 ${esc(c.date||'—')}</span></div></div><div class="selectedBadges">${leaderBadge(l)}<span class="badge ${sv.cls}">${sv.label} · ${o.score}</span></div><div class="decision"><label>結論</label><div>${esc(decision)}</div></div><div class="bigLevels"><div class="bigLv"><span>現在</span><b>${money(c.spot)}</b><small>Spot</small></div><div class="bigLv"><span>支持候補</span><b>${money(c.put_wall)}</b><small>${esc(distText(c.put_wall,c))}</small></div><div class="bigLv"><span>Gamma Flip</span><b>${money(c.gamma_flip)}</b><small>${esc(distText(c.gamma_flip,c))}</small></div><div class="bigLv"><span>上値壁</span><b>${money(c.call_wall)}</b><small>${esc(distText(c.call_wall,c))}</small></div></div><div class="scenario"><div class="scenarioBox"><label>上方向で見る条件</label><div>${esc(o.plan.entry)}</div></div><div class="scenarioBox"><label>強気シナリオ解除</label><div>${esc(o.plan.invalid)}</div></div></div>${leaderStats}<details class="moreInfo"><summary>詳しい根拠を見る</summary>${detailMetrics(o)}<div class="reasonRow">${reasons}</div><div class="miniMeta">Source ${esc(o.source)} · expiry ${esc(c.expiry||'—')} · confidence ${esc(c.confidence||'—')} · age ${o.age_days??'—'}日</div></details></article>`;
-}
-function selectTicker(ticker,scroll){
-  ticker=String(ticker||'').trim().toUpperCase();if(!ticker)return;$('#selected').innerHTML=selectedHtml(ticker);$('#selectedSection').hidden=false;$('#search').value=ticker;hideSuggestions();if(scroll)$('#selectedSection').scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function matches(q){
-  q=q.trim().toLowerCase();if(!q)return[];const exact=[],prefix=[],other=[];
-  for(const u of universe){const t=u.ticker.toLowerCase(),hay=`${u.name} ${u.sector} ${u.industry}`.toLowerCase();if(t===q)exact.push(u);else if(t.startsWith(q))prefix.push(u);else if(hay.includes(q))other.push(u)}
-  return [...exact,...prefix,...other].slice(0,10);
-}
-function showSuggestions(){
-  const box=$('#suggestions'),rows=matches($('#search').value);activeSuggestion=-1;if(!rows.length){box.hidden=true;box.innerHTML='';return}
-  box.innerHTML=rows.map((u,i)=>`<div class="suggestion" data-ticker="${esc(u.ticker)}" data-i="${i}"><strong>${esc(u.ticker)}</strong><span>${esc(u.name)}</span><small>${esc(u.sector)}</small></div>`).join('');box.hidden=false;
-  for(const el of box.querySelectorAll('.suggestion'))el.addEventListener('click',()=>selectTicker(el.dataset.ticker,true));
-}
+function regime(spot,gf,atr){if(spot===null||gf===null)return'UNKNOWN';if(atr&&Math.abs(spot-gf)/atr<=1)return'NEAR_FLIP';return spot>gf?'POSITIVE_GAMMA':'NEGATIVE_GAMMA'}
+function multi(r){if(!r)return null;const s=num(r.spot),a=num(r.atr14),rs=Object.values(r.expiries||{}).map(e=>regime(s,num(e.gamma_flip),a));const c=x=>rs.filter(v=>v===x).length;return rs.length?{count:rs.length,positive:c('POSITIVE_GAMMA'),near:c('NEAR_FLIP'),negative:c('NEGATIVE_GAMMA')}:null}
+function crossedCall(p,c){return !!p&&p.spot!==null&&p.call_wall!==null&&c.spot!==null&&p.spot<p.call_wall&&c.spot>p.call_wall*1.002}
+function crossedPut(p,c){return !!p&&p.spot!==null&&p.put_wall!==null&&c.spot!==null&&p.spot>p.put_wall&&c.spot<p.put_wall*.998}
+function timeQuality(cur,source,u){if(source!=='DETAIL')return'UNVERIFIED_HISTORY';if(cur.refresh_failed||cur.stale)return'STALE';const session=String(state.date||'').slice(0,10),pday=cur.price_session_date;if(cur.session_consistent&&(!session||pday===session))return'VERIFIED';if(!cur.expected_session_date&&session&&pday===session&&u?.price&&cur.spot&&Math.abs(cur.spot/u.price-1)<=.003)return'INFERRED_MATCH';return'MISMATCH'}
+function localSignal(cur,prev,m,tq){if(!cur||!['VERIFIED','INFERRED_MATCH'].includes(tq)||cur.confidence==='LOW')return{signal:'DATA LOW',score:0,reasons:['価格とOptionsの同一セッション確認不可']};let s=50,why=[];const rg=cur.regime||regime(cur.spot,cur.gamma_flip,cur.atr14),ca=datr(cur.call_wall,cur.spot,cur.atr14),pa=datr(cur.put_wall,cur.spot,cur.atr14);if(rg==='POSITIVE_GAMMA'){s+=18;why.push('Gamma Flip上')}else if(rg==='NEGATIVE_GAMMA'){s-=28;why.push('Gamma Flip下')}else if(rg==='NEAR_FLIP'){s-=4;why.push('Gamma Flip近辺')}if(pa!==null&&pa<0&&Math.abs(pa)<=2.2){s+=10;why.push('Put支持が近い')}if(ca!==null){if(ca>0&&ca<=1.2){s+=4;why.push('Call Wall接近')}else if(ca>1.2){s+=6;why.push('上側余地')}}if(cur.net_gex!==null&&cur.net_gex>0)s+=5;if(m&&m.positive>m.negative)s+=5;const br=crossedCall(prev,cur);if(br){s+=18;why.push('前回Call Wall突破')}s=clamp(Math.round(s),0,100);let signal='NEUTRAL';if(br&&rg!=='NEGATIVE_GAMMA')signal='ACCELERATION';else if(rg==='NEGATIVE_GAMMA')signal='HEADWIND';else if(['POSITIVE_GAMMA','NEAR_FLIP'].includes(rg)&&ca!==null&&ca>0&&ca<=1.2)signal='BREAKOUT WATCH';else if(rg==='POSITIVE_GAMMA')signal='SUPPORTIVE';return{signal,score:s,reasons:why}}
+function directionBias(cur,prev,m,u,l,tq){if(!['VERIFIED','INFERRED_MATCH'].includes(tq)||cur.spot===null||cur.confidence==='LOW')return{direction:'UNKNOWN',score:50,confidence:0,reasons:['時間整合未確認'],volatility:'UNKNOWN'};let s=50,why=[],spot=cur.spot,atr=cur.atr14||spot*.02,gf=cur.gamma_flip,pw=cur.put_wall,cw=cur.call_wall;if(gf!==null){const d=(spot-gf)/atr;if(d>.35){s+=10;why.push('終値がFlip上')}else if(d<-.35){s-=10;why.push('終値がFlip下')}else why.push('Flip近辺')}const ema=num(cur.tech?.['21EMA']),vw=num(cur.tech?.['63VWAP']);if(ema!==null){s+=spot>ema?8:-8;why.push(spot>ema?'21EMA上':'21EMA下')}if(vw!==null){s+=spot>vw?5:-5;why.push(spot>vw?'63VWAP上':'63VWAP下')}const ch=num(u?.changePct??cur.upstream_change_pct);if(ch!==null){if(ch>=2){s+=5;why.push('当日モメンタム上')}else if(ch<=-2){s-=5;why.push('当日モメンタム下')}}const up=datr(cw,spot,atr),down=pw!==null?(spot-pw)/atr:null;if(up!==null&&down!==null&&up>0&&down>0){const rr=up/Math.max(down,.05);if(rr>=1.4){s+=10;why.push('上側余地優勢')}else if(rr<=.7){s-=10;why.push('下側余地優勢')}else if(rr>=1.15)s+=4;else if(rr<=.87)s-=4}if(crossedCall(prev,cur)){s+=12;why.push('前回Call Wall突破')}if(crossedPut(prev,cur)){s-=12;why.push('前回Put Wall割れ')}if(m){if(m.positive>m.negative){s+=6;why.push('複数満期でFlip上多数')}else if(m.negative>m.positive){s-=6;why.push('複数満期でFlip下多数')}}if(l?.leaderScore>=75){s+=6;why.push('Leadership上位')}else if(l?.leaderScore>=60)s+=3;s=clamp(Math.round(s),0,100);const rg=cur.regime||'UNKNOWN';let direction=s>=68?'UP':s<=32?'DOWN':(44<=s&&s<=56&&rg==='POSITIVE_GAMMA'?'RANGE':(['NEGATIVE_GAMMA','NEAR_FLIP'].includes(rg)?'VOLATILE':'RANGE'));const conf=clamp(Math.round(45+Math.abs(s-50)*1.35+(cur.confidence==='HIGH'?8:0)),20,95),ep=num(cur.expected_move?.expected_move_pct);let vol=ep===null?(rg==='NEGATIVE_GAMMA'?'EXPANSION':'UNKNOWN'):ep>=.08?'HIGH':ep>=.04?'MEDIUM':'LOW';if(rg==='NEGATIVE_GAMMA'&&['LOW','MEDIUM'].includes(vol))vol='EXPANSION';return{direction,score:s,confidence:conf,reasons:why,volatility:vol}}
+function analysisText(cur,d,l){if(d.direction==='UNKNOWN')return'基準終値とOptions計算時点が揃っていないため、方向判定を止めています。';const lead=l?.leaderScore>=70?' Leadershipも上位。':'';const p={UP:'オプション配置は上方向優位。',DOWN:'オプション配置は下方向優位。',RANGE:'現状はレンジ寄り。',VOLATILE:'方向は混在、値幅拡大に注意。'}[d.direction]||'';const bits=[];if(cur.gamma_flip!==null)bits.push(`終値${money(cur.spot)}はFlip ${money(cur.gamma_flip)}の${cur.spot>cur.gamma_flip?'上':'下'}`);if(cur.put_wall!==null)bits.push(`下は${money(cur.put_wall)}`);if(cur.call_wall!==null)bits.push(`上は${money(cur.call_wall)}`);const ep=num(cur.expected_move?.expected_move_pct);if(ep!==null)bits.push(`織込み値幅 約±${(ep*100).toFixed(1)}%`);return p+bits.join('、')+'。'+lead}
+function plan(cur){const cw=cur.call_wall,pw=cur.put_wall,gf=cur.gamma_flip;let up=cw!==null?`${money(cw)} を終値突破・維持なら上方向の加速候補。`:'上側Call Wall未検出。';let down=gf!==null?`${money(gf)} 終値割れで構造悪化。`:'';if(pw!==null)down+=`${money(pw)} 割れで下方向加速を警戒。`;return{up,down:down||'明確な下方向トリガーなし'}}
+function fromIntel(payload){intelMeta=payload||{};records=(payload.records||[]).map(r=>{const t=String(r.ticker||'').toUpperCase(),u=universeMap[t]||{},l=leaderMap[t]||r.leader||null,c=r.current||{};return{...r,ticker:t,name:r.name||u.name||'',sector:r.sector||u.sector||'',industry:r.industry||u.industry||'',leader:l,current:c,direction:r.direction||directionBias(c,r.previous,r.multi_expiry,u,l,r.time_quality),analysis:r.analysis||analysisText(c,r.direction||{},l)}});optionMap=Object.fromEntries(records.map(r=>[r.ticker,r]))}
+function fallbackBuild(pos,dhRows,shRows){positioning=pos.tickers||{};const dh=latestTwo(dhRows),sh=latestTwo(shRows),all=new Set([...Object.keys(positioning),...Object.keys(dh),...Object.keys(sh)]);records=[];optionMap={};for(const t of all){let cur,prev,source;if(positioning[t]){cur=currentObs(positioning[t],pos.asof);prev=histObs((dh[t]||[])[1]);source='DETAIL'}else{const p=sh[t]||dh[t];if(!p)continue;cur=histObs(p[0]);prev=histObs(p[1]);source=sh[t]?'SCAN':'HISTORY'}if(!cur)continue;const u=universeMap[t]||{},l=leaderMap[t]||null,m=multi(positioning[t]),tq=timeQuality(cur,source,u),sig=localSignal(cur,prev,m,tq),dir=directionBias(cur,prev,m,u,l,tq),rec={ticker:t,name:u.name||'',sector:u.sector||'',industry:u.industry||'',source,time_quality:tq,signal:sig.signal,score:sig.score,reasons:sig.reasons,current:cur,previous:prev,multi_expiry:m,direction:dir,analysis:analysisText(cur,dir,l),leader:l,plan:plan(cur)};records.push(rec);optionMap[t]=rec}}
+function dirView(d){const x=d?.direction;return x==='UP'?{arrow:'↑',label:'上方向',cls:'bUp',ac:'up'}:x==='DOWN'?{arrow:'↓',label:'下方向',cls:'bDown',ac:'down'}:x==='RANGE'?{arrow:'↔',label:'レンジ',cls:'bRange',ac:'range'}:x==='VOLATILE'?{arrow:'↕',label:'変動拡大',cls:'bVol',ac:'vol'}:{arrow:'?',label:'判定保留',cls:'bLow',ac:'vol'}}
+function leaderBadge(l){return l?`<span class="badge bLeader">主導株 ${l.leaderScore??l.leader_score??'—'}</span>`:''}
+function expectedLabel(c){const ep=num(c?.expected_move?.expected_move_pct);return ep===null?'—':`±${(ep*100).toFixed(1)}%`}
+function miniCard(t,o,l,combined){const u=universeMap[t]||{},d=dirView(o?.direction),c=o?.current,verified=o&&['VERIFIED','INFERRED_MATCH'].includes(o.time_quality);const levels=verified?`<div class="miniLevels"><div class="miniLv"><span>終値</span><b>${money(c.spot)}</b></div><div class="miniLv"><span>支持</span><b>${money(c.put_wall)}</b></div><div class="miniLv"><span>上値壁</span><b>${money(c.call_wall)}</b></div><div class="miniLv"><span>織込み</span><b>${expectedLabel(c)}</b></div></div>`:'';const note=o?(verified?o.analysis:`Options時点不一致。基準終値 ${money(u.price)} / Options基準 ${money(c?.spot)}。`):'Options詳細未取得。';return `<article class="miniCard" data-ticker="${esc(t)}"><div class="miniHead"><div class="ticker">${esc(t)}</div><div class="company">${esc(u.name||l?.name||'')}</div><div class="score">${combined??o?.direction?.confidence??'—'}</div></div><div class="badges">${leaderBadge(l)}<span class="badge ${d.cls}">${d.arrow} ${d.label}</span>${o&&!verified?'<span class="badge bLow">時点不一致</span>':''}</div>${verified?`<div class="miniDirection"><strong class="${d.cls}">${d.arrow} ${d.label}</strong><span>方向 ${o.direction.score}/100 · 確度 ${o.direction.confidence}</span></div>`:''}<div class="miniThesis">${esc(note)}</div>${levels}<div class="miniMeta">${esc(u.sector||'')} · ${esc(u.industry||'')}${o?` · price ${esc(c?.price_session_date||c?.date||'—')}`:''}</div></article>`}
+function buildLeaderRows(){const a=[];for(const [t,l] of Object.entries(leaderMap)){const o=optionMap[t]||null,verified=o&&['VERIFIED','INFERRED_MATCH'].includes(o.time_quality),bonus=verified?(o.direction.direction==='UP'?15:o.direction.direction==='DOWN'?-12:0):0,combined=Math.round(.78*l.leaderScore+.22*(o?.direction?.confidence??50)+bonus);a.push({t,l,o,combined})}return a.sort((x,y)=>y.combined-x.combined).slice(0,8)}
+function renderLeaders(){const a=buildLeaderRows();$('#leaders').innerHTML=a.length?a.map(x=>miniCard(x.t,x.o,x.l,x.combined)).join(''):'<div class="empty">Leadershipデータなし。</div>';bind($('#leaders'))}
+function directionalRows(dir){return records.filter(r=>['VERIFIED','INFERRED_MATCH'].includes(r.time_quality)&&r.direction?.direction===dir&&r.direction.confidence>=55&&String(universeMap[r.ticker]?.type||'stock')==='stock').sort((a,b)=>dir==='UP'?b.direction.score-a.direction.score:a.direction.score-b.direction.score).slice(0,8)}
+function renderDirectional(){const up=directionalRows('UP'),dn=directionalRows('DOWN');$('#bullish').innerHTML=up.length?up.map(r=>miniCard(r.ticker,r,leaderMap[r.ticker],r.direction.confidence)).join(''):'<div class="empty">同一セッションで強い上方向配置なし。</div>';$('#bearish').innerHTML=dn.length?dn.map(r=>miniCard(r.ticker,r,leaderMap[r.ticker],r.direction.confidence)).join(''):'<div class="empty">同一セッションで強い下方向配置なし。</div>';bind($('#bullish'));bind($('#bearish'))}
+function renderAll(){const a=[...records].sort((a,b)=>(['VERIFIED','INFERRED_MATCH'].includes(b.time_quality)?1:0)-(['VERIFIED','INFERRED_MATCH'].includes(a.time_quality)?1:0)||Math.abs(b.direction.score-50)-Math.abs(a.direction.score-50)).slice(0,150);$('#allRecords').innerHTML=a.map(r=>{const u=universeMap[r.ticker]||{},d=dirView(r.direction);return`<div class="allRow" data-ticker="${esc(r.ticker)}"><strong>${esc(r.ticker)}</strong><span>${esc(u.name||'')}</span><em class="${d.cls}">${d.arrow} ${d.label}</em><b>${r.direction.confidence}</b></div>`}).join('');bind($('#allRecords'))}
+function bind(root){for(const e of root.querySelectorAll('[data-ticker]'))e.addEventListener('click',()=>selectTicker(e.dataset.ticker,true))}
+function fmtTime(x){if(!x)return'—';const d=new Date(x);if(!Number.isFinite(d.getTime()))return String(x);return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d)+' JST'}
+function detailMetrics(o){const c=o.current,m=o.multi_expiry,em=c.expected_move||{};return`<div class="detailGrid"><div class="detailMetric"><span>Direction</span><b>${o.direction.score}/100</b></div><div class="detailMetric"><span>Options配置</span><b>${o.score??'—'}/100</b></div><div class="detailMetric"><span>Net GEX</span><b>${c.net_gex===null?'—':(c.net_gex/1e6).toFixed(1)+'M'}</b></div><div class="detailMetric"><span>複数満期</span><b>${m?`${m.positive}上 / ${m.negative}下`:'—'}</b></div><div class="detailMetric"><span>ATM IV</span><b>${num(em.atm_iv)===null?'—':(em.atm_iv*100).toFixed(1)+'%'}</b></div><div class="detailMetric"><span>OI</span><b>${c.total_oi===null?'—':Math.round(c.total_oi).toLocaleString()}</b></div></div>`}
+function distText(level,c){const a=datr(level,c.spot,c.atr14);if(level===null||c.spot===null)return'';const p=(level/c.spot-1)*100;return`${p>=0?'+':''}${p.toFixed(1)}%${a!==null?' / '+Math.abs(a).toFixed(1)+'ATR':''}`}
+function selectedHtml(t){const u=universeMap[t],o=optionMap[t],l=leaderMap[t];if(!u&&!o&&!l)return'<div class="noData"><strong>銘柄が見つかりません</strong>Tickerまたは会社名で検索してください。</div>';const name=u?.name||l?.name||o?.name||'',price=u?.price??o?.current?.spot,leaderStats=l?`<div class="leaderStats"><span class="statPill">Leader<b>${l.leaderScore}</b></span><span class="statPill">RS189<b>${num(l.rs189)??'—'}</b></span><span class="statPill">RS63<b>${num(l.rs63)??'—'}</b></span><span class="statPill">RS21<b>${num(l.rs21)??'—'}</b></span></div>`:'';if(!o)return`<article class="selectedCard"><div class="selectedTop"><div><div class="selectedTicker">${esc(t)}</div><div class="selectedName">${esc(name)} · ${esc(u?.sector||'')} · ${esc(u?.industry||'')}</div></div><div class="selectedPrice"><b>${money(price)}</b><span>基準価格 ${esc(state.date||'—')}</span></div></div><div class="selectedBadges">${leaderBadge(l)}<span class="badge bLow">Options未取得</span></div>${leaderStats}<div class="noData"><strong>銘柄は存在します。</strong>Options詳細をまだ取得していないため方向・壁・値幅は未判定です。</div></article>`;const c=o.current,verified=['VERIFIED','INFERRED_MATCH'].includes(o.time_quality),d=dirView(o.direction),em=c.expected_move||{},reasons=[...(o.direction?.reasons||[]),...(o.reasons||[])].filter((x,i,a)=>a.indexOf(x)===i).map(x=>`<span class="reason">${esc(x)}</span>`).join('');if(!verified)return`<article class="selectedCard"><div class="selectedTop"><div><div class="selectedTicker">${esc(t)}</div><div class="selectedName">${esc(name)} · ${esc(u?.sector||'')}</div></div><div class="selectedPrice"><b>${money(price)}</b><span>基準セッション ${esc(state.date||'—')}</span></div></div><div class="selectedBadges">${leaderBadge(l)}<span class="badge bLow">方向判定停止</span></div><div class="decision"><label>時間監査</label><div>基準価格 ${money(price)} に対し、Options計算基準は ${money(c.spot)} / ${esc(c.price_session_date||c.date||'—')}。同一セッションを確認できないため、古いWallを現在の売買判断へ使いません。</div></div><div class="timeBox"><div class="timeCell"><span>基準セッション</span><b class="timeOk">${esc(state.date||'—')}</b></div><div class="timeCell"><span>Options価格日</span><b class="timeBad">${esc(c.price_session_date||c.date||'—')}</b></div><div class="timeCell"><span>Options取得</span><b>${esc(fmtTime(c.options_observed_at))}</b></div><div class="timeCell"><span>OI更新時刻</span><b>provider非開示</b></div></div>${leaderStats}</article>`;const p=plan(c),move=num(em.expected_move),ep=num(em.expected_move_pct),lo=num(em.expected_low),hi=num(em.expected_high);return`<article class="selectedCard"><div class="selectedTop"><div><div class="selectedTicker">${esc(t)}</div><div class="selectedName">${esc(name)} · ${esc(u?.sector||'')} · ${esc(u?.industry||'')}</div></div><div class="selectedPrice"><b>${money(c.spot)}</b><span>基準終値 ${esc(c.price_session_date||'—')}</span></div></div><div class="selectedBadges">${leaderBadge(l)}<span class="badge ${d.cls}">${d.arrow} ${d.label}</span><span class="badge ${o.signal==='ACCELERATION'?'bAccel':o.signal==='HEADWIND'?'bHead':'bNeutral'}">${esc(o.signal||'—')}</span></div><div class="directionHero"><div class="directionArrow ${d.ac}">${d.arrow}</div><div class="directionCopy"><b>${d.label}</b><span>${esc(o.direction.volatility||'')} / 確度 ${o.direction.confidence}</span></div><div class="directionScore"><b>${o.direction.score}/100</b><span>方向スコア</span></div></div><div class="decision"><label>元ネタ風の配置読み</label><div>${esc(o.analysis||analysisText(c,o.direction,l))}</div></div><div class="bigLevels"><div class="bigLv"><span>終値</span><b>${money(c.spot)}</b><small>${esc(c.price_session_date||'')}</small></div><div class="bigLv"><span>Put支持</span><b>${money(c.put_wall)}</b><small>${distText(c.put_wall,c)}</small></div><div class="bigLv"><span>Gamma Flip</span><b>${money(c.gamma_flip)}</b><small>${distText(c.gamma_flip,c)}</small></div><div class="bigLv"><span>Call壁</span><b>${money(c.call_wall)}</b><small>${distText(c.call_wall,c)}</small></div><div class="bigLv"><span>織込み値幅</span><b>${ep===null?'—':'±'+(ep*100).toFixed(1)+'%'}</b><small>${esc(em.expected_move_method||'')}</small></div></div><div class="expectedBox"><label>${esc(c.expiry||'')} までの値動き見込み</label><div class="expectedRow"><b>${move===null?'—':`±${money(move)}`}</b><span>想定レンジ ${money(lo)} ～ ${money(hi)}</span><span>${esc(em.expected_move_method||'')}</span></div></div><div class="scenario"><div class="scenarioBox"><label>↑ 上方向</label><div>${esc(p.up)}</div></div><div class="scenarioBox"><label>↓ 下方向</label><div>${esc(p.down)}</div></div></div><div class="timeBox"><div class="timeCell"><span>価格セッション</span><b class="timeOk">${esc(c.price_session_date||'—')}</b></div><div class="timeCell"><span>Options取得</span><b>${esc(fmtTime(c.options_observed_at))}</b></div><div class="timeCell"><span>Tech最終足</span><b>${esc(c.tech_session_date||c.history_session_date||'—')}</b></div><div class="timeCell"><span>OI更新時刻</span><b>provider非開示</b></div></div>${leaderStats}<details class="moreInfo"><summary>詳しい根拠を見る</summary>${detailMetrics(o)}<div class="reasonRow">${reasons}</div><div class="miniMeta">price source ${esc(c.price_source||'—')} · expiry ${esc(c.expiry||'—')} · confidence ${esc(c.confidence||'—')} · time ${esc(o.time_quality)}</div></details></article>`}
+function selectTicker(t,scroll){t=String(t||'').trim().toUpperCase();if(!t)return;$('#selected').innerHTML=selectedHtml(t);$('#selectedSection').hidden=false;$('#search').value=t;hideSuggestions();if(scroll)$('#selectedSection').scrollIntoView({behavior:'smooth',block:'start'})}
+function matches(q){q=q.trim().toLowerCase();if(!q)return[];const exact=[],pre=[],other=[];for(const u of universe){const t=u.ticker.toLowerCase(),hay=`${u.name} ${u.sector} ${u.industry}`.toLowerCase();if(t===q)exact.push(u);else if(t.startsWith(q))pre.push(u);else if(hay.includes(q))other.push(u)}return[...exact,...pre,...other].slice(0,10)}
+function showSuggestions(){const b=$('#suggestions'),a=matches($('#search').value);activeSuggestion=-1;if(!a.length){b.hidden=true;b.innerHTML='';return}b.innerHTML=a.map((u,i)=>`<div class="suggestion" data-ticker="${esc(u.ticker)}" data-i="${i}"><strong>${esc(u.ticker)}</strong><span>${esc(u.name)}</span><small>${esc(u.sector)}</small></div>`).join('');b.hidden=false;for(const e of b.querySelectorAll('.suggestion'))e.addEventListener('click',()=>selectTicker(e.dataset.ticker,true))}
 function hideSuggestions(){const b=$('#suggestions');b.hidden=true;b.innerHTML='';activeSuggestion=-1}
-function runSearch(){const q=$('#search').value.trim();if(!q)return;const t=q.toUpperCase();if(universeMap[t]||optionMap[t]||leaderMap[t])selectTicker(t,true);else{const m=matches(q);if(m[0])selectTicker(m[0].ticker,true);else{$('#selected').innerHTML='<div class="noData"><strong>見つかりません</strong>入力したTicker / 会社名 / Sectorはユニバースにありません。</div>';$('#selectedSection').hidden=false;hideSuggestions()}}}
-
-async function init(){
-  try{
-    const [uniText,pos,dhText,shText,leaders]=await Promise.all([
-      getText('uni'),getJson('pos').catch(()=>({tickers:{}})),getText('dh').catch(()=>''),getText('sh').catch(()=>''),getJson('leaders').catch(()=>null)
-    ]);
-    parseUniverse(parseCsv(uniText));
-    buildOptionMap(pos,parseCsv(dhText),parseCsv(shText));
-    leaderMap=leaders?collectLeaders(leaders):{};leaderMeta=leaders||{};
-    renderLeaders();renderBullish();renderAll();
-    $('#leaderAsOf').textContent=(leaders&&leaders.leadership_market&&leaders.leadership_market.asof)||String(leaders&&leaders.leadership_generated_at||'—').slice(0,10);
-    $('#optionsAsOf').textContent=String(pos.asof||'—').slice(0,10);
-    const lm=leaders&&leaders.leadership_market;$('#marketState').textContent=lm?`${lm.status||'—'}${lm.label?' / '+lm.label:''}`:'—';
-    $('#stamp').textContent=`Universe ${universe.length.toLocaleString()} / Options観測 ${records.length.toLocaleString()} / Leaders ${Object.keys(leaderMap).length.toLocaleString()}`;
-  }catch(e){console.error(e);$('#leaders').innerHTML=`<div class="noData"><strong>データ読み込み失敗</strong>${esc(e.message||e)}</div>`;$('#bullish').innerHTML='';$('#stamp').textContent='load error'}
-}
-
-$('#search').addEventListener('input',showSuggestions);
-$('#search').addEventListener('keydown',e=>{
-  const box=$('#suggestions'),items=[...box.querySelectorAll('.suggestion')];
-  if(e.key==='ArrowDown'&&items.length){e.preventDefault();activeSuggestion=(activeSuggestion+1)%items.length;items.forEach((x,i)=>x.classList.toggle('active',i===activeSuggestion));}
-  else if(e.key==='ArrowUp'&&items.length){e.preventDefault();activeSuggestion=(activeSuggestion-1+items.length)%items.length;items.forEach((x,i)=>x.classList.toggle('active',i===activeSuggestion));}
-  else if(e.key==='Enter'){e.preventDefault();if(activeSuggestion>=0&&items[activeSuggestion])selectTicker(items[activeSuggestion].dataset.ticker,true);else runSearch();}
-  else if(e.key==='Escape')hideSuggestions();
-});
-$('#searchBtn').addEventListener('click',runSearch);
-$('#closeSelected').addEventListener('click',()=>{$('#selectedSection').hidden=true});
-document.addEventListener('click',e=>{if(!e.target.closest('.searchBox'))hideSuggestions()});
-
-init();
+function runSearch(){const q=$('#search').value.trim();if(!q)return;const t=q.toUpperCase();if(universeMap[t]||optionMap[t]||leaderMap[t])selectTicker(t,true);else{const m=matches(q);if(m[0])selectTicker(m[0].ticker,true);else{$('#selected').innerHTML='<div class="noData"><strong>見つかりません</strong>ユニバースにありません。</div>';$('#selectedSection').hidden=false;hideSuggestions()}}}
+async function init(){try{const [uniText,leaders,st,pos,dhText,shText,intel]=await Promise.all([getText('uni'),getJson('leaders').catch(()=>null),getJson('state').catch(()=>({})),getJson('pos').catch(()=>({tickers:{}})),getText('dh').catch(()=>''),getText('sh').catch(()=>''),getJson('intel').catch(()=>null)]);state=st||{};parseUniverse(parseCsv(uniText));leaderMap=leaders?collectLeaders(leaders):{};positioning=pos.tickers||{};if(intel&&String(intel.schema_version||'').startsWith('2')&&Array.isArray(intel.records))fromIntel(intel);else fallbackBuild(pos,parseCsv(dhText),parseCsv(shText));renderLeaders();renderDirectional();renderAll();$('#priceAsOf').textContent=String(state.date||intel?.session_date||pos.session_date||'—').slice(0,10);$('#optionsAsOf').textContent=fmtTime(pos.asof||intel?.positioning_asof);$('#leaderAsOf').textContent=(leaders?.leadership_market?.asof)||String(leaders?.leadership_generated_at||'—').slice(0,10);$('#marketState').textContent=state.gate?`${state.gate} / MRI ${state.mri??'—'}`:(leaders?.leadership_market?.status||'—');const ok=records.filter(r=>['VERIFIED','INFERRED_MATCH'].includes(r.time_quality)).length;$('#stamp').textContent=`Universe ${universe.length.toLocaleString()} / Options ${records.length.toLocaleString()} / 時間一致 ${ok.toLocaleString()}`;}catch(e){console.error(e);$('#leaders').innerHTML=`<div class="noData"><strong>読み込み失敗</strong>${esc(e.message||e)}</div>`;$('#bullish').innerHTML='';$('#bearish').innerHTML='';$('#stamp').textContent='load error'}}
+$('#search').addEventListener('input',showSuggestions);$('#search').addEventListener('keydown',e=>{const b=$('#suggestions'),items=[...b.querySelectorAll('.suggestion')];if(e.key==='ArrowDown'&&items.length){e.preventDefault();activeSuggestion=(activeSuggestion+1)%items.length;items.forEach((x,i)=>x.classList.toggle('active',i===activeSuggestion))}else if(e.key==='ArrowUp'&&items.length){e.preventDefault();activeSuggestion=(activeSuggestion-1+items.length)%items.length;items.forEach((x,i)=>x.classList.toggle('active',i===activeSuggestion))}else if(e.key==='Enter'){e.preventDefault();if(activeSuggestion>=0&&items[activeSuggestion])selectTicker(items[activeSuggestion].dataset.ticker,true);else runSearch()}else if(e.key==='Escape')hideSuggestions()});$('#searchBtn').addEventListener('click',runSearch);$('#closeSelected').addEventListener('click',()=>{$('#selectedSection').hidden=true});document.addEventListener('click',e=>{if(!e.target.closest('.searchBox'))hideSuggestions()});init();
 })();
