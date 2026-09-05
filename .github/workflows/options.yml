@@ -38,9 +38,11 @@ jobs:
           python -m py_compile build_dashboard.py tools/build_options_positioning.py \
             tools/build_options_positioning_directional.py tools/build_options_intelligence.py \
             tools/render_options_html.py
+          node --check options-intelligence.js
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
-            tests/test_options_intelligence.py
+            tests/test_options_intelligence.py \
+            tests/test_options_time_direction.py
 
       - name: Build options positioning
         env:
