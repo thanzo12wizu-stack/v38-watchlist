@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install --disable-pip-version-check -r requirements.txt pytest
-      - run: python tools/tmp_patch_options_scan_verify.py
+      - run: python tools/tmp_patch_options_scan_verify_v2.py
       - name: Syntax and regression tests
         run: |
           python -m py_compile tools/build_options_intelligence.py
