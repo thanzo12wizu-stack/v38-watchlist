@@ -6,9 +6,15 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch: {}
+  # Workflow edits trigger one self-check run so pipeline repairs can be
+  # validated immediately. Ordinary data commits do not match this path.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-downstream-chain.yml'
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -17,7 +23,7 @@ concurrency:
 
 jobs:
   chain:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 210
     env:
@@ -66,7 +72,7 @@ jobs:
           print('COMMAND_CENTER_CHAIN_INPUT', asof)
           PY
 
-      - name: Run downstream stages serially
+      - name: Run market/leadership/rotation downstream stages serially
         shell: bash
         run: |
           set -euo pipefail
@@ -99,7 +105,80 @@ jobs:
           run_stage leadership-command.yml "Leadership"
           run_stage rotation-live.yml "Rotation"
           run_stage rotation-stock-context-live.yml "Rotation strong stocks"
-          run_stage publish-public-site.yml "Public mirror"
+
+      - name: Refresh Options Intelligence from final upstream snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+
+          # Fail closed: the Options overlay may read upstream artifacts only
+          # after state / Rotation / Leadership context share one session date.
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          status=json.loads(Path('rotation/data/status.json').read_text(encoding='utf-8'))
+          context=json.loads(Path('rotation/data/rotation-theme56-stock-context.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          dates={
+              'state': target,
+              'rotation_status': str(status.get('asof') or ''),
+              'leadership_market': str((context.get('leadership_market') or {}).get('asof') or ''),
+              'leadership_coverage': str((context.get('leadership_coverage') or {}).get('market_asof') or ''),
+          }
+          if not target or any(v != target for v in dates.values()):
+              raise SystemExit(f'Options upstream snapshot mismatch: {dates}')
+          print('OPTIONS_UPSTREAM_SNAPSHOT_OK', dates)
+          PY
+
+          python -m py_compile tools/build_options_intelligence.py
+          node --check options-intelligence.js
+          python tools/build_options_intelligence.py
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- options_intelligence.json options_intelligence_history.csv
+          if git diff --staged --quiet; then
+            echo "Options Intelligence already current"
+            exit 0
+          fi
+          git commit -m "Refresh Options Intelligence from downstream snapshot"
+          pushed=false
+          for a in 1 2 3; do
+            if git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((a*2))
+          done
+          [[ "$pushed" == true ]] || exit 1
+
+      - name: Publish public mirror after final snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(gh run list --repo "$REPO" --workflow publish-public-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run publish-public-site.yml --repo "$REPO" --ref main
+          run_id=""
+          for attempt in $(seq 1 30); do
+            candidate="$(gh run list --repo "$REPO" --workflow publish-public-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 2
+          done
+          if [[ -z "$run_id" ]]; then
+            echo "::error::Could not resolve dispatched public mirror run"
+            exit 1
+          fi
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          echo "Public mirror SUCCESS run_id=$run_id"
 
       - name: Prove no downstream reverse write into Command Center
         shell: bash
@@ -131,8 +210,9 @@ jobs:
         run: |
           echo '### V38 production downstream chain' >> "$GITHUB_STEP_SUMMARY"
           echo '- Upstream: Command Center daily build (main)' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Order: V38/TQQQ/CURRENT30 → Sleeve/RSI Reset → Leadership → Rotation → Rotation strong stocks → Public mirror' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Order: V38/TQQQ/CURRENT30 → Sleeve/RSI Reset → Leadership → Rotation → Rotation strong stocks → Options Intelligence read-only merge → Public mirror' >> "$GITHUB_STEP_SUMMARY"
           echo '- Command Center ownership: read-only for every downstream stage' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Options Intelligence: may read state/universe/Leadership/Rotation, never writes back to them' >> "$GITHUB_STEP_SUMMARY"
           if [[ -f /tmp/atomic-publish-status.json ]]; then
             echo '- Atomic publish validation: completed' >> "$GITHUB_STEP_SUMMARY"
           fi
