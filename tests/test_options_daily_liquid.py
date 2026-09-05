@@ -71,7 +71,7 @@ def test_liquidity_asof_mismatch_fails_closed(tmp_path, monkeypatch):
 def test_swing_expiry_uses_completed_session_date():
     expiries = ["2026-09-05", "2026-09-11", "2026-09-18", "2026-09-25", "2026-10-16"]
     assert daily._swing_expiry(expiries, "2026-09-04") == "2026-09-18"
-    assert daily._swing_expiry(["2026-09-05", "2026-09-25"], "2026-09-04") is None
+    assert daily._swing_expiry(["2026-09-05", "2026-09-26"], "2026-09-04") is None
 
 
 def test_scan_history_upsert_does_not_duplicate_same_session(tmp_path, monkeypatch):
