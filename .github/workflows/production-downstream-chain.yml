@@ -21,58 +21,48 @@ concurrency:
   group: v38-production-downstream-chain
   cancel-in-progress: false
 
+env:
+  REPO: ${{ github.repository }}
+  GH_TOKEN: ${{ github.token }}
+
 jobs:
-  chain:
+  v38_family:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    timeout-minutes: 210
+    timeout-minutes: 120
     env:
-      GH_TOKEN: ${{ github.token }}
-      REPO: ${{ github.repository }}
-      DASHBOARD_OWNED: >-
-        command-center.html
-        command-center_share.html
-        state.json
-        trend_history.json
-        daily_log.csv
-        mktcap.json
-        fred_cache.json
-        fmp_reference_cache.json
-        earnings.json
-        inception_vwap.json
-        industry_map.json
-        universe.csv
-        options_targets.json
-        commit_manifest.json
-
+      PIPELINE_BRANCH: pipeline-live
+      V38_PRODUCTION_FILES: >-
+        v38-live-state.json
+        v38-strict-loo-history.json
+        v38-strict-loo-live.json
+        tqqq-panic-state.json
+        v38-tqqq-live-source-cache.json
+        v38-sleeve-state.json
     steps:
       - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
 
-      - name: Record upstream Command Center snapshot
+      - name: Record Command Center input
         shell: bash
         run: |
           set -euo pipefail
           git fetch --depth=1 origin main
           git reset --hard origin/main
-          git rev-parse HEAD | tee /tmp/command-center-main-sha.txt
-          : > /tmp/dashboard-owned-before.txt
-          for file in $DASHBOARD_OWNED; do
-            git rev-parse "HEAD:$file" >> /tmp/dashboard-owned-before.txt
-          done
-          python - <<'PY'
+          python - <<'PY' >> "$GITHUB_ENV"
           import json
           from pathlib import Path
           state=json.loads(Path('state.json').read_text(encoding='utf-8'))
           asof=str(state.get('date') or '')
           if not asof:
               raise SystemExit('Command Center state has no as-of')
-          print('COMMAND_CENTER_CHAIN_INPUT', asof)
+          print(f'EXPECTED_ASOF={asof}')
           PY
+          echo "V38 family input: $EXPECTED_ASOF"
 
-      - name: Run market/leadership/rotation downstream stages serially
+      - name: Run V38/TQQQ/CURRENT30 then Sleeve/RSI Reset
         shell: bash
         run: |
           set -euo pipefail
@@ -102,23 +92,187 @@ jobs:
 
           run_stage v38-live.yml "V38/TQQQ/CURRENT30"
           run_stage v38-sleeve-refresh.yml "Sleeve/RSI Reset"
-          run_stage leadership-command.yml "Leadership"
-          run_stage rotation-live.yml "Rotation"
-          run_stage rotation-stock-context-live.yml "Rotation strong stocks"
 
-      - name: Refresh Options Intelligence from final upstream snapshot
+      - name: Publish only V38-family artifacts to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch --depth=1 origin "$PIPELINE_BRANCH"
+          staged_sha="$(git rev-parse "origin/$PIPELINE_BRANCH")"
+          promote_dir="$(mktemp -d)"
+          git archive "$staged_sha" $V38_PRODUCTION_FILES | tar -x -C "$promote_dir"
+
+          published=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            cp -a "$promote_dir"/. .
+
+            python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['EXPECTED_ASOF']
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          live=json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+          sleeve=json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))
+          if str(state.get('date') or '') != target:
+              raise SystemExit(f'Command Center advanced while V38 family was building: {state.get("date")} != {target}')
+          dates={
+              'V38': str(live.get('asof') or ''),
+              'TQQQ': str(tqqq.get('asof') or ''),
+              'Sleeve': str(sleeve.get('asof') or ''),
+              'Normal Stock': str((sleeve.get('normal_stock') or {}).get('asof') or ''),
+              'RSI Reset': str((sleeve.get('rsi_reset') or {}).get('asof') or ''),
+          }
+          bad={k:v for k,v in dates.items() if v != target}
+          if bad:
+              raise SystemExit(f'V38-family as-of mismatch: expected={target} actual={bad}')
+          if tqqq.get('live_generation_status') != 'READY':
+              raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")}')
+          if (tqqq.get('current30') or {}).get('status') != 'READY':
+              raise SystemExit('CURRENT30 not READY')
+          if sleeve.get('status') != 'READY':
+              raise SystemExit(f'Sleeve not READY: {sleeve.get("status")}')
+          if (sleeve.get('normal_stock') or {}).get('status') != 'READY':
+              raise SystemExit('Normal Stock not READY')
+          reset=sleeve.get('rsi_reset') or {}
+          if reset.get('status') != 'READY':
+              raise SystemExit('RSI Reset not READY')
+          if (reset.get('download_quality') or {}).get('coverage_ok') is not True:
+              raise SystemExit('RSI Reset coverage not READY')
+          gross=live.get('gross100_allocation') or {}
+          if 'LIVE ALLOCATION READY' not in str(gross.get('status') or ''):
+              raise SystemExit(f'Gross100 not READY: {gross.get("status")}')
+          print('V38_FAMILY_PUBLISH_READY', target)
+          PY
+
+            git add -- $V38_PRODUCTION_FILES
+            unexpected="$(git diff --cached --name-only | while IFS= read -r changed; do
+              case " $V38_PRODUCTION_FILES " in
+                *" $changed "*) ;;
+                *) echo "$changed" ;;
+              esac
+            done)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::V38 family attempted to stage files outside its ownership: $unexpected"
+              exit 1
+            fi
+
+            if git diff --staged --quiet; then
+              echo "V38 family already current on main"
+              published=true
+              break
+            fi
+
+            git commit -m "Publish V38 family $EXPECTED_ASOF"
+            if git push origin HEAD:main; then
+              published=true
+              break
+            fi
+            echo "::warning::Main changed concurrently; retry V38-family publish $attempt/3"
+            sleep $((attempt * 2))
+          done
+          [[ "$published" == true ]] || exit 1
+
+  leadership:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Run Leadership independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(gh run list --repo "$REPO" --workflow leadership-command.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run leadership-command.yml --repo "$REPO" --ref main
+          run_id=""
+          for attempt in $(seq 1 30); do
+            candidate="$(gh run list --repo "$REPO" --workflow leadership-command.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 2
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve Leadership run"; exit 1; }
+          echo "Leadership run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+
+  rotation:
+    needs: [v38_family]
+    if: always() && needs.v38_family.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Run Rotation independently of Leadership result
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(gh run list --repo "$REPO" --workflow rotation-live.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run rotation-live.yml --repo "$REPO" --ref main
+          run_id=""
+          for attempt in $(seq 1 30); do
+            candidate="$(gh run list --repo "$REPO" --workflow rotation-live.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 2
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve Rotation run"; exit 1; }
+          echo "Rotation run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+
+  leadership_overlay:
+    needs: [leadership, rotation]
+    if: always() && needs.leadership.result == 'success' && needs.rotation.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Build optional Leadership x Rotation overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(gh run list --repo "$REPO" --workflow rotation-stock-context-live.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run rotation-stock-context-live.yml --repo "$REPO" --ref main
+          run_id=""
+          for attempt in $(seq 1 30); do
+            candidate="$(gh run list --repo "$REPO" --workflow rotation-stock-context-live.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 2
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve Rotation strong-stock context run"; exit 1; }
+          echo "Rotation strong-stock context run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+
+  options_overlay:
+    needs: [leadership_overlay]
+    if: always() && needs.leadership_overlay.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Refresh optional Options Intelligence overlay
         shell: bash
         run: |
           set -euo pipefail
           git fetch --depth=1 origin main
           git reset --hard origin/main
 
-          # Fail closed: the Options overlay may read upstream artifacts only
-          # after state / Rotation / Leadership context share one session date.
           python - <<'PY'
           import json
           from pathlib import Path
-
           state=json.loads(Path('state.json').read_text(encoding='utf-8'))
           status=json.loads(Path('rotation/data/status.json').read_text(encoding='utf-8'))
           context=json.loads(Path('rotation/data/rotation-theme56-stock-context.json').read_text(encoding='utf-8'))
@@ -140,79 +294,28 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- options_intelligence.json options_intelligence_history.csv
-          if git diff --staged --quiet; then
-            echo "Options Intelligence already current"
-            exit 0
-          fi
-          git commit -m "Refresh Options Intelligence from downstream snapshot"
-          pushed=false
-          for a in 1 2 3; do
+          generated="$(mktemp -d)"
+          cp options_intelligence.json "$generated/options_intelligence.json"
+          cp options_intelligence_history.csv "$generated/options_intelligence_history.csv"
+
+          published=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            cp "$generated/options_intelligence.json" options_intelligence.json
+            cp "$generated/options_intelligence_history.csv" options_intelligence_history.csv
+            git add -- options_intelligence.json options_intelligence_history.csv
+            if git diff --staged --quiet; then
+              echo "Options Intelligence already current"
+              published=true
+              break
+            fi
+            git commit -m "Refresh Options Intelligence from independent overlays"
             if git push origin HEAD:main; then
-              pushed=true
+              published=true
               break
             fi
-            git fetch origin main
-            git rebase origin/main || { git rebase --abort || true; exit 1; }
-            sleep $((a*2))
+            echo "::warning::Main changed concurrently; retry Options publish $attempt/3"
+            sleep $((attempt * 2))
           done
-          [[ "$pushed" == true ]] || exit 1
-
-      - name: Publish public mirror after final snapshot
-        shell: bash
-        run: |
-          set -euo pipefail
-          before="$(gh run list --repo "$REPO" --workflow publish-public-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
-          gh workflow run publish-public-site.yml --repo "$REPO" --ref main
-          run_id=""
-          for attempt in $(seq 1 30); do
-            candidate="$(gh run list --repo "$REPO" --workflow publish-public-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
-            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
-              run_id="$candidate"
-              break
-            fi
-            sleep 2
-          done
-          if [[ -z "$run_id" ]]; then
-            echo "::error::Could not resolve dispatched public mirror run"
-            exit 1
-          fi
-          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
-          echo "Public mirror SUCCESS run_id=$run_id"
-
-      - name: Prove no downstream reverse write into Command Center
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --depth=1 origin main
-          git reset --hard origin/main
-          : > /tmp/dashboard-owned-after.txt
-          for file in $DASHBOARD_OWNED; do
-            git rev-parse "HEAD:$file" >> /tmp/dashboard-owned-after.txt
-          done
-          if ! cmp -s /tmp/dashboard-owned-before.txt /tmp/dashboard-owned-after.txt; then
-            echo "::error::A downstream stage modified Command Center-owned artifacts"
-            diff -u /tmp/dashboard-owned-before.txt /tmp/dashboard-owned-after.txt || true
-            exit 1
-          fi
-          echo "DOWNSTREAM_REVERSE_WRITE_CHECK_PASS"
-
-      - name: Validate final atomic production snapshot
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/validate_atomic_publish.py --root . --output /tmp/atomic-publish-status.json
-          cat /tmp/atomic-publish-status.json
-
-      - name: Report production chain
-        if: always()
-        shell: bash
-        run: |
-          echo '### V38 production downstream chain' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Upstream: Command Center daily build (main)' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Order: V38/TQQQ/CURRENT30 → Sleeve/RSI Reset → Leadership → Rotation → Rotation strong stocks → Options Intelligence read-only merge → Public mirror' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Command Center ownership: read-only for every downstream stage' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Options Intelligence: may read state/universe/Leadership/Rotation, never writes back to them' >> "$GITHUB_STEP_SUMMARY"
-          if [[ -f /tmp/atomic-publish-status.json ]]; then
-            echo '- Atomic publish validation: completed' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          [[ "$published" == true ]] || exit 1
