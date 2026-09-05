@@ -1,0 +1,80 @@
+name: Rotation Exit Sensitivity Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exit-overlay-20260905
+    paths:
+      - leadership/research/audit_rotation_exit_sensitivity.py
+      - .github/workflows/rotation-exit-sensitivity-research.yml
+
+concurrency:
+  group: rotation-exit-sensitivity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy statsmodels yfinance requests lxml beautifulsoup4 html5lib
+      - name: Download audited strict-PIT Rotation panel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rotation
+          gh api repos/${{ github.repository }}/actions/artifacts/9743601391/zip > /tmp/rotation.zip
+          unzip -q /tmp/rotation.zip -d /tmp/rotation
+          test -s /tmp/rotation/rotation_pit_panel_cov80.csv
+      - name: Download audited PIT sector snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/pit
+          gh api repos/${{ github.repository }}/actions/artifacts/9742872318/zip > /tmp/pit.zip
+          unzip -q /tmp/pit.zip -d /tmp/pit
+          test -s /tmp/pit/monthly_wikipedia_sector_snapshots.csv
+      - name: Syntax check
+        env:
+          PYTHONPATH: .:leadership/research
+        run: python -m py_compile leadership/research/audit_rotation_exit_sensitivity.py
+      - name: Run sensitivity audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_rotation_exit_sensitivity.py \
+            --root . \
+            --panel /tmp/rotation/rotation_pit_panel_cov80.csv \
+            --snapshots /tmp/pit/monthly_wikipedia_sector_snapshots.csv \
+            --analysis-start 2022-04-18 \
+            --analysis-end 2026-06-20 \
+            --max-tickers 6000 \
+            --batch-size 60 \
+            --output leadership/research/rotation_exit_sensitivity_outputs
+      - name: Guard output
+        run: |
+          test -s leadership/research/rotation_exit_sensitivity_outputs/summary_rotation_exit_sensitivity.json
+          python - <<'PY'
+          import json
+          p='leadership/research/rotation_exit_sensitivity_outputs/summary_rotation_exit_sensitivity.json'
+          x=json.load(open(p))
+          assert x['status']=='ROTATION_EXIT_SENSITIVITY_RESEARCH'
+          assert x['primary_evidence']=='STRICT_PIT'
+          assert x['secondary_evidence']=='CURRENT_CLASSIFICATION_LOOKAHEAD_SENSITIVITY'
+          assert 'BASE' in x['broad_portfolio']
+          print(json.dumps(x['fixed_entry_replay_qa'], indent=2))
+          PY
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-exit-sensitivity-research
+          path: leadership/research/rotation_exit_sensitivity_outputs/
+          if-no-files-found: warn
+          retention-days: 14
