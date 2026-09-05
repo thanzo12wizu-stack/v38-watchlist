@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - tools/build_options_chart_data.py
+      - tools/build_options_chart_history_shards.py
       - options-chart.js
       - options-chart-bridge.js
       - options-chart.css
@@ -41,23 +42,31 @@ jobs:
           node --check options-chart-bridge.js
       - name: Install
         run: pip install --disable-pip-version-check -r requirements.txt
-      - name: Build read-only chart price history
+      - name: Build Options chart datasets
         env:
           V38_OPT_JSON: options_positioning.json
+          V38_OPT_HISTORY: options_history.csv
+          V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_CHART_JSON: options_chart_data.json
+          V38_OPT_CHART_HISTORY_DIR: options_chart_history
+          V38_OPT_CHART_HISTORY_MAX: '260'
           V38_OPT_CHART_PERIOD: 1y
           V38_OPT_CHART_WORKERS: '3'
           V38_OPT_CHART_ATTEMPTS: '2'
         run: |
-          python -m py_compile tools/build_options_chart_data.py
+          python -m py_compile tools/build_options_chart_data.py tools/build_options_chart_history_shards.py
+          # Detailed names keep the 1y OHLCV/MA/VWAP chart.
           python tools/build_options_chart_data.py
-      - name: Commit chart artifact only
+          # Broad daily Options observations are sharded for mobile/on-demand loading.
+          # No additional broad Yahoo price fetch is performed here.
+          python tools/build_options_chart_history_shards.py
+      - name: Commit chart artifacts only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- options_chart_data.json
+          git add -- options_chart_data.json options_chart_history
           if git diff --staged --quiet; then
             echo "no chart data changes"
             exit 0
