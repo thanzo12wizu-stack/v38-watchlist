@@ -1,0 +1,61 @@
+name: Astra frozen-input attribution and native weekly audit
+on:
+  push:
+    branches: [research/astra-v38-full-audit-20260905]
+    paths:
+      - leadership/research/astra_audit_20260905/followup.py
+      - .github/workflows/astra-v38-followup.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  research:
+    if: github.ref == 'refs/heads/research/astra-v38-full-audit-20260905'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: 898a684142239fa77ce6dd28b2c35b43e3b188ec
+          path: research_source
+      - uses: actions/checkout@v7
+        with:
+          ref: e32eff1bf460ffd517bb042c7fbc36e4f5f8844e
+          path: dashboard_source
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install pandas==3.0.5 numpy==2.4.6 scipy==1.17.1 yfinance==1.7.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: astra-v38-full-audit-20260905
+          path: frozen/audit
+          github-token: ${{ github.token }}
+          run-id: 33972198145
+      - uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: frozen/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+      - run: python leadership/research/astra_audit_20260905/followup.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astra-v38-frozen-followup-20260905
+          path: followup_output/
+          retention-days: 90
+      - name: Preserve research evidence
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/research/astra-v38-full-audit-20260905
+          destination=leadership/research/astra_audit_20260905/followup_results
+          mkdir -p "$destination"
+          cp followup_output/* "$destination/"
+          git config user.name 'V38 Research Audit'
+          git config user.email 'audit@users.noreply.github.com'
+          git add -- "$destination"
+          git diff --cached --quiet && exit 0
+          git commit -m 'research: preserve frozen attribution and weekly audit'
+          git push origin HEAD:refs/heads/research/astra-v38-full-audit-20260905
