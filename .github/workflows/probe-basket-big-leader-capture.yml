@@ -1,0 +1,42 @@
+name: Probe Basket Big Leader Capture
+
+on:
+  push:
+    branches:
+      - research/leader-entry-delay-audit-20260904
+    paths:
+      - leadership/research/audit_probe_basket_big_leader_capture.py
+      - .github/workflows/probe-basket-big-leader-capture.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_probe_basket_big_leader_capture.py
+      - name: Run probe basket capture audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_probe_basket_big_leader_capture.py \
+            --root . \
+            --output leadership/research/probe_basket_big_leader_capture_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-09-02 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-basket-big-leader-capture
+          path: leadership/research/probe_basket_big_leader_capture_output/
+          retention-days: 14
