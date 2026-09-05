@@ -13,6 +13,10 @@ on:
       - leadership/research/postprocess_theme56_retrospective_robust.py
       - .github/workflows/rotation-theme56-retrospective-validation.yml
 
+concurrency:
+  group: rotation-theme56-retrospective-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   price-shards:
     runs-on: ubuntu-24.04
