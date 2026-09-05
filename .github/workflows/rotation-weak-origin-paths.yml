@@ -1,0 +1,45 @@
+name: Rotation weak-origin path validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-validation-20260905-work
+    paths:
+      - leadership/research/validate_weak_origin_paths.py
+      - .github/workflows/rotation-weak-origin-paths.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Download audited PIT panel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/pit
+          gh api repos/${{ github.repository }}/actions/artifacts/9743199098/zip > /tmp/pit.zip
+          unzip -q /tmp/pit.zip -d /tmp/pit
+          test -s /tmp/pit/distribution_pit_panel_cov80.csv
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_weak_origin_paths.py
+      - name: Run weak-origin validation
+        run: |
+          python leadership/research/validate_weak_origin_paths.py \
+            --panel /tmp/pit/distribution_pit_panel_cov80.csv \
+            --output leadership/research/weak_origin_path_outputs
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-weak-origin-paths
+          path: leadership/research/weak_origin_path_outputs/
+          if-no-files-found: warn
+          retention-days: 14
