@@ -156,11 +156,15 @@ def test_zero_quotes_do_not_erase_valid_open_interest():
         sys.path.remove(tools_path)
 
 
-def test_options_workflow_runs_only_after_close_or_manual_dispatch():
+def test_options_workflow_runs_daily_liquid_scan_after_upstream_close_build():
     workflow = Path(".github/workflows/options.yml").read_text(encoding="utf-8")
     assert "  push:" not in workflow
     assert "schedule:" in workflow
     assert "workflow_dispatch:" in workflow
-    assert "V38_OPT_SCAN_ALL: '1'" in workflow
+    assert "cron: '47 23 * * 1-5'" in workflow
+    assert "V38_OPT_SCAN_ALL: '0'" in workflow
+    assert "python tools/build_options_daily_liquid.py" in workflow
+    assert "V38_OPT_MIN_PRICE: '5'" in workflow
+    assert "V38_OPT_MIN_DVOL_M: '10'" in workflow
     assert "V38_OPT_SCAN_STATE: options_scan_state.json" in workflow
     assert "V38_OPT_MIN_REFRESH_RATIO: '0.35'" in workflow
