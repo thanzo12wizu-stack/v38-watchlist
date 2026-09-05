@@ -1,0 +1,62 @@
+name: Rotation Sector Allocation Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exit-overlay-20260905
+    paths:
+      - leadership/research/audit_rotation_sector_allocation.py
+      - .github/workflows/rotation-sector-allocation-research.yml
+
+concurrency:
+  group: rotation-sector-allocation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Download audited strict-PIT Rotation panel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rotation
+          gh api repos/${{ github.repository }}/actions/artifacts/9743601391/zip > /tmp/rotation.zip
+          unzip -q /tmp/rotation.zip -d /tmp/rotation
+          test -s /tmp/rotation/rotation_pit_panel_cov80.csv
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_rotation_sector_allocation.py
+      - name: Run Sector allocation audit
+        run: |
+          python leadership/research/audit_rotation_sector_allocation.py \
+            --panel /tmp/rotation/rotation_pit_panel_cov80.csv \
+            --output leadership/research/rotation_sector_allocation_outputs
+      - name: Guard output
+        run: |
+          test -s leadership/research/rotation_sector_allocation_outputs/summary_rotation_sector_allocation.json
+          python - <<'PY'
+          import json
+          p='leadership/research/rotation_sector_allocation_outputs/summary_rotation_sector_allocation.json'
+          x=json.load(open(p))
+          assert x['status']=='ROTATION_SECTOR_ALLOCATION_RESEARCH'
+          assert 'SECTOR_EW_BASE' in x['variants']
+          assert 'EXCLUDE_DISTRIBUTION_TRAP_TO_SPY' in x['variants']
+          assert all(k in x['variants']['EXCLUDE_DISTRIBUTION_TRAP_TO_SPY'] for k in ('0bp','5bp','10bp'))
+          print(json.dumps({k:v['5bp']['metrics']['confirmation_2024_plus'].get('cagr') for k,v in x['variants'].items()}, indent=2))
+          PY
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-sector-allocation-research
+          path: leadership/research/rotation_sector_allocation_outputs/
+          if-no-files-found: warn
+          retention-days: 14
