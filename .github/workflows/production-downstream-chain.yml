@@ -60,7 +60,6 @@ jobs:
               raise SystemExit('Command Center state has no as-of')
           print(f'EXPECTED_ASOF={asof}')
           PY
-          echo "V38 family input: $EXPECTED_ASOF"
 
       - name: Run V38/TQQQ/CURRENT30 then Sleeve/RSI Reset
         shell: bash
