@@ -1,0 +1,51 @@
+name: Options nested attribution research
+
+on:
+  push:
+    branches:
+      - research/options-intelligence-validation-20260905
+    paths:
+      - '.github/workflows/options-nested-attribution-research.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-nested-attribution-20260905
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/options-intelligence-validation-20260905
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy scipy
+      - name: Syntax check
+        run: python -m py_compile research/options-intelligence-20260905/attribute_nested_value.py
+      - name: Run nested attribution
+        run: python research/options-intelligence-20260905/attribute_nested_value.py
+      - name: Commit research outputs only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/options-intelligence-20260905/ATTRIBUTION.md \
+                  research/options-intelligence-20260905/nested_delta.csv \
+                  research/options-intelligence-20260905/partial_coefficients.csv \
+                  research/options-intelligence-20260905/partial_coefficients_by_date.csv \
+                  research/options-intelligence-20260905/dvol_control_by_date.csv \
+                  research/options-intelligence-20260905/attribution_summary.json
+          if git diff --cached --quiet; then
+            echo "No research output changes"
+            exit 0
+          fi
+          git commit -m "Complete nested Options attribution"
+          git push origin HEAD:research/options-intelligence-validation-20260905
