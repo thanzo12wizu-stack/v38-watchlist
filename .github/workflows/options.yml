@@ -2,17 +2,10 @@ name: Options positioning
 
 on:
   schedule:
-    # 米引け後（JST翌朝6:47）。EODのOIが載ったタイミングで取得する。
+    # 米引け後（JST翌朝6:47）。OIの正確なprovider更新時刻は非公開なので取得時刻と分離して記録する。
     - cron: '47 21 * * 1-5'
-  # コードpush時はYahooのOI更新前・メンテナンス時間にも走って全滅し得るため実データ取得しない。
-  # 修復確認は明示的な手動実行、通常更新は米引け後のscheduleだけに限定する。
+  # コードpushでは実データ取得しない。通常更新はschedule、修復確認は明示的な手動実行。
   workflow_dispatch:
-    inputs:
-      force_full_refresh:
-        description: '全ユニバースを再取得対象にする（14日ローテーションを無視）'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -25,7 +18,7 @@ concurrency:
 jobs:
   options:
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.force_full_refresh && 180 || 30 }}
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -36,11 +29,12 @@ jobs:
       - name: Preflight tests
         run: |
           python -m py_compile build_dashboard.py tools/build_options_positioning.py \
-            tools/build_options_positioning_directional.py tools/build_options_intelligence.py \
-            tools/render_options_html.py
+            tools/build_options_positioning_directional.py tools/build_options_daily_liquid.py \
+            tools/build_options_intelligence.py tools/render_options_html.py
           node --check options-intelligence.js
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
+            tests/test_options_daily_liquid.py \
             tests/test_options_intelligence.py \
             tests/test_options_time_direction.py
 
@@ -52,38 +46,49 @@ jobs:
           V38_OPT_CACHE: options_cache
           V38_OPT_INTEL_JSON: options_intelligence.json
           V38_OPT_INTEL_HISTORY: options_intelligence_history.csv
-          # 対象。空なら state.json の picks/hold（Core 12）を使う。
-          V38_OPT_TICKERS: ''
-          # UIで0-6 / 7-21 / 22-45DTEと個別満期を切り替えられるよう、
-          # 詳細対象は近い満期を最大8本保持する。広域scanは従来どおり1本だけ。
-          V38_OPT_MAX_EXPIRY: '8'
           V38_OPT_HTML: options-positioning.html
-          # Core＋候補は毎回詳細取得。残りは少量ローテーションし、数週間かけて広域蓄積する。
-          V38_OPT_SCAN_ALL: '1'
+          V38_OPT_TICKERS: ''
+          V38_OPT_MAX_EXPIRY: '8'
+          V38_OPT_TARGETS: options_targets.json
+
+          # Detailed leaders/targets are fetched first. The old 60-name rotating scan
+          # is disabled; the daily liquid scanner below is now the only broad route.
+          V38_OPT_SCAN_ALL: '0'
           V38_UNIVERSE_CSV: universe.csv
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_SCAN_STATE: options_scan_state.json
-          # 手動force時は一時state/historyを空から作り、全銘柄をdue扱いにする。
-          # 通常runは従来どおり60件ローテーション。
-          V38_OPT_FORCE_FULL_REFRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.force_full_refresh && '1' || '0' }}
-          V38_OPT_SCAN_BUDGET: ${{ github.event_name == 'workflow_dispatch' && inputs.force_full_refresh && '100000' || '60' }}
+          V38_OPT_DAILY_STATUS: options_daily_liquid_status.json
+          V38_OPT_DASHBOARD_HTML: command-center.html
+
+          # Broad daily universe = common stock, Price >= $5, Dashboard DDV >= $10M.
+          # No RS / Theme / trend filter is allowed here. Options availability is
+          # checked for every qualifying name every trading day.
+          V38_OPT_MIN_PRICE: '5'
+          V38_OPT_MIN_DVOL_M: '10'
+
+          # Provider-friendly throttling. Every eligible name is attempted; transient
+          # failures are retried in later passes. Stale rows are never relabelled current.
           V38_OPT_SCAN_WORKERS: '2'
-          V38_OPT_SCAN_REFRESH_DAYS: '14'
-          # 一時的な空レスポンス/429には短いバックオフ。全滅時は失敗にして前回commitを維持。
+          V38_OPT_DAILY_BATCH_SIZE: '20'
+          V38_OPT_DAILY_BATCH_PAUSE: '1.5'
+          V38_OPT_DAILY_MAX_PASSES: '3'
+          V38_OPT_DAILY_PASS_PAUSE: '30'
+          V38_OPT_DAILY_RATE_LIMIT_PAUSE: '45'
+          V38_OPT_DAILY_MIN_TERMINAL_RATIO: '0.98'
+
+          # Detailed target retry/fail-closed policy.
           V38_OPT_FETCH_ATTEMPTS: '3'
           V38_OPT_RETRY_BASE_SECONDS: '2'
           V38_OPT_MIN_REFRESH_RATIO: '0.35'
           V38_OPT_STALE_DAYS: '3'
-          V38_OPT_TARGETS: options_targets.json
         shell: bash
         run: |
           set -euo pipefail
 
           # Manual runs can occur while Yahoo exposes expiry labels but not a
           # usable OI/IV chain. Probe the same analysis path used by production
-          # before starting a full refresh. If all three reference ETFs are
-          # unusable, preserve the committed last-known-good snapshot and finish
-          # green so the rest of the site pipeline can continue safely.
+          # before starting a large refresh. If all three reference ETFs are
+          # unusable, preserve the committed last-known-good snapshot.
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             set +e
             python - <<'PY'
@@ -124,7 +129,7 @@ jobs:
             preflight_rc=$?
             set -e
             if [[ "$preflight_rc" == "42" ]]; then
-              echo "::warning::Yahoo option chains are not currently usable for SPY/QQQ/IWM. Keeping the previous committed Options snapshot and continuing the site pipeline."
+              echo "::warning::Yahoo option chains are not currently usable for SPY/QQQ/IWM. Keeping the previous committed Options snapshot."
               echo "### Options positioning" >> "$GITHUB_STEP_SUMMARY"
               echo "- Status: retained last-known-good" >> "$GITHUB_STEP_SUMMARY"
               echo "- Reason: no usable OI/IV chain for SPY / QQQ / IWM during manual run" >> "$GITHUB_STEP_SUMMARY"
@@ -135,76 +140,35 @@ jobs:
             fi
           fi
 
-          if [[ "${V38_OPT_FORCE_FULL_REFRESH}" == "1" ]]; then
-            echo "[opt] force full refresh: all universe names are due in this run"
-            export V38_OPT_SCAN_HISTORY=/tmp/options_scan_history.full.csv
-            export V38_OPT_SCAN_STATE=/tmp/options_scan_state.full.json
-            rm -f "$V38_OPT_SCAN_HISTORY" "$V38_OPT_SCAN_STATE"
-            printf '{}\n' > "$V38_OPT_SCAN_STATE"
+          # 1) Small detailed set: up to 8 expiries for period selector.
+          python tools/build_options_positioning_directional.py
 
-            python tools/build_options_positioning_directional.py
+          # 2) Broad set: every liquid common stock, every trading day.
+          #    Detail names that are already fresh for this same session are not
+          #    fetched twice. All remaining names are attempted in throttled batches.
+          python tools/build_options_daily_liquid.py
 
-            # 通常の履歴/stateを消さず、今回の全件再取得結果だけをマージする。
-            python - <<'PY'
-          import csv
+          # 3) Rebuild downstream Options-only views. No reverse write to V38/Rotation.
+          python tools/render_options_html.py
+          python tools/build_options_intelligence.py
+
+          python - <<'PY'
           import json
           from pathlib import Path
 
-          old_hist = Path("options_scan_history.csv")
-          new_hist = Path("/tmp/options_scan_history.full.csv")
-          merged = {}
-          fieldnames = []
-          for path in (old_hist, new_hist):
-              if not path.is_file():
-                  continue
-              with path.open(encoding="utf-8-sig", newline="") as fh:
-                  reader = csv.DictReader(fh)
-                  if reader.fieldnames:
-                      for name in reader.fieldnames:
-                          if name not in fieldnames:
-                              fieldnames.append(name)
-                  for row in reader:
-                      key = (row.get("date", ""), row.get("ticker", ""), row.get("expiry", ""))
-                      if any(key):
-                          merged[key] = row
-          if fieldnames and merged:
-              with old_hist.open("w", encoding="utf-8", newline="") as fh:
-                  writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
-                  writer.writeheader()
-                  for row in merged.values():
-                      writer.writerow(row)
-
-          old_state_path = Path("options_scan_state.json")
-          new_state_path = Path("/tmp/options_scan_state.full.json")
-          try:
-              old_state = json.loads(old_state_path.read_text(encoding="utf-8")) if old_state_path.is_file() else {}
-          except Exception:
-              old_state = {}
-          try:
-              new_state = json.loads(new_state_path.read_text(encoding="utf-8")) if new_state_path.is_file() else {}
-          except Exception:
-              new_state = {}
-          if not isinstance(old_state, dict):
-              old_state = {}
-          if isinstance(new_state, dict):
-              old_state.update(new_state)
-          old_state_path.write_text(
-              json.dumps(old_state, ensure_ascii=False, sort_keys=True),
-              encoding="utf-8",
-          )
+          p = Path("options_daily_liquid_status.json")
+          if p.is_file():
+              q = json.loads(p.read_text(encoding="utf-8"))
+              with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+                  fh.write("### Daily liquid Options coverage\n")
+                  fh.write(f"- Session: {q.get('session_date')}\n")
+                  fh.write(f"- Eligible: {q.get('eligible_total')}\n")
+                  fh.write(f"- Fresh detailed: {q.get('detail_fresh')}\n")
+                  fh.write(f"- Broad attempted: {q.get('broad_attempted_unique')}/{q.get('broad_requested')}\n")
+                  fh.write(f"- Current checked: {float(q.get('daily_checked_ratio') or 0)*100:.1f}%\n")
+                  fh.write(f"- Fresh usable Options: {q.get('fresh_options_total')}\n")
+                  fh.write(f"- Unresolved after retries: {q.get('unresolved')}\n")
           PY
-
-            V38_OPT_SCAN_HISTORY=options_scan_history.csv \
-              V38_OPT_SCAN_STATE=options_scan_state.json \
-              python tools/render_options_html.py
-          else
-            python tools/build_options_positioning_directional.py
-            python tools/render_options_html.py
-          fi
-
-          # No extra provider calls. Merge current detail + rotating broad scan into
-          # the standalone research page payload and persist daily signal history.
-          python tools/build_options_intelligence.py
 
       - name: Commit and refresh dashboard
         shell: bash
@@ -216,6 +180,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for f in options_positioning.json options_history.csv \
                    options-positioning.html options_scan_history.csv options_scan_state.json \
+                   options_daily_liquid_status.json \
                    options_intelligence.json options_intelligence_history.csv; do
             [[ -f "$f" ]] && git add -- "$f"
           done
