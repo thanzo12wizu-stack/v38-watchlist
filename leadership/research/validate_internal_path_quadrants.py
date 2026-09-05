@@ -43,7 +43,7 @@ def strict_events(df,mask):
     return pd.DataFrame(rows)
 
 
-def cluster_ci(df,col,cluster,reps=4000,seed=1):
+def cluster_ci(df,col,cluster,reps=3000,seed=1):
     z=df[[cluster,col]].dropna(); keys=z[cluster].drop_duplicates().tolist()
     if len(keys)<6:return [None,None]
     groups={k:z.loc[z[cluster]==k,col].to_numpy(float) for k in keys}; rng=np.random.default_rng(seed); vals=[]
@@ -52,14 +52,14 @@ def cluster_ci(df,col,cluster,reps=4000,seed=1):
     q=np.quantile(vals,[.025,.975]); return [float(q[0]),float(q[1])]
 
 
-def attach_controls(df,ev,band,dcol,direction):
+def attach_controls(df,ev,band,dcol,direction,threshold):
     if ev.empty:return ev
     out=[]
     for _,r in ev.iterrows():
         same=df[(df.date==r.date)&(df.internal_band==band)&(df.sector!=r.sector)].copy()
-        # Primary control holds current internal band constant and excludes same direction.
-        if direction=='UP': same=same[same[dcol]<10]
-        else: same=same[same[dcol]>-10]
+        # Hold current internal band constant; threshold-specific non-signal controls.
+        if direction=='UP': same=same[same[dcol]<threshold]
+        else: same=same[same[dcol]>-threshold]
         same_price=same[same.price_band==r.price_band]
         z=r.to_dict()
         for h in H:
@@ -92,7 +92,7 @@ def main():
             defs=[('WEAK_IMPROVING','WEAK','UP',(df.internal_band=='WEAK')&(df[dcol]>=threshold)),('WEAK_WORSENING','WEAK','DOWN',(df.internal_band=='WEAK')&(df[dcol]<=-threshold)),('STRONG_IMPROVING','STRONG','UP',(df.internal_band=='STRONG')&(df[dcol]>=threshold)),('STRONG_WORSENING','STRONG','DOWN',(df.internal_band=='STRONG')&(df[dcol]<=-threshold))]
             for signal,band,direction,mask in defs:
                 ev=strict_events(df,mask)
-                ev=attach_controls(df,ev,band,dcol,direction)
+                ev=attach_controls(df,ev,band,dcol,direction,threshold)
                 if not ev.empty:
                     ev['signal']=signal; ev['delta_horizon']=delta_h; ev['delta_threshold']=threshold; event_rows.append(ev)
                 for period,lo in periods:
@@ -101,11 +101,10 @@ def main():
     summary=pd.DataFrame(rows)
     all_ev=pd.concat(event_rows,ignore_index=True) if event_rows else pd.DataFrame()
     summary.to_csv(args.output/'internal_path_quadrant_summary.csv',index=False); all_ev.to_csv(args.output/'internal_path_quadrant_events.csv',index=False)
-    # Compact direction stability: fraction of eligible horizon/period/threshold variants with same sign.
     stability={}
     for signal,g in summary.groupby('signal'):
         eligible=g[g.n>=8].copy(); vals=pd.to_numeric(eligible.mean_excess,errors='coerce').dropna(); stability[signal]={'eligible_cells':len(vals),'positive_fraction':None if vals.empty else float((vals>0).mean()),'negative_fraction':None if vals.empty else float((vals<0).mean()),'mean_of_cell_means':None if vals.empty else float(vals.mean())}
-    report={'schema':1,'research_only':True,'design':'Audited 11-sector PIT panel; current internal band x 5/10/20d internal change; transition-only events; 20-session cooldown; sector/date cluster bootstrap; same-day matched controls.','band_definition':{'WEAK':'internal_score <45','STRONG':'internal_score >=60'},'delta_thresholds':[10,20],'periods':[p[0] for p in periods],'stability':stability}
+    report={'schema':2,'research_only':True,'design':'Audited 11-sector PIT panel; current internal band x 5/10/20d internal change; transition-only events; 20-session cooldown; sector/date cluster bootstrap; threshold-matched same-day controls.','band_definition':{'WEAK':'internal_score <45','STRONG':'internal_score >=60'},'delta_thresholds':[10,20],'periods':[p[0] for p in periods],'stability':stability}
     (args.output/'internal_path_quadrant_report.json').write_text(json.dumps(safe(report),ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(stability,indent=2))
 
