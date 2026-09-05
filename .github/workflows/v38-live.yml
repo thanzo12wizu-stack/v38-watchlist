@@ -23,6 +23,16 @@ jobs:
         v38-strict-loo-live.json
         tqqq-panic-state.json
         v38-tqqq-live-source-cache.json
+      V38_BUILD_INPUTS: >-
+        state.json
+        command-center.html
+        universe.csv
+        sector_snapshot.json
+        v38_rules.py
+        build_v38_companion.py
+        build_v38_strict_loo_live.py
+        build_v38_tqqq_live.py
+        requirements.txt
 
     steps:
       - uses: actions/checkout@v7
@@ -289,14 +299,19 @@ jobs:
             echo "::error::Pipeline staging advanced during V38 build; skip stale persistence and reject stale output"
             exit 1
           fi
-          if [[ "$(git rev-parse origin/main)" != "$COMMAND_CENTER_SOURCE_SHA" ]]; then
-            echo "::error::Command Center advanced during V38 build; reject stale downstream output"
+
+          # Independent downstream writers may advance main while V38 is
+          # running. Reject only when an actual V38 build input changed.
+          changed_inputs="$(git diff --name-only "$COMMAND_CENTER_SOURCE_SHA" origin/main -- $V38_BUILD_INPUTS)"
+          if [[ -n "$changed_inputs" ]]; then
+            echo "::error::V38 build inputs changed during build; reject stale downstream output"
+            echo "$changed_inputs"
             exit 1
           fi
 
-          # Recreate staging from the exact main snapshot, then overlay only
-          # V38-owned output files. A force-with-lease is safe here because
-          # pipeline-live is a disposable downstream staging branch.
+          # Recreate staging from the latest main snapshot, then overlay only
+          # V38-owned output files. Unrelated Leadership/Rotation/Options
+          # updates are therefore preserved and cannot invalidate this build.
           git reset --hard origin/main
           for file in $V38_LIVE_ARTIFACTS; do
             if [[ -f "$staging/$file" ]]; then
