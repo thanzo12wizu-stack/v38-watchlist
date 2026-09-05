@@ -1,0 +1,51 @@
+name: Options incremental reconciliation research
+
+on:
+  push:
+    branches:
+      - research/options-intelligence-validation-20260905
+    paths:
+      - '.github/workflows/options-reconcile-research.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-reconcile-research-20260905
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/options-intelligence-validation-20260905
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy scipy
+      - name: Syntax check
+        run: python -m py_compile research/options-intelligence-20260905/reconcile_incremental_value.py
+      - name: Run reconciliation
+        run: python research/options-intelligence-20260905/reconcile_incremental_value.py
+      - name: Commit research outputs only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/options-intelligence-20260905/RECONCILIATION.md \
+                  research/options-intelligence-20260905/reconcile_lodo.csv \
+                  research/options-intelligence-20260905/reconcile_lodo_by_date.csv \
+                  research/options-intelligence-20260905/depth_diagnostics.csv \
+                  research/options-intelligence-20260905/strict_univariate.csv \
+                  research/options-intelligence-20260905/reconcile_missingness.json
+          if git diff --cached --quiet; then
+            echo "No research output changes"
+            exit 0
+          fi
+          git commit -m "Reconcile Options incremental value"
+          git push origin HEAD:research/options-intelligence-validation-20260905
