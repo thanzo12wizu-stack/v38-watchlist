@@ -7,6 +7,7 @@ on:
       - research/rotation-exit-overlay-20260905
     paths:
       - leadership/research/audit_rotation_exit_overlays.py
+      - leadership/research/audit_rotation_exit_overlays_v2.py
       - .github/workflows/rotation-exit-overlay-research.yml
 
 concurrency:
@@ -41,10 +42,10 @@ jobs:
           unzip -q /tmp/pit.zip -d /tmp/pit
           test -s /tmp/pit/monthly_wikipedia_sector_snapshots.csv
       - name: Syntax check
-        run: python -m py_compile leadership/research/audit_rotation_exit_overlays.py
+        run: python -m py_compile leadership/research/audit_rotation_exit_overlays.py leadership/research/audit_rotation_exit_overlays_v2.py
       - name: Run Rotation exit overlay audit
         run: |
-          python leadership/research/audit_rotation_exit_overlays.py \
+          python leadership/research/audit_rotation_exit_overlays_v2.py \
             --root . \
             --panel /tmp/rotation/rotation_pit_panel_cov80.csv \
             --snapshots /tmp/pit/monthly_wikipedia_sector_snapshots.csv \
