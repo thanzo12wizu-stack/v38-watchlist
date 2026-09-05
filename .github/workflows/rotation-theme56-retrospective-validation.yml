@@ -43,6 +43,8 @@ jobs:
             --expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
             --fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
             --dram leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv \
+            --firsttrust-holdings leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv \
+            --etfcom-holdings leadership/research/rotation_theme56_etfcom_holdings/theme56_etfcom_current_holdings.csv \
             --start 2022-01-01 \
             --end 2026-09-05 \
             --shard ${{ matrix.shard }} \
@@ -86,6 +88,8 @@ jobs:
         run: |
           python leadership/research/validate_theme56_rotation_retrospective_v4.py \
             --cache-dir /tmp/theme56-price-shards \
+            --firsttrust-holdings leadership/research/rotation_theme56_firsttrust/firsttrust_exact_current_holdings.csv \
+            --etfcom-holdings leadership/research/rotation_theme56_etfcom_holdings/theme56_etfcom_current_holdings.csv \
             --config leadership/research/rotation_theme56_config.json \
             --base leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
             --expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
