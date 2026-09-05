@@ -20,6 +20,8 @@ WINDOWS = (5, 10, 20)
 TOPKS = (3, 5, 10)
 RANKERS = (
     "HIGH_ACCEL",
+    "RS21_HIGH63",
+    "RS21_TREND_HIGH",
     "MOM_EQ",
     "MOM_VCON",
     "MOM_THEME",
@@ -107,6 +109,10 @@ def active_from_fresh(fresh: pd.DataFrame, window: int) -> pd.DataFrame:
 def ranker_frame(name: str, f: dict[str, pd.DataFrame]) -> pd.DataFrame:
     if name == "HIGH_ACCEL":
         return (0.50 * f["RS21"] + 0.25 * f["HIGH63"] + 0.25 * f["ACC21"]).astype(np.float32)
+    if name == "RS21_HIGH63":
+        return (0.75 * f["RS21"] + 0.25 * f["HIGH63"]).astype(np.float32)
+    if name == "RS21_TREND_HIGH":
+        return (0.55 * f["RS21"] + 0.25 * f["HIGH63"] + 0.20 * f["TREND50"]).astype(np.float32)
     if name == "MOM_EQ":
         return ((f["RS21"] + f["HIGH63"] + f["ACC21"]) / 3.0).astype(np.float32)
     if name == "MOM_VCON":
@@ -311,6 +317,8 @@ def main() -> None:
     high63_raw = close / close.shift(1).rolling(63, min_periods=40).max()
     high63 = pct(high63_raw, pool)
     acc21 = pct(rs[21] - rs[21].shift(20), pool)
+    sma50 = close.rolling(50, min_periods=35).mean()
+    trend50 = pct(close / sma50.replace(0.0, np.nan), pool)
     prior_vol10 = volume.shift(1).rolling(10, min_periods=8).mean()
     prior_vol20 = volume.shift(1).rolling(20, min_periods=15).mean()
     vcon_ratio = prior_vol10 / prior_vol20.replace(0.0, np.nan)
@@ -346,6 +354,7 @@ def main() -> None:
         "RS21": rs[21].astype(np.float32),
         "HIGH63": high63,
         "ACC21": acc21,
+        "TREND50": trend50,
         "VCON": vcon,
         "THEME": theme,
         "SECTOR": sector,
