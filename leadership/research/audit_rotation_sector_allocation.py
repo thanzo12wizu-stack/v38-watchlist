@@ -127,11 +127,17 @@ def download_open(start: str, end: str) -> pd.DataFrame:
 def load_panel(path: Path) -> pd.DataFrame:
     p = pd.read_csv(path)
     p["date"] = pd.to_datetime(p["date"]).dt.tz_localize(None).dt.normalize()
-    for c in ("price_score", "internal_score", "internal_delta20", "flow20_pct_aum"):
+    p["sector"] = p["sector"].astype(str).str.upper()
+    for c in ("price_score", "internal_score", "flow20_pct_aum"):
         p[c] = pd.to_numeric(p[c], errors="coerce")
     p = p[p["sector"].isin(SECTORS)].copy()
-    p = p.sort_values(["date", "sector"]).drop_duplicates(["date", "sector"], keep="last")
-    return p
+    p = p.sort_values(["sector", "date"]).drop_duplicates(["sector", "date"], keep="last")
+    # Match the audited exit research exactly: 20 trading-session change in the
+    # strict PIT internal score is derived from the panel when not stored.
+    p["internal_delta20"] = p.groupby("sector", observed=True)["internal_score"].transform(
+        lambda s: pd.to_numeric(s, errors="coerce") - pd.to_numeric(s, errors="coerce").shift(20)
+    )
+    return p.sort_values(["date", "sector"])
 
 
 def warning_sets(panel: pd.DataFrame, kind: str) -> dict[pd.Timestamp, set[str]]:
