@@ -30,6 +30,24 @@ function ema(bars, n) {
   return out;
 }
 
+function rollingVwap(bars, n) {
+  const out = [], q = [];
+  let pvSum = 0, volSum = 0;
+  for (const b of bars) {
+    const h = finite(b.high), l = finite(b.low), c = finite(b.close), v = finite(b.volume);
+    if ([h, l, c, v].some(x => x === null) || v < 0) continue;
+    const pv = ((h + l + c) / 3) * v;
+    q.push({ pv, v });
+    pvSum += pv; volSum += v;
+    if (q.length > n) {
+      const old = q.shift();
+      pvSum -= old.pv; volSum -= old.v;
+    }
+    if (q.length === n && volSum > 0) out.push({ time: b.time, value: pvSum / volSum });
+  }
+  return out;
+}
+
 function addLine(chart, data, title, opts = {}) {
   if (!data?.length) return null;
   const lib = L();
@@ -107,6 +125,20 @@ function mount({ element, bars, ticker, levels = {}, stale = false }) {
   addLine(chart, ema(clean, 21), '21EMA', { color: '#f4c75a', lineWidth: 1 });
   addLine(chart, sma(clean, 50), '50MA', { color: '#6fb8ff', lineWidth: 1 });
   addLine(chart, sma(clean, 200), '200MA', { color: '#b98cff', lineWidth: 1 });
+  const vwap63 = rollingVwap(clean, 63);
+  const vwap63Series = addLine(chart, vwap63, '63VWAP', { color: '#4fc7bd', lineWidth: 1 });
+  const vwap63Last = finite(vwap63.at(-1)?.value);
+  if (vwap63Series && vwap63Last !== null) {
+    vwap63Series.createPriceLine({
+      price: vwap63Last,
+      title: '63VWAP',
+      color: '#4fc7bd',
+      lineWidth: 1,
+      lineStyle: lib.LineStyle.Solid,
+      lineVisible: false,
+      axisLabelVisible: true,
+    });
+  }
 
   priceLine(candles, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed);
   priceLine(candles, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed);
