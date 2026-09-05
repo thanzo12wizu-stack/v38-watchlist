@@ -2,8 +2,9 @@ name: Options positioning
 
 on:
   schedule:
-    # 米引け後（JST翌朝6:47）。OIの正確なprovider更新時刻は非公開なので取得時刻と分離して記録する。
-    - cron: '47 21 * * 1-5'
+    # Command Center日次build(22:17 UTC)完了後に実行。上流の同一セッションを読んでからOptionsを取得する。
+    # OIの正確なprovider更新時刻は非公開なので、取得時刻とは分離して記録する。
+    - cron: '47 23 * * 1-5'
   # コードpushでは実データ取得しない。通常更新はschedule、修復確認は明示的な手動実行。
   workflow_dispatch:
 
