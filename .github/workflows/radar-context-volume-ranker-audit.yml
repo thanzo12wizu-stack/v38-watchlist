@@ -1,0 +1,46 @@
+# Research-only audit. Does not modify main, Pages, dashboard, or live rules.
+name: Radar Context Volume Ranker Audit
+
+on:
+  push:
+    branches:
+      - research/leader-entry-delay-audit-20260904
+    paths:
+      - leadership/research/audit_radar_context_volume_ranker.py
+      - .github/workflows/radar-context-volume-ranker-audit.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy scikit-learn yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_radar_context_volume_ranker.py
+          python -m py_compile leadership/research/audit_major_leader_entry_delay.py
+          python -m py_compile leadership/research/audit_radar_cohort_discriminator.py
+      - name: Run radar context and volume ranker audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_radar_context_volume_ranker.py \
+            --root . \
+            --output leadership/research/radar_context_volume_ranker_output \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-09-02 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-context-volume-ranker-audit
+          path: leadership/research/radar_context_volume_ranker_output/
+          retention-days: 14
