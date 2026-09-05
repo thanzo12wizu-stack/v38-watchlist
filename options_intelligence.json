@@ -1,8 +1,8 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-05T05:08:47Z",
+  "generated_at": "2026-09-05T05:58:01Z",
   "session_date": "2026-09-04",
-  "positioning_asof": "2026-09-05T05:07:40+00:00",
+  "positioning_asof": "2026-09-05T05:56:37+00:00",
   "quality": {
     "requested": 34,
     "refreshed": 30,
@@ -39,18 +39,18 @@
   ],
   "trade_tape": "unavailable_from_current_provider",
   "summary": {
-    "coverage": 1189,
+    "coverage": 1232,
     "ACCELERATION": 4,
     "SUPPORTIVE": 4,
     "BREAKOUT WATCH": 7,
     "NEUTRAL": 8,
     "HEADWIND": 1,
-    "DATA LOW": 1165,
+    "DATA LOW": 1208,
     "DIR_UP": 14,
     "DIR_DOWN": 1,
     "DIR_RANGE": 4,
     "DIR_VOLATILE": 5,
-    "DIR_UNKNOWN": 1165
+    "DIR_UNKNOWN": 1208
   },
   "records": [
     {
@@ -80,7 +80,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -172,11 +172,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
-        "positive": 4,
-        "near": 0,
+        "count": 8,
+        "positive": 5,
+        "near": 1,
         "negative": 0,
-        "unknown": 0
+        "unknown": 2
       },
       "direction": {
         "direction": "UP",
@@ -246,7 +246,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -338,11 +338,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
-        "positive": 4,
+        "count": 8,
+        "positive": 7,
         "near": 0,
         "negative": 0,
-        "unknown": 0
+        "unknown": 1
       },
       "direction": {
         "direction": "UP",
@@ -398,7 +398,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -549,7 +549,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -622,11 +622,11 @@
       },
       "previous": null,
       "multi_expiry": {
-        "count": 4,
-        "positive": 2,
+        "count": 7,
+        "positive": 3,
         "near": 0,
         "negative": 1,
-        "unknown": 1
+        "unknown": 3
       },
       "direction": {
         "direction": "UP",
@@ -696,7 +696,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -788,11 +788,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 7,
         "positive": 4,
-        "near": 0,
+        "near": 1,
         "negative": 0,
-        "unknown": 0
+        "unknown": 2
       },
       "direction": {
         "direction": "UP",
@@ -848,7 +848,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "yfinance_daily_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -940,11 +940,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
-        "positive": 2,
-        "near": 1,
+        "count": 8,
+        "positive": 3,
+        "near": 3,
         "negative": 1,
-        "unknown": 0
+        "unknown": 1
       },
       "direction": {
         "direction": "UP",
@@ -997,7 +997,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "yfinance_daily_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1089,10 +1089,10 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
-        "positive": 0,
-        "near": 3,
-        "negative": 1,
+        "count": 8,
+        "positive": 1,
+        "near": 5,
+        "negative": 2,
         "unknown": 0
       },
       "direction": {
@@ -1147,7 +1147,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1220,11 +1220,11 @@
       },
       "previous": null,
       "multi_expiry": {
-        "count": 4,
-        "positive": 3,
+        "count": 8,
+        "positive": 4,
         "near": 1,
-        "negative": 0,
-        "unknown": 0
+        "negative": 1,
+        "unknown": 2
       },
       "direction": {
         "direction": "UP",
@@ -1279,7 +1279,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1428,7 +1428,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1501,11 +1501,11 @@
       },
       "previous": null,
       "multi_expiry": {
-        "count": 4,
+        "count": 6,
         "positive": 4,
         "near": 0,
         "negative": 0,
-        "unknown": 0
+        "unknown": 2
       },
       "direction": {
         "direction": "UP",
@@ -1572,7 +1572,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1664,11 +1664,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 8,
         "positive": 0,
         "near": 0,
         "negative": 0,
-        "unknown": 4
+        "unknown": 8
       },
       "direction": {
         "direction": "UP",
@@ -1686,6 +1686,156 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Put Wall 80.00 終値割れで支持シナリオ失効",
         "target": "次のCall Wall 90.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "SPY",
+      "name": "",
+      "sector": "",
+      "industry": "",
+      "source": "DETAIL",
+      "age_days": 1,
+      "time_quality": "VERIFIED",
+      "session_date": "2026-09-04",
+      "signal": "NEUTRAL",
+      "score": 76,
+      "reasons": [
+        "Gamma Flip近辺",
+        "Put支持候補が近い",
+        "上側Wallまで余地",
+        "Net GEXプラス",
+        "複数満期もFlip上側優勢"
+      ],
+      "current": {
+        "date": "2026-09-04",
+        "price_session_date": "2026-09-04",
+        "expected_session_date": "2026-09-04",
+        "history_session_date": "2026-09-04",
+        "tech_session_date": "2026-09-04",
+        "session_consistent": true,
+        "price_source": "yfinance_daily_close",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
+        "oi_observed_at": null,
+        "oi_basis": "provider_open_interest_update_time_unavailable",
+        "expiry": "2026-09-18",
+        "spot": 770.19,
+        "atr14": 5.5029,
+        "call_wall": 779.0,
+        "put_wall": 760.0,
+        "gamma_flip": 770.11,
+        "net_gex": 23113917.873573303,
+        "regime": "NEAR_FLIP",
+        "confidence": "HIGH",
+        "total_oi": 3113344.0,
+        "n_strikes": 273.0,
+        "call_oi": 979076.0,
+        "put_oi": 2134268.0,
+        "call_wall_share": 0.20175939416839514,
+        "put_wall_share": 0.16759179702885765,
+        "call_wall_vs_second": 1.3893715205140398,
+        "put_wall_vs_second": 1.816093671229715,
+        "call_walls": [
+          {
+            "strike": 779.0,
+            "gex": 587136247.6261452
+          },
+          {
+            "strike": 790.0,
+            "gex": 422591250.04154146
+          },
+          {
+            "strike": 780.0,
+            "gex": 382388145.8634325
+          }
+        ],
+        "put_walls": [
+          {
+            "strike": 760.0,
+            "gex": 737331896.9386371
+          },
+          {
+            "strike": 750.0,
+            "gex": 405998825.1813984
+          },
+          {
+            "strike": 755.0,
+            "gex": 347766376.5413704
+          }
+        ],
+        "refresh_failed": false,
+        "stale": false,
+        "tech": {
+          "21EMA": 765.99,
+          "50MA": 756.86,
+          "63VWAP": 750.66
+        },
+        "detail": true,
+        "expected_move": {
+          "atm_strike": 770.0,
+          "atm_iv": 0.111688,
+          "straddle_move": 13.42,
+          "straddle_move_pct": 0.017424,
+          "iv_1sigma_move": 16.2341,
+          "iv_1sigma_move_pct": 0.021078,
+          "expected_move": 13.42,
+          "expected_move_pct": 0.017424,
+          "expected_move_method": "atm_straddle_mid",
+          "expected_low": 756.77,
+          "expected_high": 783.61
+        },
+        "upstream_change_pct": null
+      },
+      "previous": {
+        "date": "2026-09-03",
+        "price_session_date": "2026-09-03",
+        "expiry": "2026-09-18",
+        "spot": 773.17,
+        "atr14": null,
+        "call_wall": 790.0,
+        "put_wall": 760.0,
+        "gamma_flip": 772.68,
+        "net_gex": 117386765.27,
+        "regime": "NEAR_FLIP",
+        "confidence": "HIGH",
+        "total_oi": null,
+        "n_strikes": null,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "multi_expiry": {
+        "count": 8,
+        "positive": 1,
+        "near": 7,
+        "negative": 0,
+        "unknown": 0
+      },
+      "direction": {
+        "direction": "VOLATILE",
+        "score": 65,
+        "confidence": 73,
+        "reasons": [
+          "Gamma Flip近辺",
+          "21EMA上",
+          "63VWAP上",
+          "複数満期でFlip上が多数"
+        ],
+        "volatility": "LOW"
+      },
+      "analysis": "方向は混在、値幅拡大に注意。基準終値770.19はFlip 770.11の上 下はPut Wall 760.00 上はCall Wall 779.00 2026-09-18までの織込み値幅は約±13.42（1.7%、atm_straddle_mid）。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 770.11 終値割れで構造悪化、Put Wall 760.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 779.00"
       },
       "leader": null,
       "tape": null,
@@ -1720,7 +1870,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1793,11 +1943,11 @@
       },
       "previous": null,
       "multi_expiry": {
-        "count": 4,
+        "count": 6,
         "positive": 3,
         "near": 1,
         "negative": 0,
-        "unknown": 0
+        "unknown": 2
       },
       "direction": {
         "direction": "UP",
@@ -1867,7 +2017,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -1959,11 +2109,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 8,
         "positive": 1,
         "near": 0,
         "negative": 0,
-        "unknown": 3
+        "unknown": 7
       },
       "direction": {
         "direction": "UP",
@@ -2017,7 +2167,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -2147,7 +2297,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -2275,7 +2425,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -2348,11 +2498,11 @@
       },
       "previous": null,
       "multi_expiry": {
-        "count": 4,
+        "count": 5,
         "positive": 1,
         "near": 0,
         "negative": 0,
-        "unknown": 3
+        "unknown": 4
       },
       "direction": {
         "direction": "RANGE",
@@ -2395,154 +2545,6 @@
       ]
     },
     {
-      "ticker": "SPY",
-      "name": "",
-      "sector": "",
-      "industry": "",
-      "source": "DETAIL",
-      "age_days": 1,
-      "time_quality": "VERIFIED",
-      "session_date": "2026-09-04",
-      "signal": "NEUTRAL",
-      "score": 71,
-      "reasons": [
-        "Gamma Flip近辺",
-        "Put支持候補が近い",
-        "上側Wallまで余地",
-        "Net GEXプラス"
-      ],
-      "current": {
-        "date": "2026-09-04",
-        "price_session_date": "2026-09-04",
-        "expected_session_date": "2026-09-04",
-        "history_session_date": "2026-09-04",
-        "tech_session_date": "2026-09-04",
-        "session_consistent": true,
-        "price_source": "yfinance_daily_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
-        "oi_observed_at": null,
-        "oi_basis": "provider_open_interest_update_time_unavailable",
-        "expiry": "2026-09-18",
-        "spot": 770.19,
-        "atr14": 5.5029,
-        "call_wall": 779.0,
-        "put_wall": 760.0,
-        "gamma_flip": 770.11,
-        "net_gex": 23113917.873573303,
-        "regime": "NEAR_FLIP",
-        "confidence": "HIGH",
-        "total_oi": 3113344.0,
-        "n_strikes": 273.0,
-        "call_oi": 979076.0,
-        "put_oi": 2134268.0,
-        "call_wall_share": 0.20175939416839514,
-        "put_wall_share": 0.16759179702885765,
-        "call_wall_vs_second": 1.3893715205140398,
-        "put_wall_vs_second": 1.816093671229715,
-        "call_walls": [
-          {
-            "strike": 779.0,
-            "gex": 587136247.6261452
-          },
-          {
-            "strike": 790.0,
-            "gex": 422591250.04154146
-          },
-          {
-            "strike": 780.0,
-            "gex": 382388145.8634325
-          }
-        ],
-        "put_walls": [
-          {
-            "strike": 760.0,
-            "gex": 737331896.9386371
-          },
-          {
-            "strike": 750.0,
-            "gex": 405998825.1813984
-          },
-          {
-            "strike": 755.0,
-            "gex": 347766376.5413704
-          }
-        ],
-        "refresh_failed": false,
-        "stale": false,
-        "tech": {
-          "21EMA": 765.99,
-          "50MA": 756.86,
-          "63VWAP": 750.66
-        },
-        "detail": true,
-        "expected_move": {
-          "atm_strike": 770.0,
-          "atm_iv": 0.111688,
-          "straddle_move": 13.42,
-          "straddle_move_pct": 0.017424,
-          "iv_1sigma_move": 16.2341,
-          "iv_1sigma_move_pct": 0.021078,
-          "expected_move": 13.42,
-          "expected_move_pct": 0.017424,
-          "expected_move_method": "atm_straddle_mid",
-          "expected_low": 756.77,
-          "expected_high": 783.61
-        },
-        "upstream_change_pct": null
-      },
-      "previous": {
-        "date": "2026-09-03",
-        "price_session_date": "2026-09-03",
-        "expiry": "2026-09-18",
-        "spot": 773.17,
-        "atr14": null,
-        "call_wall": 790.0,
-        "put_wall": 760.0,
-        "gamma_flip": 772.68,
-        "net_gex": 117386765.27,
-        "regime": "NEAR_FLIP",
-        "confidence": "HIGH",
-        "total_oi": null,
-        "n_strikes": null,
-        "detail": false,
-        "stale": false,
-        "session_consistent": false,
-        "time_quality": "UNVERIFIED_HISTORY",
-        "expected_move": null
-      },
-      "multi_expiry": {
-        "count": 4,
-        "positive": 0,
-        "near": 4,
-        "negative": 0,
-        "unknown": 0
-      },
-      "direction": {
-        "direction": "VOLATILE",
-        "score": 59,
-        "confidence": 65,
-        "reasons": [
-          "Gamma Flip近辺",
-          "21EMA上",
-          "63VWAP上"
-        ],
-        "volatility": "LOW"
-      },
-      "analysis": "方向は混在、値幅拡大に注意。基準終値770.19はFlip 770.11の上 下はPut Wall 760.00 上はCall Wall 779.00 2026-09-18までの織込み値幅は約±13.42（1.7%、atm_straddle_mid）。",
-      "plan": {
-        "entry": "Gamma Flipから方向が離れるまで待つ。",
-        "invalid": "Gamma Flip 770.11 終値割れで構造悪化、Put Wall 760.00 割れで支持シナリオ失効",
-        "target": "次のCall Wall 779.00"
-      },
-      "leader": null,
-      "tape": null,
-      "trade_direction_available": false,
-      "limitations": [
-        "OI/IVは観測するがproviderのOI更新時刻は非開示",
-        "約定方向が無いためPut売り/Call買いは断定しない"
-      ]
-    },
-    {
       "ticker": "MRNA",
       "name": "Moderna, Inc.",
       "sector": "Health Technology",
@@ -2567,7 +2569,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -2659,11 +2661,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 8,
         "positive": 0,
-        "near": 3,
+        "near": 5,
         "negative": 0,
-        "unknown": 1
+        "unknown": 3
       },
       "direction": {
         "direction": "VOLATILE",
@@ -2715,7 +2717,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "yfinance_daily_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -2807,21 +2809,22 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 8,
         "positive": 1,
-        "near": 2,
-        "negative": 1,
+        "near": 5,
+        "negative": 2,
         "unknown": 0
       },
       "direction": {
         "direction": "VOLATILE",
-        "score": 53,
+        "score": 47,
         "confidence": 57,
         "reasons": [
           "Gamma Flip近辺",
           "21EMA上",
           "63VWAP上",
-          "上側Wallが近く下側余地が広い"
+          "上側Wallが近く下側余地が広い",
+          "複数満期でFlip下が多数"
         ],
         "volatility": "LOW"
       },
@@ -2865,7 +2868,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "yfinance_daily_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -2957,11 +2960,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 8,
         "positive": 3,
         "near": 1,
-        "negative": 0,
-        "unknown": 0
+        "negative": 1,
+        "unknown": 3
       },
       "direction": {
         "direction": "VOLATILE",
@@ -3015,7 +3018,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -3107,11 +3110,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 6,
         "positive": 1,
         "near": 0,
         "negative": 0,
-        "unknown": 3
+        "unknown": 5
       },
       "direction": {
         "direction": "RANGE",
@@ -3166,7 +3169,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -3258,11 +3261,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 3,
+        "count": 4,
         "positive": 0,
         "near": 0,
         "negative": 0,
-        "unknown": 3
+        "unknown": 4
       },
       "direction": {
         "direction": "RANGE",
@@ -3313,7 +3316,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -3405,11 +3408,11 @@
         "expected_move": null
       },
       "multi_expiry": {
-        "count": 4,
+        "count": 8,
         "positive": 0,
         "near": 0,
         "negative": 0,
-        "unknown": 4
+        "unknown": 8
       },
       "direction": {
         "direction": "RANGE",
@@ -3461,7 +3464,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -3622,7 +3625,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -3765,7 +3768,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -3830,11 +3833,11 @@
       },
       "previous": null,
       "multi_expiry": {
-        "count": 4,
+        "count": 7,
         "positive": 2,
         "near": 0,
         "negative": 0,
-        "unknown": 2
+        "unknown": 5
       },
       "direction": {
         "direction": "UNKNOWN",
@@ -3894,7 +3897,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -4037,7 +4040,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -4176,7 +4179,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -4315,7 +4318,7 @@
         "tech_session_date": "2026-09-04",
         "session_consistent": true,
         "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-05T05:07:40+00:00",
+        "options_observed_at": "2026-09-05T05:56:37+00:00",
         "oi_observed_at": null,
         "oi_basis": "provider_open_interest_update_time_unavailable",
         "expiry": "2026-09-18",
@@ -5281,6 +5284,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 100.56 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 105.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "ACHR",
+      "name": "Archer Aviation Inc Class A",
+      "sector": "Electronic Technology",
+      "industry": "Aerospace & Defense",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 5.71,
+        "atr14": 0.2836,
+        "call_wall": 7.0,
+        "put_wall": 5.0,
+        "gamma_flip": 5.483411527263344,
+        "net_gex": 73860.98,
+        "regime": "NEAR_FLIP",
+        "confidence": "LOW",
+        "total_oi": 50220.0,
+        "n_strikes": 7.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値5.71はFlip 5.48の上 下はPut Wall 5.00 上はCall Wall 7.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 5.48 終値割れで構造悪化、Put Wall 5.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 7.00"
       },
       "leader": null,
       "tape": null,
@@ -7882,6 +7944,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 169.37 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 185.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "ALK",
+      "name": "Alaska Air Group, Inc.",
+      "sector": "Transportation",
+      "industry": "Airlines",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 42.04,
+        "atr14": 1.4443,
+        "call_wall": 45.0,
+        "put_wall": 40.0,
+        "gamma_flip": 41.864521422775404,
+        "net_gex": 43366.86,
+        "regime": "NEAR_FLIP",
+        "confidence": "MEDIUM",
+        "total_oi": 27467.0,
+        "n_strikes": 10.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値42.04はFlip 41.86の上 下はPut Wall 40.00 上はCall Wall 45.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 41.86 終値割れで構造悪化、Put Wall 40.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 45.00"
       },
       "leader": null,
       "tape": null,
@@ -13419,6 +13540,65 @@
       ]
     },
     {
+      "ticker": "BB",
+      "name": "BlackBerry Limited",
+      "sector": "Technology Services",
+      "industry": "Packaged Software",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 7.7,
+        "atr14": 0.37,
+        "call_wall": 8.0,
+        "put_wall": 7.0,
+        "gamma_flip": null,
+        "net_gex": 166892.54,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 96634.0,
+        "n_strikes": 10.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 7.00 上はCall Wall 8.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 7.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 8.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "BBIO",
       "name": "BridgeBio Pharma, Inc.",
       "sector": "Health Technology",
@@ -13702,6 +13882,124 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 23.77 終値割れで構造悪化、Put Wall 20.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 27.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "BCO",
+      "name": "Brink's Company",
+      "sector": "Commercial Services",
+      "industry": "Miscellaneous Commercial Services",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 108.87,
+        "atr14": 3.3179,
+        "call_wall": 140.0,
+        "put_wall": 105.0,
+        "gamma_flip": 90.35137419963466,
+        "net_gex": -80762.23,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 8481.0,
+        "n_strikes": 12.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値108.87はFlip 90.35の上 下はPut Wall 105.00 上はCall Wall 140.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 90.35 終値割れで構造悪化、Put Wall 105.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 140.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "BDC",
+      "name": "Belden Inc.",
+      "sector": "Producer Manufacturing",
+      "industry": "Electrical Products",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 122.28,
+        "atr14": 4.7786,
+        "call_wall": 130.0,
+        "put_wall": 120.0,
+        "gamma_flip": null,
+        "net_gex": 624889.85,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 2869.0,
+        "n_strikes": 14.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 120.00 上はCall Wall 130.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 120.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 130.00"
       },
       "leader": null,
       "tape": null,
@@ -14808,6 +15106,65 @@
       ]
     },
     {
+      "ticker": "BLLN",
+      "name": "BillionToOne, Inc. Class A",
+      "sector": "Health Services",
+      "industry": "Medical/Nursing Services",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 99.39,
+        "atr14": 4.8091,
+        "call_wall": 100.0,
+        "put_wall": 95.0,
+        "gamma_flip": 124.89096504488668,
+        "net_gex": -27044.65,
+        "regime": "NEGATIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 2450.0,
+        "n_strikes": 12.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値99.39はFlip 124.89の下 下はPut Wall 95.00 上はCall Wall 100.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 124.89 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 100.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "BLSH",
       "name": "Bullish",
       "sector": "Technology Services",
@@ -15608,6 +15965,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 104.10 終値割れで構造悪化、Put Wall 130.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 140.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "BOOT",
+      "name": "Boot Barn Holdings, Inc.",
+      "sector": "Retail Trade",
+      "industry": "Apparel/Footwear Retail",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 154.29,
+        "atr14": 6.3304,
+        "call_wall": 160.0,
+        "put_wall": 150.0,
+        "gamma_flip": 123.24955613933251,
+        "net_gex": 336896.04,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 1070.0,
+        "n_strikes": 18.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値154.29はFlip 123.25の上 下はPut Wall 150.00 上はCall Wall 160.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 123.25 終値割れで構造悪化、Put Wall 150.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 160.00"
       },
       "leader": null,
       "tape": null,
@@ -18877,6 +19293,65 @@
       ]
     },
     {
+      "ticker": "CELC",
+      "name": "Celcuity Inc.",
+      "sector": "Health Technology",
+      "industry": "Medical Specialties",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 95.7,
+        "atr14": 3.7213,
+        "call_wall": 100.0,
+        "put_wall": 90.0,
+        "gamma_flip": null,
+        "net_gex": -374782.56,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 8170.0,
+        "n_strikes": 11.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 90.00 上はCall Wall 100.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 90.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 100.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "CELH",
       "name": "Celsius Holdings, Inc.",
       "sector": "Consumer Non-Durables",
@@ -18926,6 +19401,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 30.04 終値割れで構造悪化、Put Wall 30.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 32.50"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "CENX",
+      "name": "Century Aluminum Company",
+      "sector": "Non-Energy Minerals",
+      "industry": "Aluminum",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 46.78,
+        "atr14": 2.3814,
+        "call_wall": 50.0,
+        "put_wall": 45.0,
+        "gamma_flip": 39.79010878133516,
+        "net_gex": 401079.43,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "HIGH",
+        "total_oi": 9364.0,
+        "n_strikes": 20.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値46.78はFlip 39.79の上 下はPut Wall 45.00 上はCall Wall 50.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 39.79 終値割れで構造悪化、Put Wall 45.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 50.00"
       },
       "leader": null,
       "tape": null,
@@ -19232,6 +19766,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 47.42 終値割れで構造悪化、Put Wall 40.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 50.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "CGAU",
+      "name": "Centerra Gold Inc.",
+      "sector": "Non-Energy Minerals",
+      "industry": "Precious Metals",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 22.92,
+        "atr14": 1.0343,
+        "call_wall": 25.0,
+        "put_wall": 22.5,
+        "gamma_flip": null,
+        "net_gex": 109224.16,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 1939.0,
+        "n_strikes": 4.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 22.50 上はCall Wall 25.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 22.50 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 25.00"
       },
       "leader": null,
       "tape": null,
@@ -19560,8 +20153,8 @@
       "name": "Chefs' Warehouse, Inc.",
       "sector": "Distribution Services",
       "industry": "Food Distributors",
-      "source": "HISTORY",
-      "age_days": 9,
+      "source": "SCAN",
+      "age_days": 0,
       "time_quality": "UNVERIFIED_HISTORY",
       "session_date": "2026-09-04",
       "signal": "DATA LOW",
@@ -19570,45 +20163,26 @@
         "同一セッションの価格とOptionsを確認できない"
       ],
       "current": {
-        "date": "2026-08-27",
-        "price_session_date": "2026-08-27",
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
         "expiry": "2026-09-18",
-        "spot": 112.01,
-        "atr14": null,
+        "spot": 114.36,
+        "atr14": 3.5229,
         "call_wall": 115.0,
         "put_wall": 110.0,
         "gamma_flip": null,
-        "net_gex": -42206.92,
+        "net_gex": -79887.62,
         "regime": "UNKNOWN",
         "confidence": "LOW",
-        "total_oi": null,
-        "n_strikes": null,
+        "total_oi": 285.0,
+        "n_strikes": 9.0,
         "detail": false,
         "stale": false,
         "session_consistent": false,
         "time_quality": "UNVERIFIED_HISTORY",
         "expected_move": null
       },
-      "previous": {
-        "date": "2026-08-25",
-        "price_session_date": "2026-08-25",
-        "expiry": "2026-09-18",
-        "spot": 111.78,
-        "atr14": null,
-        "call_wall": 115.0,
-        "put_wall": 110.0,
-        "gamma_flip": null,
-        "net_gex": -39397.44,
-        "regime": "UNKNOWN",
-        "confidence": "LOW",
-        "total_oi": null,
-        "n_strikes": null,
-        "detail": false,
-        "stale": false,
-        "session_consistent": false,
-        "time_quality": "UNVERIFIED_HISTORY",
-        "expected_move": null
-      },
+      "previous": null,
       "multi_expiry": null,
       "direction": {
         "direction": "UNKNOWN",
@@ -19624,6 +20198,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Put Wall 110.00 終値割れで支持シナリオ失効",
         "target": "次のCall Wall 115.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "CHH",
+      "name": "Choice Hotels International, Inc.",
+      "sector": "Consumer Services",
+      "industry": "Hotels/Resorts/Cruise lines",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 100.62,
+        "atr14": 3.3207,
+        "call_wall": 105.0,
+        "put_wall": 100.0,
+        "gamma_flip": 108.265562490252,
+        "net_gex": -414705.47,
+        "regime": "NEGATIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 3311.0,
+        "n_strikes": 11.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値100.62はFlip 108.27の下 下はPut Wall 100.00 上はCall Wall 105.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 108.27 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 105.00"
       },
       "leader": null,
       "tape": null,
@@ -23601,6 +24234,78 @@
       ]
     },
     {
+      "ticker": "CRGY",
+      "name": "Crescent Energy Company Class A",
+      "sector": "Energy Minerals",
+      "industry": "Integrated Oil",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 13.77,
+        "atr14": 0.4584,
+        "call_wall": 14.0,
+        "put_wall": 13.0,
+        "gamma_flip": null,
+        "net_gex": 206621.62,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 7118.0,
+        "n_strikes": 8.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 13.00 上はCall Wall 14.00 Leadershipも上位。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 13.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 14.00"
+      },
+      "leader": {
+        "ticker": "CRGY",
+        "name": "Crescent Energy Company Class A",
+        "leader_score": 84,
+        "strength": 87.0,
+        "rs189": 84.1,
+        "rs63": 73.0,
+        "rs21": 95.7,
+        "role": "PIONEER",
+        "group": "Oil&Gas-Explorers/Producers",
+        "group_phase": "EMERGING",
+        "breakout_status": "NONE",
+        "etf": "XOP"
+      },
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "CRH",
       "name": "CRH public limited company",
       "sector": "Non-Energy Minerals",
@@ -23669,6 +24374,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 92.04 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 100.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "CRK",
+      "name": "Comstock Resources, Inc.",
+      "sector": "Energy Minerals",
+      "industry": "Oil & Gas Production",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 15.26,
+        "atr14": 0.6779,
+        "call_wall": 16.0,
+        "put_wall": 15.0,
+        "gamma_flip": 10.917121381831608,
+        "net_gex": 683851.69,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 22643.0,
+        "n_strikes": 9.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値15.26はFlip 10.92の上 下はPut Wall 15.00 上はCall Wall 16.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 10.92 終値割れで構造悪化、Put Wall 15.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 16.00"
       },
       "leader": null,
       "tape": null,
@@ -25044,6 +25808,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 32.75 終値割れで構造悪化、Put Wall 28.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 34.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "CVI",
+      "name": "CVR Energy, Inc.",
+      "sector": "Energy Minerals",
+      "industry": "Oil Refining/Marketing",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 44.5,
+        "atr14": 2.1321,
+        "call_wall": 45.0,
+        "put_wall": 40.0,
+        "gamma_flip": null,
+        "net_gex": 191314.83,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 4935.0,
+        "n_strikes": 8.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 40.00 上はCall Wall 45.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 40.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 45.00"
       },
       "leader": null,
       "tape": null,
@@ -26996,6 +27819,65 @@
       ]
     },
     {
+      "ticker": "DK",
+      "name": "Delek US Holdings Inc",
+      "sector": "Energy Minerals",
+      "industry": "Oil Refining/Marketing",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 71.86,
+        "atr14": 4.4343,
+        "call_wall": 75.0,
+        "put_wall": 70.0,
+        "gamma_flip": null,
+        "net_gex": 2667605.9,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 14757.0,
+        "n_strikes": 14.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 70.00 上はCall Wall 75.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 70.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 75.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "DKNG",
       "name": "DraftKings, Inc. Class A",
       "sector": "Consumer Services",
@@ -27475,6 +28357,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 110.25 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 130.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "DOCS",
+      "name": "Doximity, Inc. Class A",
+      "sector": "Technology Services",
+      "industry": "Packaged Software",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 26.35,
+        "atr14": 0.9597,
+        "call_wall": 27.5,
+        "put_wall": 25.0,
+        "gamma_flip": null,
+        "net_gex": 654636.35,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 16308.0,
+        "n_strikes": 6.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 25.00 上はCall Wall 27.50。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 25.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 27.50"
       },
       "leader": null,
       "tape": null,
@@ -28750,6 +29691,65 @@
       ]
     },
     {
+      "ticker": "DYN",
+      "name": "Dyne Therapeutics Inc",
+      "sector": "Health Technology",
+      "industry": "Biotechnology",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 24.28,
+        "atr14": 0.9024,
+        "call_wall": 29.0,
+        "put_wall": 22.0,
+        "gamma_flip": null,
+        "net_gex": 24412.04,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 2281.0,
+        "n_strikes": 15.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 22.00 上はCall Wall 29.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 22.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 29.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "EAT",
       "name": "Brinker International, Inc.",
       "sector": "Consumer Services",
@@ -29170,6 +30170,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 107.57 終値割れで構造悪化、Put Wall 100.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 125.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "EE",
+      "name": "Excelerate Energy, Inc. Class A",
+      "sector": "Utilities",
+      "industry": "Gas Distributors",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 40.03,
+        "atr14": 1.6192,
+        "call_wall": 43.0,
+        "put_wall": 35.0,
+        "gamma_flip": 46.8796725834141,
+        "net_gex": -55413.52,
+        "regime": "NEGATIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 1089.0,
+        "n_strikes": 8.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値40.03はFlip 46.88の下 下はPut Wall 35.00 上はCall Wall 43.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 46.88 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 43.00"
       },
       "leader": null,
       "tape": null,
@@ -30765,6 +31824,65 @@
       ]
     },
     {
+      "ticker": "EPR",
+      "name": "EPR Properties",
+      "sector": "Finance",
+      "industry": "Real Estate Investment Trusts",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 59.99,
+        "atr14": 0.9643,
+        "call_wall": 60.0,
+        "put_wall": 55.0,
+        "gamma_flip": 55.23274136948044,
+        "net_gex": 177832.12,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 854.0,
+        "n_strikes": 6.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値59.99はFlip 55.23の上 下はPut Wall 55.00 上はCall Wall 60.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 55.23 終値割れで構造悪化、Put Wall 55.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 60.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "EQH",
       "name": "Equitable Holdings, Inc.",
       "sector": "Finance",
@@ -31322,6 +32440,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 56.32 終値割れで構造悪化、Put Wall 70.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 75.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "ESAB",
+      "name": "ESAB Corporation",
+      "sector": "Producer Manufacturing",
+      "industry": "Industrial Machinery",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 75.02,
+        "atr14": 2.8316,
+        "call_wall": 85.0,
+        "put_wall": 70.0,
+        "gamma_flip": null,
+        "net_gex": -28695.72,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 123.0,
+        "n_strikes": 6.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 70.00 上はCall Wall 85.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 70.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 85.00"
       },
       "leader": null,
       "tape": null,
@@ -32254,6 +33431,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 130.86 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 135.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "EWTX",
+      "name": "Edgewise Therapeutics, Inc.",
+      "sector": "Health Technology",
+      "industry": "Biotechnology",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 43.07,
+        "atr14": 2.1829,
+        "call_wall": 45.0,
+        "put_wall": 40.0,
+        "gamma_flip": 33.76303516547551,
+        "net_gex": 655541.83,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 6252.0,
+        "n_strikes": 18.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値43.07はFlip 33.76の上 下はPut Wall 40.00 上はCall Wall 45.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 33.76 終値割れで構造悪化、Put Wall 40.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 45.00"
       },
       "leader": null,
       "tape": null,
@@ -33869,6 +35105,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 388.90 終値割れで構造悪化、Put Wall 360.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 400.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "FHI",
+      "name": "Federated Hermes, Inc. Class B",
+      "sector": "Finance",
+      "industry": "Investment Managers",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 62.4,
+        "atr14": 1.3643,
+        "call_wall": 65.0,
+        "put_wall": 57.5,
+        "gamma_flip": 52.34411878445712,
+        "net_gex": 4553.54,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 47.0,
+        "n_strikes": 7.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値62.40はFlip 52.34の上 下はPut Wall 57.50 上はCall Wall 65.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 52.34 終値割れで構造悪化、Put Wall 57.50 割れで支持シナリオ失効",
+        "target": "次のCall Wall 65.00"
       },
       "leader": null,
       "tape": null,
@@ -36944,6 +38239,65 @@
       ]
     },
     {
+      "ticker": "GEF",
+      "name": "Greif Inc Class A",
+      "sector": "Process Industries",
+      "industry": "Containers/Packaging",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 85.0,
+        "atr14": 2.11,
+        "call_wall": 95.0,
+        "put_wall": 80.0,
+        "gamma_flip": 62.054600066922085,
+        "net_gex": 68525.75,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 1962.0,
+        "n_strikes": 6.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値85.00はFlip 62.05の上 下はPut Wall 80.00 上はCall Wall 95.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 62.05 終値割れで構造悪化、Put Wall 80.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 95.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "GEHC",
       "name": "GE Healthcare Technologies Inc.",
       "sector": "Health Technology",
@@ -39632,6 +40986,65 @@
       ]
     },
     {
+      "ticker": "HAE",
+      "name": "Haemonetics Corporation",
+      "sector": "Health Technology",
+      "industry": "Medical Specialties",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 102.92,
+        "atr14": 3.47,
+        "call_wall": 105.0,
+        "put_wall": 100.0,
+        "gamma_flip": null,
+        "net_gex": 58508.85,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 1042.0,
+        "n_strikes": 11.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 100.00 上はCall Wall 105.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 100.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 105.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "HAL",
       "name": "Halliburton Company",
       "sector": "Industrial Services",
@@ -40981,6 +42394,65 @@
       ]
     },
     {
+      "ticker": "HP",
+      "name": "Helmerich & Payne, Inc.",
+      "sector": "Industrial Services",
+      "industry": "Contract Drilling",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 44.36,
+        "atr14": 1.6879,
+        "call_wall": 45.0,
+        "put_wall": 42.5,
+        "gamma_flip": 32.999706252447645,
+        "net_gex": 96501.87,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 1535.0,
+        "n_strikes": 9.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値44.36はFlip 33.00の上 下はPut Wall 42.50 上はCall Wall 45.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 33.00 終値割れで構造悪化、Put Wall 42.50 割れで支持シナリオ失効",
+        "target": "次のCall Wall 45.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "HPE",
       "name": "Hewlett Packard Enterprise Co.",
       "sector": "Electronic Technology",
@@ -41245,6 +42717,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 47.47 終値割れで構造悪化、Put Wall 50.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 55.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "HRI",
+      "name": "Herc Holdings, Inc.",
+      "sector": "Finance",
+      "industry": "Finance/Rental/Leasing",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 140.92,
+        "atr14": 7.545,
+        "call_wall": 150.0,
+        "put_wall": 140.0,
+        "gamma_flip": 108.32500660244276,
+        "net_gex": 2871120.81,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 10376.0,
+        "n_strikes": 17.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値140.92はFlip 108.33の上 下はPut Wall 140.00 上はCall Wall 150.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 108.33 終値割れで構造悪化、Put Wall 140.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 150.00"
       },
       "leader": null,
       "tape": null,
@@ -45809,6 +47340,65 @@
       ]
     },
     {
+      "ticker": "KBR",
+      "name": "KBR, Inc.",
+      "sector": "Technology Services",
+      "industry": "Information Technology Services",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 36.82,
+        "atr14": 0.8636,
+        "call_wall": 37.5,
+        "put_wall": 35.0,
+        "gamma_flip": 34.333117998005825,
+        "net_gex": 2266926.53,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 17261.0,
+        "n_strikes": 9.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値36.82はFlip 34.33の上 下はPut Wall 35.00 上はCall Wall 37.50。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 34.33 終値割れで構造悪化、Put Wall 35.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 37.50"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "KDP",
       "name": "Keurig Dr Pepper Inc.",
       "sector": "Consumer Non-Durables",
@@ -47818,6 +49408,65 @@
       ]
     },
     {
+      "ticker": "LAZ",
+      "name": "Lazard Inc",
+      "sector": "Finance",
+      "industry": "Investment Banks/Brokers",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 45.0,
+        "atr14": 1.6114,
+        "call_wall": 50.0,
+        "put_wall": 40.0,
+        "gamma_flip": 37.50522951967146,
+        "net_gex": 262217.58,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 3585.0,
+        "n_strikes": 5.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値45.00はFlip 37.51の上 下はPut Wall 40.00 上はCall Wall 50.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 37.51 終値割れで構造悪化、Put Wall 40.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 50.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "LB",
       "name": "LandBridge Company LLC Class A",
       "sector": "Commercial Services",
@@ -48855,6 +50504,65 @@
       ]
     },
     {
+      "ticker": "LIVN",
+      "name": "LivaNova Plc",
+      "sector": "Health Technology",
+      "industry": "Medical Specialties",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 81.92,
+        "atr14": 2.1836,
+        "call_wall": 85.0,
+        "put_wall": 80.0,
+        "gamma_flip": 86.19234083276505,
+        "net_gex": -2742.21,
+        "regime": "NEGATIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 61.0,
+        "n_strikes": 7.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値81.92はFlip 86.19の下 下はPut Wall 80.00 上はCall Wall 85.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 86.19 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 85.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "LKQ",
       "name": "LKQ Corporation",
       "sector": "Consumer Durables",
@@ -49627,6 +51335,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 360.70 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 370.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "LPX",
+      "name": "Louisiana-Pacific Corporation",
+      "sector": "Non-Energy Minerals",
+      "industry": "Forest Products",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 68.17,
+        "atr14": 2.4186,
+        "call_wall": 75.0,
+        "put_wall": 65.0,
+        "gamma_flip": 70.41751850024258,
+        "net_gex": -9069.76,
+        "regime": "NEAR_FLIP",
+        "confidence": "LOW",
+        "total_oi": 296.0,
+        "n_strikes": 8.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値68.17はFlip 70.42の下 下はPut Wall 65.00 上はCall Wall 75.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 70.42 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 75.00"
       },
       "leader": null,
       "tape": null,
@@ -52201,6 +53968,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 1987.12 終値割れで構造悪化、Put Wall 1900.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 2460.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "MEOH",
+      "name": "Methanex Corporation",
+      "sector": "Process Industries",
+      "industry": "Chemicals: Specialty",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 58.72,
+        "atr14": 2.2971,
+        "call_wall": 60.0,
+        "put_wall": 50.0,
+        "gamma_flip": 56.03008300905629,
+        "net_gex": 77121.58,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 2807.0,
+        "n_strikes": 7.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値58.72はFlip 56.03の上 下はPut Wall 50.00 上はCall Wall 60.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 56.03 終値割れで構造悪化、Put Wall 50.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 60.00"
       },
       "leader": null,
       "tape": null,
@@ -55367,6 +57193,65 @@
       ]
     },
     {
+      "ticker": "MTH",
+      "name": "Meritage Homes Corporation",
+      "sector": "Finance",
+      "industry": "Real Estate Development",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 67.33,
+        "atr14": 2.1393,
+        "call_wall": 80.0,
+        "put_wall": 65.0,
+        "gamma_flip": 72.34451735250539,
+        "net_gex": -132488.9,
+        "regime": "NEGATIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 1816.0,
+        "n_strikes": 17.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値67.33はFlip 72.34の下 下はPut Wall 65.00 上はCall Wall 80.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 72.34 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 80.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "MTN",
       "name": "Vail Resorts, Inc.",
       "sector": "Consumer Services",
@@ -55808,6 +57693,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 81.45 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 75.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "MYRG",
+      "name": "MYR Group Inc.",
+      "sector": "Industrial Services",
+      "industry": "Engineering & Construction",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 286.59,
+        "atr14": 14.1364,
+        "call_wall": 350.0,
+        "put_wall": 280.0,
+        "gamma_flip": null,
+        "net_gex": -107752.01,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 324.0,
+        "n_strikes": 13.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 280.00 上はCall Wall 350.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 280.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 350.00"
       },
       "leader": null,
       "tape": null,
@@ -57444,6 +59388,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 331.17 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 390.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "NSIT",
+      "name": "Insight Enterprises, Inc.",
+      "sector": "Technology Services",
+      "industry": "Information Technology Services",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 160.98,
+        "atr14": 4.8564,
+        "call_wall": 170.0,
+        "put_wall": 155.0,
+        "gamma_flip": null,
+        "net_gex": -68218.77,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 189.0,
+        "n_strikes": 12.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 155.00 上はCall Wall 170.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 155.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 170.00"
       },
       "leader": null,
       "tape": null,
@@ -59251,6 +61254,65 @@
         "breakout_status": "NONE",
         "etf": "CIBR"
       },
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "OLLI",
+      "name": "Ollie's Bargain Outlet Holdings Inc",
+      "sector": "Retail Trade",
+      "industry": "Department Stores",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 76.565,
+        "atr14": 3.5971,
+        "call_wall": 80.0,
+        "put_wall": 75.0,
+        "gamma_flip": 54.45531380160874,
+        "net_gex": 2894733.5,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "MEDIUM",
+        "total_oi": 21331.0,
+        "n_strikes": 9.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値76.56はFlip 54.46の上 下はPut Wall 75.00 上はCall Wall 80.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 54.46 終値割れで構造悪化、Put Wall 75.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 80.00"
+      },
+      "leader": null,
       "tape": null,
       "trade_direction_available": false,
       "limitations": [
@@ -61085,6 +63147,65 @@
       ]
     },
     {
+      "ticker": "PAY",
+      "name": "Paymentus Holdings, Inc Class A",
+      "sector": "Commercial Services",
+      "industry": "Miscellaneous Commercial Services",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 36.19,
+        "atr14": 1.7269,
+        "call_wall": 37.0,
+        "put_wall": 35.0,
+        "gamma_flip": null,
+        "net_gex": 38940.32,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 555.0,
+        "n_strikes": 21.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 35.00 上はCall Wall 37.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 35.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 37.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "PAYX",
       "name": "Paychex, Inc.",
       "sector": "Technology Services",
@@ -62639,6 +64760,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Put Wall 65.00 終値割れで支持シナリオ失効",
         "target": "次のCall Wall 80.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "PJT",
+      "name": "PJT Partners, Inc. Class A",
+      "sector": "Finance",
+      "industry": "Investment Banks/Brokers",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 182.73,
+        "atr14": 5.4892,
+        "call_wall": 185.0,
+        "put_wall": 170.0,
+        "gamma_flip": null,
+        "net_gex": 169630.78,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 483.0,
+        "n_strikes": 15.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 170.00 上はCall Wall 185.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 170.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 185.00"
       },
       "leader": null,
       "tape": null,
@@ -64707,6 +66887,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Put Wall 70.00 終値割れで支持シナリオ失効",
         "target": "次のCall Wall 75.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "PTEN",
+      "name": "Patterson-UTI Energy, Inc.",
+      "sector": "Energy Minerals",
+      "industry": "Oil & Gas Production",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 12.42,
+        "atr14": 0.5379,
+        "call_wall": 13.0,
+        "put_wall": 12.0,
+        "gamma_flip": null,
+        "net_gex": 680005.57,
+        "regime": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "total_oi": 17293.0,
+        "n_strikes": 8.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 12.00 上はCall Wall 13.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 12.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 13.00"
       },
       "leader": null,
       "tape": null,
@@ -70305,6 +72544,65 @@
       ]
     },
     {
+      "ticker": "SITE",
+      "name": "SiteOne Landscape Supply, Inc.",
+      "sector": "Distribution Services",
+      "industry": "Wholesale Distributors",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 100.58,
+        "atr14": 2.8813,
+        "call_wall": 110.0,
+        "put_wall": 95.0,
+        "gamma_flip": 97.7507735396986,
+        "net_gex": 3556.35,
+        "regime": "NEAR_FLIP",
+        "confidence": "LOW",
+        "total_oi": 110.0,
+        "n_strikes": 11.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値100.58はFlip 97.75の上 下はPut Wall 95.00 上はCall Wall 110.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 97.75 終値割れで構造悪化、Put Wall 95.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 110.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "SITM",
       "name": "SiTime Corporation",
       "sector": "Electronic Technology",
@@ -70451,6 +72749,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 128.42 終値割れで構造悪化、Put Wall 90.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 135.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "SKY",
+      "name": "Champion Homes, Inc.",
+      "sector": "Consumer Durables",
+      "industry": "Homebuilding",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 87.76,
+        "atr14": 2.7186,
+        "call_wall": 95.0,
+        "put_wall": 85.0,
+        "gamma_flip": 79.56436880812976,
+        "net_gex": 31360.97,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 337.0,
+        "n_strikes": 8.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値87.76はFlip 79.56の上 下はPut Wall 85.00 上はCall Wall 95.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 79.56 終値割れで構造悪化、Put Wall 85.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 95.00"
       },
       "leader": null,
       "tape": null,
@@ -76626,6 +78983,65 @@
       ]
     },
     {
+      "ticker": "TPC",
+      "name": "Tutor Perini Corporation",
+      "sector": "Industrial Services",
+      "industry": "Engineering & Construction",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 88.21,
+        "atr14": 3.345,
+        "call_wall": 100.0,
+        "put_wall": 85.0,
+        "gamma_flip": null,
+        "net_gex": 18304.33,
+        "regime": "UNKNOWN",
+        "confidence": "LOW",
+        "total_oi": 402.0,
+        "n_strikes": 10.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。下はPut Wall 85.00 上はCall Wall 100.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Put Wall 85.00 終値割れで支持シナリオ失効",
+        "target": "次のCall Wall 100.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
       "ticker": "TPG",
       "name": "TPG Inc Class A",
       "sector": "Finance",
@@ -76850,6 +79266,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Gamma Flip 122.59 終値割れで構造悪化、Put Wall 120.00 割れで支持シナリオ失効",
         "target": "次のCall Wall 125.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "TREX",
+      "name": "Trex Company, Inc.",
+      "sector": "Non-Energy Minerals",
+      "industry": "Forest Products",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 45.63,
+        "atr14": 1.6243,
+        "call_wall": 47.5,
+        "put_wall": 45.0,
+        "gamma_flip": 41.34710561313548,
+        "net_gex": 14087.59,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 292.0,
+        "n_strikes": 10.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値45.63はFlip 41.35の上 下はPut Wall 45.00 上はCall Wall 47.50。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 41.35 終値割れで構造悪化、Put Wall 45.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 47.50"
       },
       "leader": null,
       "tape": null,
@@ -79546,6 +82021,65 @@
         "entry": "Gamma Flipから方向が離れるまで待つ。",
         "invalid": "Put Wall 110.00 終値割れで支持シナリオ失効",
         "target": "次のCall Wall 145.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "UNF",
+      "name": "UniFirst Corporation",
+      "sector": "Consumer Services",
+      "industry": "Other Consumer Services",
+      "source": "SCAN",
+      "age_days": 0,
+      "time_quality": "UNVERIFIED_HISTORY",
+      "session_date": "2026-09-04",
+      "signal": "DATA LOW",
+      "score": 0,
+      "reasons": [
+        "同一セッションの価格とOptionsを確認できない"
+      ],
+      "current": {
+        "date": "2026-09-05",
+        "price_session_date": "2026-09-05",
+        "expiry": "2026-09-18",
+        "spot": 275.17,
+        "atr14": 5.52,
+        "call_wall": 280.0,
+        "put_wall": 270.0,
+        "gamma_flip": 238.3970963536239,
+        "net_gex": -30368.92,
+        "regime": "POSITIVE_GAMMA",
+        "confidence": "LOW",
+        "total_oi": 101.0,
+        "n_strikes": 9.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "UNVERIFIED_HISTORY",
+        "expected_move": null
+      },
+      "previous": null,
+      "multi_expiry": null,
+      "direction": {
+        "direction": "UNKNOWN",
+        "score": 50,
+        "confidence": 0,
+        "reasons": [
+          "同一セッションの価格/Options整合を確認できない"
+        ],
+        "volatility": "UNKNOWN"
+      },
+      "analysis": "時間整合を確認できず方向判定を保留。基準終値275.17はFlip 238.40の上 下はPut Wall 270.00 上はCall Wall 280.00。",
+      "plan": {
+        "entry": "Gamma Flipから方向が離れるまで待つ。",
+        "invalid": "Gamma Flip 238.40 終値割れで構造悪化、Put Wall 270.00 割れで支持シナリオ失効",
+        "target": "次のCall Wall 280.00"
       },
       "leader": null,
       "tape": null,
