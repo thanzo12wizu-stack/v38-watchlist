@@ -1,0 +1,71 @@
+name: Astra V38 isolated source and portfolio audit
+on:
+  push:
+    branches: [research/astra-v38-full-audit-20260905]
+    paths:
+      - leadership/research/astra_audit_20260905/remote_audit.py
+      - .github/workflows/astra-v38-audit.yml
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: astra-v38-research-audit-20260905
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/research/astra-v38-full-audit-20260905'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: 898a684142239fa77ce6dd28b2c35b43e3b188ec
+          path: research_source
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install pandas==3.0.5 numpy==2.4.6 scipy==1.17.1 yfinance==1.7.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: rsi-strong-stock-threshold-interaction-audit
+          path: frozen/reset
+          github-token: ${{ github.token }}
+          run-id: 33130536827
+      - uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: frozen/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+      - name: Reproduce and audit with pinned source and packages
+        run: python leadership/research/astra_audit_20260905/remote_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astra-v38-full-audit-20260905
+          path: audit_output/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve completed audit evidence on research branch only
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/research/astra-v38-full-audit-20260905
+          destination=leadership/research/astra_audit_20260905/results
+          mkdir -p "$destination"
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          dest=Path('leadership/research/astra_audit_20260905/results')
+          for p in Path('audit_output').iterdir():
+              if p.is_file() and not p.name.endswith('.pkl.gz'):
+                  shutil.copy2(p,dest/p.name)
+          PY
+          git config user.name 'V38 Research Audit'
+          git config user.email 'audit@users.noreply.github.com'
+          git add -- "$destination"
+          git diff --cached --quiet && exit 0
+          git commit -m 'research: preserve Astra audit results and provenance'
+          git push origin HEAD:refs/heads/research/astra-v38-full-audit-20260905
