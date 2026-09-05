@@ -48,6 +48,27 @@ def core_entry_map(core_intervals: pd.DataFrame) -> dict[pd.Timestamp, set[str]]
     return out
 
 
+def core_held_map(core_intervals: pd.DataFrame, idx: pd.DatetimeIndex) -> dict[pd.Timestamp, set[str]]:
+    adds: dict[pd.Timestamp, set[str]] = {}
+    removes: dict[pd.Timestamp, set[str]] = {}
+    if not core_intervals.empty:
+        for r in core_intervals.itertuples(index=False):
+            sym = str(r.symbol)
+            en = pd.Timestamp(r.entry_date)
+            exd = pd.Timestamp(r.exit_date)
+            adds.setdefault(en, set()).add(sym)
+            if not bool(getattr(r, "open_end", False)):
+                removes.setdefault(exd, set()).add(sym)
+    held: set[str] = set()
+    out: dict[pd.Timestamp, set[str]] = {}
+    for d0 in idx:
+        d = pd.Timestamp(d0)
+        held.difference_update(removes.get(d, set()))
+        held.update(adds.get(d, set()))
+        out[d] = set(held)
+    return out
+
+
 def simulate_probe(
     capacity: int,
     gate: str,
@@ -63,6 +84,7 @@ def simulate_probe(
     intervals: list[dict[str, Any]] = []
     ipos = {pd.Timestamp(d): i for i, d in enumerate(idx)}
     core_entries = core_entry_map(core_intervals)
+    core_held = core_held_map(core_intervals, idx)
     promoted = expired = stopped = red_exits = 0
 
     def close_probe(sym: str, d: pd.Timestamp, reason: str) -> None:
@@ -95,7 +117,6 @@ def simulate_probe(
             for sym in list(pos):
                 close_probe(sym, d, "RED")
         else:
-            # Promotion frees a probe seat as soon as the real DDV20 Core takes it.
             for sym in list(pos):
                 if sym in core_entries.get(d, set()):
                     close_probe(sym, d, "PROMOTED_CORE")
@@ -122,8 +143,7 @@ def simulate_probe(
                 break
             if sym in pos:
                 continue
-            # If Core already owns it on the entry date, no probe seat is needed.
-            if sym in core_entries.get(d, set()):
+            if sym in core_held.get(d, set()):
                 continue
             dv = px(dvol, prev, sym, None)
             if dv is None or dv < LIQUIDITY_FLOOR:
@@ -218,7 +238,7 @@ def main() -> None:
     meta, matrices = ex.build_inputs_ext(root, args.analysis_start, args.analysis_end, args.max_tickers, args.batch_size)
     peer_ctx = loo.build_leave_one_out_scores(root, matrices)
     ctx = stage.build_signal_context(root, matrices)
-    core_attack, core_selective, early_by_score = stage.precompute_candidates(meta, matrices, peer_ctx, ctx)
+    _core_attack, _core_selective, early_by_score = stage.precompute_candidates(meta, matrices, peer_ctx, ctx)
     idx = pd.DatetimeIndex(meta["analysis_idx"])
 
     print("TRACE CORE DDV20", flush=True)
@@ -236,7 +256,7 @@ def main() -> None:
             ent, iv, diag = simulate_probe(capacity, gate, meta, matrices, early_by_score[RANKER], core_iv)
             ent.to_csv(out / f"entries_{gate}_cap{capacity}.csv", index=False)
             diags.append(diag)
-            for name, evs in events.items():
+            for _name, evs in events.items():
                 for _, ev in evs.iterrows():
                     all_rows.append(event_row(ev, iv, core_iv, capacity, gate))
 
@@ -265,6 +285,7 @@ def main() -> None:
             "max_days": MAX_DAYS, "capacities": list(CAPACITIES), "gates": list(GATES),
             "portfolio_budget_note": "shadow capture audit; intended later portfolio budget is one Early slot total split equally across probes",
             "preemption": False,
+            "core_overlap": "existing DDV20 Core holdings are excluded from probe candidates; same-day Core entry promotes/frees a probe seat",
         },
         "core_diag": core_diag, "focus": focus.to_dict(orient="records"), "diagnostics": diags,
     }
