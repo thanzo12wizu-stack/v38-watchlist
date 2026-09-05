@@ -36,9 +36,11 @@ jobs:
       - name: Preflight tests
         run: |
           python -m py_compile build_dashboard.py tools/build_options_positioning.py \
-            tools/build_options_positioning_directional.py tools/render_options_html.py
+            tools/build_options_positioning_directional.py tools/build_options_intelligence.py \
+            tools/render_options_html.py
           pytest -q tests/test_dashboard_build_regressions.py \
-            tests/test_options_positioning_quality.py
+            tests/test_options_positioning_quality.py \
+            tests/test_options_intelligence.py
 
       - name: Build options positioning
         env:
@@ -46,6 +48,8 @@ jobs:
           V38_OPT_JSON: options_positioning.json
           V38_OPT_HISTORY: options_history.csv
           V38_OPT_CACHE: options_cache
+          V38_OPT_INTEL_JSON: options_intelligence.json
+          V38_OPT_INTEL_HISTORY: options_intelligence_history.csv
           # 対象。空なら state.json の picks/hold（Core 12）を使う。
           V38_OPT_TICKERS: ''
           V38_OPT_MAX_EXPIRY: '4'
@@ -194,6 +198,10 @@ jobs:
             python tools/render_options_html.py
           fi
 
+          # No extra provider calls. Merge current detail + rotating broad scan into
+          # the standalone research page payload and persist daily signal history.
+          python tools/build_options_intelligence.py
+
       - name: Commit and refresh dashboard
         shell: bash
         env:
@@ -203,7 +211,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for f in options_positioning.json options_history.csv \
-                   options-positioning.html options_scan_history.csv options_scan_state.json; do
+                   options-positioning.html options_scan_history.csv options_scan_state.json \
+                   options_intelligence.json options_intelligence_history.csv; do
             [[ -f "$f" ]] && git add -- "$f"
           done
           [[ -d options_cache ]] && git add -A options_cache || true
