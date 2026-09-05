@@ -62,8 +62,36 @@ def safe_parent_map(etf_close: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     mini = argparse.ArgumentParser(add_help=False)
     mini.add_argument('--cache-dir', type=Path, required=True)
+    mini.add_argument('--firsttrust-holdings', type=Path)
+    mini.add_argument('--etfcom-holdings', type=Path)
     known, rest = mini.parse_known_args()
     close, volume, cache_diag = _read_cache(known.cache_dir)
+
+    original_norm_members = base.norm_members
+    ft = pd.DataFrame(columns=['sector_etf','symbol','weight_pct','source'])
+    ec = pd.DataFrame(columns=['sector_etf','symbol','weight_pct','source'])
+    if known.firsttrust_holdings and known.firsttrust_holdings.exists():
+        ft = original_norm_members([(known.firsttrust_holdings, 'FIRSTTRUST_EXACT_SUPPLEMENT')])
+    if known.etfcom_holdings and known.etfcom_holdings.exists():
+        ec = original_norm_members([(known.etfcom_holdings, 'ETFCOM_VALIDATED_SUPPLEMENT')])
+
+    def supplemented_norm_members(parts):
+        """Preserve all existing memberships; fill only themes with zero rows."""
+        members = original_norm_members(parts)
+        candidates = sorted(set(ft.sector_etf.astype(str)) | set(ec.sector_etf.astype(str)))
+        added = []
+        for ticker in candidates:
+            if (members.sector_etf == ticker).any():
+                continue
+            g = ft[ft.sector_etf == ticker].copy()
+            if len(g) < 5:
+                g = ec[ec.sector_etf == ticker].copy()
+            if len(g) >= 5:
+                added.append(g)
+        if added:
+            members = pd.concat([members, *added], ignore_index=True)
+            members = members.drop_duplicates(['sector_etf','symbol'], keep='first').reset_index(drop=True)
+        return members
 
     def cached_download(symbols: list[str], start: str, end: str, batch_size: int):
         requested = list(dict.fromkeys(symbols))
@@ -89,6 +117,7 @@ def main() -> None:
         }
         return {'close': c, 'volume': v}, diag
 
+    base.norm_members = supplemented_norm_members
     base.pl.download_ohlcv = cached_download
     base.parent_map = safe_parent_map
 
