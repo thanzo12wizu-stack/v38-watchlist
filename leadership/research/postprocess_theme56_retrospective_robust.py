@@ -44,22 +44,27 @@ def mbb_mean(x: np.ndarray, block: int, reps: int = 3000, seed: int = 7):
     x = np.asarray(x, float); x = x[np.isfinite(x)]
     n = len(x)
     if n < max(20, block * 2): return {'ci95':[None,None], 'p_two':None}
-    rng = np.random.default_rng(seed); vals=[]; block=max(2,min(block,n))
-    for _ in range(reps):
-        out=[]
-        while len(out) < n:
-            st=int(rng.integers(0,n)); idx=(st+np.arange(block))%n; out.extend(x[idx].tolist())
-        vals.append(float(np.mean(out[:n])))
-    a=np.asarray(vals); ci=np.quantile(a,[.025,.975]); p=2*min(np.mean(a<=0),np.mean(a>=0)); p=min(1.0,float(p))
+    block = max(2, min(block, n))
+    rng = np.random.default_rng(seed)
+    nblocks = int(math.ceil(n / block))
+    starts = rng.integers(0, n, size=(reps, nblocks))
+    offsets = np.arange(block, dtype=int)
+    idx = (starts[:, :, None] + offsets[None, None, :]) % n
+    idx = idx.reshape(reps, -1)[:, :n]
+    vals = x[idx].mean(axis=1)
+    ci=np.quantile(vals,[.025,.975]); p=2*min(np.mean(vals<=0),np.mean(vals>=0)); p=min(1.0,float(p))
     return {'ci95':[float(ci[0]),float(ci[1])], 'p_two':p}
 
 
 def cluster_ci(df:pd.DataFrame,col:str,cluster:str,reps:int=3000,seed:int=11):
-    z=df[[cluster,col]].dropna(); keys=z[cluster].drop_duplicates().tolist()
-    if len(keys)<8:return [None,None]
-    groups={k:z.loc[z[cluster]==k,col].to_numpy(float) for k in keys}; rng=np.random.default_rng(seed); vals=[]
-    for _ in range(reps):
-        draw=rng.choice(keys,len(keys),replace=True); a=np.concatenate([groups[k] for k in draw]); vals.append(float(np.mean(a)))
+    z=df[[cluster,col]].dropna()
+    agg=z.groupby(cluster,sort=False)[col].agg(['sum','count'])
+    if len(agg)<8:return [None,None]
+    sums=agg['sum'].to_numpy(float); counts=agg['count'].to_numpy(float); k=len(agg)
+    rng=np.random.default_rng(seed)
+    draw=rng.integers(0,k,size=(reps,k))
+    numer=sums[draw].sum(axis=1); denom=counts[draw].sum(axis=1)
+    vals=numer/denom
     q=np.quantile(vals,[.025,.975]); return [float(q[0]),float(q[1])]
 
 
@@ -68,12 +73,12 @@ def continuous(panel:pd.DataFrame):
     for feat in FEATURES:
         if feat not in d:continue
         for h in H:
-            target=f'fwd_excess_{h}d'; vals=[]; dates=[]
-            for dt,g in d.groupby('date',sort=True):
+            target=f'fwd_excess_{h}d'; vals=[]
+            for _,g in d.groupby('date',sort=True):
                 z=g[[feat,target]].dropna()
                 if len(z)>=20 and z[feat].nunique()>=5:
                     r=stats.spearmanr(z[feat],z[target]).statistic
-                    if np.isfinite(r): vals.append(float(r)); dates.append(dt)
+                    if np.isfinite(r): vals.append(float(r))
             a=np.asarray(vals,float)
             if len(a)<30:continue
             maxlags=min(max(1,h),len(a)-1)
