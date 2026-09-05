@@ -9,25 +9,62 @@
 </head>
 <body>
 <main class="wrap">
-  <div class="top">
-    <div><h1>Options Intelligence</h1><p>主導株の「上に余地があるか / 下に支持があるか / Wall突破後に加速しやすいか」を、既存V38とは別建てで観測する研究ページ。</p></div>
-    <div id="stamp" class="stamp">loading…</div>
+  <header class="topbar">
+    <div>
+      <h1>Options Intelligence</h1>
+      <p>主導株とオプション配置を重ねて、「今日どこを見るか」を絞る研究ページ。</p>
+    </div>
+    <div id="stamp" class="stamp">読み込み中…</div>
+  </header>
+
+  <section class="searchHero" aria-label="銘柄検索">
+    <div class="searchTitle">銘柄を調べる</div>
+    <div class="searchRow">
+      <div class="searchBox">
+        <input id="search" autocomplete="off" spellcheck="false" placeholder="Ticker / 会社名 / Sector 例: MU, Micron, Semiconductor">
+        <div id="suggestions" class="suggestions" hidden></div>
+      </div>
+      <button id="searchBtn" class="searchBtn">検索</button>
+    </div>
+    <div class="searchHint">全ユニバースを検索。Options未取得の銘柄も「銘柄は存在 / データ未取得」と表示します。</div>
+  </section>
+
+  <section id="selectedSection" class="selectedSection" hidden>
+    <div class="sectionHead"><div><span class="eyebrow">SEARCH RESULT</span><h2>銘柄分析</h2></div><button id="closeSelected" class="ghostBtn">閉じる</button></div>
+    <div id="selected"></div>
+  </section>
+
+  <section class="marketStrip">
+    <div><span>主導株データ</span><b id="leaderAsOf">—</b></div>
+    <div><span>Optionsデータ</span><b id="optionsAsOf">—</b></div>
+    <div><span>市場状態</span><b id="marketState">—</b></div>
+  </section>
+
+  <section>
+    <div class="sectionHead">
+      <div><span class="eyebrow">TODAY'S LEADERS</span><h2>見るべきリーダー</h2></div>
+      <p>Leadershipの強さにOptions配置を上乗せ。主導株判定そのものは変更しません。</p>
+    </div>
+    <div id="leaders" class="cardGrid"><div class="loading">読み込み中…</div></div>
+  </section>
+
+  <section>
+    <div class="sectionHead">
+      <div><span class="eyebrow">BULLISH OPTIONS SETUPS</span><h2>上方向が強い配置</h2></div>
+      <p>新鮮なOptions観測だけから、上方向の配置が強い順。</p>
+    </div>
+    <div id="bullish" class="cardGrid"><div class="loading">読み込み中…</div></div>
+  </section>
+
+  <details class="allDetails">
+    <summary>その他のOptions観測を見る</summary>
+    <div id="allRecords" class="allList"></div>
+  </details>
+
+  <div class="footnote">
+    このページは既存V38の読み取り専用補助です。V38ランキング・Market Mode・売買ルールへ逆流しません。Options側はOI×推定GammaのPositioning Proxyで、Put Wall/Call Wallが必ず支持・抵抗になるとは限りません。無料データ経路ではPut売り/買い、Call売り/買い、Sweep/Blockなど実約定方向は判別できないため、表示しません。
   </div>
-  <div class="toolbar">
-    <input id="search" class="search" type="search" placeholder="Ticker / 会社名 / Sector検索 例: MU / semiconductor">
-    <button class="filter on" data-signal="ALL">ALL</button>
-    <button class="filter" data-signal="ACCELERATION">ACCEL</button>
-    <button class="filter" data-signal="SUPPORTIVE">SUPPORT</button>
-    <button class="filter" data-signal="BREAKOUT WATCH">BREAKOUT</button>
-    <button class="filter" data-signal="NEUTRAL">NEUTRAL</button>
-    <button class="filter" data-signal="HEADWIND">HEADWIND</button>
-  </div>
-  <div id="summary" class="summary"></div>
-  <div class="section"><h2>Options Edge Map</h2><small>研究用判定。V38ランキング/売買ルールには未反映。</small></div>
-  <div id="status" class="loading">データを統合中…</div>
-  <div id="grid" class="grid"></div>
-  <button id="more" class="more" hidden>さらに表示</button>
-  <div class="foot">重要: 現行の無料データ経路で観測できるのは主にOI・IV・推定Gamma。<b>Put売り/Put買い、Call売り/Call買い、Sweep/Block、大口premiumの売買方向は判別できない</b>ため、方向を捏造しない。ページ上の「支持/抵抗/加速」はPositioning Proxyと価格履歴からの研究用ヒューリスティックで、Put Wallが床、Call Wallが天井であることを保証しない。Gamma Flip割れではむしろ値動きが増幅する場合がある。</div>
 </main>
 <script src="./options-intelligence.js" defer></script>
-</body></html>
+</body>
+</html>
