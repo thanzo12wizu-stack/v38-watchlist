@@ -71,10 +71,54 @@ def _attempt(batch: list[tuple[str, str]], start: str, end: str, retries: int = 
     return {}, {}, last
 
 
+def _fill_zero_member_themes(
+    members: pd.DataFrame,
+    themes: list[str],
+    firsttrust_holdings: Path | None,
+    etfcom_holdings: Path | None,
+) -> tuple[pd.DataFrame, dict[str, str]]:
+    """Fill only themes that have zero rows in the original research merge.
+
+    Existing theme membership is deliberately left untouched. For a missing theme,
+    prefer issuer/First Trust data when available; otherwise use the already
+    validated ETF.com current-membership file. This remains current-membership
+    retrospective data and must never be labeled PIT.
+    """
+    missing = [t for t in themes if not (members.sector_etf == t).any()]
+    if not missing:
+        return members, {}
+
+    ft = pd.DataFrame(columns=members.columns)
+    ec = pd.DataFrame(columns=members.columns)
+    if firsttrust_holdings and firsttrust_holdings.exists():
+        ft = base.norm_members([(firsttrust_holdings, 'FIRSTTRUST_EXACT_SUPPLEMENT')])
+    if etfcom_holdings and etfcom_holdings.exists():
+        ec = base.norm_members([(etfcom_holdings, 'ETFCOM_VALIDATED_SUPPLEMENT')])
+
+    added = []
+    source_by_theme: dict[str, str] = {}
+    for t in missing:
+        g = ft[ft.sector_etf == t].copy()
+        source = 'FIRSTTRUST_EXACT_SUPPLEMENT'
+        if len(g) < 5:
+            g = ec[ec.sector_etf == t].copy()
+            source = 'ETFCOM_VALIDATED_SUPPLEMENT'
+        if len(g) >= 5:
+            added.append(g)
+            source_by_theme[t] = source
+
+    if added:
+        members = pd.concat([members, *added], ignore_index=True)
+        members = members.drop_duplicates(['sector_etf', 'symbol'], keep='first').reset_index(drop=True)
+    return members, source_by_theme
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     for a in ('config', 'base', 'expansion', 'fallback', 'dram', 'output'):
         ap.add_argument('--' + a.replace('_', '-'), dest=a, type=Path, required=True)
+    ap.add_argument('--firsttrust-holdings', type=Path)
+    ap.add_argument('--etfcom-holdings', type=Path)
     ap.add_argument('--start', default='2022-01-01')
     ap.add_argument('--end', default='2026-09-05')
     ap.add_argument('--shard', type=int, required=True)
@@ -92,6 +136,10 @@ def main() -> None:
         (args.fallback, 'VALIDATED_FALLBACK'),
     ])
     members = members[members.sector_etf.isin(themes)]
+    members, supplemental_sources = _fill_zero_member_themes(
+        members, themes, args.firsttrust_holdings, args.etfcom_holdings
+    )
+
     requested = sorted(set(members.symbol) | set(themes) | {'SPY', *base.SECTORS})
     shard_symbols = [s for i, s in enumerate(requested) if i % args.shards == args.shard]
 
@@ -142,8 +190,10 @@ def main() -> None:
 
     missing_final = sorted(set(shard_symbols) - set(common))
     diag = {
-        'schema': 1,
+        'schema': 2,
         'research_only': True,
+        'membership_evidence': 'CURRENT_MEMBERSHIP_RETROSPECTIVE_NOT_PIT',
+        'supplemental_zero_member_themes': supplemental_sources,
         'shard': args.shard,
         'shards': args.shards,
         'requested': len(shard_symbols),
