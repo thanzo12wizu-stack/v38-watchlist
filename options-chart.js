@@ -52,7 +52,8 @@ function addLine(chart, data, title, opts = {}) {
   if (!data?.length) return null;
   const lib = L();
   const s = chart.addSeries(lib.LineSeries, {
-    title,
+    title: opts.hideTitle ? '' : title,
+    priceScaleId: opts.priceScaleId || 'right',
     lineWidth: opts.lineWidth ?? 1,
     lineStyle: opts.lineStyle ?? lib.LineStyle.Solid,
     lineType: opts.lineType ?? lib.LineType.Simple,
@@ -63,6 +64,20 @@ function addLine(chart, data, title, opts = {}) {
   });
   s.setData(data);
   return s;
+}
+
+function axisLabel(series, value, title, color) {
+  const p = finite(value);
+  if (!series || p === null) return null;
+  return series.createPriceLine({
+    price: p,
+    title,
+    color,
+    lineWidth: 1,
+    lineStyle: L().LineStyle.Solid,
+    lineVisible: false,
+    axisLabelVisible: true,
+  });
 }
 
 function dayGap(a, b) {
@@ -94,11 +109,19 @@ function historySegments(timeline, history, field) {
   return segments;
 }
 
-function addHistory(chart, timeline, history, field, title, color) {
+function addHistory(chart, timeline, history, field, color) {
   const lib = L();
   for (const seg of historySegments(timeline, history, field)) {
     if (seg.length < 2) continue;
-    addLine(chart, seg, title, { color, lineWidth: 2, lineType: lib.LineType.WithSteps });
+    addLine(chart, seg, '', {
+      color,
+      lineWidth: 2,
+      lineType: lib.LineType.WithSteps,
+      priceScaleId: 'right',
+      hideTitle: true,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
   }
 }
 
@@ -146,28 +169,41 @@ function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wall
   let timeline;
   if (hasCandles) {
     baseSeries = chart.addSeries(lib.CandlestickSeries, {
+      priceScaleId: 'right',
       upColor: '#57c785', downColor: '#ef6a6a', borderUpColor: '#57c785', borderDownColor: '#ef6a6a', wickUpColor: '#57c785', wickDownColor: '#ef6a6a', priceLineVisible: false,
     });
     baseSeries.setData(clean.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
     timeline = clean;
 
-    addLine(chart, ema(clean, 21), '21EMA', { color: '#f4c75a', lineWidth: 1 });
-    addLine(chart, sma(clean, 50), '50MA', { color: '#6fb8ff', lineWidth: 1 });
-    addLine(chart, sma(clean, 200), '200MA', { color: '#b98cff', lineWidth: 1 });
+    const ema21 = ema(clean, 21);
+    const ema21Series = addLine(chart, ema21, '', { color: '#f4c75a', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
+    axisLabel(ema21Series, ema21.at(-1)?.value, '21EMA', '#f4c75a');
+
+    const sma50 = sma(clean, 50);
+    const sma50Series = addLine(chart, sma50, '', { color: '#6fb8ff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
+    axisLabel(sma50Series, sma50.at(-1)?.value, '50MA', '#6fb8ff');
+
+    const sma200 = sma(clean, 200);
+    const sma200Series = addLine(chart, sma200, '', { color: '#b98cff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
+    axisLabel(sma200Series, sma200.at(-1)?.value, '200MA', '#b98cff');
+
     const vwap63 = rollingVwap(clean, 63);
-    const vwap63Series = addLine(chart, vwap63, '63VWAP', { color: '#4fc7bd', lineWidth: 1 });
-    const vwap63Last = finite(vwap63.at(-1)?.value);
-    if (vwap63Series && vwap63Last !== null) {
-      vwap63Series.createPriceLine({ price: vwap63Last, title: '63VWAP', color: '#4fc7bd', lineWidth: 1, lineStyle: lib.LineStyle.Solid, lineVisible: false, axisLabelVisible: true });
-    }
+    const vwap63Series = addLine(chart, vwap63, '', { color: '#4fc7bd', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
+    axisLabel(vwap63Series, vwap63.at(-1)?.value, '63VWAP', '#4fc7bd');
   } else {
-    baseSeries = addLine(chart, spots, 'Spot', { color: '#d7dde5', lineWidth: 2, lastValueVisible: true, crosshairMarkerVisible: true });
+    baseSeries = addLine(chart, spots, 'Spot', {
+      color: '#d7dde5',
+      lineWidth: 2,
+      priceScaleId: 'right',
+      lastValueVisible: true,
+      crosshairMarkerVisible: true,
+    });
     timeline = spots.map(x => ({ time: x.time }));
   }
 
-  addHistory(chart, timeline, wallHistory, 'call_wall', 'Call Wall history', 'rgba(239,119,119,.50)');
-  addHistory(chart, timeline, wallHistory, 'put_wall', 'Put Wall history', 'rgba(101,201,140,.50)');
-  addHistory(chart, timeline, wallHistory, 'gamma_flip', 'Gamma Flip history', 'rgba(240,201,77,.46)');
+  addHistory(chart, timeline, wallHistory, 'call_wall', 'rgba(239,119,119,.50)');
+  addHistory(chart, timeline, wallHistory, 'put_wall', 'rgba(101,201,140,.50)');
+  addHistory(chart, timeline, wallHistory, 'gamma_flip', 'rgba(240,201,77,.46)');
 
   priceLine(baseSeries, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed);
   priceLine(baseSeries, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed);
