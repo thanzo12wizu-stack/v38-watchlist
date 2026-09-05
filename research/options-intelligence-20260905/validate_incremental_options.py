@@ -51,7 +51,8 @@ def score_components(d):
     gp=d.gex_per_oi.to_numpy(float)
     d["signed_log_gex_per_oi"]=np.sign(gp)*np.log1p(np.abs(gp))
     d["log_oi"]=np.log1p(d.total_oi.clip(lower=0))
-    d["quality_gate"]=(d.total_oi>=5000)&(d.n_strikes>=20)&(d.cp_balance>=.05)
+    d["quality_gate"]=(d.total_oi>=5000)&(d.n_strikes>=20)
+    d["quality_gate_strict"]=(d.total_oi>=5000)&(d.n_strikes>=20)&(d.cp_balance>=.05)
     return d
 
 
@@ -111,7 +112,7 @@ def ridge_predict(X,y,Xt,lam=5.0):
 def cv_incremental(d,h=5):
     y=f"r{h}_exqqq"
     base=["ret1_today","ret20","dist20hi","sector_ret20","hv20","above_ema21","above_vwap63"]
-    opts=["flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes","cp_balance"]
+    opts=["flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes"]
     cols=base+opts
     z=d[["date","ticker",y]+cols].replace([np.inf,-np.inf],np.nan).dropna().copy()
     rows=[]
@@ -141,11 +142,11 @@ def cv_incremental(d,h=5):
 def fama_macbeth(d,h=5):
     y=f"r{h}_exqqq"
     cols=["ret1_today","ret20","dist20hi","sector_ret20","hv20","above_ema21","above_vwap63",
-          "flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes","cp_balance"]
+          "flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes"]
     z=d[["date",y]+cols].replace([np.inf,-np.inf],np.nan).dropna().copy()
     coefs=[]
     for dt,g in z.groupby("date"):
-        if len(g)<max(60,len(cols)*5): continue
+        if len(g)<max(40,len(cols)*3): continue
         X=g[cols].copy(); mu=X.mean(); sd=X.std(ddof=0).replace(0,1); X=(X-mu)/sd
         X=np.column_stack([np.ones(len(X)),X.to_numpy(float)])
         yy=g[y].to_numpy(float)
@@ -193,7 +194,7 @@ def main():
     for _,r in t.iterrows():
         lines.append(f"|{r.feature}|{int(r.dates)}|{p(r.spread_mean)}|{p(r.ci_lo)} to {p(r.ci_hi)}|{p(r.positive_date_fraction)}|{r.note}|")
     lines += ["","## Leave-one-date-out prediction, 5-day ex-QQQ","",
-              "Baseline = underlying 1d/20d momentum, distance from 20d high, sector 20d momentum, HV20, EMA21 and 63d VWAP state. Enhanced = baseline + Flip distance, Wall asymmetry, GEX-per-OI transform, OI depth, strike count and C/P OI balance.",""]
+              "Baseline = underlying 1d/20d momentum, distance from 20d high, sector 20d momentum, HV20, EMA21 and 63d VWAP state. Enhanced = baseline + Flip distance, Wall asymmetry, GEX-per-OI transform, OI depth and strike count. Historical C/P OI balance is excluded because older snapshots do not contain it consistently.",""]
     if cv.empty:
         lines.append("Insufficient complete-case folds.")
     else:
@@ -206,8 +207,12 @@ def main():
     lines += ["","## Date-by-date multivariate coefficients (Fama-MacBeth style, 5-day ex-QQQ)","",
               "Each date is regressed cross-sectionally after z-scoring features. The table averages coefficients across dates; t-stat is across independent dates, not across tickers.","",
               "|Feature|Dates|Mean standardized coefficient|t across dates|Positive dates|","|---|---:|---:|---:|---:|"]
-    for _,r in fm.sort_values("t_across_dates",key=lambda s:s.abs(),ascending=False).iterrows():
-        lines.append(f"|{r.feature}|{int(r.dates)}|{p(r.mean_coef)}|{r.t_across_dates:.2f}|{p(r.positive_fraction)}|")
+    if fm.empty:
+        lines.append("|—|0|—|—|—|")
+        lines.append("\nInsufficient complete-case dates for the multivariate coefficient table.")
+    else:
+        for _,r in fm.sort_values("t_across_dates",key=lambda s:s.abs(),ascending=False).iterrows():
+            lines.append(f"|{r.feature}|{int(r.dates)}|{p(r.mean_coef)}|{r.t_across_dates:.2f}|{p(r.positive_fraction)}|")
 
     lines += ["","## Interpretation guardrail",""]
     if not cv.empty:
