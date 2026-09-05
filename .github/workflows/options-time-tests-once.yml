@@ -11,8 +11,10 @@ on:
       - 'options-intelligence-period.css'
       - 'tools/build_options_positioning.py'
       - 'tools/build_options_positioning_directional.py'
+      - 'tools/build_options_daily_liquid.py'
       - 'tools/build_options_intelligence.py'
       - 'tests/test_options_positioning_quality.py'
+      - 'tests/test_options_daily_liquid.py'
       - 'tests/test_options_intelligence.py'
       - 'tests/test_options_time_direction.py'
       - '.github/workflows/options-time-tests-once.yml'
@@ -29,8 +31,16 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install --disable-pip-version-check -r requirements.txt pytest
-      - name: Test Options time, direction and UI syntax
+      - name: Test Options time, direction, daily universe and UI syntax
         run: |
-          python -m py_compile tools/build_options_positioning.py tools/build_options_positioning_directional.py tools/build_options_intelligence.py
+          python -m py_compile tools/build_options_positioning.py \
+            tools/build_options_positioning_directional.py \
+            tools/build_options_daily_liquid.py \
+            tools/build_options_intelligence.py
           node --check options-intelligence.js
-          pytest -q tests/test_options_positioning_quality.py tests/test_options_intelligence.py tests/test_options_time_direction.py
+          pytest -q tests/test_options_positioning_quality.py \
+            tests/test_options_daily_liquid.py \
+            tests/test_options_intelligence.py \
+            tests/test_options_time_direction.py
+      - name: Report liquid Options universe without provider calls
+        run: python tools/build_options_daily_liquid.py --count-only
