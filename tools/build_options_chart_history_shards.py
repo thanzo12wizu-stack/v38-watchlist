@@ -60,6 +60,17 @@ def _round(v: Any) -> float | None:
     return round(x, 6) if x is not None else None
 
 
+def _valid_market_date(v: Any) -> str:
+    day = str(v or "")[:10]
+    if len(day) != 10:
+        return ""
+    try:
+        dt = datetime.strptime(day, "%Y-%m-%d")
+    except ValueError:
+        return ""
+    return day if dt.weekday() < 5 else ""
+
+
 def _load_rows() -> dict[str, list[dict[str, Any]]]:
     """Choose one honest observation per ticker/session.
 
@@ -76,8 +87,8 @@ def _load_rows() -> dict[str, list[dict[str, Any]]]:
             for row in csv.DictReader(fh):
                 order += 1
                 ticker = str(row.get("ticker") or "").strip().upper()
-                date = str(row.get("price_session_date") or row.get("date") or "")[:10]
-                if not ticker or len(date) != 10:
+                date = _valid_market_date(row.get("price_session_date") or row.get("date"))
+                if not ticker or not date:
                     continue
                 if _boolish(row.get("stale")):
                     continue
