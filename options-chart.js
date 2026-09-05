@@ -58,81 +58,73 @@ function addLine(chart, data, title, opts = {}) {
     lineType: opts.lineType ?? lib.LineType.Simple,
     color: opts.color,
     priceLineVisible: false,
-    lastValueVisible: false,
+    lastValueVisible: opts.lastValueVisible ?? false,
     crosshairMarkerVisible: opts.crosshairMarkerVisible ?? false,
   });
   s.setData(data);
   return s;
 }
 
-function historySegments(bars, history, field) {
-  const index = new Map(bars.map((b, i) => [b.time, i]));
+function dayGap(a, b) {
+  const x = Date.parse(a + 'T00:00:00Z'), y = Date.parse(b + 'T00:00:00Z');
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return 99;
+  return Math.round((y - x) / 86400000);
+}
+
+function historySegments(timeline, history, field) {
+  const index = new Map(timeline.map((b, i) => [b.time, i]));
   const points = (history || [])
-    .map(r => ({
-      time: String(r.time || '').slice(0, 10),
-      value: finite(r[field]),
-      expiry: String(r.expiry || ''),
-    }))
+    .map(r => ({ time: String(r.time || '').slice(0, 10), value: finite(r[field]), expiry: String(r.expiry || '') }))
     .filter(p => p.value !== null && index.has(p.time))
     .sort((a, b) => a.time.localeCompare(b.time));
   const segments = [];
-  let seg = [];
-  let prev = null;
+  let seg = [], prev = null;
   for (const p of points) {
     const i = index.get(p.time);
-    const consecutive = prev && i === prev.i + 1;
+    const adjacent = prev && i === prev.i + 1 && dayGap(prev.time, p.time) <= 4;
     const sameExpiry = prev && (!prev.expiry || !p.expiry || prev.expiry === p.expiry);
-    if (!prev || (consecutive && sameExpiry)) {
-      seg.push({ time: p.time, value: p.value });
-    } else {
+    if (!prev || (adjacent && sameExpiry)) seg.push({ time: p.time, value: p.value });
+    else {
       if (seg.length) segments.push(seg);
       seg = [{ time: p.time, value: p.value }];
     }
-    prev = { i, expiry: p.expiry };
+    prev = { i, expiry: p.expiry, time: p.time };
   }
   if (seg.length) segments.push(seg);
   return segments;
 }
 
-function addHistory(chart, bars, history, field, title, color) {
+function addHistory(chart, timeline, history, field, title, color) {
   const lib = L();
-  for (const seg of historySegments(bars, history, field)) {
+  for (const seg of historySegments(timeline, history, field)) {
     if (seg.length < 2) continue;
-    addLine(chart, seg, title, {
-      color,
-      lineWidth: 2,
-      lineType: lib.LineType.WithSteps,
-      crosshairMarkerVisible: false,
-    });
+    addLine(chart, seg, title, { color, lineWidth: 2, lineType: lib.LineType.WithSteps });
   }
 }
 
 function priceLine(series, price, title, color, style) {
   const p = finite(price);
   if (p === null) return null;
-  return series.createPriceLine({
-    price: p,
-    title,
-    color,
-    lineWidth: 1,
-    lineStyle: style,
-    axisLabelVisible: true,
-  });
+  return series.createPriceLine({ price: p, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true });
 }
 
-function mount({ element, bars, ticker, levels = {}, wallHistory = [], stale = false }) {
+function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wallHistory = [], stale = false }) {
   if (!element) return null;
   const lib = L();
   if (!lib) {
     element.innerHTML = '<div class="v38ChartError">チャートライブラリを読み込めませんでした。</div>';
     return null;
   }
+
   const clean = (bars || []).map(b => ({
-    time: String(b.time || '').slice(0, 10),
-    open: finite(b.open), high: finite(b.high), low: finite(b.low), close: finite(b.close), volume: finite(b.volume) || 0,
+    time: String(b.time || '').slice(0, 10), open: finite(b.open), high: finite(b.high), low: finite(b.low), close: finite(b.close), volume: finite(b.volume) || 0,
   })).filter(b => b.time && [b.open, b.high, b.low, b.close].every(v => v !== null));
-  if (clean.length < 20) {
-    element.innerHTML = '<div class="v38ChartError">日足履歴が不足しています。</div>';
+  const spots = (spotHistory || []).map(r => ({ time: String(r.time || '').slice(0, 10), value: finite(r.spot) }))
+    .filter(r => r.time && r.value !== null)
+    .sort((a, b) => a.time.localeCompare(b.time));
+  const hasCandles = clean.length >= 20;
+  if (!hasCandles && spots.length < 2) {
+    element.innerHTML = '<div class="v38ChartError">Options日次履歴がまだ不足しています。</div>';
     return null;
   }
 
@@ -141,74 +133,56 @@ function mount({ element, bars, ticker, levels = {}, wallHistory = [], stale = f
   const chart = lib.createChart(element, {
     width: Math.max(280, element.clientWidth || 640),
     height: Math.max(330, element.clientHeight || 410),
-    layout: {
-      background: { type: lib.ColorType.Solid, color: '#0b0d10' },
-      textColor: '#aeb5bf',
-      attributionLogo: true,
-    },
-    grid: {
-      vertLines: { color: 'rgba(255,255,255,.035)' },
-      horzLines: { color: 'rgba(255,255,255,.045)' },
-    },
+    layout: { background: { type: lib.ColorType.Solid, color: '#0b0d10' }, textColor: '#aeb5bf', attributionLogo: true },
+    grid: { vertLines: { color: 'rgba(255,255,255,.035)' }, horzLines: { color: 'rgba(255,255,255,.045)' } },
     rightPriceScale: { borderColor: 'rgba(255,255,255,.12)', scaleMargins: { top: .08, bottom: .08 } },
-    timeScale: { borderColor: 'rgba(255,255,255,.12)', timeVisible: false, rightOffset: 8, barSpacing: 7, minBarSpacing: 3 },
+    timeScale: { borderColor: 'rgba(255,255,255,.12)', timeVisible: false, rightOffset: 8, barSpacing: hasCandles ? 7 : 10, minBarSpacing: 3 },
     crosshair: { mode: lib.CrosshairMode.Normal },
     handleScroll: true,
     handleScale: true,
   });
 
-  const candles = chart.addSeries(lib.CandlestickSeries, {
-    upColor: '#57c785', downColor: '#ef6a6a',
-    borderUpColor: '#57c785', borderDownColor: '#ef6a6a',
-    wickUpColor: '#57c785', wickDownColor: '#ef6a6a',
-    priceLineVisible: false,
-  });
-  candles.setData(clean.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
-
-  addLine(chart, ema(clean, 21), '21EMA', { color: '#f4c75a', lineWidth: 1 });
-  addLine(chart, sma(clean, 50), '50MA', { color: '#6fb8ff', lineWidth: 1 });
-  addLine(chart, sma(clean, 200), '200MA', { color: '#b98cff', lineWidth: 1 });
-  const vwap63 = rollingVwap(clean, 63);
-  const vwap63Series = addLine(chart, vwap63, '63VWAP', { color: '#4fc7bd', lineWidth: 1 });
-  const vwap63Last = finite(vwap63.at(-1)?.value);
-  if (vwap63Series && vwap63Last !== null) {
-    vwap63Series.createPriceLine({
-      price: vwap63Last,
-      title: '63VWAP',
-      color: '#4fc7bd',
-      lineWidth: 1,
-      lineStyle: lib.LineStyle.Solid,
-      lineVisible: false,
-      axisLabelVisible: true,
+  let baseSeries;
+  let timeline;
+  if (hasCandles) {
+    baseSeries = chart.addSeries(lib.CandlestickSeries, {
+      upColor: '#57c785', downColor: '#ef6a6a', borderUpColor: '#57c785', borderDownColor: '#ef6a6a', wickUpColor: '#57c785', wickDownColor: '#ef6a6a', priceLineVisible: false,
     });
+    baseSeries.setData(clean.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
+    timeline = clean;
+
+    addLine(chart, ema(clean, 21), '21EMA', { color: '#f4c75a', lineWidth: 1 });
+    addLine(chart, sma(clean, 50), '50MA', { color: '#6fb8ff', lineWidth: 1 });
+    addLine(chart, sma(clean, 200), '200MA', { color: '#b98cff', lineWidth: 1 });
+    const vwap63 = rollingVwap(clean, 63);
+    const vwap63Series = addLine(chart, vwap63, '63VWAP', { color: '#4fc7bd', lineWidth: 1 });
+    const vwap63Last = finite(vwap63.at(-1)?.value);
+    if (vwap63Series && vwap63Last !== null) {
+      vwap63Series.createPriceLine({ price: vwap63Last, title: '63VWAP', color: '#4fc7bd', lineWidth: 1, lineStyle: lib.LineStyle.Solid, lineVisible: false, axisLabelVisible: true });
+    }
+  } else {
+    baseSeries = addLine(chart, spots, 'Spot', { color: '#d7dde5', lineWidth: 2, lastValueVisible: true, crosshairMarkerVisible: true });
+    timeline = spots.map(x => ({ time: x.time }));
   }
 
-  // Historical Options structure. Only consecutive trading-day observations with
-  // the same expiry are connected; sparse scan observations are never interpolated.
-  addHistory(chart, clean, wallHistory, 'call_wall', 'Call Wall history', 'rgba(239,119,119,.48)');
-  addHistory(chart, clean, wallHistory, 'put_wall', 'Put Wall history', 'rgba(101,201,140,.48)');
-  addHistory(chart, clean, wallHistory, 'gamma_flip', 'Gamma Flip history', 'rgba(240,201,77,.44)');
+  addHistory(chart, timeline, wallHistory, 'call_wall', 'Call Wall history', 'rgba(239,119,119,.50)');
+  addHistory(chart, timeline, wallHistory, 'put_wall', 'Put Wall history', 'rgba(101,201,140,.50)');
+  addHistory(chart, timeline, wallHistory, 'gamma_flip', 'Gamma Flip history', 'rgba(240,201,77,.46)');
 
-  priceLine(candles, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed);
-  priceLine(candles, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed);
-  priceLine(candles, levels.putWall, 'Put Wall', '#65c98c', lib.LineStyle.Dashed);
-  priceLine(candles, levels.expectedHigh, 'Expected High', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted);
-  priceLine(candles, levels.expectedLow, 'Expected Low', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted);
+  priceLine(baseSeries, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed);
+  priceLine(baseSeries, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed);
+  priceLine(baseSeries, levels.putWall, 'Put Wall', '#65c98c', lib.LineStyle.Dashed);
+  priceLine(baseSeries, levels.expectedHigh, 'Expected High', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted);
+  priceLine(baseSeries, levels.expectedLow, 'Expected Low', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted);
 
   const band = document.createElement('div');
   band.className = 'v38ExpectedBand';
   element.appendChild(band);
   const lo = finite(levels.expectedLow), hi = finite(levels.expectedHigh);
   function updateBand() {
-    if (lo === null || hi === null || hi <= lo || !band.isConnected) {
-      band.style.display = 'none';
-      return;
-    }
-    const y1 = candles.priceToCoordinate(hi), y2 = candles.priceToCoordinate(lo);
-    if (y1 === null || y2 === null || !Number.isFinite(y1) || !Number.isFinite(y2)) {
-      band.style.display = 'none';
-      return;
-    }
+    if (lo === null || hi === null || hi <= lo || !band.isConnected) { band.style.display = 'none'; return; }
+    const y1 = baseSeries.priceToCoordinate(hi), y2 = baseSeries.priceToCoordinate(lo);
+    if (y1 === null || y2 === null || !Number.isFinite(y1) || !Number.isFinite(y2)) { band.style.display = 'none'; return; }
     band.style.display = 'block';
     band.style.top = `${Math.min(y1, y2)}px`;
     band.style.height = `${Math.abs(y2 - y1)}px`;
@@ -230,14 +204,7 @@ function mount({ element, bars, ticker, levels = {}, wallHistory = [], stale = f
   if (stale) element.classList.add('isStale');
   else element.classList.remove('isStale');
 
-  return {
-    ticker,
-    chart,
-    destroy() {
-      ro.disconnect();
-      try { chart.remove(); } catch (_) {}
-    },
-  };
+  return { ticker, chart, mode: hasCandles ? 'candles' : 'options_spot', destroy() { ro.disconnect(); try { chart.remove(); } catch (_) {} } };
 }
 
 window.V38Chart = { mount };
