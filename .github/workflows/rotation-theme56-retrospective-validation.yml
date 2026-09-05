@@ -7,26 +7,81 @@ on:
       - research/rotation-validation-20260905-theme56
     paths:
       - leadership/research/validate_theme56_rotation_retrospective.py
-      - leadership/research/validate_theme56_rotation_retrospective_v2.py
       - leadership/research/validate_theme56_rotation_retrospective_v3.py
+      - leadership/research/validate_theme56_rotation_retrospective_v4.py
+      - leadership/research/download_theme56_price_shard.py
+      - leadership/research/postprocess_theme56_retrospective_robust.py
       - .github/workflows/rotation-theme56-retrospective-validation.yml
 
 jobs:
-  validate:
+  price-shards:
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --disable-pip-version-check pandas numpy scipy statsmodels yfinance pyarrow
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy statsmodels yfinance pyarrow requests openpyxl lxml
       - name: Syntax check
-        run: python -m py_compile leadership/research/validate_theme56_rotation_retrospective.py leadership/research/validate_theme56_rotation_retrospective_v3.py
-      - name: Run retrospective validation
+        run: python -m py_compile leadership/research/download_theme56_price_shard.py
+      - name: Download normalized price shard
         run: |
-          python leadership/research/validate_theme56_rotation_retrospective_v3.py \
+          python leadership/research/download_theme56_price_shard.py \
+            --config leadership/research/rotation_theme56_config.json \
+            --base leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
+            --expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
+            --fallback leadership/research/rotation_theme56_secondary_holdings_fallback/validated_current_membership_fallback.csv \
+            --dram leadership/research/rotation_theme56_dram_supplement/dram_current_equity_holdings.csv \
+            --start 2022-01-01 \
+            --end 2026-09-05 \
+            --shard ${{ matrix.shard }} \
+            --shards 8 \
+            --batch-size 20 \
+            --output leadership/research/theme56_price_shards
+      - name: Upload shard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme56-price-shard-${{ matrix.shard }}
+          path: leadership/research/theme56_price_shards/
+          if-no-files-found: warn
+          retention-days: 14
+
+  validate:
+    needs: price-shards
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy statsmodels yfinance pyarrow requests openpyxl lxml
+      - name: Download all usable price shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: theme56-price-shard-*
+          path: /tmp/theme56-price-shards
+          merge-multiple: true
+      - name: Syntax check
+        run: python -m py_compile leadership/research/validate_theme56_rotation_retrospective.py leadership/research/validate_theme56_rotation_retrospective_v3.py leadership/research/validate_theme56_rotation_retrospective_v4.py leadership/research/postprocess_theme56_retrospective_robust.py
+      - name: Require usable cache
+        run: |
+          test $(find /tmp/theme56-price-shards -name 'close_*.parquet' | wc -l) -ge 6
+          test $(find /tmp/theme56-price-shards -name 'volume_*.parquet' | wc -l) -ge 6
+      - name: Run current-membership retrospective
+        run: |
+          python leadership/research/validate_theme56_rotation_retrospective_v4.py \
+            --cache-dir /tmp/theme56-price-shards \
             --config leadership/research/rotation_theme56_config.json \
             --base leadership/research/rotation_theme56_provider_qa/theme56_exact_current_holdings.csv \
             --expansion leadership/research/rotation_theme56_holdings_expansion/exact_current_holdings_expansion.csv \
@@ -35,14 +90,21 @@ jobs:
             --exact-flows leadership/research/rotation_theme56_provider_qa/theme56_exact_flows.csv \
             --etfcom-flows leadership/research/rotation_theme56_etfcom_flow/theme56_etfcom_daily_flows.csv \
             --start 2022-01-01 \
-            --end 2026-09-04 \
-            --batch-size 80 \
+            --end 2026-09-05 \
+            --batch-size 20 \
             --output leadership/research/theme56_retrospective_outputs
+      - name: Run overlap-safe inference
+        run: python leadership/research/postprocess_theme56_retrospective_robust.py --output leadership/research/theme56_retrospective_outputs
+      - name: Preserve acquisition diagnostics
+        if: always()
+        run: |
+          mkdir -p leadership/research/theme56_retrospective_outputs/price_acquisition
+          cp /tmp/theme56-price-shards/diagnostic_*.json leadership/research/theme56_retrospective_outputs/price_acquisition/ 2>/dev/null || true
       - name: Upload outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rotation-theme56-retrospective-validation-v3
+          name: rotation-theme56-retrospective-validation-v4
           path: leadership/research/theme56_retrospective_outputs/
           if-no-files-found: warn
           retention-days: 14
