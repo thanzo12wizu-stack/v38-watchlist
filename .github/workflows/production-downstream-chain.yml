@@ -12,6 +12,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/production-downstream-chain.yml'
+      - '.github/workflows/v38-live.yml'
+      - '.github/workflows/v38-sleeve-refresh.yml'
+      - '.github/workflows/rotation-live.yml'
+      - '.github/workflows/rotation-stock-context-live.yml'
 
 permissions:
   contents: write
