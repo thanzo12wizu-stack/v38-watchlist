@@ -54,7 +54,9 @@ jobs:
           V38_OPT_INTEL_HISTORY: options_intelligence_history.csv
           # 対象。空なら state.json の picks/hold（Core 12）を使う。
           V38_OPT_TICKERS: ''
-          V38_OPT_MAX_EXPIRY: '4'
+          # UIで0-6 / 7-21 / 22-45DTEと個別満期を切り替えられるよう、
+          # 詳細対象は近い満期を最大8本保持する。広域scanは従来どおり1本だけ。
+          V38_OPT_MAX_EXPIRY: '8'
           V38_OPT_HTML: options-positioning.html
           # Core＋候補は毎回詳細取得。残りは少量ローテーションし、数週間かけて広域蓄積する。
           V38_OPT_SCAN_ALL: '1'
