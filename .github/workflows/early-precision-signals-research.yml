@@ -1,0 +1,45 @@
+# Research-only audit. Does not modify main, Pages, Dashboard, or live rules.
+name: Early Precision Signals Research
+
+on:
+  push:
+    branches:
+      - research/sector-stock-leadership-20260826
+    paths:
+      - leadership/research/audit_early_precision_signals.py
+      - leadership/research/audit_early_liquidity_label_sensitivity.py
+      - .github/workflows/early-precision-signals-research.yml
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install research dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scipy yfinance
+      - name: Syntax check
+        run: |
+          python -m py_compile leadership/research/audit_early_precision_signals.py
+      - name: Run early precision signal audit
+        env:
+          PYTHONPATH: .:leadership/research
+        run: |
+          python leadership/research/audit_early_precision_signals.py \
+            --root . \
+            --output leadership/research/early_precision_signals \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2025-12-31 \
+            --max-tickers 6000 \
+            --batch-size 75
+      - name: Upload research outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: early-precision-signals
+          path: leadership/research/early_precision_signals/
+          retention-days: 14
