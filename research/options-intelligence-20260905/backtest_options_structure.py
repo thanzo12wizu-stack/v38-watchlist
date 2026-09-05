@@ -566,7 +566,7 @@ def write_report(events, df, tests, walls, em, dirs, missing):
         lines.append(f"|{r.bucket}|{int(r.n)}|{fmt_pct(r.inside_expected)}|{ratio}|")
 
     # Programmatic conclusions with conservative criteria.
-    lines += ["","## Research conclusions","""]
+    lines += ["", "## Research conclusions", ""]
     conclusions=[]
     if not tests.empty:
         robust=tests[(tests.n>=20)&(tests.dates>=4)&(tests.q_bh<=.10)&((tests.ci_lo>0)|(tests.ci_hi<0))]
