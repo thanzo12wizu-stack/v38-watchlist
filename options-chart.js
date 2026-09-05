@@ -55,13 +55,56 @@ function addLine(chart, data, title, opts = {}) {
     title,
     lineWidth: opts.lineWidth ?? 1,
     lineStyle: opts.lineStyle ?? lib.LineStyle.Solid,
+    lineType: opts.lineType ?? lib.LineType.Simple,
     color: opts.color,
     priceLineVisible: false,
     lastValueVisible: false,
-    crosshairMarkerVisible: false,
+    crosshairMarkerVisible: opts.crosshairMarkerVisible ?? false,
   });
   s.setData(data);
   return s;
+}
+
+function historySegments(bars, history, field) {
+  const index = new Map(bars.map((b, i) => [b.time, i]));
+  const points = (history || [])
+    .map(r => ({
+      time: String(r.time || '').slice(0, 10),
+      value: finite(r[field]),
+      expiry: String(r.expiry || ''),
+    }))
+    .filter(p => p.value !== null && index.has(p.time))
+    .sort((a, b) => a.time.localeCompare(b.time));
+  const segments = [];
+  let seg = [];
+  let prev = null;
+  for (const p of points) {
+    const i = index.get(p.time);
+    const consecutive = prev && i === prev.i + 1;
+    const sameExpiry = prev && (!prev.expiry || !p.expiry || prev.expiry === p.expiry);
+    if (!prev || (consecutive && sameExpiry)) {
+      seg.push({ time: p.time, value: p.value });
+    } else {
+      if (seg.length) segments.push(seg);
+      seg = [{ time: p.time, value: p.value }];
+    }
+    prev = { i, expiry: p.expiry };
+  }
+  if (seg.length) segments.push(seg);
+  return segments;
+}
+
+function addHistory(chart, bars, history, field, title, color) {
+  const lib = L();
+  for (const seg of historySegments(bars, history, field)) {
+    if (seg.length < 2) continue;
+    addLine(chart, seg, title, {
+      color,
+      lineWidth: 2,
+      lineType: lib.LineType.WithSteps,
+      crosshairMarkerVisible: false,
+    });
+  }
 }
 
 function priceLine(series, price, title, color, style) {
@@ -77,7 +120,7 @@ function priceLine(series, price, title, color, style) {
   });
 }
 
-function mount({ element, bars, ticker, levels = {}, stale = false }) {
+function mount({ element, bars, ticker, levels = {}, wallHistory = [], stale = false }) {
   if (!element) return null;
   const lib = L();
   if (!lib) {
@@ -139,6 +182,12 @@ function mount({ element, bars, ticker, levels = {}, stale = false }) {
       axisLabelVisible: true,
     });
   }
+
+  // Historical Options structure. Only consecutive trading-day observations with
+  // the same expiry are connected; sparse scan observations are never interpolated.
+  addHistory(chart, clean, wallHistory, 'call_wall', 'Call Wall history', 'rgba(239,119,119,.48)');
+  addHistory(chart, clean, wallHistory, 'put_wall', 'Put Wall history', 'rgba(101,201,140,.48)');
+  addHistory(chart, clean, wallHistory, 'gamma_flip', 'Gamma Flip history', 'rgba(240,201,77,.44)');
 
   priceLine(candles, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed);
   priceLine(candles, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed);
