@@ -10,23 +10,17 @@
 <body>
 <main class="wrap">
   <header class="topbar">
-    <div>
-      <h1>Options Intelligence</h1>
-      <p>主導株とオプション配置を重ねて、「今日どこを見るか」を絞る研究ページ。</p>
-    </div>
+    <div><h1>Options Intelligence</h1><p>主導株 × Options配置 × 基準終値を重ねて、方向・値幅・支持・突破点を読む。</p></div>
     <div id="stamp" class="stamp">読み込み中…</div>
   </header>
 
   <section class="searchHero" aria-label="銘柄検索">
     <div class="searchTitle">銘柄を調べる</div>
     <div class="searchRow">
-      <div class="searchBox">
-        <input id="search" autocomplete="off" spellcheck="false" placeholder="Ticker / 会社名 / Sector 例: MU, Micron, Semiconductor">
-        <div id="suggestions" class="suggestions" hidden></div>
-      </div>
+      <div class="searchBox"><input id="search" autocomplete="off" spellcheck="false" placeholder="Ticker / 会社名 / Sector 例: MU, Micron"><div id="suggestions" class="suggestions" hidden></div></div>
       <button id="searchBtn" class="searchBtn">検索</button>
     </div>
-    <div class="searchHint">全ユニバースを検索。Options未取得の銘柄も「銘柄は存在 / データ未取得」と表示します。</div>
+    <div class="searchHint">全ユニバース検索。Options未取得・時間不一致も隠さず表示します。</div>
   </section>
 
   <section id="selectedSection" class="selectedSection" hidden>
@@ -35,35 +29,28 @@
   </section>
 
   <section class="marketStrip">
-    <div><span>主導株データ</span><b id="leaderAsOf">—</b></div>
-    <div><span>Optionsデータ</span><b id="optionsAsOf">—</b></div>
+    <div><span>基準セッション</span><b id="priceAsOf">—</b></div>
+    <div><span>Options取得</span><b id="optionsAsOf">—</b></div>
+    <div><span>Leadership</span><b id="leaderAsOf">—</b></div>
     <div><span>市場状態</span><b id="marketState">—</b></div>
   </section>
 
   <section>
-    <div class="sectionHead">
-      <div><span class="eyebrow">TODAY'S LEADERS</span><h2>見るべきリーダー</h2></div>
-      <p>Leadershipの強さにOptions配置を上乗せ。主導株判定そのものは変更しません。</p>
-    </div>
+    <div class="sectionHead"><div><span class="eyebrow">TODAY'S LEADERS</span><h2>見るべきリーダー</h2></div><p>Leadershipは上流から読み取りのみ。Options側から逆流しません。</p></div>
     <div id="leaders" class="cardGrid"><div class="loading">読み込み中…</div></div>
   </section>
 
   <section>
-    <div class="sectionHead">
-      <div><span class="eyebrow">BULLISH OPTIONS SETUPS</span><h2>上方向が強い配置</h2></div>
-      <p>新鮮なOptions観測だけから、上方向の配置が強い順。</p>
+    <div class="sectionHead"><div><span class="eyebrow">DIRECTIONAL SETUPS</span><h2>方向性が強い配置</h2></div><p>同一セッションで価格とOptionsが揃った銘柄だけ。</p></div>
+    <div class="directionColumns">
+      <div class="directionPane"><h3>↑ 上方向</h3><div id="bullish" class="cardGrid one"><div class="loading">読み込み中…</div></div></div>
+      <div class="directionPane"><h3>↓ 下方向</h3><div id="bearish" class="cardGrid one"><div class="loading">読み込み中…</div></div></div>
     </div>
-    <div id="bullish" class="cardGrid"><div class="loading">読み込み中…</div></div>
   </section>
 
-  <details class="allDetails">
-    <summary>その他のOptions観測を見る</summary>
-    <div id="allRecords" class="allList"></div>
-  </details>
+  <details class="allDetails"><summary>その他のOptions観測を見る</summary><div id="allRecords" class="allList"></div></details>
 
-  <div class="footnote">
-    このページは既存V38の読み取り専用補助です。V38ランキング・Market Mode・売買ルールへ逆流しません。Options側はOI×推定GammaのPositioning Proxyで、Put Wall/Call Wallが必ず支持・抵抗になるとは限りません。無料データ経路ではPut売り/買い、Call売り/買い、Sweep/Blockなど実約定方向は判別できないため、表示しません。
-  </div>
+  <div class="footnote">このページは既存V38の読み取り専用補助です。V38ランキング・Market Mode・売買ルールへ逆流しません。価格は上流Dashboardの基準セッションと照合し、Optionsの価格基準が一致しない場合は方向判定を止めます。OI×推定GammaはPositioning Proxyであり実ディーラーポジションではありません。providerはOI更新時刻を公開しておらず、無料データではPut売り/買い・Call売り/買い・Sweep/Blockを判別できないため断定しません。</div>
 </main>
 <script src="./options-intelligence.js" defer></script>
 </body>
