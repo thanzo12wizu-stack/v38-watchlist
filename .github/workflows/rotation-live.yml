@@ -17,29 +17,9 @@ jobs:
     env:
       TZ: Asia/Tokyo
       RESEARCH_BRANCH: research/rotation-exact-flow-internals-20260831
-      PIPELINE_BRANCH: pipeline-live
-      ATOMIC_PRODUCTION_FILES: >-
-        v38-live-state.json
-        v38-strict-loo-history.json
-        v38-strict-loo-live.json
-        tqqq-panic-state.json
-        v38-tqqq-live-source-cache.json
-        v38-sleeve-state.json
-      COMMAND_CENTER_OWNED_FILES: >-
-        command-center.html
-        command-center_share.html
-        state.json
-        trend_history.json
-        daily_log.csv
-        mktcap.json
-        fred_cache.json
-        fmp_reference_cache.json
-        earnings.json
-        inception_vwap.json
-        industry_map.json
-        universe.csv
-        options_targets.json
-        commit_manifest.json
+      ROTATION_PRODUCTION_FILES: >-
+        rotation/data/rotation-theme56.json
+        rotation/data/status.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,18 +30,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Load fully READY staged production as-of
+      - name: Load current READY V38 production from main
         shell: bash
         run: |
           set -euo pipefail
           git fetch --depth=1 origin main
-          git fetch --depth=1 origin "$PIPELINE_BRANCH"
-          echo "PIPELINE_SOURCE_SHA=$(git rev-parse "origin/$PIPELINE_BRANCH")" >> "$GITHUB_ENV"
-          echo "MAIN_SOURCE_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
           git show "origin/main:state.json" > /tmp/state.json
-          git show "origin/$PIPELINE_BRANCH:v38-live-state.json" > /tmp/v38-live-state.json
-          git show "origin/$PIPELINE_BRANCH:tqqq-panic-state.json" > /tmp/tqqq-panic-state.json
-          git show "origin/$PIPELINE_BRANCH:v38-sleeve-state.json" > /tmp/v38-sleeve-state.json
+          git show "origin/main:v38-live-state.json" > /tmp/v38-live-state.json
+          git show "origin/main:tqqq-panic-state.json" > /tmp/tqqq-panic-state.json
+          git show "origin/main:v38-sleeve-state.json" > /tmp/v38-sleeve-state.json
           python - <<'PY' >> "$GITHUB_ENV"
           import json
           from datetime import date, timedelta
@@ -80,7 +57,7 @@ jobs:
           }
           bad={name:value for name,value in dates.items() if value != target}
           if not target or bad:
-              raise SystemExit(f'pre-Rotation staged as-of mismatch: expected={target!r} actual={bad!r}')
+              raise SystemExit(f'pre-Rotation main as-of mismatch: expected={target!r} actual={bad!r}')
           if tqqq.get('live_generation_status') != 'READY':
               raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
           if (tqqq.get('current30') or {}).get('status') != 'READY':
@@ -104,7 +81,7 @@ jobs:
           print(f'TARGET_ASOF={target}')
           print(f'DOWNLOAD_END={end}')
           PY
-          echo "Rotation prerequisites READY on staging; TARGET_ASOF and DOWNLOAD_END prepared"
+          echo "Rotation prerequisites READY on main; TARGET_ASOF and DOWNLOAD_END prepared"
 
       - name: Install isolated Rotation dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy requests openpyxl yfinance lxml html5lib
@@ -270,68 +247,74 @@ jobs:
               'asof':os.environ['TARGET_ASOF'],
               'v38_asof':(brief.get('input_alignment') or {}).get('v38_asof'),
               'generated_at':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
-              'source':'atomic staged production Theme56 workflow',
+              'source':'isolated Rotation Theme56 workflow',
           }
           Path('/tmp/rotation-data/status.json').write_text(json.dumps(status,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
 
-      - name: Promote one atomic production snapshot to main
+      - name: Persist only Rotation artifacts to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git fetch --depth=1 origin main
-          git fetch --depth=1 origin "$PIPELINE_BRANCH"
-          if [[ "$(git rev-parse "origin/$PIPELINE_BRANCH")" != "$PIPELINE_SOURCE_SHA" ]]; then
-            echo "::error::Pipeline staging advanced during Rotation build; reject stale promotion"
-            exit 1
-          fi
-          if [[ "$(git rev-parse origin/main)" != "$MAIN_SOURCE_SHA" ]]; then
-            echo "::error::Public main advanced during Rotation build; reject stale promotion"
-            exit 1
-          fi
+          published=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
 
-          promote_dir="$(mktemp -d)"
-          git archive "origin/$PIPELINE_BRANCH" $ATOMIC_PRODUCTION_FILES | tar -x -C "$promote_dir"
+            python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          live=json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+          sleeve=json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))
+          dates={
+              'state': str(state.get('date') or ''),
+              'V38': str(live.get('asof') or ''),
+              'TQQQ': str(tqqq.get('asof') or ''),
+              'Sleeve': str(sleeve.get('asof') or ''),
+          }
+          if any(v != target for v in dates.values()):
+              raise SystemExit(f'Rotation publish prerequisite changed: target={target} actual={dates}')
+          if tqqq.get('live_generation_status') != 'READY' or (tqqq.get('current30') or {}).get('status') != 'READY':
+              raise SystemExit('Rotation publish prerequisite TQQQ/CURRENT30 not READY')
+          if sleeve.get('status') != 'READY':
+              raise SystemExit('Rotation publish prerequisite Sleeve not READY')
+          PY
 
-          git reset --hard origin/main
-          cp -a "$promote_dir"/. .
-          mkdir -p rotation/data
-          cp /tmp/rotation-data/rotation-theme56.json rotation/data/rotation-theme56.json
-          cp /tmp/rotation-data/status.json rotation/data/status.json
+            mkdir -p rotation/data
+            cp /tmp/rotation-data/rotation-theme56.json rotation/data/rotation-theme56.json
+            cp /tmp/rotation-data/status.json rotation/data/status.json
+            git add -- $ROTATION_PRODUCTION_FILES
 
-          python scripts/validate_atomic_publish.py \
-            --root . \
-            --output /tmp/atomic-publish-status.json
-          cat /tmp/atomic-publish-status.json
-
-          # Rotation may promote downstream products, but it must never alter
-          # a Command Center-owned file copied from main.
-          if ! git diff --quiet origin/main -- $COMMAND_CENTER_OWNED_FILES; then
-            echo "::error::Rotation attempted to modify Command Center-owned artifacts"
-            git diff --name-only origin/main -- $COMMAND_CENTER_OWNED_FILES
-            exit 1
-          fi
-
-          git add -- $ATOMIC_PRODUCTION_FILES rotation/data/rotation-theme56.json rotation/data/status.json
-          unexpected="$(git diff --cached --name-only | while IFS= read -r changed; do
-            case " $ATOMIC_PRODUCTION_FILES rotation/data/rotation-theme56.json rotation/data/status.json " in
-              *" $changed "*) ;;
-              *) echo "$changed" ;;
-            esac
-          done)"
-          if [[ -n "$unexpected" ]]; then
-            echo "::error::Rotation staged files outside its ownership: $unexpected"
-            exit 1
-          fi
-          if git diff --staged --quiet; then
-            echo "Public main already matches the complete atomic snapshot"
-            exit 0
-          fi
-          git commit -m "Publish atomic V38 live snapshot $TARGET_ASOF"
-          git push origin HEAD:main
+            unexpected="$(git diff --cached --name-only | while IFS= read -r changed; do
+              case " $ROTATION_PRODUCTION_FILES " in
+                *" $changed "*) ;;
+                *) echo "$changed" ;;
+              esac
+            done)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::Rotation attempted to stage files outside its ownership: $unexpected"
+              exit 1
+            fi
+            if git diff --staged --quiet; then
+              echo "Rotation artifacts already current"
+              published=true
+              break
+            fi
+            git commit -m "Publish Rotation Theme56 $TARGET_ASOF"
+            if git push origin HEAD:main; then
+              published=true
+              break
+            fi
+            echo "::warning::Main changed concurrently; retry Rotation publish $attempt/3"
+            sleep $((attempt * 2))
+          done
+          [[ "$published" == true ]] || exit 1
 
       - name: Upload Rotation diagnostics
         if: always()
@@ -343,6 +326,5 @@ jobs:
             leadership/research/rotation_theme56_etfcom_flow/
             leadership/research/rotation_theme56_fullstack/
             /tmp/rotation-public/
-            /tmp/atomic-publish-status.json
           if-no-files-found: warn
           retention-days: 7

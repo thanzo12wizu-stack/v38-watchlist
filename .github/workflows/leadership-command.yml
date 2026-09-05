@@ -199,26 +199,30 @@ jobs:
       PUBLIC_REPOSITORY: ${{ vars.V38_PUBLIC_PAGES_REPOSITORY }}
       PUBLIC_TOKEN: ${{ secrets.V38_PUBLIC_PAGES_TOKEN }}
     steps:
-      - name: Check existing public mirror target
+      - name: Check optional public mirror target
         id: config
         shell: bash
         run: |
           set -euo pipefail
           if [[ -z "${PUBLIC_REPOSITORY:-}" || -z "${PUBLIC_TOKEN:-}" ]]; then
-            echo 'Existing V38 public Pages mirror is not configured'
-            exit 1
+            echo "::warning::Optional V38 public Pages mirror is not configured; Leadership main publish remains successful"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           if [[ ! "$PUBLIC_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
             echo 'Invalid V38_PUBLIC_PAGES_REPOSITORY'
             exit 1
           fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/download-artifact@v4
+        if: steps.config.outputs.enabled == 'true'
         with:
           name: leadership-command-preview
           path: /tmp/leadership-site
 
-      - name: Publish only /leadership to existing Pages repository
+      - name: Publish only /leadership to optional Pages repository
+        if: steps.config.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -242,7 +246,7 @@ jobs:
             git add -A -- leadership
 
             if git diff --staged --quiet; then
-              echo 'Public /leadership already current'
+              echo 'Optional public /leadership already current'
               exit 0
             fi
 
@@ -250,9 +254,9 @@ jobs:
             if git push origin HEAD:main; then
               exit 0
             fi
-            echo "::warning::Public mirror changed concurrently; retry $attempt/3"
+            echo "::warning::Optional public mirror changed concurrently; retry $attempt/3"
             sleep $((attempt * 2))
           done
 
-          echo 'Leadership public publish failed after retries'
+          echo 'Leadership optional public publish failed after retries'
           exit 1
