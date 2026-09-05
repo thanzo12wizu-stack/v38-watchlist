@@ -44,6 +44,8 @@ jobs:
       - name: Syntax check
         run: python -m py_compile leadership/research/audit_rotation_exit_overlays.py leadership/research/audit_rotation_exit_overlays_v2.py
       - name: Run Rotation exit overlay audit
+        env:
+          PYTHONPATH: .:leadership/research
         run: |
           python leadership/research/audit_rotation_exit_overlays_v2.py \
             --root . \
