@@ -9,6 +9,9 @@ let payloadPromise = null;
 const shardPromises = new Map();
 let activeChart = null;
 let scheduled = false;
+let mountToken = 0;
+let suppressNextSelectedScroll = false;
+let jumpToChartAfterMount = false;
 
 const numText = text => {
   const m = String(text || '').replaceAll(',', '').match(/-?\d+(?:\.\d+)?/);
@@ -131,12 +134,32 @@ function chartPanel(ticker, rec, levels, payload) {
   </section>`;
 }
 
+function loadingPanel(ticker) {
+  return `<section class="v38ChartPanel" data-chart-ticker="${esc(ticker)}" data-chart-loading="1">
+    <div class="v38ChartHead"><div class="v38ChartHeadLeft"><span class="v38ChartEyebrow">PRICE + OPTIONS MAP</span><div class="v38ChartTitle"><b>${esc(ticker)}</b><span>日足を準備中</span></div></div><div class="v38ChartStatus"><span>価格履歴を先読み中</span></div></div>
+    <div class="v38ChartCanvas"><div class="v38ChartPending"><b>チャートを読み込み中</b>価格履歴とOptions履歴を同期しています。</div></div>
+  </section>`;
+}
+
+function insertPanel(card, panel) {
+  const anchor = card.querySelector('.directionHero') || card.querySelector('.selectedBadges') || card.querySelector('.selectedTop');
+  if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', panel);
+  else card.appendChild(panel);
+}
+
+function jumpToChart(panel) {
+  if (!jumpToChartAfterMount || !panel) return;
+  jumpToChartAfterMount = false;
+  requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
+
 async function mountCurrent() {
   scheduled = false;
   const selected = document.querySelector('#selected');
   const card = selected?.querySelector('.selectedCard');
   const ticker = card?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
   if (!card || !ticker) return;
+  const token = ++mountToken;
 
   if (activeChart) {
     try { activeChart.destroy(); } catch (_) {}
@@ -144,29 +167,46 @@ async function mountCurrent() {
   }
   card.querySelector('.v38ChartPanel')?.remove();
 
-  let payload = null;
-  try { payload = await loadPayload(false); } catch (_) { payload = { tickers: {} }; }
-  const [detailRec, broadRows] = await Promise.all([
-    Promise.resolve(payload?.tickers?.[ticker] || null),
-    loadShard(ticker),
-  ]);
-  const rec = withBroadHistory(detailRec, broadRows);
-  const broadLatest = Array.isArray(broadRows) ? broadRows.at(-1) : null;
   const expected = readExpected(card);
-  const levels = {
-    callWall: readLevel(card, 'Call壁') ?? (detailRec ? null : Number.isFinite(Number(broadLatest?.call_wall)) ? Number(broadLatest.call_wall) : null),
-    gammaFlip: readLevel(card, 'Gamma Flip') ?? (detailRec ? null : Number.isFinite(Number(broadLatest?.gamma_flip)) ? Number(broadLatest.gamma_flip) : null),
-    putWall: readLevel(card, 'Put支持') ?? (detailRec ? null : Number.isFinite(Number(broadLatest?.put_wall)) ? Number(broadLatest.put_wall) : null),
+  const baseLevels = {
+    callWall: readLevel(card, 'Call壁'),
+    gammaFlip: readLevel(card, 'Gamma Flip'),
+    putWall: readLevel(card, 'Put支持'),
     expectedLow: expected.low,
     expectedHigh: expected.high,
+  };
+
+  const loadingHolder = document.createElement('div');
+  loadingHolder.innerHTML = loadingPanel(ticker);
+  const loading = loadingHolder.firstElementChild;
+  insertPanel(card, loading);
+  jumpToChart(loading);
+
+  const payloadP = loadPayload(false).catch(() => ({ tickers: {} }));
+  const broadP = loadShard(ticker).catch(() => []);
+  const [payload, broadRows] = await Promise.all([payloadP, broadP]);
+
+  const currentCard = document.querySelector('#selected .selectedCard');
+  const currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
+  if (token !== mountToken || currentTicker !== ticker || !currentCard) return;
+
+  const detailRec = payload?.tickers?.[ticker] || null;
+  const rec = withBroadHistory(detailRec, broadRows);
+  const broadLatest = Array.isArray(broadRows) ? broadRows.at(-1) : null;
+  const levels = {
+    callWall: baseLevels.callWall ?? (detailRec ? null : Number.isFinite(Number(broadLatest?.call_wall)) ? Number(broadLatest.call_wall) : null),
+    gammaFlip: baseLevels.gammaFlip ?? (detailRec ? null : Number.isFinite(Number(broadLatest?.gamma_flip)) ? Number(broadLatest.gamma_flip) : null),
+    putWall: baseLevels.putWall ?? (detailRec ? null : Number.isFinite(Number(broadLatest?.put_wall)) ? Number(broadLatest.put_wall) : null),
+    expectedLow: baseLevels.expectedLow,
+    expectedHigh: baseLevels.expectedHigh,
   };
 
   const holder = document.createElement('div');
   holder.innerHTML = chartPanel(ticker, rec, levels, payload);
   const panel = holder.firstElementChild;
-  const anchor = card.querySelector('.directionHero') || card.querySelector('.selectedBadges') || card.querySelector('.selectedTop');
-  if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', panel);
-  else card.appendChild(panel);
+  const oldLoading = currentCard.querySelector('.v38ChartPanel[data-chart-loading="1"]');
+  if (oldLoading) oldLoading.replaceWith(panel);
+  else insertPanel(currentCard, panel);
 
   const canvas = panel.querySelector('[data-v38-chart]');
   if (canvas && rec && window.V38Chart?.mount) {
@@ -188,9 +228,35 @@ function schedule() {
   requestAnimationFrame(() => mountCurrent().catch(err => console.error('OPTIONS_CHART', err)));
 }
 
+function installNavigationBehavior() {
+  const section = document.querySelector('#selectedSection');
+  if (!section || section.dataset.chartNavPatched === '1') return;
+  section.dataset.chartNavPatched = '1';
+  const nativeScroll = section.scrollIntoView.bind(section);
+  section.scrollIntoView = options => {
+    if (suppressNextSelectedScroll) {
+      suppressNextSelectedScroll = false;
+      jumpToChartAfterMount = true;
+      return;
+    }
+    nativeScroll(options);
+  };
+
+  document.addEventListener('pointerdown', e => {
+    const item = e.target.closest?.('[data-ticker]');
+    if (!item) return;
+    if (item.closest('#suggestions') || item.closest('#selectedSection')) return;
+    suppressNextSelectedScroll = true;
+    const ticker = String(item.dataset.ticker || '').trim().toUpperCase();
+    if (ticker) loadShard(ticker).catch(() => []);
+  }, true);
+}
+
 function boot() {
   const selected = document.querySelector('#selected');
   if (!selected) return;
+  installNavigationBehavior();
+  loadPayload(false).catch(() => ({ tickers: {} }));
   new MutationObserver(schedule).observe(selected, { childList: true });
   schedule();
 }
