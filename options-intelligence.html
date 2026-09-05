@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Options Intelligence</title>
+<style>
+:root{--bg:#080c13;--panel:#101722;--panel2:#0c121c;--line:#253247;--text:#eef4fb;--muted:#8897aa;--green:#64d8aa;--red:#ff7f8c;--amber:#f1b45f;--blue:#71a9ff;--violet:#b49cff}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--text);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",sans-serif}.wrap{max-width:980px;margin:0 auto;padding:18px 14px 44px}.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}.title h1{font-size:22px;margin:0 0 3px}.title p{margin:0;color:var(--muted);font-size:11px;line-height:1.55}.stamp{font-size:10px;color:var(--muted);text-align:right}.toolbar{display:flex;gap:8px;align-items:center;margin:12px 0}.search{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 11px;font:inherit;outline:none}.search:focus{border-color:#45678f}.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0}.sum{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}.sum b{display:block;font-size:18px}.sum span{font-size:10px;color:var(--muted)}.section{margin:22px 0 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}.section h2{font-size:14px;margin:0}.section small{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:linear-gradient(180deg,var(--panel),#0d141e);border:1px solid var(--line);border-radius:16px;padding:14px;overflow:hidden}.card.low{opacity:.72}.card[hidden]{display:none}.hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ticker{font-size:21px;font-weight:850;letter-spacing:.2px}.spot{margin-left:auto;font-size:17px;font-weight:750;font-variant-numeric:tabular-nums}.badge{font-size:10px;font-weight:800;border:1px solid currentColor;border-radius:999px;padding:3px 8px}.supportive{color:var(--green)}.breakout{color:var(--blue)}.neutral{color:var(--amber)}.headwind{color:var(--red)}.datalow{color:var(--muted)}.meta{font-size:10px;color:var(--muted);margin:5px 0 10px}.thesis{font-size:12.5px;line-height:1.65;margin-bottom:10px}.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.lv{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.065);border-radius:9px;padding:8px}.lv label{display:block;color:var(--muted);font-size:9.5px;margin-bottom:3px}.lv b{font-size:13px;font-variant-numeric:tabular-nums}.lv small{display:block;color:var(--muted);font-size:9px;margin-top:2px}.plan{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.box{border-left:2px solid var(--line);padding:3px 0 3px 9px}.box label{display:block;color:var(--muted);font-size:9.5px;margin-bottom:2px}.box div{font-size:11px;line-height:1.55}.chart{margin-top:10px;background:#09101a;border:1px solid var(--line);border-radius:10px;padding:5px}.chart svg{width:100%;height:auto;display:block}.facts{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:9.5px}.facts b{color:var(--text)}.warn{margin-top:8px;color:var(--amber);font-size:9.5px;line-height:1.5}.footnote{margin-top:20px;color:var(--muted);font-size:10px;line-height:1.65;border-top:1px solid var(--line);padding-top:12px}.error{border:1px solid #713e49;background:#26131a;color:#ffb7bf;padding:12px;border-radius:12px;line-height:1.6}.loading{color:var(--muted);padding:22px 0}.pill{border:1px solid var(--line);border-radius:999px;padding:8px 10px;background:var(--panel2);color:var(--muted);font-size:10px;white-space:nowrap}
+@media(max-width:720px){.wrap{padding:14px 10px 34px}.top{align-items:flex-start;flex-direction:column}.stamp{text-align:left}.summary{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.sum{padding:8px 6px}.sum b{font-size:16px}.sum span{font-size:8.3px}.grid{grid-template-columns:1fr}.card{padding:12px}.levels{gap:5px}.lv{padding:7px 6px}.plan{grid-template-columns:1fr}.title h1{font-size:20px}.toolbar{position:sticky;top:0;z-index:3;background:linear-gradient(var(--bg) 70%,transparent);padding:6px 0 9px;margin:5px 0}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top">
+    <div class="title"><h1>Options Intelligence</h1><p>既存V38とは別建ての研究用ページ。OI×推定Gammaから、支持・抵抗・Flip・突破監視を1画面で見る。</p></div>
+    <div id="stamp" class="stamp">loading…</div>
+  </div>
+  <div class="toolbar"><input id="search" class="search" type="search" inputmode="search" placeholder="Ticker検索 例: MU"><span id="covered" class="pill">—銘柄</span></div>
+  <div id="summary" class="summary"></div>
+  <div class="section"><h2>Options Edge Map</h2><small>研究用ヒューリスティック順。V38ランキングには未反映。</small></div>
+  <div id="status" class="loading">オプションデータを読み込み中…</div>
+  <div id="grid" class="grid"></div>
+  <div class="footnote">判定はバックテスト未採用の研究用ヒューリスティック。実ディーラーの売買方向を観測したものではなく、OI×Black-Scholes GammaのPositioning Proxyを使用する。Put Wallは床、Call Wallは天井を保証しない。特にGamma Flip割れでは値動きが増幅する可能性があるため、価格反応・終値確認なしに水準単独で売買しない。</div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const LOCAL = './options_positioning.json';
+  const RAW = 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_positioning.json';
+  const $ = s => document.querySelector(s);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const money = v => { const n=num(v); return n===null?'—':'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  const dist = b => { if(!b||typeof b!=='object') return ''; const p=num(b.pct), a=num(b.atr), x=[]; if(p!==null)x.push((p*100>=0?'+':'')+(p*100).toFixed(1)+'%'); if(a!==null)x.push(Math.abs(a).toFixed(1)+' ATR'); return x.join(' / '); };
+  const gex = v => { const n=num(v); if(n===null)return '—'; const a=Math.abs(n); if(a>=1e9)return (n/1e9>=0?'+':'')+(n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6>=0?'+':'')+Math.round(n/1e6)+'M'; if(a>=1e3)return (n/1e3>=0?'+':'')+Math.round(n/1e3)+'K'; return (n>=0?'+':'')+Math.round(n); };
+
+  function selectedExpiry(r){
+    const exps=r.expiries||{}; const k=r.selected_expiry||r.nearest;
+    if(k&&exps[k]) return exps[k];
+    const first=Object.keys(exps)[0]; return first?exps[first]:null;
+  }
+  function levels(r){ return {spot:num(r.spot),cw:num(r.call_wall&&r.call_wall.px),pw:num(r.put_wall&&r.put_wall.px),gf:num(r.gamma_flip&&r.gamma_flip.px)}; }
+  function classify(r){
+    const L=levels(r), conf=String(r.confidence||'').toUpperCase();
+    if(r.stale||conf==='LOW'||L.spot===null) return {label:'DATA LOW',cls:'datalow',score:0,thesis:'データ量または鮮度が不足。売買判断には使わない。'};
+    const reg=r.regime, ca=Math.abs(num(r.call_wall&&r.call_wall.atr)??999), pa=Math.abs(num(r.put_wall&&r.put_wall.atr)??999), net=num(r.net_gex);
+    if(reg==='NEGATIVE_GAMMA') return {label:'HEADWIND',cls:'headwind',score:1,thesis:'現値はGamma Flip下の増幅側推定。追いかけ買いより、まずFlip奪回を確認したい。'};
+    if(reg==='NEAR_FLIP'){
+      if(ca<=1.0) return {label:'BREAKOUT WATCH',cls:'breakout',score:3,thesis:'方向の境目だがCall集中帯が近い。突破して定着できるかを監視。'};
+      return {label:'NEUTRAL',cls:'neutral',score:2,thesis:'Gamma Flip近辺で方向未確定。支持・抵抗のどちらが先に機能するか待つ。'};
+    }
+    if(reg==='POSITIVE_GAMMA'){
+      if(ca<=0.9) return {label:'BREAKOUT WATCH',cls:'breakout',score:4,thesis:'Flip上を維持しつつCall集中帯に接近。終値突破なら次の上側Strikeへ進む余地を監視。'};
+      if(pa<=2.2||(net!==null&&net>0)) return {label:'SUPPORTIVE',cls:'supportive',score:5,thesis:'Flip上の安定側推定。下に支持候補、上にCall集中帯があり、押し目か上抜けを選びやすい形。'};
+      return {label:'SUPPORTIVE',cls:'supportive',score:4,thesis:'Flip上の安定側推定。上値余地と下側支持の位置関係を見ながら押し目優先。'};
+    }
+    return {label:'NEUTRAL',cls:'neutral',score:2,thesis:'Gamma regimeを確定できないため、水準だけを観測。'};
+  }
+  function nextCalls(exp,spot){
+    return [...new Set(((exp&&exp.call_walls)||[]).map(w=>num(w&&w.strike)).filter(k=>k!==null&&spot!==null&&k>spot))].sort((a,b)=>a-b).slice(0,3);
+  }
+  function plan(r,exp,c){
+    const L=levels(r); let entry;
+    if(c.label==='HEADWIND') entry=L.gf!==null?`まずGamma Flip ${money(L.gf)} の奪回待ち。奪回後に支持へ変わるか確認。`:'新規追随は見送り。';
+    else if(c.label==='BREAKOUT WATCH'&&L.cw!==null) entry=`Call Wall ${money(L.cw)} を終値で突破し、次の足でも維持できれば加速候補。`;
+    else if(c.label==='SUPPORTIVE') entry=(L.gf!==null&&L.gf<L.spot)?`押し目はGamma Flip ${money(L.gf)} 付近の反発確認を優先。`:(L.pw!==null?`Put Wall ${money(L.pw)} 付近の反発確認を優先。`:'上昇追随より、押し目反発の確認を優先。');
+    else entry='Gamma Flipから離れる方向が決まるまで待つ。';
+    let invalid;
+    if(L.gf!==null&&L.gf<L.spot&&L.pw!==null&&L.pw<L.spot) invalid=`${money(L.gf)} 終値割れで構造悪化。${money(L.pw)} 割れで支持シナリオ失効。`;
+    else if(L.gf!==null&&L.gf<L.spot) invalid=`Gamma Flip ${money(L.gf)} の終値割れで構造悪化。`;
+    else if(L.pw!==null&&L.pw<L.spot) invalid=`Put Wall ${money(L.pw)} の終値割れで支持シナリオ失効。`;
+    else invalid='明確な下側無効化水準を算出できず。';
+    const calls=nextCalls(exp,L.spot), target=calls.length?calls.map(money).join(' → '):(L.cw!==null?money(L.cw):'上側Call集中帯なし');
+    return {entry,invalid,target};
+  }
+  function concentration(exp,side){
+    const s=num(exp&&exp[side+'_wall_share']), l=num(exp&&exp[side+'_wall_vs_second']), a=[];
+    if(s!==null)a.push(Math.round(s*100)+'%'); if(l!==null)a.push('#2比 '+l.toFixed(1)+'x'); return a.length?a.join(' / '):'—';
+  }
+  function svg(r,exp){
+    const L=levels(r); if(L.spot===null||!exp)return '';
+    const rows=((exp.strikes)||[]).map(x=>[num(x&&x.k),num(x&&x.call)||0,num(x&&x.put)||0]).filter(x=>x[0]!==null); if(!rows.length)return '';
+    const anchors=[L.pw,L.gf,L.spot,L.cw].filter(v=>v!==null); let lo=Math.min(...anchors), hi=Math.max(...anchors); let pad=Math.max((hi-lo)*.35,L.spot*.035); lo=Math.max(.01,lo-pad); hi+=pad;
+    let vis=rows.filter(x=>x[0]>=lo&&x[0]<=hi); if(vis.length<6){lo=L.spot*.85;hi=L.spot*1.15;vis=rows.filter(x=>x[0]>=lo&&x[0]<=hi);} if(!vis.length)return '';
+    const W=720,H=210,top=18,mid=103,bottom=188,left=38,right=12,plotw=W-left-right,maxg=Math.max(...vis.flatMap(x=>[Math.abs(x[1]),Math.abs(x[2])]),1), xs=[...new Set(vis.map(x=>x[0]))], gap=plotw/Math.max(xs.length,1), bw=Math.max(1.2,Math.min(5,gap*.58)), x=px=>left+(px-lo)/(hi-lo)*plotw;
+    let out=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Strike別GEXと主要水準"><line x1="${left}" y1="${mid}" x2="${W-right}" y2="${mid}" stroke="#314058" stroke-width="1"/>`;
+    for(const [k,call,put] of vis){const xx=x(k),ch=Math.min(75,Math.abs(call)/maxg*75),ph=Math.min(75,Math.abs(put)/maxg*75); if(ch>.5)out+=`<rect x="${(xx-bw/2).toFixed(1)}" y="${(mid-ch).toFixed(1)}" width="${bw.toFixed(1)}" height="${ch.toFixed(1)}" fill="#71a9ff" opacity=".78"/>`; if(ph>.5)out+=`<rect x="${(xx-bw/2).toFixed(1)}" y="${mid}" width="${bw.toFixed(1)}" height="${ph.toFixed(1)}" fill="#ff7f8c" opacity=".70"/>`;}
+    const prof=exp.profile||{}, pxs=prof.x||[], pys=prof.y||[]; if(pxs.length===pys.length){const vals=[]; for(let i=0;i<pxs.length;i++){const xx=num(pxs[i]),yy=num(pys[i]); if(xx!==null&&yy!==null&&xx>=lo&&xx<=hi)vals.push(Math.abs(yy));} const maxp=Math.max(...vals,0); if(maxp>0){const pts=[]; for(let i=0;i<pxs.length;i++){const xx=num(pxs[i]),yy=num(pys[i]); if(xx===null||yy===null||xx<lo||xx>hi)continue; const sy=mid-Math.max(-1,Math.min(1,yy/maxp))*58;pts.push(`${x(xx).toFixed(1)},${sy.toFixed(1)}`);} if(pts.length>1)out+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#b49cff" stroke-width="2" opacity=".9"/>`;}}
+    for(const [px,name,col,anchor] of [[L.pw,'Put','#64d8aa','start'],[L.gf,'Flip','#f1b45f','middle'],[L.spot,'Spot','#ffffff','middle'],[L.cw,'Call','#71a9ff','end']]){if(px===null||px<lo||px>hi)continue;const xx=x(px),tx=xx+(anchor==='start'?3:anchor==='end'?-3:0);out+=`<line x1="${xx.toFixed(1)}" y1="${top}" x2="${xx.toFixed(1)}" y2="${bottom}" stroke="${col}" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${tx.toFixed(1)}" y="12" fill="${col}" font-size="10" text-anchor="${anchor}">${name} ${Math.round(px).toLocaleString('en-US')}</text>`;}
+    out+=`<text x="${left}" y="${H-5}" fill="#718198" font-size="9">Call GEX ↑ / Put GEX ↓ / violet = aggregate gamma profile</text></svg>`; return out;
+  }
+  function card(r){
+    const exp=selectedExpiry(r), c=classify(r), p=plan(r,exp,c), L=levels(r), ticker=String(r.ticker||'—').toUpperCase(), stale=!!(r.stale||r.refresh_failed), range=num(r.range_pos), atr=num(r.atr14), tech=r.tech||{}, chart=svg(r,exp);
+    return {score:c.score,ticker,label:c.label,html:`<article class="card${c.label==='DATA LOW'?' low':''}" data-ticker="${esc(ticker)}"><div class="hd"><span class="ticker">${esc(ticker)}</span><span class="badge ${c.cls}">${esc(c.label)}</span><span class="spot">${money(L.spot)}</span></div><div class="meta">満期 ${esc(r.selected_expiry||r.nearest||'—')} / regime ${esc(r.regime||'—')} / confidence ${esc(r.confidence||'—')}</div><div class="thesis">${esc(c.thesis)}</div><div class="levels"><div class="lv"><label>PUT SUPPORT</label><b>${money(L.pw)}</b><small>${esc(dist(r.put_wall))}</small></div><div class="lv"><label>GAMMA FLIP</label><b>${money(L.gf)}</b><small>${esc(dist(r.gamma_flip))}</small></div><div class="lv"><label>CALL WALL</label><b>${money(L.cw)}</b><small>${esc(dist(r.call_wall))}</small></div></div><div class="plan"><div class="box"><label>狙い方</label><div>${esc(p.entry)}</div></div><div class="box"><label>無効化</label><div>${esc(p.invalid)}</div></div><div class="box"><label>上側ストライク</label><div>${esc(p.target)}</div></div><div class="box"><label>POSITIONING</label><div>Net GEX ${gex(r.net_gex)} / Put集中 ${esc(concentration(exp,'put'))} / Call集中 ${esc(concentration(exp,'call'))}</div></div></div>${chart?`<div class="chart">${chart}</div>`:''}<div class="facts"><span>Range <b>${range===null?'—':Math.round(range)+'%'}</b></span><span>ATR14 <b>${atr===null?'—':atr.toFixed(2)}</b></span><span>21EMA <b>${money(tech['21EMA'])}</b></span><span>63VWAP <b>${money(tech['63VWAP'])}</b></span></div>${stale?'<div class="warn">⚠ 最新取得に問題あり。前回値または古い値を含むため参考扱い。</div>':''}</article>`};
+  }
+  async function load(){
+    let lastErr;
+    for(const url of [LOCAL,RAW]){
+      try{const res=await fetch(url+(url.includes('?')?'&':'?')+'_='+Date.now(),{cache:'no-store'}); if(!res.ok)throw new Error(`HTTP ${res.status}`); return await res.json();}catch(e){lastErr=e;}
+    }
+    throw lastErr||new Error('data fetch failed');
+  }
+  function summary(cards){
+    const defs=[['SUPPORTIVE','supportive'],['BREAKOUT WATCH','breakout'],['NEUTRAL','neutral'],['HEADWIND','headwind'],['DATA LOW','datalow']];
+    $('#summary').innerHTML=defs.map(([label,cls])=>`<div class="sum"><b class="${cls}">${cards.filter(c=>c.label===label).length}</b><span>${label}</span></div>`).join('');
+  }
+  function bindSearch(){
+    const input=$('#search'); input.addEventListener('input',()=>{const q=input.value.trim().toUpperCase(); document.querySelectorAll('.card').forEach(el=>{el.hidden=!!q&&!el.dataset.ticker.includes(q);});});
+  }
+  async function boot(){
+    try{
+      const data=await load(), raw=Object.values(data.tickers||{}).filter(x=>x&&typeof x==='object'), cards=raw.map(card).sort((a,b)=>b.score-a.score||a.ticker.localeCompare(b.ticker));
+      $('#stamp').innerHTML=`as of ${esc(data.asof||'—')}<br>${esc(data.source||'—')} / refreshed ${esc((data.quality&&data.quality.refreshed)??'—')} of ${esc((data.quality&&data.quality.requested)??'—')}`;
+      $('#covered').textContent=cards.length+'銘柄'; summary(cards); $('#grid').innerHTML=cards.map(c=>c.html).join(''); $('#status').remove(); bindSearch();
+    }catch(e){$('#status').className='error';$('#status').textContent='options_positioning.json を読み込めませんでした: '+(e&&e.message?e.message:e);}
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
