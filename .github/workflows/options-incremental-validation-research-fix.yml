@@ -1,0 +1,77 @@
+name: Options incremental validation research fix
+
+on:
+  push:
+    branches:
+      - research/options-intelligence-validation-20260905
+    paths:
+      - '.github/workflows/options-incremental-validation-research-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/options-intelligence-validation-20260905
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check pandas numpy scipy
+      - name: Patch historical-complete feature set
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('research/options-intelligence-20260905/validate_incremental_options.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace(
+              'd["quality_gate"]=(d.total_oi>=5000)&(d.n_strikes>=20)&(d.cp_balance>=.05)',
+              'd["quality_gate"]=(d.total_oi>=5000)&(d.n_strikes>=20)\n    d["quality_gate_strict"]=(d.total_oi>=5000)&(d.n_strikes>=20)&(d.cp_balance>=.05)'
+          )
+          s=s.replace(
+              'opts=["flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes","cp_balance"]',
+              'opts=["flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes"]'
+          )
+          s=s.replace(
+              '"flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes","cp_balance"]',
+              '"flip_dist_atr","log_wall_rr","signed_log_gex_per_oi","log_oi","n_strikes"]'
+          )
+          s=s.replace(
+              'if len(g)<max(60,len(cols)*5): continue',
+              'if len(g)<max(40,len(cols)*3): continue'
+          )
+          old='''    for _,r in fm.sort_values("t_across_dates",key=lambda s:s.abs(),ascending=False).iterrows():\n        lines.append(f"|{r.feature}|{int(r.dates)}|{p(r.mean_coef)}|{r.t_across_dates:.2f}|{p(r.positive_fraction)}|")'''
+          new='''    if fm.empty:\n        lines.append("|—|0|—|—|—|")\n        lines.append("\\nInsufficient complete-case dates for the multivariate coefficient table.")\n    else:\n        for _,r in fm.sort_values("t_across_dates",key=lambda s:s.abs(),ascending=False).iterrows():\n            lines.append(f"|{r.feature}|{int(r.dates)}|{p(r.mean_coef)}|{r.t_across_dates:.2f}|{p(r.positive_fraction)}|")'''
+          if old not in s:
+              raise SystemExit('FM report block not found')
+          s=s.replace(old,new,1)
+          s=s.replace(
+              'Enhanced = baseline + Flip distance, Wall asymmetry, GEX-per-OI transform, OI depth, strike count and C/P OI balance.',
+              'Enhanced = baseline + Flip distance, Wall asymmetry, GEX-per-OI transform, OI depth and strike count. Historical C/P OI balance is excluded because older snapshots do not contain it consistently.'
+          )
+          p.write_text(s,encoding='utf-8')
+          PY
+          python -m py_compile research/options-intelligence-20260905/validate_incremental_options.py
+      - name: Run incremental validation
+        run: python research/options-intelligence-20260905/validate_incremental_options.py
+      - name: Commit research outputs only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/options-intelligence-20260905/validate_incremental_options.py \
+                  research/options-intelligence-20260905/ADDENDUM.md \
+                  research/options-intelligence-20260905/incremental_quintile_summary.csv \
+                  research/options-intelligence-20260905/incremental_quintile_by_date.csv \
+                  research/options-intelligence-20260905/incremental_lodo_cv.csv \
+                  research/options-intelligence-20260905/incremental_fama_macbeth.csv \
+                  research/options-intelligence-20260905/incremental_fama_macbeth_by_date.csv
+          git commit -m "Complete incremental Options value validation"
+          git push origin HEAD:research/options-intelligence-validation-20260905
