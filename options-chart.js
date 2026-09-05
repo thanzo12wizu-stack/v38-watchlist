@@ -115,7 +115,7 @@ function addHistory(chart, timeline, history, field, color) {
     if (seg.length < 2) continue;
     addLine(chart, seg, '', {
       color,
-      lineWidth: 2,
+      lineWidth: 1,
       lineType: lib.LineType.WithSteps,
       priceScaleId: 'right',
       hideTitle: true,
@@ -125,10 +125,10 @@ function addHistory(chart, timeline, history, field, color) {
   }
 }
 
-function priceLine(series, price, title, color, style) {
+function priceLine(series, price, title, color, style, lineWidth = 1) {
   const p = finite(price);
   if (p === null) return null;
-  return series.createPriceLine({ price: p, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true });
+  return series.createPriceLine({ price: p, title, color, lineWidth, lineStyle: style, axisLabelVisible: true });
 }
 
 function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wallHistory = [], stale = false }) {
@@ -201,15 +201,17 @@ function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wall
     timeline = spots.map(x => ({ time: x.time }));
   }
 
-  addHistory(chart, timeline, wallHistory, 'call_wall', 'rgba(239,119,119,.50)');
-  addHistory(chart, timeline, wallHistory, 'put_wall', 'rgba(101,201,140,.50)');
-  addHistory(chart, timeline, wallHistory, 'gamma_flip', 'rgba(240,201,77,.46)');
+  // Historical Wall/Flip lines keep the exact same hue family as the current level.
+  // Only opacity and width are reduced so the latest observation reads as the natural continuation.
+  addHistory(chart, timeline, wallHistory, 'call_wall', 'rgba(239,119,119,.28)');
+  addHistory(chart, timeline, wallHistory, 'put_wall', 'rgba(101,201,140,.28)');
+  addHistory(chart, timeline, wallHistory, 'gamma_flip', 'rgba(240,201,77,.26)');
 
-  priceLine(baseSeries, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed);
-  priceLine(baseSeries, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed);
-  priceLine(baseSeries, levels.putWall, 'Put Wall', '#65c98c', lib.LineStyle.Dashed);
-  priceLine(baseSeries, levels.expectedHigh, 'Expected High', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted);
-  priceLine(baseSeries, levels.expectedLow, 'Expected Low', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted);
+  priceLine(baseSeries, levels.callWall, 'Call Wall', '#ef7777', lib.LineStyle.Dashed, 2);
+  priceLine(baseSeries, levels.gammaFlip, 'Gamma Flip', '#f0c94d', lib.LineStyle.Dashed, 2);
+  priceLine(baseSeries, levels.putWall, 'Put Wall', '#65c98c', lib.LineStyle.Dashed, 2);
+  priceLine(baseSeries, levels.expectedHigh, 'Expected High', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted, 1);
+  priceLine(baseSeries, levels.expectedLow, 'Expected Low', 'rgba(120,170,255,.75)', lib.LineStyle.Dotted, 1);
 
   const band = document.createElement('div');
   band.className = 'v38ExpectedBand';
