@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="dark">
 <title>Options Intelligence</title>
 <link rel="stylesheet" href="./options-intelligence.css">
+<link rel="stylesheet" href="./options-intelligence-period.css">
 </head>
 <body>
 <main class="wrap">
@@ -23,6 +24,18 @@
     <div class="searchHint">全ユニバース検索。Options未取得・時間不一致も隠さず表示します。</div>
   </section>
 
+  <section class="periodPanel" aria-label="分析期間">
+    <div class="periodTop"><div><span class="eyebrow">HORIZON</span><h2>分析期間</h2></div><div class="periodNow">現在: <b id="periodCurrent">スイング 7–21DTE</b></div></div>
+    <div class="periodButtons">
+      <button class="periodBtn" data-period="short">短期<br><small>0–6DTE</small></button>
+      <button class="periodBtn active" data-period="swing">スイング<br><small>7–21DTE</small></button>
+      <button class="periodBtn" data-period="medium">中期<br><small>22–45DTE</small></button>
+      <button class="periodBtn" data-period="multi">複数満期<br><small>0–45DTE統合</small></button>
+      <button class="periodBtn" data-period="exact">満期指定<br><small>銘柄ごと</small></button>
+    </div>
+    <div id="periodHint" class="periodHint">デフォルト。1〜3週間の売買判断に使う主期間。</div>
+  </section>
+
   <section id="selectedSection" class="selectedSection" hidden>
     <div class="sectionHead"><div><span class="eyebrow">SEARCH RESULT</span><h2>銘柄分析</h2></div><button id="closeSelected" class="ghostBtn">閉じる</button></div>
     <div id="selected"></div>
@@ -36,12 +49,12 @@
   </section>
 
   <section>
-    <div class="sectionHead"><div><span class="eyebrow">TODAY'S LEADERS</span><h2>見るべきリーダー</h2></div><p>Leadershipは上流から読み取りのみ。Options側から逆流しません。</p></div>
+    <div class="sectionHead"><div><span class="eyebrow">TODAY'S LEADERS</span><h2>見るべきリーダー</h2></div><p>選択中の期間でOptionsを再評価。Leadershipは上流から読み取りのみ。</p></div>
     <div id="leaders" class="cardGrid"><div class="loading">読み込み中…</div></div>
   </section>
 
   <section>
-    <div class="sectionHead"><div><span class="eyebrow">DIRECTIONAL SETUPS</span><h2>方向性が強い配置</h2></div><p>同一セッションで価格とOptionsが揃った銘柄だけ。</p></div>
+    <div class="sectionHead"><div><span class="eyebrow">DIRECTIONAL SETUPS</span><h2>方向性が強い配置</h2></div><p>選択期間かつ同一セッションで価格とOptionsが揃った銘柄だけ。</p></div>
     <div class="directionColumns">
       <div class="directionPane"><h3>↑ 上方向</h3><div id="bullish" class="cardGrid one"><div class="loading">読み込み中…</div></div></div>
       <div class="directionPane"><h3>↓ 下方向</h3><div id="bearish" class="cardGrid one"><div class="loading">読み込み中…</div></div></div>
