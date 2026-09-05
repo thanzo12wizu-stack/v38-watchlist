@@ -1,0 +1,65 @@
+name: Options chart data
+
+on:
+  workflow_run:
+    workflows: ["Options positioning"]
+    types: [completed]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - tools/build_options_chart_data.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-chart-data-main
+  cancel-in-progress: true
+
+jobs:
+  chart-data:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Build read-only chart price history
+        env:
+          V38_OPT_JSON: options_positioning.json
+          V38_OPT_CHART_JSON: options_chart_data.json
+          V38_OPT_CHART_PERIOD: 1y
+          V38_OPT_CHART_WORKERS: '3'
+          V38_OPT_CHART_ATTEMPTS: '2'
+        run: |
+          python -m py_compile tools/build_options_chart_data.py
+          python tools/build_options_chart_data.py
+      - name: Commit chart artifact only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- options_chart_data.json
+          if git diff --staged --quiet; then
+            echo "no chart data changes"
+            exit 0
+          fi
+          git commit -m "Options chart data $(date +%F)"
+          for a in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; exit 1; }
+            sleep $((a*2))
+          done
+          exit 1
