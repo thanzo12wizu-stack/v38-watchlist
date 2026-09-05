@@ -9,6 +9,11 @@ on:
     branches: [main]
     paths:
       - tools/build_options_chart_data.py
+      - options-chart.js
+      - options-chart-bridge.js
+      - options-chart.css
+      - options-intelligence.html
+      - .github/workflows/options-chart-data.yml
 
 permissions:
   contents: write
@@ -30,6 +35,10 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+      - name: Validate chart UI syntax
+        run: |
+          node --check options-chart.js
+          node --check options-chart-bridge.js
       - name: Install
         run: pip install --disable-pip-version-check -r requirements.txt
       - name: Build read-only chart price history
