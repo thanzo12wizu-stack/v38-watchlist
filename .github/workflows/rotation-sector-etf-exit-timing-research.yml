@@ -1,0 +1,60 @@
+name: Rotation Sector ETF Exit Timing Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/rotation-exit-overlay-20260905
+    paths:
+      - leadership/research/audit_sector_etf_exit_timing.py
+      - .github/workflows/rotation-sector-etf-exit-timing-research.yml
+
+concurrency:
+  group: rotation-sector-etf-exit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy yfinance
+      - name: Download audited strict-PIT Rotation panel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rotation
+          gh api repos/${{ github.repository }}/actions/artifacts/9743601391/zip > /tmp/rotation.zip
+          unzip -q /tmp/rotation.zip -d /tmp/rotation
+          test -s /tmp/rotation/rotation_pit_panel_cov80.csv
+      - name: Syntax check
+        run: python -m py_compile leadership/research/audit_sector_etf_exit_timing.py
+      - name: Run Sector ETF timing audit
+        run: |
+          python leadership/research/audit_sector_etf_exit_timing.py \
+            --panel /tmp/rotation/rotation_pit_panel_cov80.csv \
+            --output leadership/research/sector_etf_exit_timing_outputs
+      - name: Guard output
+        run: |
+          test -s leadership/research/sector_etf_exit_timing_outputs/summary_sector_etf_exit_timing.json
+          python - <<'PY'
+          import json
+          p='leadership/research/sector_etf_exit_timing_outputs/summary_sector_etf_exit_timing.json'
+          x=json.load(open(p))
+          assert x['status']=='SECTOR_ETF_EXIT_TIMING_RESEARCH'
+          assert 'DISTRIBUTION_TRAP' in x['conditions']
+          print(json.dumps({k:v.get('CONFIRM_2024_PLUS',{}).get('n') for k,v in x['conditions'].items()}, indent=2))
+          PY
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotation-sector-etf-exit-timing-research
+          path: leadership/research/sector_etf_exit_timing_outputs/
+          if-no-files-found: warn
+          retention-days: 14
