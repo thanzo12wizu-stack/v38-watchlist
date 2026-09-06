@@ -1,0 +1,45 @@
+name: Astra V38 canonical funding invariant
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/research/astra-v38-full-audit-20260905'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install pinned packages
+        run: pip install pandas==3.0.5 numpy==2.4.6
+
+      - name: Download frozen Stage56 TQQQ series
+        uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: frozen/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+          repository: thanzo12wizu-stack/v38-watchlist
+
+      - name: Audit funding-state invariance
+        run: |
+          python leadership/research/astra_audit_20260905/canonical_funding_invariant.py \
+            --results leadership/research/astra_audit_20260905/results \
+            --tqqq-daily frozen/tqqq/tqqq_stage56_daily.csv.gz \
+            --output canonical_funding_output
+
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-v38-canonical-funding-invariant
+          path: canonical_funding_output/
+          retention-days: 90
