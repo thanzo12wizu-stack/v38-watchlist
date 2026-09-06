@@ -10,8 +10,8 @@ const shardPromises = new Map();
 let activeChart = null;
 let scheduled = false;
 let mountToken = 0;
-let suppressNextSelectedScroll = false;
-let jumpToChartAfterMount = false;
+let preserveAnchor = null;
+let preserveAnchorTop = null;
 
 const numText = text => {
   const m = String(text || '').replaceAll(',', '').match(/-?\d+(?:\.\d+)?/);
@@ -147,10 +147,23 @@ function insertPanel(card, panel) {
   else card.appendChild(panel);
 }
 
-function jumpToChart(panel) {
-  if (!jumpToChartAfterMount || !panel) return;
-  jumpToChartAfterMount = false;
-  requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+function restoreAnchorPosition() {
+  if (!preserveAnchor || preserveAnchorTop === null || !preserveAnchor.isConnected) return;
+  const nowTop = preserveAnchor.getBoundingClientRect().top;
+  const delta = nowTop - preserveAnchorTop;
+  if (Math.abs(delta) > 0.5) window.scrollBy(0, delta);
+}
+
+function settleAnchorPosition() {
+  restoreAnchorPosition();
+  requestAnimationFrame(() => {
+    restoreAnchorPosition();
+    requestAnimationFrame(() => {
+      restoreAnchorPosition();
+      preserveAnchor = null;
+      preserveAnchorTop = null;
+    });
+  });
 }
 
 async function mountCurrent() {
@@ -180,7 +193,7 @@ async function mountCurrent() {
   loadingHolder.innerHTML = loadingPanel(ticker);
   const loading = loadingHolder.firstElementChild;
   insertPanel(card, loading);
-  jumpToChart(loading);
+  restoreAnchorPosition();
 
   const payloadP = loadPayload(false).catch(() => ({ tickers: {} }));
   const broadP = loadShard(ticker).catch(() => []);
@@ -207,6 +220,7 @@ async function mountCurrent() {
   const oldLoading = currentCard.querySelector('.v38ChartPanel[data-chart-loading="1"]');
   if (oldLoading) oldLoading.replaceWith(panel);
   else insertPanel(currentCard, panel);
+  restoreAnchorPosition();
 
   const canvas = panel.querySelector('[data-v38-chart]');
   if (canvas && rec && window.V38Chart?.mount) {
@@ -220,6 +234,7 @@ async function mountCurrent() {
       stale: !!rec.stale,
     });
   }
+  settleAnchorPosition();
 }
 
 function schedule() {
@@ -229,24 +244,15 @@ function schedule() {
 }
 
 function installNavigationBehavior() {
-  const section = document.querySelector('#selectedSection');
-  if (!section || section.dataset.chartNavPatched === '1') return;
-  section.dataset.chartNavPatched = '1';
-  const nativeScroll = section.scrollIntoView.bind(section);
-  section.scrollIntoView = options => {
-    if (suppressNextSelectedScroll) {
-      suppressNextSelectedScroll = false;
-      jumpToChartAfterMount = true;
-      return;
-    }
-    nativeScroll(options);
-  };
+  if (document.documentElement.dataset.chartAnchorPatched === '1') return;
+  document.documentElement.dataset.chartAnchorPatched = '1';
 
   document.addEventListener('pointerdown', e => {
     const item = e.target.closest?.('[data-ticker]');
     if (!item) return;
     if (item.closest('#suggestions') || item.closest('#selectedSection')) return;
-    suppressNextSelectedScroll = true;
+    preserveAnchor = item;
+    preserveAnchorTop = item.getBoundingClientRect().top;
     const ticker = String(item.dataset.ticker || '').trim().toUpperCase();
     if (ticker) loadShard(ticker).catch(() => []);
   }, true);
@@ -257,7 +263,7 @@ function boot() {
   if (!selected) return;
   installNavigationBehavior();
   loadPayload(false).catch(() => ({ tickers: {} }));
-  new MutationObserver(schedule).observe(selected, { childList: true });
+  new MutationObserver(() => { restoreAnchorPosition(); schedule(); }).observe(selected, { childList: true });
   schedule();
 }
 

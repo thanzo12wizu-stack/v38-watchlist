@@ -79,15 +79,6 @@
 <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js" defer></script>
 <script src="./options-chart.js?v=20260905-chart6" defer></script>
 <script src="./options-intelligence.js?v=20260906-cardscroll1" defer></script>
-<script>
-(() => {
-  const nativeScrollIntoView = Element.prototype.scrollIntoView;
-  Element.prototype.scrollIntoView = function(options) {
-    if (this?.classList?.contains('v38ChartPanel')) return;
-    return nativeScrollIntoView.call(this, options);
-  };
-})();
-</script>
-<script src="./options-chart-bridge.js?v=20260905-chart4" defer></script>
+<script src="./options-chart-bridge.js?v=20260906-anchor1" defer></script>
 </body>
 </html>
