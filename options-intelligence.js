@@ -649,7 +649,7 @@ function buildLeaderRows() {
   if (!metric) return [];
   return Object.entries(leaderMap)
     .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l) }))
-    .filter(x => x.metricValue !== null)
+    .filter(x => x.metricValue !== null && isUsable(x.o))
     .sort((a, b) => b.metricValue - a.metricValue || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.t.localeCompare(b.t))
     .slice(0, 8);
 }
@@ -664,7 +664,7 @@ function renderLeaders() {
     return;
   }
   const a = buildLeaderRows();
-  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.metricValue.toFixed(1))).join('') : `<div class="empty">${metric.label} Leadershipデータなし。</div>`;
+  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.metricValue.toFixed(1))).join('') : `<div class="empty">この期間で有効Optionsを持つ${metric.label}リーダーなし。</div>`;
   bind($('#leaders'));
 }
 function directionalRows(dir) {
