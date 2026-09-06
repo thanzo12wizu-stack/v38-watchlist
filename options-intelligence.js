@@ -58,6 +58,7 @@ let activeSuggestion = -1;
 let activePeriod = 'swing';
 let selectedTicker = null;
 let expandedTickerCard = null;
+let inlinePeriodMode = null;
 let leaderFresh = false;
 let leaderAsOf = '';
 let leaderHealthReason = '';
@@ -698,6 +699,100 @@ function closeInlineCard() {
   card.classList.remove('inlineExpanded');
   card.setAttribute('aria-expanded', 'false');
   expandedTickerCard = null;
+  inlinePeriodMode = null;
+  window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
+}
+function inlinePeriodData(t, mode) {
+  const keep = activePeriod;
+  const snapshots = {};
+  let html = '';
+  try {
+    for (const m of ['short', 'swing', 'medium']) {
+      activePeriod = m;
+      rebuildRecords();
+      const o = optionMap[t] || null;
+      if (!o) snapshots[m] = { text: 'Optionsなし', cls: 'bLow', confidence: null };
+      else if (o.period_unavailable) snapshots[m] = { text: '期間なし', cls: 'bLow', confidence: null };
+      else if (!isUsable(o)) snapshots[m] = { text: '判定停止', cls: 'bLow', confidence: null };
+      else {
+        const d = dirView(o.direction);
+        snapshots[m] = { text: `${d.arrow} ${d.label}`, cls: d.cls, confidence: o.direction?.confidence ?? null };
+      }
+      if (m === mode) html = selectedHtml(t);
+    }
+    if (!['short', 'swing', 'medium'].includes(mode)) {
+      activePeriod = mode;
+      rebuildRecords();
+      html = selectedHtml(t);
+    }
+  } finally {
+    activePeriod = keep;
+    rebuildRecords();
+  }
+  return { html, snapshots };
+}
+function inlinePeriodControls(mode, snapshots) {
+  const defs = [
+    ['short', '短期', '0–6DTE'],
+    ['swing', 'スイング', '7–21DTE'],
+    ['medium', '中期', '22–45DTE'],
+    ['multi', '複数満期', '0–45DTE'],
+    ['exact', '満期指定', ''],
+  ];
+  const buttons = defs.map(([key, label, sub]) =>
+    `<button type="button" class="inlinePeriodBtn${mode === key ? ' active' : ''}" data-inline-period="${key}"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</button>`
+  ).join('');
+  const chips = [
+    ['short', '短期'],
+    ['swing', 'スイング'],
+    ['medium', '中期'],
+  ].map(([key, label]) => {
+    const x = snapshots[key] || { text: '—', cls: 'bLow', confidence: null };
+    const conf = x.confidence === null || x.confidence === undefined ? '' : `<small>確度 ${x.confidence}</small>`;
+    return `<div class="inlineCompareChip"><span>${label}</span><b class="${x.cls}">${esc(x.text)}</b>${conf}</div>`;
+  }).join('');
+  return `<div class="inlinePeriodBar"><div class="inlinePeriodTitle"><b>このカードだけ期間切替</b><span>一覧の期間は変えません</span></div><div class="inlinePeriodButtons">${buttons}</div><div class="inlineCompare">${chips}</div></div>`;
+}
+function renderInlineCard(card, t, mode) {
+  t = String(t || '').trim().toUpperCase();
+  if (!card || !t || !PERIODS[mode]) return;
+  const { html, snapshots } = inlinePeriodData(t, mode);
+  let inline = card.querySelector(':scope > .inlineAnalysis');
+  if (!inline) {
+    inline = document.createElement('div');
+    inline.className = 'inlineAnalysis';
+    card.appendChild(inline);
+  }
+  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${inlinePeriodControls(mode, snapshots)}${html}`;
+  if (mode !== 'exact') inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
+
+  inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    closeInlineCard();
+  });
+  for (const b of inline.querySelectorAll('[data-inline-period]')) {
+    b.addEventListener('click', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const next = b.dataset.inlinePeriod;
+      if (!next || next === inlinePeriodMode) return;
+      renderInlineCard(card, t, next);
+    });
+  }
+  const expiry = inline.querySelector('#expirySelect');
+  if (expiry) {
+    expiry.addEventListener('change', ev => {
+      ev.stopPropagation();
+      exactExpiryByTicker[t] = expiry.value;
+      renderInlineCard(card, t, 'exact');
+    });
+  }
+
+  card.classList.add('inlineExpanded');
+  card.setAttribute('aria-expanded', 'true');
+  expandedTickerCard = card;
+  inlinePeriodMode = mode;
   window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
 }
 function toggleInlineCard(card, t) {
@@ -710,20 +805,7 @@ function toggleInlineCard(card, t) {
   closeInlineCard();
   $('#selectedSection').hidden = true;
   $('#selected').innerHTML = '';
-  const inline = document.createElement('div');
-  inline.className = 'inlineAnalysis';
-  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${selectedHtml(t)}`;
-  inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
-  card.appendChild(inline);
-  card.classList.add('inlineExpanded');
-  card.setAttribute('aria-expanded', 'true');
-  expandedTickerCard = card;
-  inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    closeInlineCard();
-  });
-  window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
+  renderInlineCard(card, t, activePeriod);
 }
 function bind(root) {
   for (const e of root.querySelectorAll('[data-ticker]')) {
