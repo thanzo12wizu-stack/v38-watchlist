@@ -1,0 +1,58 @@
+name: Patch Options inline period switch once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-options-inline-period-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Apply inline period switch patch
+        run: python .tmp_patch_options_inline_period.py
+
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check options-intelligence.js
+          node --check options-chart-bridge.js
+          git diff --check
+          grep -q "function inlinePeriodData(t, mode)" options-intelligence.js
+          grep -q "このカードだけ期間切替" options-intelligence.js
+          grep -q "一覧の期間は変えません" options-intelligence.js
+          grep -q "data-inline-period" options-intelligence.js
+          grep -q "inlinePeriodBar" options-intelligence.css
+          grep -q "options-intelligence.js?v=20260907-inlineperiod1" options-intelligence.html
+          grep -q "options-intelligence.css?v=20260907-inlineperiod1" options-intelligence.html
+          grep -q "short: { label: '短期 0–6DTE'" options-intelligence.js
+          grep -q "swing: { label: 'スイング 7–21DTE'" options-intelligence.js
+          grep -q "medium: { label: '中期 22–45DTE'" options-intelligence.js
+
+      - name: Commit intended files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- options-intelligence.js options-intelligence.css options-intelligence.html
+          staged="$(git diff --cached --name-only)"
+          printf '%s\n' "$staged"
+          test "$staged" = $'options-intelligence.css\noptions-intelligence.html\noptions-intelligence.js' || { echo 'unexpected staged files'; exit 1; }
+          git commit -m 'Add period switch inside expanded Options cards'
+          git push origin HEAD:main
