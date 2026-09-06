@@ -757,6 +757,51 @@ function inlinePeriodCompare(snapshots) {
   }).join('');
   return `<div class="inlineCompare">${chips}</div>`;
 }
+function inlineLevelValue(selected, label) {
+  for (const el of selected?.querySelectorAll('.bigLv') || []) {
+    if (el.querySelector('span')?.textContent?.trim() === label) return el.querySelector('b')?.textContent?.trim() || '—';
+  }
+  return '—';
+}
+function compactInlineLayout(inline, t, mode) {
+  const selected = inline.querySelector('.selectedCard');
+  if (!selected) return;
+  selected.classList.add('inlineSelectedCompact');
+
+  const price = selected.querySelector('.selectedPrice b')?.textContent?.trim() || '—';
+  const name = selected.querySelector('.selectedName')?.textContent?.trim() || '';
+  const leader = selected.querySelector('.selectedBadges .bLeader')?.textContent?.trim() || '';
+  const period = selected.querySelector('.selectedBadges .bPeriod')?.textContent?.trim() || '';
+  const arrow = selected.querySelector('.directionArrow')?.textContent?.trim() || '';
+  const direction = selected.querySelector('.directionCopy b')?.textContent?.trim() || '判定保留';
+  const arrowNode = selected.querySelector('.directionArrow');
+  const directionClass = arrowNode?.classList.contains('up') ? 'bUp'
+    : arrowNode?.classList.contains('down') ? 'bDown'
+    : arrowNode?.classList.contains('range') ? 'bRange'
+    : arrowNode?.classList.contains('vol') ? 'bVol' : 'bLow';
+
+  const compact = document.createElement('div');
+  compact.className = 'inlineCompactSummary';
+  compact.innerHTML = `<div class="inlineCompactMain"><div class="inlineCompactIdentity"><strong>${esc(t)}</strong><span class="${directionClass}">${esc(`${arrow} ${direction}`.trim())}</span><small>${esc(name)}</small></div><div class="inlineCompactPrice">${esc(price)}</div></div><div class="inlineCompactMeta">${[leader, period].filter(Boolean).map(esc).join(' · ') || esc(PERIODS[mode]?.label || '')}</div><div class="inlineKeyStrip"><span>支持 <b>${esc(inlineLevelValue(selected, 'Put支持'))}</b></span><span>抵抗 <b>${esc(inlineLevelValue(selected, 'Call壁'))}</b></span><span>Flip <b>${esc(inlineLevelValue(selected, 'Gamma Flip'))}</b></span><span>想定 <b>${esc(inlineLevelValue(selected, '織込み値幅'))}</b></span></div>`;
+  inline.querySelector('.inlineAnalysisHead')?.insertAdjacentElement('afterend', compact);
+
+  const readout = inline.querySelector('.inlineReadout');
+  const decisionText = selected.querySelector('.decision div')?.textContent?.trim();
+  if (readout && decisionText) {
+    readout.innerHTML = `<b>今の見方</b><span>${esc(decisionText)}</span>`;
+    readout.hidden = false;
+  }
+
+  const more = selected.querySelector('.moreInfo');
+  if (more) {
+    for (const node of [selected.querySelector('.decision'), selected.querySelector('.availabilityRow'), selected.querySelector('.timeBox'), selected.querySelector('.leaderStats')]) {
+      if (node) more.appendChild(node);
+    }
+  }
+
+  const picker = selected.querySelector('.expiryPicker');
+  if (mode === 'exact' && picker) inline.querySelector('.inlineChartSlot')?.before(picker);
+}
 function renderInlineCard(card, t, mode) {
   t = String(t || '').trim().toUpperCase();
   if (!card || !t || !PERIODS[mode]) return;
@@ -767,8 +812,9 @@ function renderInlineCard(card, t, mode) {
     inline.className = 'inlineAnalysis';
     card.appendChild(inline);
   }
-  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${inlinePeriodControls(mode, t)}<div class="inlineChartSlot"></div>${inlinePeriodCompare(snapshots)}${html}`;
+  inline.innerHTML = `<div class="inlineAnalysisHead"><span>銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${inlinePeriodCompare(snapshots)}${inlinePeriodControls(mode, t)}<div class="inlineChartSlot"></div><div class="inlineReadout" hidden></div>${html}`;
   if (mode !== 'exact') inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
+  compactInlineLayout(inline, t, mode);
 
   inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
     ev.preventDefault();
