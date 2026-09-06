@@ -1,0 +1,120 @@
+from pathlib import Path
+
+
+def one(text, old, new, label):
+    if old not in text:
+        raise SystemExit(f'missing anchor: {label}')
+    return text.replace(old, new, 1)
+
+
+p = Path('options-intelligence.js')
+s = p.read_text(encoding='utf-8')
+
+anchor = """function renderInlineCard(card, t, mode) {
+  t = String(t || '').trim().toUpperCase();
+  if (!card || !t || !PERIODS[mode]) return;
+  const { html, snapshots } = inlinePeriodData(t, mode);
+  let inline = card.querySelector(':scope > .inlineAnalysis');
+  if (!inline) {
+    inline = document.createElement('div');
+    inline.className = 'inlineAnalysis';
+    card.appendChild(inline);
+  }
+  inline.innerHTML = `<div class=\"inlineAnalysisHead\"><span>${esc(t)} の銘柄分析</span><button type=\"button\" class=\"inlineClose\">閉じる</button></div>${inlinePeriodControls(mode, t)}<div class=\"inlineChartSlot\"></div>${inlinePeriodCompare(snapshots)}${html}`;
+  if (mode !== 'exact') inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
+
+  inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    closeInlineCard();
+  });
+"""
+
+replacement = """function inlineLevelValue(selected, label) {
+  for (const el of selected?.querySelectorAll('.bigLv') || []) {
+    if (el.querySelector('span')?.textContent?.trim() === label) return el.querySelector('b')?.textContent?.trim() || '—';
+  }
+  return '—';
+}
+function compactInlineLayout(inline, t, mode) {
+  const selected = inline.querySelector('.selectedCard');
+  if (!selected) return;
+  selected.classList.add('inlineSelectedCompact');
+
+  const price = selected.querySelector('.selectedPrice b')?.textContent?.trim() || '—';
+  const name = selected.querySelector('.selectedName')?.textContent?.trim() || '';
+  const leader = selected.querySelector('.selectedBadges .bLeader')?.textContent?.trim() || '';
+  const period = selected.querySelector('.selectedBadges .bPeriod')?.textContent?.trim() || '';
+  const arrow = selected.querySelector('.directionArrow')?.textContent?.trim() || '';
+  const direction = selected.querySelector('.directionCopy b')?.textContent?.trim() || '判定保留';
+  const arrowNode = selected.querySelector('.directionArrow');
+  const directionClass = arrowNode?.classList.contains('up') ? 'bUp'
+    : arrowNode?.classList.contains('down') ? 'bDown'
+    : arrowNode?.classList.contains('range') ? 'bRange'
+    : arrowNode?.classList.contains('vol') ? 'bVol' : 'bLow';
+
+  const compact = document.createElement('div');
+  compact.className = 'inlineCompactSummary';
+  compact.innerHTML = `<div class=\"inlineCompactMain\"><div class=\"inlineCompactIdentity\"><strong>${esc(t)}</strong><span class=\"${directionClass}\">${esc(`${arrow} ${direction}`.trim())}</span><small>${esc(name)}</small></div><div class=\"inlineCompactPrice\">${esc(price)}</div></div><div class=\"inlineCompactMeta\">${[leader, period].filter(Boolean).map(esc).join(' · ') || esc(PERIODS[mode]?.label || '')}</div><div class=\"inlineKeyStrip\"><span>支持 <b>${esc(inlineLevelValue(selected, 'Put支持'))}</b></span><span>抵抗 <b>${esc(inlineLevelValue(selected, 'Call壁'))}</b></span><span>Flip <b>${esc(inlineLevelValue(selected, 'Gamma Flip'))}</b></span><span>想定 <b>${esc(inlineLevelValue(selected, '織込み値幅'))}</b></span></div>`;
+  inline.querySelector('.inlineAnalysisHead')?.insertAdjacentElement('afterend', compact);
+
+  const readout = inline.querySelector('.inlineReadout');
+  const decisionText = selected.querySelector('.decision div')?.textContent?.trim();
+  if (readout && decisionText) {
+    readout.innerHTML = `<b>今の見方</b><span>${esc(decisionText)}</span>`;
+    readout.hidden = false;
+  }
+
+  const more = selected.querySelector('.moreInfo');
+  if (more) {
+    for (const node of [selected.querySelector('.decision'), selected.querySelector('.availabilityRow'), selected.querySelector('.timeBox'), selected.querySelector('.leaderStats')]) {
+      if (node) more.appendChild(node);
+    }
+  }
+
+  const picker = selected.querySelector('.expiryPicker');
+  if (mode === 'exact' && picker) inline.querySelector('.inlineChartSlot')?.before(picker);
+}
+function renderInlineCard(card, t, mode) {
+  t = String(t || '').trim().toUpperCase();
+  if (!card || !t || !PERIODS[mode]) return;
+  const { html, snapshots } = inlinePeriodData(t, mode);
+  let inline = card.querySelector(':scope > .inlineAnalysis');
+  if (!inline) {
+    inline = document.createElement('div');
+    inline.className = 'inlineAnalysis';
+    card.appendChild(inline);
+  }
+  inline.innerHTML = `<div class=\"inlineAnalysisHead\"><span>銘柄分析</span><button type=\"button\" class=\"inlineClose\">閉じる</button></div>${inlinePeriodCompare(snapshots)}${inlinePeriodControls(mode, t)}<div class=\"inlineChartSlot\"></div><div class=\"inlineReadout\" hidden></div>${html}`;
+  if (mode !== 'exact') inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
+  compactInlineLayout(inline, t, mode);
+
+  inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    closeInlineCard();
+  });
+"""
+
+s = one(s, anchor, replacement, 'renderInlineCard')
+p.write_text(s, encoding='utf-8')
+
+p = Path('options-intelligence.css')
+s = p.read_text(encoding='utf-8')
+css = """
+
+/* Expanded card: one reading order, same chart/screenshot dimensions. */
+.miniCard.inlineExpanded>.miniHead,.miniCard.inlineExpanded>.badges,.miniCard.inlineExpanded>.miniDirection,.miniCard.inlineExpanded>.miniThesis,.miniCard.inlineExpanded>.miniLevels,.miniCard.inlineExpanded>.miniMeta{display:none}
+.inlineAnalysisHead{margin-bottom:8px}.inlineCompactSummary{margin:0 0 8px;padding:10px 11px;background:#0a121c;border:1px solid rgba(255,255,255,.08);border-radius:12px}.inlineCompactMain{display:flex;align-items:flex-start;gap:10px}.inlineCompactIdentity{min-width:0;display:grid;grid-template-columns:auto auto;align-items:baseline;gap:3px 8px}.inlineCompactIdentity strong{font-size:20px;line-height:1}.inlineCompactIdentity span{font-size:10px;font-weight:850}.inlineCompactIdentity small{grid-column:1/-1;display:block;color:var(--muted);font-size:8.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inlineCompactPrice{margin-left:auto;font-size:17px;font-weight:900;font-variant-numeric:tabular-nums}.inlineCompactMeta{margin-top:7px;color:#aebdcd;font-size:8.5px}.inlineKeyStrip{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px}.inlineKeyStrip span{min-width:0;background:#09111a;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 7px;color:var(--muted);font-size:8px}.inlineKeyStrip b{display:block;margin-top:2px;color:#e6edf5;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inlineAnalysis>.inlineCompare{margin:0 0 8px}.inlineAnalysis>.inlinePeriodBar{margin:0}.inlineAnalysis>.expiryPicker{margin:8px 0 0}.inlineAnalysis>.inlineChartSlot{margin:8px 0 0}.inlineReadout{display:flex;gap:8px;align-items:flex-start;margin:8px 0 10px;padding:8px 10px;border-left:2px solid #4a6d93;background:#0a121c;border-radius:0 9px 9px 0}.inlineReadout b{flex:0 0 auto;color:#8fb6df;font-size:8.5px}.inlineReadout span{font-size:10.5px;line-height:1.55}.inlineSelectedCompact>.selectedTop,.inlineSelectedCompact>.selectedBadges{display:none}.inlineSelectedCompact>.directionHero{margin-top:0}.inlineSelectedCompact>.moreInfo .decision,.inlineSelectedCompact>.moreInfo .availabilityRow,.inlineSelectedCompact>.moreInfo .timeBox,.inlineSelectedCompact>.moreInfo .leaderStats{margin-top:10px}.inlineSelectedCompact>.moreInfo .decision{margin-bottom:0}
+@media(max-width:720px){.inlineCompactSummary{padding:9px}.inlineCompactIdentity strong{font-size:18px}.inlineCompactPrice{font-size:15px}.inlineKeyStrip{grid-template-columns:repeat(2,1fr)}.inlineReadout{display:block}.inlineReadout b{display:block;margin-bottom:3px}.inlineAnalysis>.inlineCompare{gap:4px}.inlineCompareChip{padding:6px}.inlineCompareChip b{font-size:9.5px}}
+"""
+if '/* Expanded card: one reading order' in s:
+    raise SystemExit('layout css already present')
+s += css
+p.write_text(s, encoding='utf-8')
+
+p = Path('options-intelligence.html')
+h = p.read_text(encoding='utf-8')
+h = one(h, 'options-intelligence.css?v=20260907-chartcontrols1', 'options-intelligence.css?v=20260907-layout2', 'css cache')
+h = one(h, 'options-intelligence.js?v=20260907-chartcontrols1', 'options-intelligence.js?v=20260907-layout2', 'js cache')
+p.write_text(h, encoding='utf-8')
