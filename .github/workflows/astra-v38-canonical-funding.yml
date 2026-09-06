@@ -2,6 +2,12 @@ name: Astra V38 canonical funding invariant
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - research/astra-v38-full-audit-20260905
+    paths:
+      - leadership/research/astra_audit_20260905/canonical_funding_invariant.py
+      - .github/workflows/astra-v38-canonical-funding.yml
 
 permissions:
   actions: read
