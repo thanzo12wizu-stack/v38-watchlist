@@ -11,7 +11,12 @@
       "full_exits": [],
       "partial25": [],
       "entries": [],
-      "entry_cap": 0
+      "entry_cap": 0,
+      "core_cap": 0,
+      "early_cap": 0,
+      "promotions": [],
+      "ddv_policy": "TOP12_THEN_DDV20_NO_REFILL_BELOW_TOP12",
+      "early_policy": "RS21_HIGH_ACCEL_NOT_RED_BREADTH50_D10_DIRECT_PROMOTION"
     },
     "seed_source": "02c6746e65fe688bcad68d3d76f27fef344b7cab",
     "seed_policy": "FULL_RESEARCH_SIM_THROUGH_ASOF; DAILY_INCREMENTAL_AFTER_SEED",
@@ -19,7 +24,7 @@
     "gross_value": 0.0,
     "desired_pct": 0.0,
     "position_count": 0,
-    "strategy": "PEAK30_PART25_R3"
+    "strategy": "CANONICAL_DDV20_EARLY1_RS21_HIGH_ACCEL"
   },
   "rsi_reset": {
     "status": "READY",
@@ -200,7 +205,7 @@
   },
   "refresh": {
     "status": "FRESH",
-    "attempted_at_utc": "2026-09-05T10:33:05Z",
+    "attempted_at_utc": "2026-09-06T13:41:50Z",
     "attempted_asof": "2026-09-04",
     "last_successful_asof": "2026-09-04",
     "preserved_previous_ready": false,
