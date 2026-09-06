@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
+    if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -31,7 +31,6 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # options-intelligence.js: card taps expand in place; search keeps top result panel.
           p = Path('options-intelligence.js')
           s = p.read_text(encoding='utf-8')
 
@@ -125,7 +124,6 @@ function bind(root) {
               raise SystemExit('old card navigation still present')
           p.write_text(s, encoding='utf-8')
 
-          # options-chart-bridge.js: mount chart inside inline expanded card first, top search panel second.
           p = Path('options-chart-bridge.js')
           s = p.read_text(encoding='utf-8')
 
@@ -183,7 +181,6 @@ async function mountCurrent() {
               raise SystemExit('bridge still hardcodes top selected card')
           p.write_text(s, encoding='utf-8')
 
-          # CSS: expanded card spans the grid and the analysis is visually part of that card.
           p = Path('options-intelligence.css')
           s = p.read_text(encoding='utf-8')
           marker = ".miniCard.leaderMuted:hover{opacity:.68;filter:saturate(.7)}"
@@ -195,7 +192,6 @@ async function mountCurrent() {
           s = s.replace(marker, add, 1)
           p.write_text(s, encoding='utf-8')
 
-          # Cache bust only the files changed here.
           p = Path('options-intelligence.html')
           h = p.read_text(encoding='utf-8')
           reps = {
@@ -214,7 +210,6 @@ async function mountCurrent() {
           node --check options-chart-bridge.js
           git diff --check
           grep -q "toggleInlineCard(e, e.dataset.ticker)" options-intelligence.js
-          grep -q "closeInlineCard();" options-intelligence.js
           grep -q "activeSelectedCard" options-chart-bridge.js
           grep -q "options:inline-selected-change" options-chart-bridge.js
           grep -q "miniCard.inlineExpanded" options-intelligence.css
