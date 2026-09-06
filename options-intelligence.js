@@ -731,7 +731,7 @@ function inlinePeriodData(t, mode) {
   }
   return { html, snapshots };
 }
-function inlinePeriodControls(mode, snapshots) {
+function inlinePeriodControls(mode, t) {
   const defs = [
     ['short', '短期', '0–6DTE'],
     ['swing', 'スイング', '7–21DTE'],
@@ -742,6 +742,10 @@ function inlinePeriodControls(mode, snapshots) {
   const buttons = defs.map(([key, label, sub]) =>
     `<button type="button" class="inlinePeriodBtn${mode === key ? ' active' : ''}" data-inline-period="${key}"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</button>`
   ).join('');
+  const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(t)}`;
+  return `<div class="inlinePeriodBar"><div class="inlinePeriodTitle"><div><b>チャート期間</b><span>このカードだけ切替</span></div><a class="inlineTvBtn" href="${esc(tv)}" target="_blank" rel="noopener">TradingViewで開く ↗</a></div><div class="inlinePeriodButtons">${buttons}</div></div>`;
+}
+function inlinePeriodCompare(snapshots) {
   const chips = [
     ['short', '短期'],
     ['swing', 'スイング'],
@@ -751,7 +755,7 @@ function inlinePeriodControls(mode, snapshots) {
     const conf = x.confidence === null || x.confidence === undefined ? '' : `<small>確度 ${x.confidence}</small>`;
     return `<div class="inlineCompareChip"><span>${label}</span><b class="${x.cls}">${esc(x.text)}</b>${conf}</div>`;
   }).join('');
-  return `<div class="inlinePeriodBar"><div class="inlinePeriodTitle"><b>このカードだけ期間切替</b><span>一覧の期間は変えません</span></div><div class="inlinePeriodButtons">${buttons}</div><div class="inlineCompare">${chips}</div></div>`;
+  return `<div class="inlineCompare">${chips}</div>`;
 }
 function renderInlineCard(card, t, mode) {
   t = String(t || '').trim().toUpperCase();
@@ -763,7 +767,7 @@ function renderInlineCard(card, t, mode) {
     inline.className = 'inlineAnalysis';
     card.appendChild(inline);
   }
-  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${inlinePeriodControls(mode, snapshots)}${html}`;
+  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${inlinePeriodControls(mode, t)}<div class="inlineChartSlot"></div>${inlinePeriodCompare(snapshots)}${html}`;
   if (mode !== 'exact') inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
 
   inline.querySelector('.inlineClose')?.addEventListener('click', ev => {

@@ -142,6 +142,12 @@ function loadingPanel(ticker) {
 }
 
 function insertPanel(card, panel) {
+  const inline = card.closest('.inlineAnalysis');
+  const slot = inline?.querySelector(':scope > .inlineChartSlot');
+  if (slot) {
+    slot.replaceChildren(panel);
+    return;
+  }
   const anchor = card.querySelector('.directionHero') || card.querySelector('.selectedBadges') || card.querySelector('.selectedTop');
   if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', panel);
   else card.appendChild(panel);
@@ -187,7 +193,8 @@ async function mountCurrent() {
     try { activeChart.destroy(); } catch (_) {}
     activeChart = null;
   }
-  card.querySelector('.v38ChartPanel')?.remove();
+  const inlineRoot = card.closest('.inlineAnalysis');
+  (inlineRoot?.querySelector(':scope > .inlineChartSlot .v38ChartPanel') || card.querySelector('.v38ChartPanel'))?.remove();
 
   const expected = readExpected(card);
   const baseLevels = {
@@ -226,7 +233,8 @@ async function mountCurrent() {
   const holder = document.createElement('div');
   holder.innerHTML = chartPanel(ticker, rec, levels, payload);
   const panel = holder.firstElementChild;
-  const oldLoading = currentCard.querySelector('.v38ChartPanel[data-chart-loading="1"]');
+  const currentInline = currentCard.closest('.inlineAnalysis');
+  const oldLoading = currentInline?.querySelector(':scope > .inlineChartSlot .v38ChartPanel[data-chart-loading="1"]') || currentCard.querySelector('.v38ChartPanel[data-chart-loading="1"]');
   if (oldLoading) oldLoading.replaceWith(panel);
   else insertPanel(currentCard, panel);
   restoreAnchorPosition();
