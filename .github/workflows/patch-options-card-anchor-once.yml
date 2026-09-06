@@ -1,0 +1,185 @@
+name: Patch Options card viewport anchor once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-options-card-anchor-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Patch viewport-preserving card navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('options-chart-bridge.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = "let suppressNextSelectedScroll = false;\nlet jumpToChartAfterMount = false;"
+          new = "let preserveAnchor = null;\nlet preserveAnchorTop = null;"
+          if old not in s:
+              raise SystemExit('navigation state anchor missing')
+          s = s.replace(old, new, 1)
+
+          s, n = re.subn(
+              r"\nfunction jumpToChart\(panel\) \{.*?\n\}\n\nasync function mountCurrent",
+              """
+function restoreAnchorPosition() {
+  if (!preserveAnchor || preserveAnchorTop === null || !preserveAnchor.isConnected) return;
+  const nowTop = preserveAnchor.getBoundingClientRect().top;
+  const delta = nowTop - preserveAnchorTop;
+  if (Math.abs(delta) > 0.5) window.scrollBy(0, delta);
+}
+
+function settleAnchorPosition() {
+  restoreAnchorPosition();
+  requestAnimationFrame(() => {
+    restoreAnchorPosition();
+    requestAnimationFrame(() => {
+      restoreAnchorPosition();
+      preserveAnchor = null;
+      preserveAnchorTop = null;
+    });
+  });
+}
+
+async function mountCurrent""",
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('jumpToChart replacement failed')
+
+          if '  jumpToChart(loading);' not in s:
+              raise SystemExit('loading jump anchor missing')
+          s = s.replace('  jumpToChart(loading);', '  restoreAnchorPosition();', 1)
+
+          old = """  if (oldLoading) oldLoading.replaceWith(panel);
+  else insertPanel(currentCard, panel);
+
+  const canvas = panel.querySelector('[data-v38-chart]');"""
+          new = """  if (oldLoading) oldLoading.replaceWith(panel);
+  else insertPanel(currentCard, panel);
+  restoreAnchorPosition();
+
+  const canvas = panel.querySelector('[data-v38-chart]');"""
+          if old not in s:
+              raise SystemExit('panel replacement anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """      stale: !!rec.stale,
+    });
+  }
+}"""
+          new = """      stale: !!rec.stale,
+    });
+  }
+  settleAnchorPosition();
+}"""
+          if old not in s:
+              raise SystemExit('mount settle anchor missing')
+          s = s.replace(old, new, 1)
+
+          s, n = re.subn(
+              r"function installNavigationBehavior\(\) \{.*?\n\}\n\nfunction boot\(\)",
+              """function installNavigationBehavior() {
+  if (document.documentElement.dataset.chartAnchorPatched === '1') return;
+  document.documentElement.dataset.chartAnchorPatched = '1';
+
+  document.addEventListener('pointerdown', e => {
+    const item = e.target.closest?.('[data-ticker]');
+    if (!item) return;
+    if (item.closest('#suggestions') || item.closest('#selectedSection')) return;
+    preserveAnchor = item;
+    preserveAnchorTop = item.getBoundingClientRect().top;
+    const ticker = String(item.dataset.ticker || '').trim().toUpperCase();
+    if (ticker) loadShard(ticker).catch(() => []);
+  }, true);
+}
+
+function boot()""",
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('installNavigationBehavior replacement failed')
+
+          old = "  new MutationObserver(schedule).observe(selected, { childList: true });"
+          new = "  new MutationObserver(() => { restoreAnchorPosition(); schedule(); }).observe(selected, { childList: true });"
+          if old not in s:
+              raise SystemExit('mutation observer anchor missing')
+          s = s.replace(old, new, 1)
+
+          if 'scrollIntoView' in s:
+              raise SystemExit('bridge still contains scrollIntoView')
+          if 'suppressNextSelectedScroll' in s or 'jumpToChartAfterMount' in s:
+              raise SystemExit('old navigation state remains')
+          if 'preserveAnchorTop' not in s or 'settleAnchorPosition()' not in s:
+              raise SystemExit('anchor preservation missing')
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-intelligence.html')
+          h = p.read_text(encoding='utf-8')
+          hack = """<script>
+(() => {
+  const nativeScrollIntoView = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function(options) {
+    if (this?.classList?.contains('v38ChartPanel')) return;
+    return nativeScrollIntoView.call(this, options);
+  };
+})();
+</script>
+"""
+          if hack not in h:
+              raise SystemExit('old scroll hack missing')
+          h = h.replace(hack, '', 1)
+          old_src = './options-chart-bridge.js?v=20260905-chart4'
+          new_src = './options-chart-bridge.js?v=20260906-anchor1'
+          if old_src not in h:
+              raise SystemExit('bridge cache anchor missing')
+          h = h.replace(old_src, new_src, 1)
+          p.write_text(h, encoding='utf-8')
+          PY
+
+          node --check options-chart-bridge.js
+          node --check options-intelligence.js
+          git diff --check
+          grep -q "selectTicker(e.dataset.ticker, false)" options-intelligence.js
+          grep -q "if (scroll) .*selectedSection.*scrollIntoView" options-intelligence.js
+          ! grep -q "scrollIntoView" options-chart-bridge.js
+          grep -q "preserveAnchorTop" options-chart-bridge.js
+          grep -q "options-chart-bridge.js?v=20260906-anchor1" options-intelligence.html
+
+      - name: Commit intended files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- options-chart-bridge.js options-intelligence.html
+          staged="$(git diff --cached --name-only)"
+          test "$staged" = $'options-chart-bridge.js\noptions-intelligence.html' || { echo "$staged"; exit 1; }
+          git commit -m 'Keep Options card position while loading chart'
+          git push origin HEAD:main
