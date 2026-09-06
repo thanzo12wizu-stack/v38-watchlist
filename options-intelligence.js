@@ -690,7 +690,7 @@ function renderAll() {
   }).join('');
   bind($('#allRecords'));
 }
-function bind(root) { for (const e of root.querySelectorAll('[data-ticker]')) e.addEventListener('click', () => selectTicker(e.dataset.ticker, true)); }
+function bind(root) { for (const e of root.querySelectorAll('[data-ticker]')) e.addEventListener('click', () => selectTicker(e.dataset.ticker, false)); }
 function fmtTime(x) {
   if (!x) return '—';
   const d = new Date(x);
