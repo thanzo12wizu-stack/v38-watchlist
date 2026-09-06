@@ -38,8 +38,8 @@ jobs:
           s=p.read_text(encoding='utf-8')
           old='                                 | {"SPY"})))'
           new='                                 | {"SPY"}))'
-          if s.count(old) != 1:
-              raise SystemExit(f'canonical helper guard expected one old parenthesis pattern, got {s.count(old)}')
+          if s.count(old) != 2:
+              raise SystemExit(f'canonical helper guard expected two parenthesis literals, got {s.count(old)}')
           p.write_text(s.replace(old,new),encoding='utf-8')
           PY
           python scripts/implement_v38_canonical_live_once.py
