@@ -68,7 +68,7 @@ jobs:
           anchor='今は買いません。'
           if anchor not in h:
               raise SystemExit('reopen warning anchor missing')
-          h=h.replace(anchor,'今は買いません。復帰条件成立前は買いません。',1)
+          h=h.replace(anchor,'今は買いません。復帰条件成立前は買いません。どちらも復帰条件成立前は買いシグナルではありません。',1)
           p.write_text(h,encoding='utf-8')
           PY
       - name: Compile and test affected V38 code
@@ -88,7 +88,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           h=Path('command-center-v38.html').read_text(encoding='utf-8')
-          required=['本命11＋先回り1','本命3＋先回り1','DDV20','RS21_HIGH_ACCEL','earlyPick','構造的小型Clinical Biotechだけ除外','復帰条件成立前は買いません']
+          required=['本命11＋先回り1','本命3＋先回り1','DDV20','RS21_HIGH_ACCEL','earlyPick','構造的小型Clinical Biotechだけ除外','復帰条件成立前は買いません','どちらも復帰条件成立前は買いシグナルではありません']
           missing=[x for x in required if x not in h]
           if missing:
               raise SystemExit('V38 page canonical text missing: '+repr(missing))
