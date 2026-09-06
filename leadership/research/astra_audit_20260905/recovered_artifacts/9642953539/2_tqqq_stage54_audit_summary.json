@@ -1,0 +1,46 @@
+{
+  "mc57": {
+    "universe_definition": "current fixed list of 57 non-levered ETFs; each date averages only ETFs available on that date",
+    "coverage_return_semantics": "compute_mc second return is percent coverage; converted here to 57-name equivalent count",
+    "pit_indicator_math": true,
+    "historical_universe_membership_pit": false,
+    "delisted_etfs_included": false,
+    "survivorship_selection_risk": "present: current 57-name universe is projected backward and delisted/historical alternatives are not reconstructed",
+    "first_date_50plus_tickers": "2012-02-02",
+    "first_date_all57": "2017-03-08",
+    "2011_median_count": 47.0,
+    "2026_median_count": 57.0,
+    "verdict": "LIMITED_PIT: calculations are backward-looking, but the ETF universe itself is not point-in-time/survivorship-clean."
+  },
+  "nqsar": {
+    "production_authority": "sar_state.txt from TradingView->Pipedream; local TradingView export is fallback",
+    "production_asof": null,
+    "production_color": null,
+    "research_history": "PSAR(0.02/0.08)+EMA21+Wilder RSI14 reconstructed proxy on Yahoo NQ=F",
+    "research_proxy_latest": "Yellow",
+    "latest_match": null,
+    "historical_exact_match_rate": null,
+    "reason_no_historical_match_rate": "No committed historical TradingView NQ color export is present on this research branch; sar_state.txt is only a current snapshot.",
+    "verdict": "PROXY_NOT_PRODUCTION_TRUTH: keep NQSAR as a proxy caveat in historical backtests until authoritative color history is archived."
+  },
+  "intraday": {
+    "static_qqq_5m_status": "ok",
+    "static_qqq_5m_end": "2026-03-20 19:55:00",
+    "yahoo_qqq_1h": {
+      "status": "ok",
+      "first": "2023-09-29 09:30:00-04:00",
+      "last": "2026-08-26 15:30:00-04:00",
+      "n_bars": 5066
+    },
+    "bridge_overlap_or_near": true,
+    "live_4h_feasible": true,
+    "route": "Use archived 5m history for Stage51 comparability; use Yahoo 1h (09:30/10:30/11:30/12:30 => first 4H, 13:30/14:30/15:30 => partial second) for current updates; archive appended bars periodically.",
+    "verdict": "READY_FOR_LIVE_SIGNAL"
+  },
+  "production_readiness": {
+    "qqq_4h_rsi": "PASS",
+    "mc57": "CAVEAT",
+    "nqsar": "CAVEAT",
+    "overall": "CONDITIONAL: QQQ RSI execution route is operational; MC57 universe and historical NQSAR remain research-validity caveats, not silent assumptions."
+  }
+}

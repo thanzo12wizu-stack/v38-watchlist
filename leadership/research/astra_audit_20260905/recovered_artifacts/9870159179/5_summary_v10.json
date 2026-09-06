@@ -1,0 +1,18 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "primary_rule": "QID macro-compatible unless (lagged DGS2 < 1.00% AND lagged 2s10s > 1.00%)",
+  "plateau_cells": 25,
+  "plateau_positive_discovery_and_holdout": 25,
+  "current_after_latest_event": {
+    "last_event": "2026-03-30",
+    "last_event_qid2": -0.0365699497739125,
+    "macro_L1_S1_at_last_event": true,
+    "adaptive_last3_after_last_event": true
+  },
+  "notes": [
+    "Threshold grid is robustness only; no best cell is selected.",
+    "The primary 1%/1% boundary is an interpretable low-rate/steep-curve regime marker, but it was motivated after seeing the V9 era diagnostic and therefore is not pristine OOS.",
+    "The single post-2026-03-20 true-OOS event remains a required counterexample and is not removed by the macro gate.",
+    "No production change."
+  ]
+}

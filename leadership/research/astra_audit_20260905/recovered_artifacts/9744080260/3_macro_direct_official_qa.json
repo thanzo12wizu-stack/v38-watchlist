@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "series": {
+    "us10y": {
+      "name": "US 10Y Treasury Par Yield",
+      "source": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value=2026",
+      "quality": "EXACT_OFFICIAL",
+      "error": null,
+      "rows": 166,
+      "first_date": "2026-01-02",
+      "last_date": "2026-08-28",
+      "last_value": 4.73,
+      "change_20obs": -0.019999999999999574,
+      "high_252": 4.75,
+      "low_252": 3.97
+    },
+    "real10y": {
+      "name": "US 10Y Treasury Par Real Yield",
+      "source": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_real_yield_curve&field_tdr_date_value=2026",
+      "quality": "EXACT_OFFICIAL",
+      "error": null,
+      "rows": 166,
+      "first_date": "2026-01-02",
+      "last_date": "2026-08-28",
+      "last_value": 2.42,
+      "change_20obs": -0.050000000000000266,
+      "high_252": 2.47,
+      "low_252": 1.72
+    },
+    "broad_usd": {
+      "name": "Federal Reserve Nominal Broad Dollar Index",
+      "source": "https://www.federalreserve.gov/releases/h10/summary/jrxwtfb_nb.htm",
+      "quality": "EXACT_OFFICIAL",
+      "error": null,
+      "rows": 5174,
+      "first_date": "2006-01-02",
+      "last_date": "2026-08-21",
+      "last_value": 118.0628,
+      "change_20obs": -2.6477000000000004,
+      "high_252": 121.9171,
+      "low_252": 117.4396
+    },
+    "ig_oas": {
+      "quality": "DATA_REQUIRED",
+      "reason": "FRED endpoint times out from GitHub Actions; no unverified proxy substituted."
+    },
+    "hy_oas": {
+      "quality": "DATA_REQUIRED",
+      "reason": "FRED endpoint times out from GitHub Actions; CNN Junk Bond Demand remains available as a separate exact sentiment component."
+    },
+    "dxy": {
+      "quality": "DATA_REQUIRED",
+      "reason": "No stable source contract proven; Broad Dollar is kept separate and never relabeled DXY."
+    }
+  },
+  "guardrail": "Macro WHY is explanatory only and never a V38 trading Gate.",
+  "core_direct_official_pass": true
+}

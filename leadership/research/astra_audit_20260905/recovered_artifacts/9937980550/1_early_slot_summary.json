@@ -1,0 +1,139 @@
+{
+  "status": "GROSS100_EARLY_SLOT_OVERLAY_AUDIT",
+  "base": "VACANCY_TOP12_DDV20",
+  "liquidity_floor": 20000000.0,
+  "early_score": "RS21_HIGH_ACCEL",
+  "early_gate": "NOT_RED",
+  "early_max_days": 10,
+  "structure": "Attack reserves E of 12 ordinary slots for Early; Selective uses Core3+Early1 when E>0; Early promotes directly to Core or expires at D10.",
+  "tqqq_target": "target_M30_TOUCH30_F80_D10",
+  "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
+  "primary": {
+    "timing": "SAME_DAY_GROSS",
+    "cost": "BASE",
+    "policy": "SELECTIVE_FILL_NO_ZERO_OVERRIDE"
+  },
+  "guardrails": [
+    "No Confirmed sleeve.",
+    "No main/UI/live changes.",
+    "Core ranking/exit/NQSAR/Breadth, TQQQ F80 D10, final RSI30 Reset, Gross100 and Selective Fill are fixed.",
+    "Early signal definition is frozen from the prior staged-leader development winner; only Early slot count is varied."
+  ],
+  "reset_turnover_value": 8.524177226048597,
+  "primary_ranking": [
+    {
+      "early_slots": 1,
+      "cagr": 0.5363661721682125,
+      "mdd": -0.2658410729774868,
+      "sharpe": 1.6195685445426222,
+      "calmar": 2.017619648313846,
+      "avg_alloc_t": 0.3266403447080788,
+      "avg_alloc_o": 0.37981252981262326,
+      "avg_alloc_r": 0.02943185351690942,
+      "avg_total_gross": 0.7358847280376114
+    },
+    {
+      "early_slots": 3,
+      "cagr": 0.5249614168303061,
+      "mdd": -0.26520785860651286,
+      "sharpe": 1.6018156903738119,
+      "calmar": 1.9794338659066202,
+      "avg_alloc_t": 0.3276269478634835,
+      "avg_alloc_o": 0.3766251000978007,
+      "avg_alloc_r": 0.02943185351690942,
+      "avg_total_gross": 0.7336839014781935
+    },
+    {
+      "early_slots": 0,
+      "cagr": 0.5176349866690932,
+      "mdd": -0.26526322352969234,
+      "sharpe": 1.5801157739575613,
+      "calmar": 1.951401252617107,
+      "avg_alloc_t": 0.3270305261588993,
+      "avg_alloc_o": 0.37878189543765545,
+      "avg_alloc_r": 0.02943185351690942,
+      "avg_total_gross": 0.7352442751134641
+    },
+    {
+      "early_slots": 2,
+      "cagr": 0.5141900071817611,
+      "mdd": -0.2636774523004445,
+      "sharpe": 1.5777192931113342,
+      "calmar": 1.9500719636651858,
+      "avg_alloc_t": 0.3271459896793622,
+      "avg_alloc_o": 0.3779403278884256,
+      "avg_alloc_r": 0.02943185351690942,
+      "avg_total_gross": 0.7345181710846972
+    }
+  ],
+  "diagnostics": [
+    {
+      "early_slots": 0,
+      "mode": "VACANCY_TOP12",
+      "liquidity_floor": 20000000.0,
+      "entry_count": 719,
+      "blocked_top12_candidates": 583,
+      "refill_beyond12_entries": 0,
+      "refill_beyond12_share": 0.0,
+      "refill_beyond_cap_entries": 0,
+      "refill_beyond_cap_share": 0.0,
+      "avg_positions": 7.297118380062305,
+      "avg_gross": 0.5838506609860263,
+      "max_gross": 1.0
+    },
+    {
+      "early_slots": 1,
+      "early_score": "RS21_HIGH_ACCEL",
+      "early_gate": "NOT_RED",
+      "early_max_days": 10,
+      "core_entries": 647,
+      "early_entries": 222,
+      "promoted_core": 9,
+      "promotion_rate": 0.04054054054054054,
+      "early_expiry": 132,
+      "early_stop": 50,
+      "early_partial": 12,
+      "avg_positions": 7.304517133956386,
+      "avg_core_positions": 6.6382398753894085,
+      "avg_early_positions": 0.6662772585669782,
+      "avg_gross": 0.587545743081041,
+      "max_gross": 1.0
+    },
+    {
+      "early_slots": 2,
+      "early_score": "RS21_HIGH_ACCEL",
+      "early_gate": "NOT_RED",
+      "early_max_days": 10,
+      "core_entries": 593,
+      "early_entries": 382,
+      "promoted_core": 12,
+      "promotion_rate": 0.031413612565445025,
+      "early_expiry": 225,
+      "early_stop": 98,
+      "early_partial": 21,
+      "avg_positions": 7.206775700934579,
+      "avg_core_positions": 6.0463395638629285,
+      "avg_early_positions": 1.1604361370716512,
+      "avg_gross": 0.5837657608104035,
+      "max_gross": 1.0
+    },
+    {
+      "early_slots": 3,
+      "early_score": "RS21_HIGH_ACCEL",
+      "early_gate": "NOT_RED",
+      "early_max_days": 10,
+      "core_entries": 540,
+      "early_entries": 551,
+      "promoted_core": 13,
+      "promotion_rate": 0.023593466424682397,
+      "early_expiry": 322,
+      "early_stop": 145,
+      "early_partial": 29,
+      "avg_positions": 7.150311526479751,
+      "avg_core_positions": 5.471183800623053,
+      "avg_early_positions": 1.679127725856698,
+      "avg_gross": 0.5788458331246772,
+      "max_gross": 1.0
+    }
+  ]
+}

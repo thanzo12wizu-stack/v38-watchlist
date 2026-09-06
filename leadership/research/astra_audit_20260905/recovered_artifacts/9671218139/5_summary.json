@@ -1,0 +1,26 @@
+{
+  "status": "MARKET_WIDE_RS189_RSI_RESET_AUDIT",
+  "definitions": {
+    "universe": "same 3,596-stock current V38 universe; no Theme Momentum condition",
+    "RS189": "daily cross-sectional percentile of trailing 189-session return",
+    "touch": "RSI14 at or below threshold while RS189 remains at or above cutoff",
+    "signal": "first subsequent RSI14 up-day within 20 sessions; RS189 cutoff must still hold",
+    "cooldown": "after a signal, same symbol cannot signal again for 20 sessions",
+    "entry": "next open; 20-session outcome; 5 bps per side",
+    "portfolio": "2.9% of NAV, maximum four, 20-session hold; no theme cap"
+  },
+  "coverage": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3298,
+    "start": "2013-07-18",
+    "end": "2026-08-27",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Current-universe survivorship bias remains.",
+    "Market-wide strategy has no natural Theme event clock, so reset touch is the anchor.",
+    "No theme cap is applied; portfolio comparison should consider concentration separately.",
+    "Yahoo adjusted OHLCV may differ from TradingView."
+  ]
+}

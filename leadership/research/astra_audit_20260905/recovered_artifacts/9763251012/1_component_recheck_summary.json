@@ -1,0 +1,15 @@
+{
+  "status": "GROSS100_FINAL_RESET_COMPONENT_RECHECK",
+  "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
+  "analysis_start": "2016-01-04",
+  "analysis_end": "2026-03-20",
+  "days": 2568,
+  "ordinary_avg_gross": 0.5837582120280226,
+  "ordinary_max_gross": 1.0,
+  "reset_avg_gross": 0.029431853477303985,
+  "reset_max_gross": 0.13511763603200583,
+  "reset_max_positions": 4,
+  "reset_trades_input": 209,
+  "reset_turnover_value": 8.524177474803944,
+  "guardrail": "Normal sleeve mechanics unchanged; only Reset input changed from legacy broad RISE_LE30_W20 to final reproducible RS63_TOP3_RISE30_SIGTOP3."
+}

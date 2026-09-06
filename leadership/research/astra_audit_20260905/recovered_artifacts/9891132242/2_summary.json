@@ -1,0 +1,1629 @@
+{
+  "status": "PRELIMINARY_FIXED_CURRENT_TAXONOMY",
+  "question": "Can post-Subtheme-Momentum stock RS21 ignition become an actionable pioneer entry using only information known on the ignition date?",
+  "frozen_definitions": {
+    "subtheme_momentum": {
+      "theme_min": 80.0,
+      "delta20_min": 15.0,
+      "breadth_min": 60.0
+    },
+    "entry": "first stock cross into within-theme RS21 top third during 1-20 trading days after a Subtheme Momentum event; ignition date itself must still satisfy Momentum",
+    "primary_requires_continuous_momentum": true,
+    "industry_rs": "63d equal-weight TradingView Industry return vs SPY, cross-Industry percentile, constituent-weighted to theme",
+    "industry_buckets": [
+      "<60",
+      "60-80",
+      ">=80"
+    ],
+    "industry_delta20_buckets": [
+      "<=0",
+      "0-10",
+      ">=10 rank points"
+    ],
+    "filters": [
+      "ALL_CONTINUOUS",
+      "AGE_1_5",
+      "AGE_6_10",
+      "AGE_11_20",
+      "IND_LT60",
+      "IND_60_80",
+      "IND_GE80",
+      "IND_LT80_ACCEL_POS",
+      "IND_LT80_ACCEL10",
+      "IND_60_80_ACCEL_POS",
+      "IND_60_80_ACCEL10",
+      "IND_60_80_ACCEL10_BREADTH60",
+      "SECTOR_GE80",
+      "SECTOR_LT80"
+    ],
+    "horizons": [
+      5,
+      10,
+      20
+    ],
+    "no_future_industry_information_in_actionable_filters": true
+  },
+  "coverage": {
+    "selected_stocks": 1500,
+    "momentum_events": 4750,
+    "entry_rows": 5720,
+    "continuous_entry_rows": 3275,
+    "entry_dates": 2069,
+    "themes": 276
+  },
+  "download": {
+    "requested": 1501,
+    "downloaded_common_ohlcv": 1501,
+    "rows": 3039,
+    "start": "2014-08-04",
+    "end": "2026-09-02",
+    "failed_batches": 0
+  },
+  "taxonomy_candidates": [
+    {
+      "path": "root.s2i",
+      "mapped": 5698,
+      "unique": 198
+    },
+    {
+      "path": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    },
+    {
+      "chosen": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    }
+  ],
+  "filters": {
+    "5": {
+      "ALL_CONTINUOUS": {
+        "rows": 3275,
+        "entries": 2905,
+        "dates": 1617,
+        "themes": 273,
+        "mean_stocks_per_entry": 1.1273666092943202,
+        "peer_mean": -4.3723210772661926e-05,
+        "peer_median": -0.0027153031730162702,
+        "peer_positive_rate": 0.4729776247848537,
+        "peer_date_ci95": [
+          -0.003992882001218492,
+          0.0030634818306373574
+        ],
+        "peer_theme_ci95": [
+          -0.006804297097714141,
+          0.0017033994288400414
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.005754013097392053,
+          0.004825430188987768
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.0089495232334893,
+          0.003766807320746967
+        ],
+        "spy_mean": 0.002642311619681228,
+        "mfe_mean": 0.05650274144473533,
+        "mae_mean": -0.04647191127035992,
+        "discovery_peer_mean": -9.567287947781797e-05,
+        "confirmation_peer_mean": 1.2742197812755453e-05,
+        "discovery_n": 1513,
+        "confirmation_n": 1392
+      },
+      "AGE_1_5": {
+        "rows": 2353,
+        "entries": 2055,
+        "dates": 1327,
+        "themes": 269,
+        "mean_stocks_per_entry": 1.1450121654501217,
+        "peer_mean": -0.0004957356621101399,
+        "peer_median": -0.0026469704915273243,
+        "peer_positive_rate": 0.472992700729927,
+        "peer_date_ci95": [
+          -0.006492810331046927,
+          0.002031080298230122
+        ],
+        "peer_theme_ci95": [
+          -0.008645219815195155,
+          0.0019236800767982718
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.008544658230569506,
+          0.003992851609471929
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.012762710350439617,
+          0.004011484534743385
+        ],
+        "spy_mean": 0.0034796443158382736,
+        "mfe_mean": 0.05808812409416808,
+        "mae_mean": -0.046912283175802046,
+        "discovery_peer_mean": 0.0006900861674677662,
+        "confirmation_peer_mean": -0.001781378193366509,
+        "discovery_n": 1069,
+        "confirmation_n": 986
+      },
+      "AGE_6_10": {
+        "rows": 592,
+        "entries": 540,
+        "dates": 471,
+        "themes": 201,
+        "mean_stocks_per_entry": 1.0962962962962963,
+        "peer_mean": -0.0009007341847339994,
+        "peer_median": -0.004445480583447589,
+        "peer_positive_rate": 0.46111111111111114,
+        "peer_date_ci95": [
+          -0.007319280000936459,
+          0.004980009896683141
+        ],
+        "peer_theme_ci95": [
+          -0.0060318748631850985,
+          0.008993628485677784
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.010778700759899602,
+          0.00888069496326087
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.01012961273937962,
+          0.013020036708402245
+        ],
+        "spy_mean": -0.0015671412555916663,
+        "mfe_mean": 0.049636641299134004,
+        "mae_mean": -0.047342417676001565,
+        "discovery_peer_mean": -0.0051954762305557725,
+        "confirmation_peer_mean": 0.0035560735986659535,
+        "discovery_n": 275,
+        "confirmation_n": 265
+      },
+      "AGE_11_20": {
+        "rows": 330,
+        "entries": 310,
+        "dates": 275,
+        "themes": 138,
+        "mean_stocks_per_entry": 1.064516129032258,
+        "peer_mean": 0.004445539735800368,
+        "peer_median": -0.0004879423682650798,
+        "peer_positive_rate": 0.4935483870967742,
+        "peer_date_ci95": [
+          -0.0036906552876555952,
+          0.0115353903901189
+        ],
+        "peer_theme_ci95": [
+          -0.005726293313502171,
+          0.008748016117636011
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.007687702398238403,
+          0.01525175406847062
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.008853267774832016,
+          0.012261209593061656
+        ],
+        "spy_mean": 0.004424201497244565,
+        "mfe_mean": 0.057953492199704366,
+        "mae_mean": -0.04203630570671461,
+        "discovery_peer_mean": 0.003232549016153004,
+        "confirmation_peer_mean": 0.005899408045164938,
+        "discovery_n": 169,
+        "confirmation_n": 141
+      },
+      "IND_LT60": {
+        "rows": 701,
+        "entries": 657,
+        "dates": 563,
+        "themes": 202,
+        "mean_stocks_per_entry": 1.0669710806697108,
+        "peer_mean": 0.0031897666956658454,
+        "peer_median": -0.0010818868567521436,
+        "peer_positive_rate": 0.4855403348554033,
+        "peer_date_ci95": [
+          -0.0022400601308634584,
+          0.01090913409984918
+        ],
+        "peer_theme_ci95": [
+          -0.006513241788803848,
+          0.005556487040508448
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.0049819593187062465,
+          0.014125780858414068
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.009837686812328139,
+          0.008507523345968365
+        ],
+        "spy_mean": 0.00036713706703350377,
+        "mfe_mean": 0.050289047976267334,
+        "mae_mean": -0.0442013880688029,
+        "discovery_peer_mean": 0.003128144369779127,
+        "confirmation_peer_mean": 0.0032570802554720375,
+        "discovery_n": 343,
+        "confirmation_n": 314
+      },
+      "IND_60_80": {
+        "rows": 1187,
+        "entries": 1090,
+        "dates": 840,
+        "themes": 236,
+        "mean_stocks_per_entry": 1.0889908256880734,
+        "peer_mean": 0.0025892299085325506,
+        "peer_median": -0.001580353856588869,
+        "peer_positive_rate": 0.4853211009174312,
+        "peer_date_ci95": [
+          -0.0025427682633673834,
+          0.008543125021281059
+        ],
+        "peer_theme_ci95": [
+          -0.005977691757337935,
+          0.005974178068669702
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.005459542166638429,
+          0.010752090006975938
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.008651035612431676,
+          0.00925633829961918
+        ],
+        "spy_mean": 0.005262350504581443,
+        "mfe_mean": 0.06180086722552296,
+        "mae_mean": -0.04550442367442604,
+        "discovery_peer_mean": 0.0037536795731847833,
+        "confirmation_peer_mean": 0.0014162023457981651,
+        "discovery_n": 547,
+        "confirmation_n": 543
+      },
+      "IND_GE80": {
+        "rows": 1387,
+        "entries": 1158,
+        "dates": 884,
+        "themes": 209,
+        "mean_stocks_per_entry": 1.197754749568221,
+        "peer_mean": -0.004356609021284561,
+        "peer_median": -0.004590446868171521,
+        "peer_positive_rate": 0.4542314335060449,
+        "peer_date_ci95": [
+          -0.009282113882318857,
+          0.0009176757800799625
+        ],
+        "peer_theme_ci95": [
+          -0.012114610283479639,
+          0.0029921624686864608
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.012099073306588994,
+          0.003599243009600043
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.016087981306941786,
+          0.0059852314458591705
+        ],
+        "spy_mean": 0.0014669638619509333,
+        "mfe_mean": 0.055041117530853605,
+        "mae_mean": -0.048670784519920275,
+        "discovery_peer_mean": -0.005250352025708274,
+        "confirmation_peer_mean": -0.0033158578217406857,
+        "discovery_n": 623,
+        "confirmation_n": 535
+      },
+      "IND_LT80_ACCEL_POS": {
+        "rows": 1563,
+        "entries": 1427,
+        "dates": 1044,
+        "themes": 256,
+        "mean_stocks_per_entry": 1.0953048353188508,
+        "peer_mean": 0.0038819069461352206,
+        "peer_median": -0.001614269274000768,
+        "peer_positive_rate": 0.4821303433777155,
+        "peer_date_ci95": [
+          -0.001837520585570557,
+          0.008677936398168445
+        ],
+        "peer_theme_ci95": [
+          -0.005206558554197958,
+          0.006313099777704686
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.004100998463139146,
+          0.010943503954431784
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.0076901657464313305,
+          0.009702882244365347
+        ],
+        "spy_mean": 0.004630019437063949,
+        "mfe_mean": 0.060139942435652086,
+        "mae_mean": -0.04512712329624871,
+        "discovery_peer_mean": 0.005351177556849288,
+        "confirmation_peer_mean": 0.002398150568836648,
+        "discovery_n": 717,
+        "confirmation_n": 710
+      },
+      "IND_LT80_ACCEL10": {
+        "rows": 1181,
+        "entries": 1074,
+        "dates": 840,
+        "themes": 243,
+        "mean_stocks_per_entry": 1.0996275605214152,
+        "peer_mean": 0.003232317097730213,
+        "peer_median": -0.0031668189410345884,
+        "peer_positive_rate": 0.4655493482309125,
+        "peer_date_ci95": [
+          -0.0030760481920091387,
+          0.008987199278173801
+        ],
+        "peer_theme_ci95": [
+          -0.003845577837969416,
+          0.012553703609323456
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.005138511830540716,
+          0.011582522922493937
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.0068359109554843615,
+          0.01805091648347423
+        ],
+        "spy_mean": 0.0035169855375370607,
+        "mfe_mean": 0.05972546897000782,
+        "mae_mean": -0.04606820032025566,
+        "discovery_peer_mean": 0.0028903622444898126,
+        "confirmation_peer_mean": 0.0035704724526012775,
+        "discovery_n": 534,
+        "confirmation_n": 540
+      },
+      "IND_60_80_ACCEL_POS": {
+        "rows": 1037,
+        "entries": 944,
+        "dates": 751,
+        "themes": 222,
+        "mean_stocks_per_entry": 1.0985169491525424,
+        "peer_mean": 0.003947981754552839,
+        "peer_median": -0.0016441167851946204,
+        "peer_positive_rate": 0.4830508474576271,
+        "peer_date_ci95": [
+          -0.0026786238450621194,
+          0.009950557253897482
+        ],
+        "peer_theme_ci95": [
+          -0.005901429355555528,
+          0.01238545516640879
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.006324943555142199,
+          0.012839620249576468
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.009739893406038314,
+          0.017018981082273697
+        ],
+        "spy_mean": 0.006824947956039943,
+        "mfe_mean": 0.06428021833058198,
+        "mae_mean": -0.04535785343355677,
+        "discovery_peer_mean": 0.006499243467206975,
+        "confirmation_peer_mean": 0.0014395983900105352,
+        "discovery_n": 468,
+        "confirmation_n": 476
+      },
+      "IND_60_80_ACCEL10": {
+        "rows": 830,
+        "entries": 756,
+        "dates": 624,
+        "themes": 205,
+        "mean_stocks_per_entry": 1.097883597883598,
+        "peer_mean": 0.002889959569379796,
+        "peer_median": -0.003039544370836922,
+        "peer_positive_rate": 0.4656084656084656,
+        "peer_date_ci95": [
+          -0.004539892927435677,
+          0.009340099888439375
+        ],
+        "peer_theme_ci95": [
+          -0.004435878220682911,
+          0.016078542083197696
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.006897031565431189,
+          0.01270001976007825
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.008838214598115584,
+          0.021602034012359515
+        ],
+        "spy_mean": 0.005087314433970167,
+        "mfe_mean": 0.06319487914217949,
+        "mae_mean": -0.04558797472182286,
+        "discovery_peer_mean": 0.0018749527329931146,
+        "confirmation_peer_mean": 0.003822529302303598,
+        "discovery_n": 362,
+        "confirmation_n": 394
+      },
+      "IND_60_80_ACCEL10_BREADTH60": {
+        "rows": 830,
+        "entries": 756,
+        "dates": 624,
+        "themes": 205,
+        "mean_stocks_per_entry": 1.097883597883598,
+        "peer_mean": 0.002889959569379796,
+        "peer_median": -0.003039544370836922,
+        "peer_positive_rate": 0.4656084656084656,
+        "peer_date_ci95": [
+          -0.004147532867305679,
+          0.0095481556390901
+        ],
+        "peer_theme_ci95": [
+          -0.004540282316777505,
+          0.01653491960269464
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.007655627459815573,
+          0.013765277907903068
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.008496945939411882,
+          0.023711411343119576
+        ],
+        "spy_mean": 0.005087314433970167,
+        "mfe_mean": 0.06319487914217949,
+        "mae_mean": -0.04558797472182286,
+        "discovery_peer_mean": 0.0018749527329931146,
+        "confirmation_peer_mean": 0.003822529302303598,
+        "discovery_n": 362,
+        "confirmation_n": 394
+      },
+      "SECTOR_GE80": {
+        "rows": 1419,
+        "entries": 1143,
+        "dates": 845,
+        "themes": 217,
+        "mean_stocks_per_entry": 1.2414698162729658,
+        "peer_mean": -0.001716455869381497,
+        "peer_median": -0.0032357106728859945,
+        "peer_positive_rate": 0.46981627296587924,
+        "peer_date_ci95": [
+          -0.00761673896949879,
+          0.0032267856490539896
+        ],
+        "peer_theme_ci95": [
+          -0.005309709481661974,
+          0.0100036993117136
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.010910037615915058,
+          0.007253117854290425
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.007922178194196584,
+          0.01349564984354679
+        ],
+        "spy_mean": 0.004557052379545272,
+        "mfe_mean": 0.06001342205244847,
+        "mae_mean": -0.048701419542066984,
+        "discovery_peer_mean": -0.0027505701884816603,
+        "confirmation_peer_mean": -0.0007056001768354878,
+        "discovery_n": 565,
+        "confirmation_n": 578
+      },
+      "SECTOR_LT80": {
+        "rows": 1856,
+        "entries": 1762,
+        "dates": 1209,
+        "themes": 263,
+        "mean_stocks_per_entry": 1.0533484676503972,
+        "peer_mean": 0.0010413695410944773,
+        "peer_median": -0.002556340710509015,
+        "peer_positive_rate": 0.4750283768444949,
+        "peer_date_ci95": [
+          -0.0039948036214583395,
+          0.004483992174778653
+        ],
+        "peer_theme_ci95": [
+          -0.0065688701386463055,
+          0.003684780427355121
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.006094505174654114,
+          0.006520299417916493
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.008835787907102316,
+          0.006125210133441204
+        ],
+        "spy_mean": 0.001400229503605971,
+        "mfe_mean": 0.0542253816634549,
+        "mae_mean": -0.04502564114858854,
+        "discovery_peer_mean": 0.001486623512491772,
+        "confirmation_peer_mean": 0.000522818232882394,
+        "discovery_n": 948,
+        "confirmation_n": 814
+      }
+    },
+    "10": {
+      "ALL_CONTINUOUS": {
+        "rows": 3275,
+        "entries": 2905,
+        "dates": 1617,
+        "themes": 273,
+        "mean_stocks_per_entry": 1.1273666092943202,
+        "peer_mean": 0.0010837399633055308,
+        "peer_median": -0.0025060237576673833,
+        "peer_positive_rate": 0.48055077452667816,
+        "peer_date_ci95": [
+          -0.0030738828177667107,
+          0.00652862031286127
+        ],
+        "peer_theme_ci95": [
+          -0.006634426511485829,
+          0.003108291438668233
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.004428870750692463,
+          0.008921286924527356
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.008398233948538045,
+          0.005532296847023062
+        ],
+        "spy_mean": 0.004709418348181668,
+        "mfe_mean": 0.08302087669206758,
+        "mae_mean": -0.0641068755266365,
+        "discovery_peer_mean": 0.0017047477615405142,
+        "confirmation_peer_mean": 0.0004087508837584552,
+        "discovery_n": 1513,
+        "confirmation_n": 1392
+      },
+      "AGE_1_5": {
+        "rows": 2353,
+        "entries": 2055,
+        "dates": 1327,
+        "themes": 269,
+        "mean_stocks_per_entry": 1.1450121654501217,
+        "peer_mean": 0.001859683040789883,
+        "peer_median": -0.0027704291028015776,
+        "peer_positive_rate": 0.4768856447688564,
+        "peer_date_ci95": [
+          -0.004167054092668849,
+          0.007575483489626303
+        ],
+        "peer_theme_ci95": [
+          -0.007389148821803546,
+          0.005411838992443833
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.006153539856791003,
+          0.010655868779777889
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.010969941754375831,
+          0.007753606864513921
+        ],
+        "spy_mean": 0.006543962165635797,
+        "mfe_mean": 0.08539964829349862,
+        "mae_mean": -0.0641520879445845,
+        "discovery_peer_mean": 0.0035881835892428754,
+        "confirmation_peer_mean": -1.4320089328014387e-05,
+        "discovery_n": 1069,
+        "confirmation_n": 986
+      },
+      "AGE_6_10": {
+        "rows": 592,
+        "entries": 540,
+        "dates": 471,
+        "themes": 201,
+        "mean_stocks_per_entry": 1.0962962962962963,
+        "peer_mean": -0.0006341837301962344,
+        "peer_median": -0.0023551514369426225,
+        "peer_positive_rate": 0.4888888888888889,
+        "peer_date_ci95": [
+          -0.008283993622080736,
+          0.009328692657809987
+        ],
+        "peer_theme_ci95": [
+          -0.005861784509405716,
+          0.01398253039702361
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.011755339183722376,
+          0.01397704827744173
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.01060029651976069,
+          0.019955289460036496
+        ],
+        "spy_mean": -0.0001333694111923613,
+        "mfe_mean": 0.07490557074475476,
+        "mae_mean": -0.06630290557055592,
+        "discovery_peer_mean": -0.0051455996000002256,
+        "confirmation_peer_mean": 0.004047474247902246,
+        "discovery_n": 275,
+        "confirmation_n": 265
+      },
+      "AGE_11_20": {
+        "rows": 330,
+        "entries": 310,
+        "dates": 275,
+        "themes": 138,
+        "mean_stocks_per_entry": 1.064516129032258,
+        "peer_mean": -0.001067499487466695,
+        "peer_median": -0.0012435569937278052,
+        "peer_positive_rate": 0.49032258064516127,
+        "peer_date_ci95": [
+          -0.012089650885890117,
+          0.009307984828194352
+        ],
+        "peer_theme_ci95": [
+          -0.018812944659301344,
+          0.0024018911999641995
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.01598133319731786,
+          0.014879259168605665
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.025456809106979374,
+          0.007584115111380541
+        ],
+        "spy_mean": 0.0009839920423550413,
+        "mfe_mean": 0.08138826240370671,
+        "mae_mean": -0.05998181829244414,
+        "discovery_peer_mean": 0.0009381952444391996,
+        "confirmation_peer_mean": -0.0034714882086872346,
+        "discovery_n": 169,
+        "confirmation_n": 141
+      },
+      "IND_LT60": {
+        "rows": 701,
+        "entries": 657,
+        "dates": 563,
+        "themes": 202,
+        "mean_stocks_per_entry": 1.0669710806697108,
+        "peer_mean": 0.008340758004350605,
+        "peer_median": -0.0011254599666322349,
+        "peer_positive_rate": 0.4916286149162861,
+        "peer_date_ci95": [
+          0.0007879171275169347,
+          0.023130406175149762
+        ],
+        "peer_theme_ci95": [
+          -0.0025590154310634653,
+          0.01637507173730053
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.0033725964912150698,
+          0.027636211188235813
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.006888072798310533,
+          0.02131200319157958
+        ],
+        "spy_mean": 0.007098827393313602,
+        "mfe_mean": 0.07708396944469131,
+        "mae_mean": -0.061087459898538386,
+        "discovery_peer_mean": 0.006666241859013485,
+        "confirmation_peer_mean": 0.010169926914702932,
+        "discovery_n": 343,
+        "confirmation_n": 314
+      },
+      "IND_60_80": {
+        "rows": 1187,
+        "entries": 1090,
+        "dates": 840,
+        "themes": 236,
+        "mean_stocks_per_entry": 1.0889908256880734,
+        "peer_mean": 0.0029390441214674277,
+        "peer_median": -0.0017675796351305552,
+        "peer_positive_rate": 0.4871559633027523,
+        "peer_date_ci95": [
+          -0.002740040021273646,
+          0.012367550787260463
+        ],
+        "peer_theme_ci95": [
+          -0.0060784650365483675,
+          0.009622627484651536
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.005965819090614438,
+          0.0156493636182708
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.010027344491298048,
+          0.013420616315471633
+        ],
+        "spy_mean": 0.005318278977449838,
+        "mfe_mean": 0.08778637526435812,
+        "mae_mean": -0.06330910219635548,
+        "discovery_peer_mean": 0.005262955661622423,
+        "confirmation_peer_mean": 0.0005980135276096327,
+        "discovery_n": 547,
+        "confirmation_n": 543
+      },
+      "IND_GE80": {
+        "rows": 1387,
+        "entries": 1158,
+        "dates": 884,
+        "themes": 209,
+        "mean_stocks_per_entry": 1.197754749568221,
+        "peer_mean": -0.004779940853070185,
+        "peer_median": -0.004543731941519729,
+        "peer_positive_rate": 0.4680483592400691,
+        "peer_date_ci95": [
+          -0.010316747703588505,
+          0.002350078059949882
+        ],
+        "peer_theme_ci95": [
+          -0.017469167783593257,
+          0.0010393921718850222
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.012668653128471827,
+          0.005217640759469875
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.022817875149354284,
+          0.004633906031731337
+        ],
+        "spy_mean": 0.0027806620195512874,
+        "mfe_mean": 0.08190356634468374,
+        "mae_mean": -0.06657089020510525,
+        "discovery_peer_mean": -0.004151002153030967,
+        "confirmation_peer_mean": -0.005512331152368189,
+        "discovery_n": 623,
+        "confirmation_n": 535
+      },
+      "IND_LT80_ACCEL_POS": {
+        "rows": 1563,
+        "entries": 1427,
+        "dates": 1044,
+        "themes": 256,
+        "mean_stocks_per_entry": 1.0953048353188508,
+        "peer_mean": 0.007102030105134666,
+        "peer_median": -0.000596722416562126,
+        "peer_positive_rate": 0.4954449894884373,
+        "peer_date_ci95": [
+          0.0012728507092288313,
+          0.015594445699602994
+        ],
+        "peer_theme_ci95": [
+          -0.004085553148804717,
+          0.011190516241789636
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.002283508570193297,
+          0.0185152281956194
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.006986038754026405,
+          0.014497202741781704
+        ],
+        "spy_mean": 0.007881688958783988,
+        "mfe_mean": 0.08792602574393381,
+        "mae_mean": -0.06212554715015265,
+        "discovery_peer_mean": 0.008447800163741755,
+        "confirmation_peer_mean": 0.005742991891020183,
+        "discovery_n": 717,
+        "confirmation_n": 710
+      },
+      "IND_LT80_ACCEL10": {
+        "rows": 1181,
+        "entries": 1074,
+        "dates": 840,
+        "themes": 243,
+        "mean_stocks_per_entry": 1.0996275605214152,
+        "peer_mean": 0.007509719820781043,
+        "peer_median": -0.0013301284393875971,
+        "peer_positive_rate": 0.4860335195530726,
+        "peer_date_ci95": [
+          -7.485942223999242e-05,
+          0.018633038899736446
+        ],
+        "peer_theme_ci95": [
+          -0.0013018673343262765,
+          0.02004634601490089
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.0035024938424882686,
+          0.024844139375614915
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.0056442537270624815,
+          0.024713289714227864
+        ],
+        "spy_mean": 0.008823547620080505,
+        "mfe_mean": 0.08883730155191122,
+        "mae_mean": -0.06298725627598795,
+        "discovery_peer_mean": 0.009884575294196073,
+        "confirmation_peer_mean": 0.005161251630403955,
+        "discovery_n": 534,
+        "confirmation_n": 540
+      },
+      "IND_60_80_ACCEL_POS": {
+        "rows": 1037,
+        "entries": 944,
+        "dates": 751,
+        "themes": 222,
+        "mean_stocks_per_entry": 1.0985169491525424,
+        "peer_mean": 0.004385920648021954,
+        "peer_median": -0.0009481134352575932,
+        "peer_positive_rate": 0.4936440677966102,
+        "peer_date_ci95": [
+          -0.0021303516206451073,
+          0.014323559126065383
+        ],
+        "peer_theme_ci95": [
+          -0.005605837431802915,
+          0.019091086062023418
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.006219113115708023,
+          0.01851524547967644
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.009428135210618738,
+          0.026008645659278448
+        ],
+        "spy_mean": 0.006906440246383153,
+        "mfe_mean": 0.09141646007808103,
+        "mae_mean": -0.06303743330594629,
+        "discovery_peer_mean": 0.007743269860696774,
+        "confirmation_peer_mean": 0.0010849974725349483,
+        "discovery_n": 468,
+        "confirmation_n": 476
+      },
+      "IND_60_80_ACCEL10": {
+        "rows": 830,
+        "entries": 756,
+        "dates": 624,
+        "themes": 205,
+        "mean_stocks_per_entry": 1.097883597883598,
+        "peer_mean": 0.005427860661166817,
+        "peer_median": -0.00022292490128099016,
+        "peer_positive_rate": 0.4973544973544973,
+        "peer_date_ci95": [
+          -0.003753919518033834,
+          0.015537566626353529
+        ],
+        "peer_theme_ci95": [
+          -0.002352307701742279,
+          0.027084838904175734
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.007866140504753262,
+          0.020221728904077335
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.006688888454875941,
+          0.034043675598401
+        ],
+        "spy_mean": 0.007760145756503264,
+        "mfe_mean": 0.09137490473118615,
+        "mae_mean": -0.06310741382028234,
+        "discovery_peer_mean": 0.007539846159280116,
+        "confirmation_peer_mean": 0.003487406980159165,
+        "discovery_n": 362,
+        "confirmation_n": 394
+      },
+      "IND_60_80_ACCEL10_BREADTH60": {
+        "rows": 830,
+        "entries": 756,
+        "dates": 624,
+        "themes": 205,
+        "mean_stocks_per_entry": 1.097883597883598,
+        "peer_mean": 0.005427860661166817,
+        "peer_median": -0.00022292490128099016,
+        "peer_positive_rate": 0.4973544973544973,
+        "peer_date_ci95": [
+          -0.0038204081058175058,
+          0.015905565610298985
+        ],
+        "peer_theme_ci95": [
+          -0.0023042958981131434,
+          0.02636541454299994
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.007661021117322811,
+          0.01995906443504094
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.006412199769440012,
+          0.040009819394315874
+        ],
+        "spy_mean": 0.007760145756503264,
+        "mfe_mean": 0.09137490473118615,
+        "mae_mean": -0.06310741382028234,
+        "discovery_peer_mean": 0.007539846159280116,
+        "confirmation_peer_mean": 0.003487406980159165,
+        "discovery_n": 362,
+        "confirmation_n": 394
+      },
+      "SECTOR_GE80": {
+        "rows": 1419,
+        "entries": 1143,
+        "dates": 845,
+        "themes": 217,
+        "mean_stocks_per_entry": 1.2414698162729658,
+        "peer_mean": -0.0012336661017178917,
+        "peer_median": -0.0011642715326695106,
+        "peer_positive_rate": 0.4890638670166229,
+        "peer_date_ci95": [
+          -0.006173465832215276,
+          0.006180756110122098
+        ],
+        "peer_theme_ci95": [
+          -0.0075416827854011825,
+          0.008019490275801374
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.008628003348961157,
+          0.010185111226428185
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.011042678523098433,
+          0.012330150799459054
+        ],
+        "spy_mean": 0.005470664554381271,
+        "mfe_mean": 0.08682685898699277,
+        "mae_mean": -0.0664697620070731,
+        "discovery_peer_mean": 0.0009065560849176898,
+        "confirmation_peer_mean": -0.0033257518031869276,
+        "discovery_n": 565,
+        "confirmation_n": 578
+      },
+      "SECTOR_LT80": {
+        "rows": 1856,
+        "entries": 1762,
+        "dates": 1209,
+        "themes": 263,
+        "mean_stocks_per_entry": 1.0533484676503972,
+        "peer_mean": 0.002587028914679976,
+        "peer_median": -0.003046286304505568,
+        "peer_positive_rate": 0.4750283768444949,
+        "peer_date_ci95": [
+          -0.0029735482406078764,
+          0.009661196478402698
+        ],
+        "peer_theme_ci95": [
+          -0.006670717079695869,
+          0.007323300600393383
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.00536435806002952,
+          0.012883673180057292
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.009826861996523653,
+          0.011140422614693501
+        ],
+        "spy_mean": 0.004215601995351848,
+        "mfe_mean": 0.08055195628168194,
+        "mae_mean": -0.06257408367241458,
+        "discovery_peer_mean": 0.002180463265012978,
+        "confirmation_peer_mean": 0.0030605230619580055,
+        "discovery_n": 948,
+        "confirmation_n": 814
+      }
+    },
+    "20": {
+      "ALL_CONTINUOUS": {
+        "rows": 3275,
+        "entries": 2905,
+        "dates": 1617,
+        "themes": 273,
+        "mean_stocks_per_entry": 1.1273666092943202,
+        "peer_mean": -0.0007384398771457587,
+        "peer_median": -0.004292699571869063,
+        "peer_positive_rate": 0.4740103270223752,
+        "peer_date_ci95": [
+          -0.006844188312357819,
+          0.007613634408449813
+        ],
+        "peer_theme_ci95": [
+          -0.010501979198570065,
+          0.001219600389741519
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.009801593618495502,
+          0.01015819232236495
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.013448819062636173,
+          0.0035484606270919828
+        ],
+        "spy_mean": 0.008070666154113981,
+        "mfe_mean": 0.12517015395989944,
+        "mae_mean": -0.08936904656639569,
+        "discovery_peer_mean": -6.233593953837401e-05,
+        "confirmation_peer_mean": -0.0014733143438124068,
+        "discovery_n": 1513,
+        "confirmation_n": 1392
+      },
+      "AGE_1_5": {
+        "rows": 2353,
+        "entries": 2055,
+        "dates": 1327,
+        "themes": 269,
+        "mean_stocks_per_entry": 1.1450121654501217,
+        "peer_mean": 8.576911384531037e-05,
+        "peer_median": -0.004142488477519642,
+        "peer_positive_rate": 0.472992700729927,
+        "peer_date_ci95": [
+          -0.00958215255286771,
+          0.007926005793658757
+        ],
+        "peer_theme_ci95": [
+          -0.011583629360232783,
+          0.0037923610412630773
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.012733493232181493,
+          0.012124414955153496
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.015222989830157468,
+          0.0072132425111896365
+        ],
+        "spy_mean": 0.010605916173139742,
+        "mfe_mean": 0.12940184502462193,
+        "mae_mean": -0.08939610057573567,
+        "discovery_peer_mean": 0.00079341164724409,
+        "confirmation_peer_mean": -0.0006814417058334862,
+        "discovery_n": 1069,
+        "confirmation_n": 986
+      },
+      "AGE_6_10": {
+        "rows": 592,
+        "entries": 540,
+        "dates": 471,
+        "themes": 201,
+        "mean_stocks_per_entry": 1.0962962962962963,
+        "peer_mean": -0.0032079029879566764,
+        "peer_median": -0.0046814087190110935,
+        "peer_positive_rate": 0.4759259259259259,
+        "peer_date_ci95": [
+          -0.011986353897737643,
+          0.009983228191712082
+        ],
+        "peer_theme_ci95": [
+          -0.011964136487056019,
+          0.016050829189062747
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.018700435806581667,
+          0.016558107732075913
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.01807517173498576,
+          0.019940831068534
+        ],
+        "spy_mean": 0.0010781485019230141,
+        "mfe_mean": 0.10999014141366094,
+        "mae_mean": -0.09031642840684763,
+        "discovery_peer_mean": -0.006733907457804331,
+        "confirmation_peer_mean": 0.00045115825433806103,
+        "discovery_n": 275,
+        "confirmation_n": 265
+      },
+      "AGE_11_20": {
+        "rows": 330,
+        "entries": 310,
+        "dates": 275,
+        "themes": 138,
+        "mean_stocks_per_entry": 1.064516129032258,
+        "peer_mean": -0.0019005024469804514,
+        "peer_median": -0.006807787236741445,
+        "peer_positive_rate": 0.4774193548387097,
+        "peer_date_ci95": [
+          -0.02021235079567351,
+          0.017402705801278184
+        ],
+        "peer_theme_ci95": [
+          -0.02759041535876388,
+          0.0005593964374200422
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.028599398936801173,
+          0.028306244444476755
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.03571802553942252,
+          0.0070319445112178875
+        ],
+        "spy_mean": 0.003444926615679089,
+        "mfe_mean": 0.12356073988559005,
+        "mae_mean": -0.08753942662111276,
+        "discovery_peer_mean": 0.005380788304560345,
+        "confirmation_peer_mean": -0.010627723276841404,
+        "discovery_n": 169,
+        "confirmation_n": 141
+      },
+      "IND_LT60": {
+        "rows": 701,
+        "entries": 657,
+        "dates": 563,
+        "themes": 202,
+        "mean_stocks_per_entry": 1.0669710806697108,
+        "peer_mean": 0.008205507490599012,
+        "peer_median": -0.004867240096822961,
+        "peer_positive_rate": 0.4703196347031963,
+        "peer_date_ci95": [
+          -0.0051569730407649075,
+          0.03024312679583298
+        ],
+        "peer_theme_ci95": [
+          -0.006760634613060467,
+          0.016424294456473098
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.010779216065640727,
+          0.03925312744989859
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.012869571006641232,
+          0.02458703501350785
+        ],
+        "spy_mean": 0.005272656440976715,
+        "mfe_mean": 0.11635086649142387,
+        "mae_mean": -0.08706390129273255,
+        "discovery_peer_mean": 0.010217771298731469,
+        "confirmation_peer_mean": 0.006007397661970247,
+        "discovery_n": 343,
+        "confirmation_n": 314
+      },
+      "IND_60_80": {
+        "rows": 1187,
+        "entries": 1090,
+        "dates": 840,
+        "themes": 236,
+        "mean_stocks_per_entry": 1.0889908256880734,
+        "peer_mean": 0.0024142478795656187,
+        "peer_median": -0.005239909831549441,
+        "peer_positive_rate": 0.4743119266055046,
+        "peer_date_ci95": [
+          -0.006264769746126719,
+          0.015068365015411582
+        ],
+        "peer_theme_ci95": [
+          -0.009629321871559187,
+          0.01054718011027393
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.01110084450116133,
+          0.020252187064490806
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.013705047355362081,
+          0.015353329669574194
+        ],
+        "spy_mean": 0.01292243361051662,
+        "mfe_mean": 0.13029336175873682,
+        "mae_mean": -0.08805378007314472,
+        "discovery_peer_mean": 0.0018796167848638679,
+        "confirmation_peer_mean": 0.0029528173248729063,
+        "discovery_n": 547,
+        "confirmation_n": 543
+      },
+      "IND_GE80": {
+        "rows": 1387,
+        "entries": 1158,
+        "dates": 884,
+        "themes": 209,
+        "mean_stocks_per_entry": 1.197754749568221,
+        "peer_mean": -0.008780411444869178,
+        "peer_median": -0.0038168814146151636,
+        "peer_positive_rate": 0.4758203799654577,
+        "peer_date_ci95": [
+          -0.017943693459959848,
+          -0.0021119735105732556
+        ],
+        "peer_theme_ci95": [
+          -0.018319673802061058,
+          0.00014643499497933075
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.022038407864332556,
+          0.001656275017635145
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.022791207085977216,
+          0.005381936242201688
+        ],
+        "spy_mean": 0.0050912756999277175,
+        "mfe_mean": 0.12535147983732234,
+        "mae_mean": -0.09191491955641315,
+        "discovery_peer_mean": -0.007427223456351509,
+        "confirmation_peer_mean": -0.010356179887572932,
+        "discovery_n": 623,
+        "confirmation_n": 535
+      },
+      "IND_LT80_ACCEL_POS": {
+        "rows": 1563,
+        "entries": 1427,
+        "dates": 1044,
+        "themes": 256,
+        "mean_stocks_per_entry": 1.0953048353188508,
+        "peer_mean": 0.0076587025390501785,
+        "peer_median": -0.003579738460673998,
+        "peer_positive_rate": 0.48072880168185006,
+        "peer_date_ci95": [
+          -0.00041477118149250975,
+          0.02074420289651319
+        ],
+        "peer_theme_ci95": [
+          -0.007097059552174064,
+          0.011183701801269149
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.00613041542815351,
+          0.028767284295723963
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.011493964174462145,
+          0.015634176283636454
+        ],
+        "spy_mean": 0.013847815952308641,
+        "mfe_mean": 0.1311522481057523,
+        "mae_mean": -0.08669192128378456,
+        "discovery_peer_mean": 0.011624467142909593,
+        "confirmation_peer_mean": 0.0036538388475470763,
+        "discovery_n": 717,
+        "confirmation_n": 710
+      },
+      "IND_LT80_ACCEL10": {
+        "rows": 1181,
+        "entries": 1074,
+        "dates": 840,
+        "themes": 243,
+        "mean_stocks_per_entry": 1.0996275605214152,
+        "peer_mean": 0.009543273019537462,
+        "peer_median": -0.0041167002489676235,
+        "peer_positive_rate": 0.478584729981378,
+        "peer_date_ci95": [
+          -0.0007610723205494913,
+          0.026430778302832254
+        ],
+        "peer_theme_ci95": [
+          -0.005859718955474761,
+          0.018392891588979162
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.005103184837266794,
+          0.034358495547911594
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.011914098147243497,
+          0.024502355028558017
+        ],
+        "spy_mean": 0.015008551208524852,
+        "mfe_mean": 0.13211079852132868,
+        "mae_mean": -0.08713757200277109,
+        "discovery_peer_mean": 0.014919142920244483,
+        "confirmation_peer_mean": 0.004227135006616078,
+        "discovery_n": 534,
+        "confirmation_n": 540
+      },
+      "IND_60_80_ACCEL_POS": {
+        "rows": 1037,
+        "entries": 944,
+        "dates": 751,
+        "themes": 222,
+        "mean_stocks_per_entry": 1.0985169491525424,
+        "peer_mean": 0.004256870037351525,
+        "peer_median": -0.0041634561080711105,
+        "peer_positive_rate": 0.475635593220339,
+        "peer_date_ci95": [
+          -0.005424564205438136,
+          0.017263384715014894
+        ],
+        "peer_theme_ci95": [
+          -0.010590572059340187,
+          0.021917045763711368
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.010507224975705914,
+          0.02458453735205958
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.01741634617560553,
+          0.035139530208693225
+        ],
+        "spy_mean": 0.016789680624816224,
+        "mfe_mean": 0.1360284153846023,
+        "mae_mean": -0.08681637114230671,
+        "discovery_peer_mean": 0.006339139661458884,
+        "confirmation_peer_mean": 0.002209596541380426,
+        "discovery_n": 468,
+        "confirmation_n": 476
+      },
+      "IND_60_80_ACCEL10": {
+        "rows": 830,
+        "entries": 756,
+        "dates": 624,
+        "themes": 205,
+        "mean_stocks_per_entry": 1.097883597883598,
+        "peer_mean": 0.004869778513115308,
+        "peer_median": -0.0039500782019346835,
+        "peer_positive_rate": 0.47883597883597884,
+        "peer_date_ci95": [
+          -0.007107348393309944,
+          0.01835782296910578
+        ],
+        "peer_theme_ci95": [
+          -0.00824917705015428,
+          0.02895055272963675
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.011751383469356292,
+          0.023186823825898616
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.014449393798737173,
+          0.039250222924620215
+        ],
+        "spy_mean": 0.016127165557612674,
+        "mfe_mean": 0.13556126152850465,
+        "mae_mean": -0.08666229594422864,
+        "discovery_peer_mean": 0.0055383840812715125,
+        "confirmation_peer_mean": 0.004255475935266207,
+        "discovery_n": 362,
+        "confirmation_n": 394
+      },
+      "IND_60_80_ACCEL10_BREADTH60": {
+        "rows": 830,
+        "entries": 756,
+        "dates": 624,
+        "themes": 205,
+        "mean_stocks_per_entry": 1.097883597883598,
+        "peer_mean": 0.004869778513115308,
+        "peer_median": -0.0039500782019346835,
+        "peer_positive_rate": 0.47883597883597884,
+        "peer_date_ci95": [
+          -0.007112477334029452,
+          0.017949319189222244
+        ],
+        "peer_theme_ci95": [
+          -0.0075519144944041754,
+          0.028776849614776487
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.012182162289698163,
+          0.02544657607945165
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.014902421581109231,
+          0.04093666262752085
+        ],
+        "spy_mean": 0.016127165557612674,
+        "mfe_mean": 0.13556126152850465,
+        "mae_mean": -0.08666229594422864,
+        "discovery_peer_mean": 0.0055383840812715125,
+        "confirmation_peer_mean": 0.004255475935266207,
+        "discovery_n": 362,
+        "confirmation_n": 394
+      },
+      "SECTOR_GE80": {
+        "rows": 1419,
+        "entries": 1143,
+        "dates": 845,
+        "themes": 217,
+        "mean_stocks_per_entry": 1.2414698162729658,
+        "peer_mean": -0.003236411283561893,
+        "peer_median": -0.002991550931284226,
+        "peer_positive_rate": 0.48031496062992124,
+        "peer_date_ci95": [
+          -0.011316530551104,
+          0.007769406998199589
+        ],
+        "peer_theme_ci95": [
+          -0.012203074048736624,
+          0.006148465342577354
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.015933476112913104,
+          0.01143690054243443
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.016354005522761013,
+          0.010261832165190584
+        ],
+        "spy_mean": 0.011577697472650748,
+        "mfe_mean": 0.13417946738626402,
+        "mae_mean": -0.0920610395067235,
+        "discovery_peer_mean": -6.436930334491222e-05,
+        "confirmation_peer_mean": -0.006337109759033508,
+        "discovery_n": 565,
+        "confirmation_n": 578
+      },
+      "SECTOR_LT80": {
+        "rows": 1856,
+        "entries": 1762,
+        "dates": 1209,
+        "themes": 263,
+        "mean_stocks_per_entry": 1.0533484676503972,
+        "peer_mean": 0.0008819808479017099,
+        "peer_median": -0.005596303705625614,
+        "peer_positive_rate": 0.4699205448354143,
+        "peer_date_ci95": [
+          -0.007709663015708682,
+          0.010987373963947332
+        ],
+        "peer_theme_ci95": [
+          -0.010223995961361074,
+          0.005665505816580397
+        ],
+        "peer_date_bonferroni_ci": [
+          -0.011588817367966393,
+          0.016719537702808356
+        ],
+        "peer_theme_bonferroni_ci": [
+          -0.013557726354070144,
+          0.009957412227483791
+        ],
+        "spy_mean": 0.005795673647253863,
+        "mfe_mean": 0.1193258604035233,
+        "mae_mean": -0.08762276510737485,
+        "discovery_peer_mean": -6.112407186886606e-05,
+        "confirmation_peer_mean": 0.001980338911713144,
+        "discovery_n": 948,
+        "confirmation_n": 814
+      }
+    }
+  },
+  "feature_ic": {
+    "5": {
+      "theme_age": {
+        "n": 2905,
+        "spearman": 0.014571953093759308,
+        "discovery_spearman": -0.01295131095294865,
+        "confirmation_spearman": 0.041100345139688056
+      },
+      "industry_rs": {
+        "n": 2905,
+        "spearman": -0.03553352712890087,
+        "discovery_spearman": -0.03532790631104469,
+        "confirmation_spearman": -0.035754107145170695
+      },
+      "industry_delta20": {
+        "n": 2905,
+        "spearman": -0.004494246679870765,
+        "discovery_spearman": 0.018855682250241798,
+        "confirmation_spearman": -0.026165354501086698
+      },
+      "sector_rs": {
+        "n": 2905,
+        "spearman": -0.01848396505423805,
+        "discovery_spearman": -0.03000862197782986,
+        "confirmation_spearman": -0.0079962296915209
+      },
+      "breadth": {
+        "n": 2905,
+        "spearman": 0.008125237891056432,
+        "discovery_spearman": -0.009255168615892595,
+        "confirmation_spearman": 0.02331990411139124
+      },
+      "theme_rs": {
+        "n": 2905,
+        "spearman": -0.00954285731558492,
+        "discovery_spearman": -0.023572656198979997,
+        "confirmation_spearman": 0.0034709810706027417
+      },
+      "theme_delta20": {
+        "n": 2905,
+        "spearman": -0.029978840077815507,
+        "discovery_spearman": -0.023621207547240747,
+        "confirmation_spearman": -0.035964794201281396
+      }
+    },
+    "10": {
+      "theme_age": {
+        "n": 2905,
+        "spearman": 0.015422105080041767,
+        "discovery_spearman": 0.016193619178322054,
+        "confirmation_spearman": 0.014918424689922806
+      },
+      "industry_rs": {
+        "n": 2905,
+        "spearman": -0.026937690242060417,
+        "discovery_spearman": -0.031640639745923564,
+        "confirmation_spearman": -0.023585910446400456
+      },
+      "industry_delta20": {
+        "n": 2905,
+        "spearman": -0.0004211832345536067,
+        "discovery_spearman": 0.02182951953263252,
+        "confirmation_spearman": -0.02355833149112734
+      },
+      "sector_rs": {
+        "n": 2905,
+        "spearman": -0.0063401173877441295,
+        "discovery_spearman": 0.003921236159200587,
+        "confirmation_spearman": -0.01542617277440687
+      },
+      "breadth": {
+        "n": 2905,
+        "spearman": 0.01181511436555005,
+        "discovery_spearman": -0.0037748025713214345,
+        "confirmation_spearman": 0.024259683825277285
+      },
+      "theme_rs": {
+        "n": 2905,
+        "spearman": -0.011969517343017065,
+        "discovery_spearman": -0.00945589107875521,
+        "confirmation_spearman": -0.015177302476773602
+      },
+      "theme_delta20": {
+        "n": 2905,
+        "spearman": -0.020195534908109766,
+        "discovery_spearman": -0.0030566070906683667,
+        "confirmation_spearman": -0.03757762705908091
+      }
+    },
+    "20": {
+      "theme_age": {
+        "n": 2905,
+        "spearman": 0.0031979335191001917,
+        "discovery_spearman": 0.005694898877965164,
+        "confirmation_spearman": 0.0011653009535999078
+      },
+      "industry_rs": {
+        "n": 2905,
+        "spearman": -0.016891231759686626,
+        "discovery_spearman": -0.0018672183136934867,
+        "confirmation_spearman": -0.03203668615686066
+      },
+      "industry_delta20": {
+        "n": 2905,
+        "spearman": 0.009210722577359446,
+        "discovery_spearman": 0.03984685709755291,
+        "confirmation_spearman": -0.020391117361603636
+      },
+      "sector_rs": {
+        "n": 2905,
+        "spearman": -0.007367476809387242,
+        "discovery_spearman": 0.011114935515615881,
+        "confirmation_spearman": -0.025978751058835757
+      },
+      "breadth": {
+        "n": 2905,
+        "spearman": 0.01809904162717605,
+        "discovery_spearman": -0.001358589927523993,
+        "confirmation_spearman": 0.03686659728113931
+      },
+      "theme_rs": {
+        "n": 2905,
+        "spearman": -0.017145167150809156,
+        "discovery_spearman": -0.023441707661467585,
+        "confirmation_spearman": -0.01109862743475742
+      },
+      "theme_delta20": {
+        "n": 2905,
+        "spearman": -0.025681874510068793,
+        "discovery_spearman": -0.021672974618505293,
+        "confirmation_spearman": -0.029219069148264
+      }
+    }
+  },
+  "future_industry_confirmation_diagnostic": {
+    "ALL_LT80": {
+      "rows": 1888,
+      "entries": 1747,
+      "future_confirm20_rate": 0.3384533898305085
+    },
+    "ACCEL_POS": {
+      "rows": 1563,
+      "entries": 1427,
+      "future_confirm20_rate": 0.3672424824056302
+    },
+    "ACCEL10": {
+      "rows": 1181,
+      "entries": 1074,
+      "future_confirm20_rate": 0.3835732430143946
+    },
+    "IND_60_80_ACCEL10": {
+      "rows": 830,
+      "entries": 756,
+      "future_confirm20_rate": 0.4927710843373494
+    }
+  }
+}

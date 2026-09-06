@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "source": "pitindex pinned public dataset + official current SSGA sector ETF holdings",
+  "pitindex_version": "0.2.1",
+  "pitindex_info": {
+    "build_timestamp_utc": "2026-08-17T07:24:18.911333+00:00",
+    "cik_corrected_from_sec": 0,
+    "cik_filled_from_sec": 0,
+    "current_size": 503,
+    "diff_ratio": 0.007952286282306162,
+    "end_date": "2026-08-17",
+    "events_count": 1028,
+    "renames_applied": 28,
+    "seed_size": 495,
+    "seed_source": "https://github.com/fja05680/sp500",
+    "start_date": "2004-12-30",
+    "synthetic_events": 0,
+    "wikipedia_changes_source": "https://en.wikipedia.org/wiki/Historical_components_of_the_S%26P_500",
+    "wikipedia_source": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+    "index": "sp500",
+    "data_age_days": 13,
+    "stale_threshold_days": 14,
+    "is_stale": false
+  },
+  "window": {
+    "start": "2022-01-31",
+    "end": "2026-08-31",
+    "snapshots": 56
+  },
+  "gics_coverage": {
+    "min_mapping_rate": 0.8217821782178217,
+    "median_mapping_rate": 0.9095427435387674,
+    "latest_mapping_rate": 1.0,
+    "max_missing_in_snapshot": 90,
+    "unique_unknown_tickers": 96
+  },
+  "current_alignment": {
+    "min_jaccard": 0.8529411764705882,
+    "median_jaccard": 0.9516129032258065,
+    "detail": {
+      "XLC": {
+        "pit_only": [],
+        "ssga_only": [
+          "-",
+          "RDDT"
+        ],
+        "intersection": 23,
+        "jaccard": 0.92
+      },
+      "XLY": {
+        "pit_only": [],
+        "ssga_only": [
+          "-"
+        ],
+        "intersection": 47,
+        "jaccard": 0.9791666666666666
+      },
+      "XLP": {
+        "pit_only": [],
+        "ssga_only": [
+          "-",
+          "IXRU6"
+        ],
+        "intersection": 34,
+        "jaccard": 0.9444444444444444
+      },
+      "XLE": {
+        "pit_only": [],
+        "ssga_only": [
+          "-",
+          "IXPU6"
+        ],
+        "intersection": 21,
+        "jaccard": 0.9130434782608695
+      },
+      "XLF": {
+        "pit_only": [],
+        "ssga_only": [
+          "-",
+          "IXAU6"
+        ],
+        "intersection": 76,
+        "jaccard": 0.9743589743589743
+      },
+      "XLV": {
+        "pit_only": [],
+        "ssga_only": [
+          "-",
+          "2602335D",
+          "IXCU6"
+        ],
+        "intersection": 59,
+        "jaccard": 0.9516129032258065
+      },
+      "XLI": {
+        "pit_only": [],
+        "ssga_only": [
+          "-"
+        ],
+        "intersection": 83,
+        "jaccard": 0.9880952380952381
+      },
+      "XLB": {
+        "pit_only": [],
+        "ssga_only": [
+          "-",
+          "IXDU6"
+        ],
+        "intersection": 25,
+        "jaccard": 0.9259259259259259
+      },
+      "XLRE": {
+        "pit_only": [
+          "AVB",
+          "EQR"
+        ],
+        "ssga_only": [
+          "-",
+          "VMRK",
+          "XARU6"
+        ],
+        "intersection": 29,
+        "jaccard": 0.8529411764705882
+      },
+      "XLK": {
+        "pit_only": [],
+        "ssga_only": [
+          "-"
+        ],
+        "intersection": 73,
+        "jaccard": 0.9864864864864865
+      },
+      "XLU": {
+        "pit_only": [],
+        "ssga_only": [
+          "-"
+        ],
+        "intersection": 31,
+        "jaccard": 0.96875
+      }
+    }
+  },
+  "decision": {
+    "usable_for_pit_sector_internal_without_extra_sector_backfill": false,
+    "thresholds": {
+      "monthly_gics_mapping_min": 0.98,
+      "current_sector_jaccard_min": 0.95
+    },
+    "reason": "Fails strict PIT sector-classification/alignment guard; do not use directly for final Distribution validation without remediation."
+  },
+  "limitations": [
+    "pitindex states that GICS metadata for delisted/removed historical constituents can be missing.",
+    "Current SSGA holdings comparison validates present-day mapping only, not historical Select Sector index membership weights.",
+    "No historical weights are used; intended downstream internal test is equal-weight only."
+  ]
+}

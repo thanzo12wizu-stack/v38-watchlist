@@ -1,0 +1,712 @@
+{
+  "status": "RELEADERSHIP_PRIORITY_BREADTH_WALKFORWARD_AUDIT",
+  "analysis_window": {
+    "start": "2020-01-02",
+    "end": "2026-09-02",
+    "downloaded": 3595
+  },
+  "freeze": {
+    "rows": 414,
+    "sha256": "0eff23a482f15bfff28468cb83ec607d35815b2be5dc580c2eb66f0872292603"
+  },
+  "design": {
+    "fixed": "THREE4 signal, V38 ordering inside Re-Leadership group, portfolio/exits/market mode unchanged.",
+    "variants": "P1/P2/P3/PALL = number of simultaneous valid Core Re-Leadership signals promoted ahead of normal Core candidates on vacant fills only; no forced sale.",
+    "selection": "2021-2023 labels only; 2024-2026YTD not used to reselect."
+  },
+  "validation": {
+    "p1_reproduction_max_abs_diff": 0.0
+  },
+  "evaluations": {
+    "P1": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "median_capture_progress": 0.5891510393414994
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 29,
+          "hit_rate": 0.48333333333333334,
+          "early_n": 5,
+          "early_rate_all": 0.08333333333333333,
+          "median_capture_progress": 0.6652409321624921
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 35,
+          "hit_rate": 0.2229299363057325,
+          "early_n": 12,
+          "early_rate_all": 0.07643312101910828,
+          "median_capture_progress": 0.5155230878932168
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 19,
+          "hit_rate": 0.6333333333333333,
+          "early_n": 11,
+          "early_rate_all": 0.36666666666666664,
+          "median_capture_progress": 0.27980445020651845
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 30,
+          "hit_rate": 0.5,
+          "early_n": 16,
+          "early_rate_all": 0.26666666666666666,
+          "median_capture_progress": 0.28305015619107454
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 33,
+          "hit_rate": 0.24087591240875914,
+          "early_n": 15,
+          "early_rate_all": 0.10948905109489052,
+          "median_capture_progress": 0.36431414959748254
+        }
+      }
+    },
+    "P2": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 3,
+          "early_rate_all": 0.1,
+          "median_capture_progress": 0.573912977096184
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 26,
+          "hit_rate": 0.43333333333333335,
+          "early_n": 5,
+          "early_rate_all": 0.08333333333333333,
+          "median_capture_progress": 0.64023090908484
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 36,
+          "hit_rate": 0.22929936305732485,
+          "early_n": 12,
+          "early_rate_all": 0.07643312101910828,
+          "median_capture_progress": 0.5088399698392216
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 8,
+          "early_rate_all": 0.26666666666666666,
+          "median_capture_progress": 0.3406785411037323
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 26,
+          "hit_rate": 0.43333333333333335,
+          "early_n": 13,
+          "early_rate_all": 0.21666666666666667,
+          "median_capture_progress": 0.31348720163968147
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 37,
+          "hit_rate": 0.27007299270072993,
+          "early_n": 15,
+          "early_rate_all": 0.10948905109489052,
+          "median_capture_progress": 0.3918279496757061
+        }
+      }
+    },
+    "P3": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 16,
+          "hit_rate": 0.5333333333333333,
+          "early_n": 3,
+          "early_rate_all": 0.1,
+          "median_capture_progress": 0.5499742202212614
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 24,
+          "hit_rate": 0.4,
+          "early_n": 4,
+          "early_rate_all": 0.06666666666666667,
+          "median_capture_progress": 0.604713096757329
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 35,
+          "hit_rate": 0.2229299363057325,
+          "early_n": 12,
+          "early_rate_all": 0.07643312101910828,
+          "median_capture_progress": 0.5021568517852266
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 7,
+          "early_rate_all": 0.23333333333333334,
+          "median_capture_progress": 0.3721286328691832
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 26,
+          "hit_rate": 0.43333333333333335,
+          "early_n": 12,
+          "early_rate_all": 0.2,
+          "median_capture_progress": 0.340885324694362
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 38,
+          "hit_rate": 0.2773722627737226,
+          "early_n": 14,
+          "early_rate_all": 0.10218978102189781,
+          "median_capture_progress": 0.38646771911265343
+        }
+      }
+    },
+    "PALL": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 14,
+          "hit_rate": 0.4666666666666667,
+          "early_n": 3,
+          "early_rate_all": 0.1,
+          "median_capture_progress": 0.49112162157143363
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 20,
+          "hit_rate": 0.3333333333333333,
+          "early_n": 4,
+          "early_rate_all": 0.06666666666666667,
+          "median_capture_progress": 0.5499742202212614
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 32,
+          "hit_rate": 0.20382165605095542,
+          "early_n": 10,
+          "early_rate_all": 0.06369426751592357,
+          "median_capture_progress": 0.4802640306214049
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 13,
+          "hit_rate": 0.43333333333333335,
+          "early_n": 8,
+          "early_rate_all": 0.26666666666666666,
+          "median_capture_progress": 0.28629586217563063
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 22,
+          "hit_rate": 0.36666666666666664,
+          "early_n": 13,
+          "early_rate_all": 0.21666666666666667,
+          "median_capture_progress": 0.28170775779617974
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 32,
+          "hit_rate": 0.23357664233576642,
+          "early_n": 15,
+          "early_rate_all": 0.10948905109489052,
+          "median_capture_progress": 0.3521129564670151
+        }
+      }
+    }
+  },
+  "dev_selected": "P2",
+  "selected_dev_key": [
+    3,
+    12,
+    17,
+    36,
+    0,
+    -1
+  ],
+  "oos_guardrails": {
+    "annual_hit_not_worse": false,
+    "annual_early_not_worse": false,
+    "rolling_hit_not_worse": true,
+    "rolling_early_not_worse": true,
+    "cagr_not_worse_by_gt_1pp": false,
+    "mdd_not_worse_by_gt_2pp": true
+  },
+  "oos_guardrails_all_pass": false,
+  "oos_portfolio": {
+    "selected": {
+      "n": 670,
+      "total_return": 1.6458789745146079,
+      "cagr": 0.44269438140093165,
+      "mdd": -0.20879204397345075,
+      "sharpe": 1.3142764266403635,
+      "positive_days": 0.4439461883408072
+    },
+    "p1": {
+      "n": 670,
+      "total_return": 2.2765858107335664,
+      "cagr": 0.5636869802112847,
+      "mdd": -0.23751361943028393,
+      "sharpe": 1.4804970325195779,
+      "positive_days": 0.4484304932735426
+    },
+    "bootstrap_vs_p1": 0.0734
+  },
+  "oos_paired": {
+    "annual_top10": {
+      "n": 30,
+      "hit_selected_only": 0,
+      "hit_baseline_only": 2,
+      "early_selected_only": 0,
+      "early_baseline_only": 3
+    },
+    "rolling126": {
+      "n": 137,
+      "hit_selected_only": 7,
+      "hit_baseline_only": 3,
+      "early_selected_only": 1,
+      "early_baseline_only": 1
+    }
+  },
+  "calendar_returns": {
+    "P1": {
+      "2021": 0.31171122664606843,
+      "2022": 0.05442506247136447,
+      "2023": 0.19384356416523718,
+      "2024": 0.43531119984244904,
+      "2025": 0.4407499485571118,
+      "2026": 0.5580798821281134
+    },
+    "P2": {
+      "2021": 0.371783350139127,
+      "2022": 0.06859984327601154,
+      "2023": 0.16790056107584017,
+      "2024": 0.3441870220015022,
+      "2025": 0.43219719942519097,
+      "2026": 0.35148216006179767
+    },
+    "P3": {
+      "2021": 0.39142072224479585,
+      "2022": 0.03688776841000885,
+      "2023": 0.16752594889849393,
+      "2024": 0.3746394306142462,
+      "2025": 0.27069778938071276,
+      "2026": 0.3096993278571041
+    },
+    "PALL": {
+      "2021": 0.2932343703892226,
+      "2022": 0.0061565041364843864,
+      "2023": 0.21909819143954978,
+      "2024": 0.20259470350877162,
+      "2025": 0.29854629423327284,
+      "2026": 0.1954638040517105
+    }
+  },
+  "trade_stats": {
+    "P1": {
+      "closed_trades": 451,
+      "mean_return": 0.06860755231052636,
+      "median_return": -0.029297507352316288,
+      "win_rate": 0.43015521064301554,
+      "mean_hold_calendar_days": 37.465631929046566,
+      "median_hold_calendar_days": 23.0,
+      "exit_reasons": {
+        "RED": 214,
+        "HARD8": 204,
+        "PEAK30": 33
+      },
+      "by_period": {
+        "discovery": {
+          "n": 154,
+          "mean_return": 0.0747441929715688,
+          "median_return": -0.06662347174464905,
+          "win_rate": 0.4090909090909091
+        },
+        "confirmation": {
+          "n": 297,
+          "mean_return": 0.06542559048628213,
+          "median_return": -0.022189106907286704,
+          "win_rate": 0.44107744107744107
+        }
+      }
+    },
+    "P2": {
+      "closed_trades": 449,
+      "mean_return": 0.06124445376601258,
+      "median_return": -0.02910535413837101,
+      "win_rate": 0.44320712694877507,
+      "mean_hold_calendar_days": 37.54120267260579,
+      "median_hold_calendar_days": 23.0,
+      "exit_reasons": {
+        "RED": 222,
+        "HARD8": 198,
+        "PEAK30": 29
+      },
+      "by_period": {
+        "discovery": {
+          "n": 151,
+          "mean_return": 0.07711510943558511,
+          "median_return": -0.05844156091615993,
+          "win_rate": 0.4304635761589404
+        },
+        "confirmation": {
+          "n": 298,
+          "mean_return": 0.053202611463645286,
+          "median_return": -0.02226339254911819,
+          "win_rate": 0.44966442953020136
+        }
+      }
+    },
+    "P3": {
+      "closed_trades": 441,
+      "mean_return": 0.05503909185098153,
+      "median_return": -0.02602414050734192,
+      "win_rate": 0.4467120181405896,
+      "mean_hold_calendar_days": 38.3968253968254,
+      "median_hold_calendar_days": 24.0,
+      "exit_reasons": {
+        "RED": 223,
+        "HARD8": 189,
+        "PEAK30": 29
+      },
+      "by_period": {
+        "discovery": {
+          "n": 151,
+          "mean_return": 0.07655489940109261,
+          "median_return": -0.05417484839540143,
+          "win_rate": 0.423841059602649
+        },
+        "confirmation": {
+          "n": 290,
+          "mean_return": 0.043836033436958174,
+          "median_return": -0.021263123602508427,
+          "win_rate": 0.4586206896551724
+        }
+      }
+    },
+    "PALL": {
+      "closed_trades": 437,
+      "mean_return": 0.046901854084893245,
+      "median_return": -0.02077183179331865,
+      "win_rate": 0.45537757437070936,
+      "mean_hold_calendar_days": 39.11670480549199,
+      "median_hold_calendar_days": 25.0,
+      "exit_reasons": {
+        "RED": 225,
+        "HARD8": 184,
+        "PEAK30": 28
+      },
+      "by_period": {
+        "discovery": {
+          "n": 153,
+          "mean_return": 0.07076682306939017,
+          "median_return": -0.049091337429589266,
+          "win_rate": 0.43790849673202614
+        },
+        "confirmation": {
+          "n": 284,
+          "mean_return": 0.0340450222024002,
+          "median_return": -0.014108142836659954,
+          "win_rate": 0.4647887323943662
+        }
+      }
+    }
+  },
+  "cost10bps": {
+    "selected_10bps": {
+      "n": 670,
+      "total_return": 1.5621025656862266,
+      "cagr": 0.4253147960135293,
+      "mdd": -0.21080562471559816,
+      "sharpe": 1.2762879388436956,
+      "positive_days": 0.4349775784753363
+    },
+    "cagr_drag": -0.017379585387402363
+  },
+  "named_diagnostics": {
+    "P1": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "actual_entry": true,
+        "actual_entry_date": "2024-01-19",
+        "priority_rank": 1.0
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": true,
+        "actual_entry_date": "2024-05-22",
+        "priority_rank": 1.0
+      },
+      {
+        "symbol": "CAVA",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "SE",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "STX",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": true,
+        "actual_entry_date": "2025-12-23",
+        "priority_rank": null
+      },
+      {
+        "symbol": "RVMD",
+        "start": "2026-01-02",
+        "peak": "2026-09-02",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      }
+    ],
+    "P2": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "actual_entry": true,
+        "actual_entry_date": "2024-01-19",
+        "priority_rank": 1.0
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "CAVA",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "SE",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "STX",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": true,
+        "actual_entry_date": "2025-12-23",
+        "priority_rank": null
+      },
+      {
+        "symbol": "RVMD",
+        "start": "2026-01-02",
+        "peak": "2026-09-02",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      }
+    ],
+    "P3": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "actual_entry": true,
+        "actual_entry_date": "2024-01-19",
+        "priority_rank": 1.0
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "CAVA",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "SE",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "STX",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": true,
+        "actual_entry_date": "2025-12-23",
+        "priority_rank": null
+      },
+      {
+        "symbol": "RVMD",
+        "start": "2026-01-02",
+        "peak": "2026-09-02",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      }
+    ],
+    "PALL": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "actual_entry": true,
+        "actual_entry_date": "2024-01-19",
+        "priority_rank": 1.0
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "actual_entry": true,
+        "actual_entry_date": "2024-08-20",
+        "priority_rank": 5.0
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "CAVA",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "SE",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "STX",
+        "start": "2025-01-02",
+        "peak": "2025-12-31",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      },
+      {
+        "symbol": "RVMD",
+        "start": "2026-01-02",
+        "peak": "2026-09-02",
+        "actual_entry": false,
+        "actual_entry_date": null,
+        "priority_rank": null
+      }
+    ]
+  }
+}

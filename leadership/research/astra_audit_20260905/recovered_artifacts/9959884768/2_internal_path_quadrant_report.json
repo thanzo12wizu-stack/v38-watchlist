@@ -1,0 +1,43 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "design": "Audited 11-sector PIT panel; current internal band x 5/10/20d internal change; transition-only events; 20-session cooldown; sector/date cluster bootstrap; threshold-matched same-day controls.",
+  "band_definition": {
+    "WEAK": "internal_score <45",
+    "STRONG": "internal_score >=60"
+  },
+  "delta_thresholds": [
+    10,
+    20
+  ],
+  "periods": [
+    "CONFIRMATION_2024_PLUS",
+    "RECENT_2025_PLUS"
+  ],
+  "stability": {
+    "STRONG_IMPROVING": {
+      "eligible_cells": 48,
+      "positive_fraction": 0.0,
+      "negative_fraction": 1.0,
+      "mean_of_cell_means": -0.005048624577446956
+    },
+    "STRONG_WORSENING": {
+      "eligible_cells": 48,
+      "positive_fraction": 0.4375,
+      "negative_fraction": 0.5625,
+      "mean_of_cell_means": -0.002378029418889411
+    },
+    "WEAK_IMPROVING": {
+      "eligible_cells": 48,
+      "positive_fraction": 0.08333333333333333,
+      "negative_fraction": 0.9166666666666666,
+      "mean_of_cell_means": -0.0069291968080342535
+    },
+    "WEAK_WORSENING": {
+      "eligible_cells": 48,
+      "positive_fraction": 0.375,
+      "negative_fraction": 0.625,
+      "mean_of_cell_means": -0.002010466957631149
+    }
+  }
+}

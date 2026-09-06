@@ -1,0 +1,70 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "memory_universe": {
+    "old_events": 9,
+    "official_2016_freeze_events": 23,
+    "recent_dynamic_events": 1,
+    "removed_nonofficial_2016_freeze": [
+      "2016-01-11",
+      "2016-02-09"
+    ],
+    "missing_official": []
+  },
+  "primary_rule": "Official eligible CORE_MC event only; adaptive memory also updates only on eligible event outcomes. Prior3 mean>0 and prior5 mean>0 =>30%; exactly one=>15%; neither=>0%; spare gross only; hold2; Panic/Stage56 kill. No macro/date gate.",
+  "primary_cost5": {
+    "config": "S3_L5_M15",
+    "cost_bp": 5,
+    "active_days": 38,
+    "avg_weight": 0.2842105263157896,
+    "cagr": 0.49545522853294877,
+    "mdd": -0.2323359830178694,
+    "delta_cagr": 0.025429433105986776,
+    "delta_mdd": 0.0,
+    "TRAIN_2016_2021_delta_cagr": 0.009498068009594407,
+    "TRAIN_2016_2021_delta_mdd": 0.0,
+    "HOLDOUT_2022_2026_delta_cagr": 0.04695419630990871,
+    "HOLDOUT_2022_2026_delta_mdd": 0.003590665428034323,
+    "2016_2019_delta_cagr": 0.0033838288861320898,
+    "2016_2019_delta_mdd": 0.0,
+    "2020_2021_delta_cagr": 0.02613458153044701,
+    "2020_2021_delta_mdd": -1.1102230246251565e-16,
+    "2022_2023_delta_cagr": 0.06162892746316073,
+    "2022_2023_delta_mdd": -2.220446049250313e-16,
+    "2024_2026_delta_cagr": 0.02944237900084179,
+    "2024_2026_delta_mdd": 0.003590665428033768
+  },
+  "plateau": {
+    "configs": 9,
+    "all_full_positive": true,
+    "all_train_hold_positive": true,
+    "min_delta_cagr": 0.023496833767791436,
+    "max_delta_cagr": 0.025889598274670966
+  },
+  "event_bootstrap": {
+    "n": 23,
+    "weighted_mean": 0.00783607328019411,
+    "weighted_median": 0.00255504044741529,
+    "p_mean_positive": 0.99765,
+    "mean_p05": 0.0031001212330064405
+  },
+  "current": {
+    "latest_market_date": "2026-09-02",
+    "prior3_after_true_oos": -0.011230326284595533,
+    "prior5_after_true_oos": 0.01815682765180928,
+    "next_eligible_target": 0.15
+  },
+  "true_oos": [
+    {
+      "signal_date": "2026-03-30 00:00:00",
+      "qid2": -0.0365699497739125,
+      "adaptive_size": 0.3,
+      "prior3_mean": 0.04188012090690813,
+      "prior5_mean": 0.02866696455790966
+    }
+  ],
+  "notes": [
+    "This run fixes the last contamination risk: nonofficial 2016-01-11 and 2016-02-09 outcomes do not enter the adaptive memory.",
+    "2011-2015 reconstructed eligible events remain in the memory history so the rule must suppress that failed era without a calendar cutoff.",
+    "No production change."
+  ]
+}

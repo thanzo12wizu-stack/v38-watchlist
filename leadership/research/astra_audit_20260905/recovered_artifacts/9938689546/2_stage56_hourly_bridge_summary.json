@@ -1,0 +1,31 @@
+{
+  "status": "STAGE56_HOURLY_BRIDGE_AUDIT",
+  "purpose": "Validate Yahoo 60m aggregation as a post-2026-03-20 bridge for the frozen Stage51 5m->4H RSI30 trigger.",
+  "coverage": {
+    "five_min_start": "2026-06-10",
+    "five_min_end": "2026-09-03",
+    "hourly_start": "2023-10-06",
+    "hourly_end": "2026-09-03",
+    "overlap_bars": 120,
+    "compare_bars": 80
+  },
+  "close_abs_diff_bps": {
+    "median": 0.0,
+    "p99": 0.0
+  },
+  "rsi_abs_diff": {
+    "median": 0.1404845745002099,
+    "p99": 2.5632606914588
+  },
+  "touch30": {
+    "five_min_events": 1,
+    "sixty_min_events": 2,
+    "match_rate": 0.9875,
+    "precision": 0.5,
+    "recall": 1.0
+  },
+  "bar_equivalence_pass": false,
+  "signal_equivalence_pass": false,
+  "approved_for_stage56_history_extension": false,
+  "guardrail": "Do not extend frozen Stage56 history unless both bar and actual touch30 signal equivalence pass. No-event overlap is insufficient for approval."
+}

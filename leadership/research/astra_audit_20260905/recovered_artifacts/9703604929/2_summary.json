@@ -1,0 +1,16 @@
+{
+  "status": "NORMAL_STOCK_N4_REPAIR_V4B",
+  "scope": "normal stock only",
+  "fixed_boundaries": {
+    "attack_stock_pa50": 0.6,
+    "selective_stock_pa50": [
+      0.5,
+      0.6
+    ],
+    "post_red_restart_stock_pa50": 0.5,
+    "defense": "NQSAR Red"
+  },
+  "fixed_selective_capacity": "4 of 12 slots; each remains 1/12 sleeve NAV",
+  "only_question": "whether Yellow/non-Red repair states with stock breadth >=50% may open the four-slot normal-stock sleeve, and whether mode downgrade should immediately trim",
+  "note": "No threshold search. No RSI30, shallow, TQQQ, main, or dashboard changes."
+}

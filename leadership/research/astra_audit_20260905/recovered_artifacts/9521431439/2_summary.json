@@ -1,0 +1,147 @@
+{
+  "period": {
+    "start": "2011-01-03",
+    "end_exclusive": "2026-01-01",
+    "years": 15
+  },
+  "capital": {
+    "start_jpy": 9000000.0,
+    "annual_contribution_jpy": 1000000.0
+  },
+  "tax": {
+    "rate": 0.20315,
+    "loss_carryforward_years": 3,
+    "model": "annual realization; contribution after year-end tax"
+  },
+  "market_policy": {
+    "source": "V38 market policy v1.0.0 thresholds and component weights",
+    "stock_breadth_reconstruction": "fixed ETF cross-section proxy; dynamic by available history; not full point-in-time stock universe",
+    "signal_execution": "close t signal -> open t+1 entry -> open t+2 mark; no close look-ahead"
+  },
+  "regime_counts": {
+    "BLUE": 2045,
+    "GREEN": 826,
+    "YELLOW": 481,
+    "RED": 420
+  },
+  "vix_event_count": 111,
+  "ftd_proxy_count": 23,
+  "weights_meta": [
+    {
+      "strategy": "QQQ_buy_hold",
+      "mean_invested_fraction": 1.0,
+      "max_invested_fraction": 1.0
+    },
+    {
+      "strategy": "TQQQ_buy_hold",
+      "mean_invested_fraction": 1.0,
+      "max_invested_fraction": 1.0
+    },
+    {
+      "strategy": "V38_regime_QQQ",
+      "mean_invested_fraction": 0.7510206786850476,
+      "max_invested_fraction": 1.0
+    },
+    {
+      "strategy": "V38_regime_TQQQ",
+      "mean_invested_fraction": 0.6494034994697775,
+      "max_invested_fraction": 0.9
+    },
+    {
+      "strategy": "V38_beta_rotation",
+      "mean_invested_fraction": 0.677677624602333,
+      "max_invested_fraction": 0.9
+    },
+    {
+      "strategy": "V38_beta_rotation_FTD",
+      "mean_invested_fraction": 0.47690217391304346,
+      "max_invested_fraction": 0.9
+    }
+  ],
+  "strategies": [
+    {
+      "strategy": "QQQ_buy_hold",
+      "final_after_tax_jpy": 122569977.82612945,
+      "net_twr_cagr": 0.14839728889902237,
+      "max_drawdown_after_tax_curve": -0.3898699056935524,
+      "worst_year": 2022,
+      "worst_year_return": -0.33222685323250367,
+      "total_tax_jpy": 25129561.392204545,
+      "total_contributions_jpy": 15000000.0,
+      "annualized_turnover_proxy": 0.0,
+      "reach_200m": null,
+      "reach_300m": null,
+      "reach_540m": null
+    },
+    {
+      "strategy": "TQQQ_buy_hold",
+      "final_after_tax_jpy": 782818322.4496742,
+      "net_twr_cagr": 0.3178641017607928,
+      "max_drawdown_after_tax_curve": -0.8341182182835853,
+      "worst_year": 2022,
+      "worst_year_return": -0.797242089812163,
+      "total_tax_jpy": 193454153.48641694,
+      "total_contributions_jpy": 15000000.0,
+      "annualized_turnover_proxy": 0.0,
+      "reach_200m": "2019-12-18",
+      "reach_300m": "2020-08-19",
+      "reach_540m": "2021-07-22"
+    },
+    {
+      "strategy": "V38_regime_QQQ",
+      "final_after_tax_jpy": 65787988.78713336,
+      "net_twr_cagr": 0.09061973016189406,
+      "max_drawdown_after_tax_curve": -0.2227256293292601,
+      "worst_year": 2022,
+      "worst_year_return": -0.19440404583660686,
+      "total_tax_jpy": 10653485.501795996,
+      "total_contributions_jpy": 15000000.0,
+      "annualized_turnover_proxy": 8.995000000000001,
+      "reach_200m": null,
+      "reach_300m": null,
+      "reach_540m": null
+    },
+    {
+      "strategy": "V38_regime_TQQQ",
+      "final_after_tax_jpy": 109819705.49916747,
+      "net_twr_cagr": 0.13485181348953734,
+      "max_drawdown_after_tax_curve": -0.392281735531817,
+      "worst_year": 2022,
+      "worst_year_return": -0.33104816941573867,
+      "total_tax_jpy": 21878989.98827367,
+      "total_contributions_jpy": 15000000.0,
+      "annualized_turnover_proxy": 10.518333333333334,
+      "reach_200m": null,
+      "reach_300m": null,
+      "reach_540m": null
+    },
+    {
+      "strategy": "V38_beta_rotation",
+      "final_after_tax_jpy": 76529909.35036835,
+      "net_twr_cagr": 0.10298904342822657,
+      "max_drawdown_after_tax_curve": -0.34674352704044664,
+      "worst_year": 2022,
+      "worst_year_return": -0.29033348082566723,
+      "total_tax_jpy": 13392045.032976508,
+      "total_contributions_jpy": 15000000.0,
+      "annualized_turnover_proxy": 18.95,
+      "reach_200m": null,
+      "reach_300m": null,
+      "reach_540m": null
+    },
+    {
+      "strategy": "V38_beta_rotation_FTD",
+      "final_after_tax_jpy": 35785302.40078955,
+      "net_twr_cagr": 0.03550429210265604,
+      "max_drawdown_after_tax_curve": -0.4992968357116624,
+      "worst_year": 2022,
+      "worst_year_return": -0.35976732273563616,
+      "total_tax_jpy": 3231388.6600358933,
+      "total_contributions_jpy": 15000000.0,
+      "annualized_turnover_proxy": 12.812000000000001,
+      "reach_200m": null,
+      "reach_300m": null,
+      "reach_540m": null
+    }
+  ]
+}

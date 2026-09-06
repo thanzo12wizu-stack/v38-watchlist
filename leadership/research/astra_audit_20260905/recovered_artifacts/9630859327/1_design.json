@@ -1,0 +1,42 @@
+{
+  "status": "PRELIMINARY_CURRENT_TAXONOMY_POST_IGNITION_PRUNE_GRID",
+  "bias_warning": "Current universe and current taxonomy are retrospectively applied; hypothesis validation only.",
+  "download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3104,
+    "start": "2014-04-24",
+    "end": "2026-08-26",
+    "failed_batches": 0
+  },
+  "taxonomy": [
+    {
+      "path": "root.s2i",
+      "mapped": 5698,
+      "unique": 198
+    },
+    {
+      "path": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    },
+    {
+      "chosen": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    }
+  ],
+  "coverage": {
+    "stocks": 3595,
+    "theme_events": 4686,
+    "retained_events": 3259,
+    "rows": 234648
+  },
+  "design": {
+    "baseline": "Day0 signal close -> next open buy RS63 top3, equal one-third weights, hold to terminal",
+    "wait": "stay in cash until Day1/2/3/5 close, then next open buy positive Theme-relative top N",
+    "prune": "buy baseline RS3 on Day0->next open; at specified day close sell only names with cumulative Theme-relative return <=0 at next open; no reallocation",
+    "prune_2neg": "sell an initial RS3 name only after two consecutive closes with cumulative Theme-relative return <=0 during Days1-5; no reallocation",
+    "candidate_pool": "same Day0 price/liquidity/EMA21/SMA50 eligible pool as prior validation"
+  }
+}

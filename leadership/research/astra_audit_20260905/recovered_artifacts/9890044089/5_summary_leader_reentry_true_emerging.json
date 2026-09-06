@@ -1,0 +1,80 @@
+{
+  "status": "LEADER_REENTRY_TRUE_EMERGING_DIAGNOSTIC",
+  "analysis_window": {
+    "start": "2020-01-02",
+    "end": "2026-09-02",
+    "leader_start": "2021-01-04",
+    "downloaded": 3595
+  },
+  "baseline_validation": {
+    "status": "PASS",
+    "equity_max_abs_diff": 0.0,
+    "closed_trades": 486,
+    "entries": 495,
+    "reference_variant": "PEAK30_PART25_R3"
+  },
+  "corrected_size_definition": "Core-size is contemporaneous DDV>=100M OR DDV cross-sectional percentile>=85, independent of eligibility/RS/trend.",
+  "true_emerging_durable": {
+    "absolute_n": 33,
+    "relative_n": 18
+  },
+  "rolling_all": {
+    "n": 294,
+    "captured": 64,
+    "hit_rate": 0.21768707482993196,
+    "blockers": {
+      "RANKING": 114,
+      "CAPTURED": 64,
+      "SLOT_OR_TIMING": 53,
+      "ELIGIBILITY": 52,
+      "MARKET_GATE": 11
+    }
+  },
+  "rolling_start_core": {
+    "n": 146,
+    "captured": 32,
+    "hit_rate": 0.2191780821917808,
+    "blockers": {
+      "RANKING": 52,
+      "CAPTURED": 32,
+      "SLOT_OR_TIMING": 29,
+      "ELIGIBILITY": 28,
+      "MARKET_GATE": 5
+    }
+  },
+  "rolling_start_noncore": {
+    "n": 148,
+    "captured": 32,
+    "hit_rate": 0.21621621621621623,
+    "blockers": {
+      "RANKING": 62,
+      "CAPTURED": 32,
+      "ELIGIBILITY": 24,
+      "SLOT_OR_TIMING": 24,
+      "MARKET_GATE": 6
+    }
+  },
+  "lag": {
+    "core_current_eligibility": {
+      "n": 118,
+      "median_days": 33.0,
+      "p75_days": 104.75
+    },
+    "core_relaxed_rs63_75": {
+      "n": 118,
+      "median_days": 24.0,
+      "p75_days": 103.75
+    },
+    "core_rank_ready": {
+      "n": 60,
+      "median_days": 77.5,
+      "p75_days": 142.5
+    },
+    "noncore_current_eligibility": {
+      "n": 124,
+      "median_days": 33.0,
+      "p75_days": 84.5
+    }
+  },
+  "note": "Relaxed RS63>=75 is diagnostic only; no production or portfolio rule is changed."
+}

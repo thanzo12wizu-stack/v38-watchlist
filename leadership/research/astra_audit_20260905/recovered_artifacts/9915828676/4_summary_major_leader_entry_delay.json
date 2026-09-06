@@ -1,0 +1,557 @@
+{
+  "status": "MAJOR_LEADER_ENTRY_DELAY_AUDIT",
+  "scope": "research only; production/main/UI untouched",
+  "leader_label": {
+    "primary": "calendar-year Top1-5 by adjusted close return, complete years 2016-2025",
+    "large_return_sensitivity": "all tradable-near-year-start stocks finishing +200% to <+400%, and >=+400%",
+    "2026": "reported separately as YTD because the year is incomplete",
+    "anchor": "first analysis session close of the calendar year"
+  },
+  "current_core_rule_reconstructed": "daily refresh/refill; Attack Stock70+leave-one-out Theme30, Selective RS189; 12/4 slots; no scheduled rank prune; hard -8%; +24% first-hit next-open 25% partial; peak-close -30% trail; Red next-open full exit",
+  "radar_note": "Exact deleted Leader Radar Precision run could not be recovered. radar_proxy is therefore transparently defined as first tradable day with any of cross-sectional RS21/RS42/RS63 >=85. It is not represented as the vanished exact radar.",
+  "coverage": {
+    "selected": 3595,
+    "downloaded": 3595,
+    "analysis_sessions": 2682,
+    "leader_rows": 154,
+    "entries": 780,
+    "trace_rows": 2681
+  },
+  "groups": {
+    "TOP1_5_COMPLETE_2016_2025": {
+      "delay": {
+        "n": 50,
+        "captured": 26,
+        "capture_rate": 0.52,
+        "blockers": {
+          "CAPTURED": 26,
+          "SLOT_TIMING": 12,
+          "CANDIDATE_COMPETITION_OR_EXECUTION": 11,
+          "RANKING_OR_MARKET_MODE": 1
+        },
+        "radar_proxy": {
+          "reached": 50,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 7.0,
+          "delay_p75_sessions": 15.0,
+          "gain_median": 0.09083048846878639,
+          "gain_p75": 0.2991337970108805,
+          "within_30pct": 0.76,
+          "within_50pct": 0.9,
+          "before_100pct": 0.96
+        },
+        "eligibility": {
+          "reached": 50,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 45.0,
+          "delay_p75_sessions": 102.5,
+          "gain_median": 0.5743599651246006,
+          "gain_p75": 0.9982234205000209,
+          "within_30pct": 0.24,
+          "within_50pct": 0.4,
+          "before_100pct": 0.74
+        },
+        "attack_rank12": {
+          "reached": 44,
+          "reach_rate": 0.88,
+          "delay_median_sessions": 135.5,
+          "delay_p75_sessions": 183.75,
+          "gain_median": 1.1600284928211688,
+          "gain_p75": 2.234218038199314,
+          "within_30pct": 0.11363636363636363,
+          "within_50pct": 0.1590909090909091,
+          "before_100pct": 0.29545454545454547
+        },
+        "policy_ranked": {
+          "reached": 49,
+          "reach_rate": 0.98,
+          "delay_median_sessions": 135.0,
+          "delay_p75_sessions": 200.0,
+          "gain_median": 1.5487419647509486,
+          "gain_p75": 2.607387283946615,
+          "within_30pct": 0.04081632653061224,
+          "within_50pct": 0.12244897959183673,
+          "before_100pct": 0.24489795918367346
+        },
+        "slot_available": {
+          "reached": 37,
+          "reach_rate": 0.74,
+          "delay_median_sessions": 131.0,
+          "delay_p75_sessions": 191.0,
+          "gain_median": 1.3963465292106751,
+          "gain_p75": 2.2570744565771736,
+          "within_30pct": 0.05405405405405406,
+          "within_50pct": 0.08108108108108109,
+          "before_100pct": 0.2702702702702703
+        },
+        "actual_entry": {
+          "reached": 26,
+          "reach_rate": 0.52,
+          "delay_median_sessions": 169.0,
+          "delay_p75_sessions": 195.0,
+          "gain_median": 2.3847801460510727,
+          "gain_p75": 3.4567150597850764,
+          "within_30pct": 0.0,
+          "within_50pct": 0.038461538461538464,
+          "before_100pct": 0.15384615384615385
+        },
+        "actual_entry_extra": {
+          "entry_gain_median": 2.3847801460510727,
+          "remaining_upside_median": 0.4444643328906609,
+          "progress_median": 0.6167129715067755
+        }
+      },
+      "alternative_rs_rank12": {
+        "RS21": {
+          "reached": 49,
+          "reach_rate": 0.98,
+          "gain_median": 0.7104677549740808,
+          "delay_median_sessions": 60.0,
+          "within_30pct_all_events": 0.12,
+          "within_50pct_all_events": 0.28
+        },
+        "RS42": {
+          "reached": 47,
+          "reach_rate": 0.94,
+          "gain_median": 0.8403660682071761,
+          "delay_median_sessions": 60.0,
+          "within_30pct_all_events": 0.12,
+          "within_50pct_all_events": 0.2
+        },
+        "RS63": {
+          "reached": 47,
+          "reach_rate": 0.94,
+          "gain_median": 0.8450765148493529,
+          "delay_median_sessions": 69.0,
+          "within_30pct_all_events": 0.1,
+          "within_50pct_all_events": 0.2
+        },
+        "RS126": {
+          "reached": 44,
+          "reach_rate": 0.88,
+          "gain_median": 1.4604487324375177,
+          "delay_median_sessions": 108.5,
+          "within_30pct_all_events": 0.08,
+          "within_50pct_all_events": 0.12
+        },
+        "RS189": {
+          "reached": 46,
+          "reach_rate": 0.92,
+          "gain_median": 1.5710359182783378,
+          "delay_median_sessions": 138.0,
+          "within_30pct_all_events": 0.08,
+          "within_50pct_all_events": 0.14
+        },
+        "RS252": {
+          "reached": 46,
+          "reach_rate": 0.92,
+          "gain_median": 1.7592616343939427,
+          "delay_median_sessions": 151.5,
+          "within_30pct_all_events": 0.14,
+          "within_50pct_all_events": 0.16
+        }
+      }
+    },
+    "ALL_200_400_COMPLETE_2016_2025": {
+      "delay": {
+        "n": 105,
+        "captured": 44,
+        "capture_rate": 0.41904761904761906,
+        "blockers": {
+          "CAPTURED": 44,
+          "CANDIDATE_COMPETITION_OR_EXECUTION": 26,
+          "RANKING_OR_MARKET_MODE": 18,
+          "SLOT_TIMING": 16,
+          "ELIGIBILITY": 1
+        },
+        "radar_proxy": {
+          "reached": 105,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 3.0,
+          "delay_p75_sessions": 8.0,
+          "gain_median": 0.061240281270339425,
+          "gain_p75": 0.18733028589084189,
+          "within_30pct": 0.8666666666666667,
+          "within_50pct": 0.9238095238095239,
+          "before_100pct": 0.9714285714285714
+        },
+        "eligibility": {
+          "reached": 104,
+          "reach_rate": 0.9904761904761905,
+          "delay_median_sessions": 40.5,
+          "delay_p75_sessions": 106.75,
+          "gain_median": 0.432335335776996,
+          "gain_p75": 0.8113774878821683,
+          "within_30pct": 0.3942307692307692,
+          "within_50pct": 0.5384615384615384,
+          "before_100pct": 0.8269230769230769
+        },
+        "attack_rank12": {
+          "reached": 87,
+          "reach_rate": 0.8285714285714286,
+          "delay_median_sessions": 99.0,
+          "delay_p75_sessions": 166.5,
+          "gain_median": 0.9492824125387094,
+          "gain_p75": 1.7082217102881803,
+          "within_30pct": 0.1724137931034483,
+          "within_50pct": 0.26436781609195403,
+          "before_100pct": 0.5057471264367817
+        },
+        "policy_ranked": {
+          "reached": 86,
+          "reach_rate": 0.819047619047619,
+          "delay_median_sessions": 128.5,
+          "delay_p75_sessions": 178.25,
+          "gain_median": 1.3008492744672133,
+          "gain_p75": 2.0847250694764883,
+          "within_30pct": 0.12790697674418605,
+          "within_50pct": 0.16279069767441862,
+          "before_100pct": 0.36046511627906974
+        },
+        "slot_available": {
+          "reached": 70,
+          "reach_rate": 0.6666666666666666,
+          "delay_median_sessions": 117.5,
+          "delay_p75_sessions": 174.5,
+          "gain_median": 1.259367206271201,
+          "gain_p75": 2.0836470892031826,
+          "within_30pct": 0.08571428571428572,
+          "within_50pct": 0.14285714285714285,
+          "before_100pct": 0.38571428571428573
+        },
+        "actual_entry": {
+          "reached": 44,
+          "reach_rate": 0.41904761904761906,
+          "delay_median_sessions": 150.0,
+          "delay_p75_sessions": 202.25,
+          "gain_median": 1.7555639535161696,
+          "gain_p75": 2.560580655084793,
+          "within_30pct": 0.0,
+          "within_50pct": 0.06818181818181818,
+          "before_100pct": 0.1590909090909091
+        },
+        "actual_entry_extra": {
+          "entry_gain_median": 1.7555639535161696,
+          "remaining_upside_median": 0.36712743740298037,
+          "progress_median": 0.6282837105036907
+        }
+      },
+      "alternative_rs_rank12": {
+        "RS21": {
+          "reached": 94,
+          "reach_rate": 0.8952380952380953,
+          "gain_median": 0.6417511883296464,
+          "delay_median_sessions": 67.0,
+          "within_30pct_all_events": 0.13333333333333333,
+          "within_50pct_all_events": 0.3333333333333333
+        },
+        "RS42": {
+          "reached": 85,
+          "reach_rate": 0.8095238095238095,
+          "gain_median": 0.863095212238939,
+          "delay_median_sessions": 82.0,
+          "within_30pct_all_events": 0.05714285714285714,
+          "within_50pct_all_events": 0.14285714285714285
+        },
+        "RS63": {
+          "reached": 79,
+          "reach_rate": 0.7523809523809524,
+          "gain_median": 0.9009839736968885,
+          "delay_median_sessions": 92.0,
+          "within_30pct_all_events": 0.08571428571428572,
+          "within_50pct_all_events": 0.14285714285714285
+        },
+        "RS126": {
+          "reached": 64,
+          "reach_rate": 0.6095238095238096,
+          "gain_median": 1.5398375440177607,
+          "delay_median_sessions": 113.5,
+          "within_30pct_all_events": 0.0380952380952381,
+          "within_50pct_all_events": 0.0761904761904762
+        },
+        "RS189": {
+          "reached": 67,
+          "reach_rate": 0.638095238095238,
+          "gain_median": 1.8426183274626364,
+          "delay_median_sessions": 154.0,
+          "within_30pct_all_events": 0.06666666666666667,
+          "within_50pct_all_events": 0.08571428571428572
+        },
+        "RS252": {
+          "reached": 55,
+          "reach_rate": 0.5238095238095238,
+          "gain_median": 1.8195479550331317,
+          "delay_median_sessions": 141.0,
+          "within_30pct_all_events": 0.0761904761904762,
+          "within_50pct_all_events": 0.08571428571428572
+        }
+      }
+    },
+    "ALL_400PLUS_COMPLETE_2016_2025": {
+      "delay": {
+        "n": 22,
+        "captured": 16,
+        "capture_rate": 0.7272727272727273,
+        "blockers": {
+          "CAPTURED": 16,
+          "SLOT_TIMING": 4,
+          "CANDIDATE_COMPETITION_OR_EXECUTION": 2
+        },
+        "radar_proxy": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 8.5,
+          "delay_p75_sessions": 12.75,
+          "gain_median": 0.2111336667068966,
+          "gain_p75": 0.455962660342085,
+          "within_30pct": 0.6363636363636364,
+          "within_50pct": 0.8181818181818182,
+          "before_100pct": 0.9090909090909091
+        },
+        "eligibility": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 38.0,
+          "delay_p75_sessions": 114.75,
+          "gain_median": 0.540874926899968,
+          "gain_p75": 1.02882547837147,
+          "within_30pct": 0.18181818181818182,
+          "within_50pct": 0.22727272727272727,
+          "before_100pct": 0.7272727272727273
+        },
+        "attack_rank12": {
+          "reached": 20,
+          "reach_rate": 0.9090909090909091,
+          "delay_median_sessions": 154.0,
+          "delay_p75_sessions": 199.5,
+          "gain_median": 1.740278117650108,
+          "gain_p75": 2.6089244507934652,
+          "within_30pct": 0.15,
+          "within_50pct": 0.2,
+          "before_100pct": 0.3
+        },
+        "policy_ranked": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 124.5,
+          "delay_p75_sessions": 196.75,
+          "gain_median": 2.1958176255433086,
+          "gain_p75": 3.259498641713769,
+          "within_30pct": 0.09090909090909091,
+          "within_50pct": 0.18181818181818182,
+          "before_100pct": 0.2727272727272727
+        },
+        "slot_available": {
+          "reached": 18,
+          "reach_rate": 0.8181818181818182,
+          "delay_median_sessions": 115.0,
+          "delay_p75_sessions": 187.25,
+          "gain_median": 1.9552528561968823,
+          "gain_p75": 3.110151103734508,
+          "within_30pct": 0.1111111111111111,
+          "within_50pct": 0.16666666666666666,
+          "before_100pct": 0.2777777777777778
+        },
+        "actual_entry": {
+          "reached": 16,
+          "reach_rate": 0.7272727272727273,
+          "delay_median_sessions": 193.5,
+          "delay_p75_sessions": 196.5,
+          "gain_median": 2.5598724339696806,
+          "gain_p75": 3.5937205330557944,
+          "within_30pct": 0.0625,
+          "within_50pct": 0.125,
+          "before_100pct": 0.125
+        },
+        "actual_entry_extra": {
+          "entry_gain_median": 2.5598724339696806,
+          "remaining_upside_median": 0.7153986159051506,
+          "progress_median": 0.49083288779078715
+        }
+      },
+      "alternative_rs_rank12": {
+        "RS21": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "gain_median": 0.6981595581291902,
+          "delay_median_sessions": 43.0,
+          "within_30pct_all_events": 0.2727272727272727,
+          "within_50pct_all_events": 0.36363636363636365
+        },
+        "RS42": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "gain_median": 0.6453450011094681,
+          "delay_median_sessions": 42.0,
+          "within_30pct_all_events": 0.22727272727272727,
+          "within_50pct_all_events": 0.3181818181818182
+        },
+        "RS63": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "gain_median": 0.8492408667955192,
+          "delay_median_sessions": 52.0,
+          "within_30pct_all_events": 0.13636363636363635,
+          "within_50pct_all_events": 0.2727272727272727
+        },
+        "RS126": {
+          "reached": 22,
+          "reach_rate": 1.0,
+          "gain_median": 1.6740867688269998,
+          "delay_median_sessions": 124.5,
+          "within_30pct_all_events": 0.09090909090909091,
+          "within_50pct_all_events": 0.13636363636363635
+        },
+        "RS189": {
+          "reached": 21,
+          "reach_rate": 0.9545454545454546,
+          "gain_median": 2.6712121049015756,
+          "delay_median_sessions": 121.0,
+          "within_30pct_all_events": 0.09090909090909091,
+          "within_50pct_all_events": 0.18181818181818182
+        },
+        "RS252": {
+          "reached": 20,
+          "reach_rate": 0.9090909090909091,
+          "gain_median": 3.0921800474534518,
+          "delay_median_sessions": 98.5,
+          "within_30pct_all_events": 0.18181818181818182,
+          "within_50pct_all_events": 0.2727272727272727
+        }
+      }
+    },
+    "TOP1_5_2026_YTD": {
+      "delay": {
+        "n": 5,
+        "captured": 3,
+        "capture_rate": 0.6,
+        "blockers": {
+          "CAPTURED": 3,
+          "SLOT_TIMING": 1,
+          "ELIGIBILITY": 1
+        },
+        "radar_proxy": {
+          "reached": 5,
+          "reach_rate": 1.0,
+          "delay_median_sessions": 3.0,
+          "delay_p75_sessions": 7.0,
+          "gain_median": 0.4401114762951823,
+          "gain_p75": 0.5294117733898589,
+          "within_30pct": 0.4,
+          "within_50pct": 0.6,
+          "before_100pct": 0.8
+        },
+        "eligibility": {
+          "reached": 4,
+          "reach_rate": 0.8,
+          "delay_median_sessions": 11.0,
+          "delay_p75_sessions": 21.5,
+          "gain_median": 0.40427477098958753,
+          "gain_p75": 2.0058082722886335,
+          "within_30pct": 0.25,
+          "within_50pct": 0.75,
+          "before_100pct": 0.75
+        },
+        "attack_rank12": {
+          "reached": 3,
+          "reach_rate": 0.6,
+          "delay_median_sessions": 73.0,
+          "delay_p75_sessions": 115.0,
+          "gain_median": 4.295264814311437,
+          "gain_p75": 4.472972676661726,
+          "within_30pct": 0.0,
+          "within_50pct": 0.0,
+          "before_100pct": 0.0
+        },
+        "policy_ranked": {
+          "reached": 4,
+          "reach_rate": 0.8,
+          "delay_median_sessions": 57.0,
+          "delay_p75_sessions": 99.25,
+          "gain_median": 3.6387108501535517,
+          "gain_p75": 5.7905466726056884,
+          "within_30pct": 0.25,
+          "within_50pct": 0.25,
+          "before_100pct": 0.25
+        },
+        "slot_available": {
+          "reached": 3,
+          "reach_rate": 0.6,
+          "delay_median_sessions": 65.0,
+          "delay_p75_sessions": 111.0,
+          "gain_median": 3.71866321422388,
+          "gain_p75": 4.184671876617948,
+          "within_30pct": 0.0,
+          "within_50pct": 0.0,
+          "before_100pct": 0.0
+        },
+        "actual_entry": {
+          "reached": 3,
+          "reach_rate": 0.6,
+          "delay_median_sessions": 66.0,
+          "delay_p75_sessions": 112.0,
+          "gain_median": 3.71866321422388,
+          "gain_p75": 3.7919303825521133,
+          "within_30pct": 0.0,
+          "within_50pct": 0.0,
+          "before_100pct": 0.0
+        },
+        "actual_entry_extra": {
+          "entry_gain_median": 3.71866321422388,
+          "remaining_upside_median": 0.004462489487604859,
+          "progress_median": 0.994414354431085
+        }
+      },
+      "alternative_rs_rank12": {
+        "RS21": {
+          "reached": 5,
+          "reach_rate": 1.0,
+          "gain_median": 0.6183844238681311,
+          "delay_median_sessions": 19.0,
+          "within_30pct_all_events": 0.2,
+          "within_50pct_all_events": 0.2
+        },
+        "RS42": {
+          "reached": 4,
+          "reach_rate": 0.8,
+          "gain_median": 2.6805938745364193,
+          "delay_median_sessions": 17.0,
+          "within_30pct_all_events": 0.0,
+          "within_50pct_all_events": 0.2
+        },
+        "RS63": {
+          "reached": 4,
+          "reach_rate": 0.8,
+          "gain_median": 2.7668445021664185,
+          "delay_median_sessions": 12.0,
+          "within_30pct_all_events": 0.2,
+          "within_50pct_all_events": 0.2
+        },
+        "RS126": {
+          "reached": 4,
+          "reach_rate": 0.8,
+          "gain_median": 2.982721971218325,
+          "delay_median_sessions": 13.5,
+          "within_30pct_all_events": 0.2,
+          "within_50pct_all_events": 0.2
+        },
+        "RS189": {
+          "reached": 4,
+          "reach_rate": 0.8,
+          "gain_median": 3.3907998850836005,
+          "delay_median_sessions": 48.5,
+          "within_30pct_all_events": 0.2,
+          "within_50pct_all_events": 0.2
+        },
+        "RS252": {
+          "reached": 3,
+          "reach_rate": 0.6,
+          "gain_median": 1.7994430169952604,
+          "delay_median_sessions": 30.0,
+          "within_30pct_all_events": 0.0,
+          "within_50pct_all_events": 0.0
+        }
+      }
+    }
+  }
+}

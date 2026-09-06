@@ -1,0 +1,221 @@
+{
+  "status": "GROSS100_DDV_EARLY1_INTERACTION",
+  "frozen_early": {
+    "slots": 1,
+    "score": "RS21_HIGH_ACCEL",
+    "gate": "NOT_RED",
+    "max_days": 10,
+    "promotion": "DIRECT_TO_CORE"
+  },
+  "primary": [
+    {
+      "ddv_m": 10,
+      "early_slots": 0,
+      "cagr": 0.49631393497738663,
+      "mdd": -0.25467586133863396,
+      "sharpe": 1.5296982146092801,
+      "calmar": 1.9488063468938448,
+      "avg_alloc_t": 0.3275272307521516,
+      "avg_alloc_o": 0.37766671323401596,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.7346257979700247
+    },
+    {
+      "ddv_m": 10,
+      "early_slots": 1,
+      "cagr": 0.48924743039765084,
+      "mdd": -0.2581835386870691,
+      "sharpe": 1.5215066954567464,
+      "calmar": 1.894959813803785,
+      "avg_alloc_t": 0.3271408464443461,
+      "avg_alloc_o": 0.3788128355924389,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.735385536020642
+    },
+    {
+      "ddv_m": 20,
+      "early_slots": 0,
+      "cagr": 0.5176350360532034,
+      "mdd": -0.26526322563016447,
+      "sharpe": 1.5801159568994025,
+      "calmar": 1.9514014233352532,
+      "avg_alloc_t": 0.3270305261679739,
+      "avg_alloc_o": 0.37878189553334013,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.7352442756851713
+    },
+    {
+      "ddv_m": 20,
+      "early_slots": 1,
+      "cagr": 0.53636619259255,
+      "mdd": -0.26584106337493885,
+      "sharpe": 1.6195686335133563,
+      "calmar": 2.0176197980221966,
+      "avg_alloc_t": 0.32664034474318876,
+      "avg_alloc_o": 0.3798125296313838,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.7358847283584297
+    },
+    {
+      "ddv_m": 50,
+      "early_slots": 0,
+      "cagr": 0.5199003663403265,
+      "mdd": -0.3151813996534033,
+      "sharpe": 1.5678335741237974,
+      "calmar": 1.6495274369364668,
+      "avg_alloc_t": 0.3293142888407839,
+      "avg_alloc_o": 0.37583109602540427,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.7345772388500452
+    },
+    {
+      "ddv_m": 50,
+      "early_slots": 1,
+      "cagr": 0.5221670017016968,
+      "mdd": -0.2900035898083687,
+      "sharpe": 1.5847173803704597,
+      "calmar": 1.8005535795151337,
+      "avg_alloc_t": 0.32870572284690075,
+      "avg_alloc_o": 0.37547491460831134,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.733612491439069
+    },
+    {
+      "ddv_m": 100,
+      "early_slots": 0,
+      "cagr": 0.5438051565788835,
+      "mdd": -0.29971177860750586,
+      "sharpe": 1.6192616616252467,
+      "calmar": 1.8144270442271657,
+      "avg_alloc_t": 0.3402636758413419,
+      "avg_alloc_o": 0.3553345025407591,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.7250300323659581
+    },
+    {
+      "ddv_m": 100,
+      "early_slots": 1,
+      "cagr": 0.542046401922017,
+      "mdd": -0.33820905422660763,
+      "sharpe": 1.6219060260652576,
+      "calmar": 1.6026963061693607,
+      "avg_alloc_t": 0.33652303471120276,
+      "avg_alloc_o": 0.3637696429107126,
+      "avg_alloc_r": 0.029431853983857073,
+      "avg_total_gross": 0.7297245316057724
+    }
+  ],
+  "bootstrap": [
+    {
+      "comparison": "DDV10_E1_vs_E0",
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.3812,
+      "p_mdd_a_no_worse": 0.4724,
+      "p_calmar_a_gt_b": 0.4074,
+      "cagr_diff_median": -0.007837989707842552,
+      "cagr_diff_p05": -0.050869126200045287,
+      "cagr_diff_p95": 0.03393693544625539
+    },
+    {
+      "comparison": "DDV10_E1_vs_E0",
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.3862,
+      "p_mdd_a_no_worse": 0.4204,
+      "p_calmar_a_gt_b": 0.3884,
+      "cagr_diff_median": -0.007532412373619568,
+      "cagr_diff_p05": -0.04884011093166664,
+      "cagr_diff_p95": 0.034460635541179854
+    },
+    {
+      "comparison": "DDV20_E1_vs_E0",
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.8136,
+      "p_mdd_a_no_worse": 0.509,
+      "p_calmar_a_gt_b": 0.7078,
+      "cagr_diff_median": 0.018174162530605442,
+      "cagr_diff_p05": -0.014737157825520052,
+      "cagr_diff_p95": 0.05363717620537214
+    },
+    {
+      "comparison": "DDV20_E1_vs_E0",
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.8636,
+      "p_mdd_a_no_worse": 0.43,
+      "p_calmar_a_gt_b": 0.738,
+      "cagr_diff_median": 0.019503801688916855,
+      "cagr_diff_p05": -0.010232055499343837,
+      "cagr_diff_p95": 0.052794170221198505
+    },
+    {
+      "comparison": "DDV50_E1_vs_E0",
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.5228,
+      "p_mdd_a_no_worse": 0.656,
+      "p_calmar_a_gt_b": 0.6222,
+      "cagr_diff_median": 0.0012609731155770465,
+      "cagr_diff_p05": -0.03234990160983967,
+      "cagr_diff_p95": 0.036866497319183185
+    },
+    {
+      "comparison": "DDV50_E1_vs_E0",
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.5752,
+      "p_mdd_a_no_worse": 0.759,
+      "p_calmar_a_gt_b": 0.7404,
+      "cagr_diff_median": 0.003944097110730849,
+      "cagr_diff_p05": -0.03043245988193375,
+      "cagr_diff_p95": 0.039149302835012646
+    },
+    {
+      "comparison": "DDV100_E1_vs_E0",
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.4158,
+      "p_mdd_a_no_worse": 0.714,
+      "p_calmar_a_gt_b": 0.5974,
+      "cagr_diff_median": -0.005052374584531449,
+      "cagr_diff_p05": -0.04423474026507187,
+      "cagr_diff_p95": 0.029781067539000353
+    },
+    {
+      "comparison": "DDV100_E1_vs_E0",
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.305,
+      "p_mdd_a_no_worse": 0.491,
+      "p_calmar_a_gt_b": 0.4116,
+      "cagr_diff_median": -0.009380359912513847,
+      "cagr_diff_p05": -0.042003494499898465,
+      "cagr_diff_p95": 0.018994343900857004
+    },
+    {
+      "comparison": "DDV20_E1_vs_DDV10_E0",
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.915,
+      "p_mdd_a_no_worse": 0.5426,
+      "p_calmar_a_gt_b": 0.7944,
+      "cagr_diff_median": 0.03978158644818808,
+      "cagr_diff_p05": -0.0067959515746163655,
+      "cagr_diff_p95": 0.09103798566330108
+    },
+    {
+      "comparison": "DDV20_E1_vs_DDV10_E0",
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.93,
+      "p_mdd_a_no_worse": 0.562,
+      "p_calmar_a_gt_b": 0.847,
+      "cagr_diff_median": 0.040298213322764176,
+      "cagr_diff_p05": -0.004679645548131838,
+      "cagr_diff_p95": 0.08851199827757608
+    }
+  ],
+  "guardrail": "Interaction audit only. DDV floor and Early presence are the only varied design dimensions; no new threshold is selected from this run alone."
+}

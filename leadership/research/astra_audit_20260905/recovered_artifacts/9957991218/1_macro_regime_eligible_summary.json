@@ -1,0 +1,1015 @@
+{
+  "schema": 1,
+  "minimum_n_each_side": 8,
+  "summary": {
+    "DISTRIBUTION_TRAP": {
+      "eligible_comparisons": 10,
+      "stable_comparisons": 10,
+      "stable_fraction": 1.0,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 18,
+          "a_mean": -0.0038298774051525233,
+          "b_n": 28,
+          "b_mean": -0.014306650119211523,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 16,
+          "a_mean": -0.010119011628322107,
+          "b_n": 28,
+          "b_mean": -0.021317818223957164,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 11,
+          "a_mean": -0.006500103692843537,
+          "b_n": 35,
+          "b_mean": -0.011372081600268261,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 11,
+          "a_mean": -0.012370660443220745,
+          "b_n": 33,
+          "b_mean": -0.018870479740864424,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 13,
+          "a_mean": -0.017472781170954823,
+          "b_n": 33,
+          "b_mean": -0.007344783072977434,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 11,
+          "a_mean": -0.026225462672390544,
+          "b_n": 33,
+          "b_mean": -0.014252212331141162,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 11,
+          "a_mean": -0.013630229614352764,
+          "b_n": 35,
+          "b_mean": -0.009131184882079648,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 11,
+          "a_mean": -0.037517157531207615,
+          "b_n": 33,
+          "b_mean": -0.010488314044868802,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 20,
+          "a_mean": -0.015248894112956202,
+          "b_n": 14,
+          "b_mean": -0.006921105304899271,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 19,
+          "a_mean": -0.014138933453029356,
+          "b_n": 14,
+          "b_mean": -0.028339001688432824,
+          "both_expected_sign": true
+        }
+      ]
+    },
+    "INTERNAL_DETERIORATION": {
+      "eligible_comparisons": 10,
+      "stable_comparisons": 10,
+      "stable_fraction": 1.0,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 19,
+          "a_mean": -0.004022367548263768,
+          "b_n": 27,
+          "b_mean": -0.01478672649320814,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 17,
+          "a_mean": -0.014793751446743683,
+          "b_n": 27,
+          "b_mean": -0.02604900975799014,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 10,
+          "a_mean": -0.01073592892343399,
+          "b_n": 36,
+          "b_mean": -0.010230758597202539,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 10,
+          "a_mean": -0.02320877202595547,
+          "b_n": 34,
+          "b_mean": -0.021256744641200635,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 12,
+          "a_mean": -0.019900730950642074,
+          "b_n": 33,
+          "b_mean": -0.007823014645190226,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 10,
+          "a_mean": -0.027179636136657238,
+          "b_n": 33,
+          "b_mean": -0.022067902725749614,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 12,
+          "a_mean": -0.011580986792761592,
+          "b_n": 34,
+          "b_mean": -0.0099027869770733,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 12,
+          "a_mean": -0.03604749714596847,
+          "b_n": 32,
+          "b_mean": -0.016320221009648583,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 19,
+          "a_mean": -0.012489332963104675,
+          "b_n": 17,
+          "b_mean": -0.007250621128966723,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 17,
+          "a_mean": -0.020638367927103614,
+          "b_n": 17,
+          "b_mean": -0.03155330508710516,
+          "both_expected_sign": true
+        }
+      ]
+    },
+    "PRICE_LEAD_INTERNAL_WEAK": {
+      "eligible_comparisons": 10,
+      "stable_comparisons": 8,
+      "stable_fraction": 0.8,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 33,
+          "a_mean": 0.0035833582500817774,
+          "b_n": 35,
+          "b_mean": -0.01393011190978261,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 30,
+          "a_mean": 0.0030802111428000424,
+          "b_n": 35,
+          "b_mean": -0.019967021525294486,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 20,
+          "a_mean": -0.004721818742454949,
+          "b_n": 48,
+          "b_mean": -0.005726389994595703,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 20,
+          "a_mean": -0.0047512575362700146,
+          "b_n": 45,
+          "b_mean": -0.011364761519464568,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 14,
+          "a_mean": -0.009631790302541257,
+          "b_n": 54,
+          "b_mean": -0.004341815376928058,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 11,
+          "a_mean": -0.02899815793676259,
+          "b_n": 54,
+          "b_mean": -0.0053233274406836555,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 11,
+          "a_mean": -0.010983803817585165,
+          "b_n": 57,
+          "b_mean": -0.004359320220986946,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 11,
+          "a_mean": -0.04277548616834511,
+          "b_n": 54,
+          "b_mean": -0.0025168346527687005,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 30,
+          "a_mean": -0.0046264706808308445,
+          "b_n": 16,
+          "b_mean": -0.0027411768872296623,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 29,
+          "a_mean": -0.000299745639209238,
+          "b_n": 16,
+          "b_mean": -0.02549763832028831,
+          "both_expected_sign": true
+        }
+      ]
+    },
+    "INTERNAL_ROLLOVER_10D": {
+      "eligible_comparisons": 10,
+      "stable_comparisons": 10,
+      "stable_fraction": 1.0,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 34,
+          "a_mean": -0.003247740892602726,
+          "b_n": 37,
+          "b_mean": -0.00897394301177876,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 32,
+          "a_mean": -0.009340179912009972,
+          "b_n": 37,
+          "b_mean": -0.021291701444707364,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 20,
+          "a_mean": -0.010089776478800225,
+          "b_n": 51,
+          "b_mean": -0.004718893180554949,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 20,
+          "a_mean": -0.021012084468025875,
+          "b_n": 49,
+          "b_mean": -0.013600755536285184,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 10,
+          "a_mean": -0.030804909334045515,
+          "b_n": 60,
+          "b_mean": -0.002611457757165725,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 8,
+          "a_mean": -0.05542738661729947,
+          "b_n": 60,
+          "b_mean": -0.011498215501566747,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 8,
+          "a_mean": -0.0249467322632783,
+          "b_n": 63,
+          "b_mean": -0.003855321010763183,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 8,
+          "a_mean": -0.06341218659967081,
+          "b_n": 61,
+          "b_mean": -0.009498052751493853,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 32,
+          "a_mean": -0.0033112195463186438,
+          "b_n": 19,
+          "b_mean": -0.007253878760162862,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 30,
+          "a_mean": -0.007903892454343529,
+          "b_n": 19,
+          "b_mean": -0.0368342591949229,
+          "both_expected_sign": true
+        }
+      ]
+    },
+    "BREADTH50_ROLLOVER_10D": {
+      "eligible_comparisons": 10,
+      "stable_comparisons": 9,
+      "stable_fraction": 0.9,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 31,
+          "a_mean": 0.0034274535791637807,
+          "b_n": 29,
+          "b_mean": -0.022273499741961456,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 29,
+          "a_mean": -0.004531738565713986,
+          "b_n": 29,
+          "b_mean": -0.03810480550564075,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 18,
+          "a_mean": -0.006926982935376768,
+          "b_n": 42,
+          "b_mean": -0.009880827112524368,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 18,
+          "a_mean": -0.017796760336333723,
+          "b_n": 40,
+          "b_mean": -0.022902952300382008,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 11,
+          "a_mean": -0.018379886923207564,
+          "b_n": 49,
+          "b_mean": -0.006887789294031063,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 9,
+          "a_mean": -0.059225945127808065,
+          "b_n": 49,
+          "b_mean": -0.014355638202428873,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 14,
+          "a_mean": -0.010526427945477122,
+          "b_n": 46,
+          "b_mean": -0.008528487833176642,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 14,
+          "a_mean": -0.044481827026225385,
+          "b_n": 44,
+          "b_mean": -0.013948049993230268,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 25,
+          "a_mean": -0.002636910458945084,
+          "b_n": 19,
+          "b_mean": -0.014756775976267745,
+          "both_expected_sign": true
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 24,
+          "a_mean": -0.01258676589951419,
+          "b_n": 19,
+          "b_mean": -0.03635150552242282,
+          "both_expected_sign": true
+        }
+      ]
+    },
+    "EARLY_ROTATION": {
+      "eligible_comparisons": 10,
+      "stable_comparisons": 0,
+      "stable_fraction": 0.0,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 39,
+          "a_mean": -0.0039709688987493285,
+          "b_n": 47,
+          "b_mean": -0.007970953081206628,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 34,
+          "a_mean": -0.0041091502761832896,
+          "b_n": 47,
+          "b_mean": -0.010735984818264805,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 22,
+          "a_mean": -0.001811446955275073,
+          "b_n": 64,
+          "b_mean": -0.0076507929508106845,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 22,
+          "a_mean": 0.000927719820610549,
+          "b_n": 59,
+          "b_mean": -0.011266309015289995,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 21,
+          "a_mean": -0.0025377131819782433,
+          "b_n": 64,
+          "b_mean": -0.008341194820410904,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 16,
+          "a_mean": 0.0012888347226455744,
+          "b_n": 64,
+          "b_mean": -0.01175194667412971,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 16,
+          "a_mean": -0.006471738341003267,
+          "b_n": 70,
+          "b_mean": -0.006085068120169759,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 16,
+          "a_mean": -0.017993242516878942,
+          "b_n": 65,
+          "b_mean": -0.005483238701209455,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 39,
+          "a_mean": -0.013247625312734487,
+          "b_n": 20,
+          "b_mean": 0.011757849536897225,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 34,
+          "a_mean": -0.017287629831759417,
+          "b_n": 20,
+          "b_mean": 0.012536914571252288,
+          "both_expected_sign": false
+        }
+      ]
+    },
+    "INTERNAL_IGNITION_10D": {
+      "eligible_comparisons": 20,
+      "stable_comparisons": 0,
+      "stable_fraction": 0.0,
+      "details": [
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 63,
+          "a_mean": -0.005492827651047849,
+          "b_n": 75,
+          "b_mean": -0.009856171831141559,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS2_HIGH_GE4",
+            "DGS2_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 58,
+          "a_mean": -0.007730388517271649,
+          "b_n": 75,
+          "b_mean": -0.012234352030063282,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS2_RISING_25BP",
+            "DGS2_FALLING_25BP"
+          ],
+          "horizon": 20,
+          "a_n": 19,
+          "a_mean": -0.016131253518125648,
+          "b_n": 19,
+          "b_mean": -0.007747687718570334,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS2_RISING_25BP",
+            "DGS2_FALLING_25BP"
+          ],
+          "horizon": 40,
+          "a_n": 18,
+          "a_mean": -0.04092478497995497,
+          "b_n": 19,
+          "b_mean": -0.012406454386018465,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS10_HIGH_GE4",
+            "DGS10_LOW_LT4"
+          ],
+          "horizon": 20,
+          "a_n": 126,
+          "a_mean": -0.0069409094426699834,
+          "b_n": 12,
+          "b_mean": -0.017558869964601126,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS10_HIGH_GE4",
+            "DGS10_LOW_LT4"
+          ],
+          "horizon": 40,
+          "a_n": 121,
+          "a_mean": -0.009373944060435771,
+          "b_n": 12,
+          "b_mean": -0.019307642078647807,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS10_RISING_25BP",
+            "DGS10_FALLING_25BP"
+          ],
+          "horizon": 20,
+          "a_n": 14,
+          "a_mean": -0.012173806840844657,
+          "b_n": 9,
+          "b_mean": -0.017836874151222745,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "DGS10_RISING_25BP",
+            "DGS10_FALLING_25BP"
+          ],
+          "horizon": 40,
+          "a_n": 13,
+          "a_mean": -0.027029892761770116,
+          "b_n": 9,
+          "b_mean": -0.025927703636794704,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 20,
+          "a_n": 35,
+          "a_mean": -0.004801235395570015,
+          "b_n": 103,
+          "b_mean": -0.00890502709229787,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "CURVE_INVERTED",
+            "CURVE_POSITIVE"
+          ],
+          "horizon": 40,
+          "a_n": 35,
+          "a_mean": -0.005062377646332582,
+          "b_n": 98,
+          "b_mean": -0.012130160394233282,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 20,
+          "a_n": 29,
+          "a_mean": -0.0037907014297871872,
+          "b_n": 109,
+          "b_mean": -0.00894798796227342,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "FED_BALANCE_RISING",
+            "FED_BALANCE_FALLING"
+          ],
+          "horizon": 40,
+          "a_n": 24,
+          "a_mean": -0.008114283798438789,
+          "b_n": 109,
+          "b_mean": -0.010744918578843767,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 20,
+          "a_n": 23,
+          "a_mean": -0.02056275653820947,
+          "b_n": 115,
+          "b_mean": -0.005324501121502726,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "VIX_HIGH_GE20",
+            "VIX_LOW_LT20"
+          ],
+          "horizon": 40,
+          "a_n": 23,
+          "a_mean": -0.03944564953472948,
+          "b_n": 110,
+          "b_mean": -0.0041698999723429435,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "SPY_UPTREND",
+            "SPY_DOWNTREND"
+          ],
+          "horizon": 20,
+          "a_n": 126,
+          "a_mean": -0.005734273489913867,
+          "b_n": 12,
+          "b_mean": -0.03022854746854034,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "SPY_UPTREND",
+            "SPY_DOWNTREND"
+          ],
+          "horizon": 40,
+          "a_n": 121,
+          "a_mean": -0.005146892967929055,
+          "b_n": 12,
+          "b_mean": -0.061930407261423875,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "QQQ_UPTREND",
+            "QQQ_DOWNTREND"
+          ],
+          "horizon": 20,
+          "a_n": 126,
+          "a_mean": -0.005734273489913867,
+          "b_n": 12,
+          "b_mean": -0.03022854746854034,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "QQQ_UPTREND",
+            "QQQ_DOWNTREND"
+          ],
+          "horizon": 40,
+          "a_n": 121,
+          "a_mean": -0.005146892967929055,
+          "b_n": 12,
+          "b_mean": -0.061930407261423875,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 20,
+          "a_n": 58,
+          "a_mean": -0.01333875496656373,
+          "b_n": 40,
+          "b_mean": -0.0031638806293198007,
+          "both_expected_sign": false
+        },
+        {
+          "pair": [
+            "MARKET_BREADTH_STRONG",
+            "MARKET_BREADTH_WEAK"
+          ],
+          "horizon": 40,
+          "a_n": 55,
+          "a_mean": -0.02294627879650049,
+          "b_n": 40,
+          "b_mean": -0.01082786537307575,
+          "both_expected_sign": false
+        }
+      ]
+    }
+  }
+}

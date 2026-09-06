@@ -1,0 +1,27 @@
+{
+  "status": "RSI_RESET_PORTFOLIO_AUDIT",
+  "input_rows": 638,
+  "definitions": {
+    "entry": "prior audited RISE_LE30_W20 signal, next open",
+    "slot": "fraction of live total NAV per accepted position",
+    "tranche": "half at entry; half next open after prior close above EMA21 and theme active",
+    "caps": "maximum open positions plus at most two positions per theme",
+    "stop8": "prior close at least 8% below original entry; sell next open",
+    "cost": "5 bps per side"
+  },
+  "handoff_rate_20d": 0.09247648902821316,
+  "handoff_days_median": 15.0,
+  "download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3298,
+    "start": "2013-07-18",
+    "end": "2026-08-27",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Current-universe/current-taxonomy retrospective bias remains.",
+    "This validates the panic sleeve and handoff incidence, not the normal-book portfolio return.",
+    "Tax and USDJPY are excluded here; TQQQ mandate audit handles portfolio currency/tax sensitivity."
+  ]
+}

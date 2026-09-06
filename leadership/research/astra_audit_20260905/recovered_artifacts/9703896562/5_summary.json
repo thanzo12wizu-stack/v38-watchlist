@@ -1,0 +1,20 @@
+{
+  "status": "NORMAL_STOCK_FINAL_ROBUSTNESS_V6",
+  "candidate": "NQSAR Blue/Green; stock breadth >=60% full 12 slots; 50-60% max 4 slots; <50% or Yellow no new normal-stock entries; NQSAR Red full exit; no immediate breadth-downgrade trim; no Yellow repair entries",
+  "comparators": [
+    "Blue/Green + stock breadth >=60% full only",
+    "Blue/Green only"
+  ],
+  "tests": [
+    "calendar-year metrics",
+    "rolling 252-session returns",
+    "paired 20-session block bootstrap by ALL/DISCOVERY/CONFIRM"
+  ],
+  "threshold_policy": "No threshold changes or new search in V6.",
+  "limitations": [
+    "Normal-stock sleeve is a comparison reconstruction, not the missing exact production ledger.",
+    "Current-universe survivorship bias remains in stock breadth and stock returns; the separate V5 57ETF audit is the independent breadth-state corroboration.",
+    "2022+ is robustness confirmation, not pristine OOS.",
+    "No RSI30, shallow, TQQQ, main, or dashboard changes."
+  ]
+}

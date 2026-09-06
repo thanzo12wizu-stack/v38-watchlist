@@ -1,0 +1,29 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "source": "official iShares latest-holdings.csv endpoint",
+  "funds": {
+    "SOXX": {
+      "endpoint_returns_valid_holdings": true,
+      "requested_dates_honored": 0,
+      "tests": 5,
+      "historical_asof_supported_for_test_set": false,
+      "reported_dates": [
+        "20260828"
+      ]
+    },
+    "IGV": {
+      "endpoint_returns_valid_holdings": true,
+      "requested_dates_honored": 0,
+      "tests": 5,
+      "historical_asof_supported_for_test_set": false,
+      "reported_dates": [
+        "20260828"
+      ]
+    }
+  },
+  "usable_as_quarterly_pit_holdings_2022_2026": false,
+  "usable_for_live_internal_membership": true,
+  "decision": "LIVE_ONLY",
+  "guardrail": "A 200 response is not historical evidence unless the returned Fund Holdings as-of date matches the requested date."
+}

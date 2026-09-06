@@ -1,0 +1,421 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "flow_definition": "daily net creation/redemption flow = split-normalized change in official shares outstanding multiplied by same-day official NAV",
+  "quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED",
+  "requested_window": {
+    "start": "2022-01-01",
+    "end": "2026-08-31"
+  },
+  "tickers_requested": [
+    "XLC",
+    "XLY",
+    "XLP",
+    "XLE",
+    "XLF",
+    "XLV",
+    "XLI",
+    "XLB",
+    "XLRE",
+    "XLK",
+    "XLU",
+    "XBI",
+    "SOXX",
+    "IBB",
+    "ICLN"
+  ],
+  "tickers_built": [
+    "IBB",
+    "ICLN",
+    "SOXX",
+    "XBI",
+    "XLB",
+    "XLC",
+    "XLE",
+    "XLF",
+    "XLI",
+    "XLK",
+    "XLP",
+    "XLRE",
+    "XLU",
+    "XLV",
+    "XLY"
+  ],
+  "failures": [],
+  "diagnostics": [
+    {
+      "ticker": "XLC",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlc.xlsx",
+      "first_date": "2018-06-19",
+      "last_date": "2026-08-27",
+      "rows": 2059,
+      "valid_flow_rows": 2058,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": 3.4414863099623705e-09,
+      "max_tna_identity_rel_error": 1.2072646226588543e-08,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLY",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xly.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 1,
+      "split_dates": [
+        "2025-12-05"
+      ],
+      "median_tna_identity_rel_error": 2.7165264382647544e-09,
+      "max_tna_identity_rel_error": 0.29869809272098286,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLP",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlp.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": 4.826504273779913e-09,
+      "max_tna_identity_rel_error": 0.10696171619407248,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLE",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xle.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 1,
+      "split_dates": [
+        "2025-12-05"
+      ],
+      "median_tna_identity_rel_error": 3.729678519983752e-09,
+      "max_tna_identity_rel_error": 0.02118564181643248,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLF",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlf.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": 9.0119589920372e-09,
+      "max_tna_identity_rel_error": 0.47447034221264783,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLV",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlv.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": 3.1713856822852448e-09,
+      "max_tna_identity_rel_error": 0.387207980698871,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLI",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xli.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": 3.769515548545246e-09,
+      "max_tna_identity_rel_error": 0.3807168741742851,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLB",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlb.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 1,
+      "split_dates": [
+        "2025-12-05"
+      ],
+      "median_tna_identity_rel_error": 4.725291354116901e-09,
+      "max_tna_identity_rel_error": 0.4674369010744514,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLRE",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlre.xlsx",
+      "first_date": "2015-10-07",
+      "last_date": "2026-08-27",
+      "rows": 2738,
+      "valid_flow_rows": 2737,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": 6.459210043847998e-09,
+      "max_tna_identity_rel_error": 2.0506952880625308e-07,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLK",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlk.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 1,
+      "split_dates": [
+        "2025-12-05"
+      ],
+      "median_tna_identity_rel_error": 3.732279534761424e-09,
+      "max_tna_identity_rel_error": 0.09890417564011826,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XLU",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xlu.xlsx",
+      "first_date": "2006-05-31",
+      "last_date": "2026-08-27",
+      "rows": 5096,
+      "valid_flow_rows": 5095,
+      "split_events": 1,
+      "split_dates": [
+        "2025-12-05"
+      ],
+      "median_tna_identity_rel_error": 4.9659683420105986e-09,
+      "max_tna_identity_rel_error": 0.39799910904261393,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "XBI",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xbi.xlsx",
+      "first_date": "2006-02-21",
+      "last_date": "2026-08-27",
+      "rows": 5165,
+      "valid_flow_rows": 5164,
+      "split_events": 1,
+      "split_dates": [
+        "2015-09-11"
+      ],
+      "median_tna_identity_rel_error": 2.8462064993625903e-09,
+      "max_tna_identity_rel_error": 0.05000000044882208,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "SOXX",
+      "provider": "ISHARES",
+      "source_url": "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=fundDownload&locale=en_US&portfolioId=239705&targetSite=us-ishares&userType=individual&excludeContent=true",
+      "first_date": "2001-07-10",
+      "last_date": "2026-08-28",
+      "rows": 8898,
+      "valid_flow_rows": 8897,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": null,
+      "max_tna_identity_rel_error": null,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "IBB",
+      "provider": "ISHARES",
+      "source_url": "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=fundDownload&locale=en_US&portfolioId=239699&targetSite=us-ishares&userType=individual&excludeContent=true",
+      "first_date": "2001-02-05",
+      "last_date": "2026-08-28",
+      "rows": 6432,
+      "valid_flow_rows": 6431,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": null,
+      "max_tna_identity_rel_error": null,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    },
+    {
+      "ticker": "ICLN",
+      "provider": "ISHARES",
+      "source_url": "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=fundDownload&locale=en_US&portfolioId=239738&targetSite=us-ishares&userType=individual&excludeContent=true",
+      "first_date": "2008-06-24",
+      "last_date": "2026-08-28",
+      "rows": 4577,
+      "valid_flow_rows": 4576,
+      "split_events": 0,
+      "split_dates": [],
+      "median_tna_identity_rel_error": null,
+      "max_tna_identity_rel_error": null,
+      "status": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED"
+    }
+  ],
+  "latest": [
+    {
+      "ticker": "IBB",
+      "date": "2026-08-28",
+      "provider": "ISHARES",
+      "flow_1d": 31346931.45,
+      "flow_5d": 10750259.550000597,
+      "flow_20d": 197664664.34999996,
+      "flow_20d_pct_aum": 1.8785631083557017,
+      "aum": 10522119990.050001
+    },
+    {
+      "ticker": "ICLN",
+      "date": "2026-08-28",
+      "provider": "ISHARES",
+      "flow_1d": 10507354.799999999,
+      "flow_5d": -304908.6000000462,
+      "flow_20d": -98403689.10000002,
+      "flow_20d_pct_aum": -4.473831200186445,
+      "aum": 2199539604.7999997
+    },
+    {
+      "ticker": "SOXX",
+      "date": "2026-08-28",
+      "provider": "ISHARES",
+      "flow_1d": -152531494.5,
+      "flow_5d": 887883906.4499996,
+      "flow_20d": -3632206747.6499996,
+      "flow_20d_pct_aum": -8.71201145406088,
+      "aum": 41691941830.0
+    },
+    {
+      "ticker": "XBI",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": -71496242.1,
+      "flow_5d": 267911692.07499948,
+      "flow_20d": 981784860.0500003,
+      "flow_20d_pct_aum": 8.18239168232339,
+      "aum": 11998751687.37
+    },
+    {
+      "ticker": "XLB",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 13313565.75,
+      "flow_5d": -10805180.34999986,
+      "flow_20d": 91517677.90000007,
+      "flow_20d_pct_aum": 1.0380735223083584,
+      "aum": 8816107523.53
+    },
+    {
+      "ticker": "XLC",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 0.0,
+      "flow_5d": -151453931.70000035,
+      "flow_20d": -131875998.64999977,
+      "flow_20d_pct_aum": -0.5910351583282346,
+      "aum": 22312716391.19
+    },
+    {
+      "ticker": "XLE",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 326941093.5,
+      "flow_5d": -415429810.2000007,
+      "flow_20d": -297119105.30000025,
+      "flow_20d_pct_aum": -0.7331743478251097,
+      "aum": 40525027393.74
+    },
+    {
+      "ticker": "XLF",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": -497967580.2,
+      "flow_5d": -1191262996.7499995,
+      "flow_20d": -3261237732.25,
+      "flow_20d_pct_aum": -5.900424225916177,
+      "aum": 55271241649.47
+    },
+    {
+      "ticker": "XLI",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": -366641190.04999995,
+      "flow_5d": -284485346.4500004,
+      "flow_20d": 381071875.2999996,
+      "flow_20d_pct_aum": 1.1587625654028642,
+      "aum": 32886105115.72
+    },
+    {
+      "ticker": "XLK",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": -113226921.6,
+      "flow_5d": -38462150.25000118,
+      "flow_20d": -1090681590.7499986,
+      "flow_20d_pct_aum": -0.8863612872959422,
+      "aum": 123051582507.33
+    },
+    {
+      "ticker": "XLP",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 29788700.55,
+      "flow_5d": -274810497.8500003,
+      "flow_20d": -362043940.4500003,
+      "flow_20d_pct_aum": -2.4894726055685275,
+      "aum": 14542997566.64
+    },
+    {
+      "ticker": "XLRE",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 13393836.3,
+      "flow_5d": -4514746.800000396,
+      "flow_20d": -127003371.44999973,
+      "flow_20d_pct_aum": -1.511513027441691,
+      "aum": 8402400055.06
+    },
+    {
+      "ticker": "XLU",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 0.0,
+      "flow_5d": 90705063.10000026,
+      "flow_20d": -45482081.849999934,
+      "flow_20d_pct_aum": -0.20428135469950331,
+      "aum": 22264431287.38
+    },
+    {
+      "ticker": "XLV",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 60069869.65,
+      "flow_5d": -444981998.4000012,
+      "flow_20d": -95164879.24999985,
+      "flow_20d_pct_aum": -0.2155714374743437,
+      "aum": 44145402732.83
+    },
+    {
+      "ticker": "XLY",
+      "date": "2026-08-27",
+      "provider": "SSGA",
+      "flow_1d": 0.0,
+      "flow_5d": -206122586.7500003,
+      "flow_20d": 173513804.9500001,
+      "flow_20d_pct_aum": 0.7667176529818579,
+      "aum": 22630730396.67
+    }
+  ]
+}

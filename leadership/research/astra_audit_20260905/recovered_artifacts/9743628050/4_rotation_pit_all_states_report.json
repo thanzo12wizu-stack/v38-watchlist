@@ -1,0 +1,337 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "source_panel": "rotation-distribution-pit-research artifact 9743199098 / cov80 panel",
+  "flow_quality": "EXACT_OFFICIAL_SSGA_SHARES_OUTSTANDING_DERIVED",
+  "internal_quality": "DYNAMIC_PIT_EQUAL_WEIGHT_SP500_WITH_HISTORICAL_GICS",
+  "decisions": {
+    "CONFIRMED_ACCUMULATION": {
+      "expected_sign": 1,
+      "horizons": {
+        "20": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.3333333333333333,
+          "fraction_negative": 0.6666666666666666,
+          "fraction_expected_direction": 0.3333333333333333,
+          "median_config_mean_excess": -0.0012009925635705237,
+          "min_config_mean_excess": -0.003696233816070947,
+          "max_config_mean_excess": 0.003094187199219197
+        },
+        "40": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 0.0,
+          "median_config_mean_excess": -0.008332770113080753,
+          "min_config_mean_excess": -0.011128442569520298,
+          "max_config_mean_excess": -0.00565638777369516
+        }
+      },
+      "baseline_config": "p70_i60_f0.0_d0",
+      "baseline_confirmation": [
+        {
+          "state": "CONFIRMED_ACCUMULATION",
+          "config": "p70_i60_f0.0_d0",
+          "p": 70.0,
+          "i": 60.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 20,
+          "n": 90,
+          "mean_excess": -0.001799744361662949,
+          "median_excess": -0.00512284763802345,
+          "negative_rate": 0.5444444444444444,
+          "block_ci_lo": -0.00924391470815842,
+          "block_ci_hi": 0.005357666990234158,
+          "sector_ci_lo": -0.008392808680253173,
+          "sector_ci_hi": 0.00514052353757908
+        },
+        {
+          "state": "CONFIRMED_ACCUMULATION",
+          "config": "p70_i60_f0.0_d0",
+          "p": 70.0,
+          "i": 60.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 40,
+          "n": 89,
+          "mean_excess": -0.008441717841558328,
+          "median_excess": -0.0103838483686999,
+          "negative_rate": 0.6292134831460674,
+          "block_ci_lo": -0.020019758357390106,
+          "block_ci_hi": 0.0034260698472006377,
+          "sector_ci_lo": -0.017846014087329068,
+          "sector_ci_hi": 0.0004313045813383657
+        }
+      ],
+      "passes_predictive_robustness": false
+    },
+    "HIDDEN_ACCUMULATION": {
+      "expected_sign": 1,
+      "horizons": {
+        "20": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 0.0,
+          "median_config_mean_excess": -0.007339824442690983,
+          "min_config_mean_excess": -0.012795421366331251,
+          "max_config_mean_excess": -0.005173100265851351
+        },
+        "40": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 0.0,
+          "median_config_mean_excess": -0.011307728403625046,
+          "min_config_mean_excess": -0.019309911494288377,
+          "max_config_mean_excess": -0.006025432396545757
+        }
+      },
+      "baseline_config": "p60_i60_f0.0_d0",
+      "baseline_confirmation": [
+        {
+          "state": "HIDDEN_ACCUMULATION",
+          "config": "p60_i60_f0.0_d0",
+          "p": 60.0,
+          "i": 60.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 20,
+          "n": 90,
+          "mean_excess": -0.007165525678548733,
+          "median_excess": -0.013948766620173251,
+          "negative_rate": 0.5888888888888889,
+          "block_ci_lo": -0.017498713216633325,
+          "block_ci_hi": 0.0031865797857314588,
+          "sector_ci_lo": -0.017784753134567437,
+          "sector_ci_hi": 0.004771603298791722
+        },
+        {
+          "state": "HIDDEN_ACCUMULATION",
+          "config": "p60_i60_f0.0_d0",
+          "p": 60.0,
+          "i": 60.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 40,
+          "n": 85,
+          "mean_excess": -0.01299143978981467,
+          "median_excess": -0.0225639679168689,
+          "negative_rate": 0.6470588235294118,
+          "block_ci_lo": -0.024518223152254482,
+          "block_ci_hi": -0.0003878059439017258,
+          "sector_ci_lo": -0.028286583377093225,
+          "sector_ci_hi": 0.0064372197937022585
+        }
+      ],
+      "passes_predictive_robustness": false
+    },
+    "DISTRIBUTION_TRAP": {
+      "expected_sign": -1,
+      "horizons": {
+        "20": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 1.0,
+          "median_config_mean_excess": -0.009999124053269318,
+          "min_config_mean_excess": -0.015936997496234694,
+          "max_config_mean_excess": -0.005468320307137906
+        },
+        "40": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 1.0,
+          "median_config_mean_excess": -0.017830721993012527,
+          "min_config_mean_excess": -0.023662326732310026,
+          "max_config_mean_excess": -0.007410042317037637
+        }
+      },
+      "baseline_config": "p70_i50_f0.0_d0",
+      "baseline_confirmation": [
+        {
+          "state": "DISTRIBUTION_TRAP",
+          "config": "p70_i50_f0.0_d0",
+          "p": 70.0,
+          "i": 50.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 20,
+          "n": 46,
+          "mean_excess": -0.010207043405014523,
+          "median_excess": -0.01289869412879395,
+          "negative_rate": 0.6304347826086957,
+          "block_ci_lo": -0.020301206982381068,
+          "block_ci_hi": -0.0008532834176782932,
+          "sector_ci_lo": -0.02296652934316572,
+          "sector_ci_hi": 1.5052458107966474e-06
+        },
+        {
+          "state": "DISTRIBUTION_TRAP",
+          "config": "p70_i50_f0.0_d0",
+          "p": 70.0,
+          "i": 50.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 40,
+          "n": 44,
+          "mean_excess": -0.017245524916453505,
+          "median_excess": -0.0188929251950923,
+          "negative_rate": 0.6590909090909091,
+          "block_ci_lo": -0.03193897551429821,
+          "block_ci_hi": -0.002977569198895892,
+          "sector_ci_lo": -0.0378840923164072,
+          "sector_ci_hi": -0.002943643123770119
+        }
+      ],
+      "passes_predictive_robustness": true
+    },
+    "REDEMPTION_DIVERGENCE": {
+      "expected_sign": null,
+      "horizons": {
+        "20": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": null,
+          "median_config_mean_excess": -0.0059111924295990395,
+          "min_config_mean_excess": -0.009844797017897845,
+          "max_config_mean_excess": -0.0009020552294612352
+        },
+        "40": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": null,
+          "median_config_mean_excess": -0.016075066676001042,
+          "min_config_mean_excess": -0.021059956898676097,
+          "max_config_mean_excess": -0.010565854811343414
+        }
+      },
+      "baseline_config": "p60_i60_f0.0_d0",
+      "baseline_confirmation": [
+        {
+          "state": "REDEMPTION_DIVERGENCE",
+          "config": "p60_i60_f0.0_d0",
+          "p": 60.0,
+          "i": 60.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 20,
+          "n": 84,
+          "mean_excess": -0.0024050147131134273,
+          "median_excess": -0.00037707743129064997,
+          "negative_rate": 0.5238095238095238,
+          "block_ci_lo": -0.010242198758819467,
+          "block_ci_hi": 0.005132279945380726,
+          "sector_ci_lo": -0.008911176754399078,
+          "sector_ci_hi": 0.002080159319350092
+        },
+        {
+          "state": "REDEMPTION_DIVERGENCE",
+          "config": "p60_i60_f0.0_d0",
+          "p": 60.0,
+          "i": 60.0,
+          "f": 0.0,
+          "delta": 0.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 40,
+          "n": 81,
+          "mean_excess": -0.010565854811343414,
+          "median_excess": -0.0072734271703731,
+          "negative_rate": 0.5432098765432098,
+          "block_ci_lo": -0.02432985878327123,
+          "block_ci_hi": 0.003363500848704434,
+          "sector_ci_lo": -0.023799037415508272,
+          "sector_ci_hi": -0.000882748231779313
+        }
+      ],
+      "passes_predictive_robustness": null,
+      "diagnostic_only": true
+    },
+    "EARLY_ROTATION": {
+      "expected_sign": 1,
+      "horizons": {
+        "20": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 0.0,
+          "median_config_mean_excess": -0.007087956721043798,
+          "min_config_mean_excess": -0.008628298145866787,
+          "max_config_mean_excess": -0.004878040146477848
+        },
+        "40": {
+          "configs_with_result": 27,
+          "fraction_positive": 0.0,
+          "fraction_negative": 1.0,
+          "fraction_expected_direction": 0.0,
+          "median_config_mean_excess": -0.009951592047968033,
+          "min_config_mean_excess": -0.012710475468765586,
+          "max_config_mean_excess": -0.004843593750559994
+        }
+      },
+      "baseline_config": "p60_i50_f0.0_d10",
+      "baseline_confirmation": [
+        {
+          "state": "EARLY_ROTATION",
+          "config": "p60_i50_f0.0_d10",
+          "p": 60.0,
+          "i": 50.0,
+          "f": 0.0,
+          "delta": 10.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 20,
+          "n": 86,
+          "mean_excess": -0.006157006765906226,
+          "median_excess": -0.0137558207470065,
+          "negative_rate": 0.6046511627906976,
+          "block_ci_lo": -0.016524930397758868,
+          "block_ci_hi": 0.005307238118131489,
+          "sector_ci_lo": -0.015311933266451925,
+          "sector_ci_hi": 0.0038223607341766543
+        },
+        {
+          "state": "EARLY_ROTATION",
+          "config": "p60_i50_f0.0_d10",
+          "p": 60.0,
+          "i": 50.0,
+          "f": 0.0,
+          "delta": 10.0,
+          "period": "CONFIRMATION_2024_PLUS",
+          "horizon": 40,
+          "n": 81,
+          "mean_excess": -0.00795435056603306,
+          "median_excess": -0.0211807613325369,
+          "negative_rate": 0.6296296296296297,
+          "block_ci_lo": -0.024476682220187913,
+          "block_ci_hi": 0.009960530995145704,
+          "sector_ci_lo": -0.0211363412981561,
+          "sector_ci_hi": 0.010134670008359704
+        }
+      ],
+      "passes_predictive_robustness": false
+    }
+  },
+  "distribution_vs_redemption": {
+    "distribution_fraction_negative_20d": 1.0,
+    "distribution_fraction_negative_40d": 1.0,
+    "redemption_fraction_negative_20d": 1.0,
+    "redemption_fraction_negative_40d": 1.0,
+    "interpretation": "Redemption Divergence remains a diagnostic label for strong internals despite ETF outflow; it is not presumed bullish and is not treated as equivalent to Distribution without separate magnitude evidence."
+  },
+  "guardrails": {
+    "production_adoption": false,
+    "trading_gate": false,
+    "forced_exit": false
+  }
+}

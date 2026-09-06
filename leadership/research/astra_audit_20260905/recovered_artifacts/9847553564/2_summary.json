@@ -1,0 +1,291 @@
+{
+  "status": "RESEARCH_ONLY_NO_RULE_CHANGE",
+  "data": {
+    "pit": "audited cov80 PIT panel: official SSGA shares-outstanding-derived flow + historical-GICS dynamic constituent internals",
+    "rrg": "independent RRG-like price-relative vector, same formula as validate_rrg_tail_system.py; warmed on full frozen proxy price history before PIT overlap; not proprietary JdK formula",
+    "rate": "Duration Shock 5D = mean(z252 5d change in 10Y nominal, z252 5d change in 10Y real)",
+    "signal_cut": 0.75,
+    "frozen_sector_loading": {
+      "tightening_favor": [
+        "XLF",
+        "XLE"
+      ],
+      "easing_favor": [
+        "XLRE",
+        "XLV"
+      ]
+    },
+    "signal_timing": "date-t close information only; outcomes begin after date-t close"
+  },
+  "train": "2022-04-18..2023-12-31",
+  "holdout": "2024-01-01..2026-03-20",
+  "baseline_features": [
+    "price_score_xrank",
+    "price_rs63_rank_xrank",
+    "price_rs189_rank_xrank",
+    "internal_score_xrank",
+    "internal_delta20_xrank",
+    "flow20_pct_aum_xrank",
+    "rrg_trend_xrank",
+    "rrg_momentum_xrank",
+    "rrg_accel_xrank"
+  ],
+  "primary_residual_test": {
+    "TRAIN_2022_2023": {
+      "n": 180,
+      "blocks": 21,
+      "mean": 0.0008438830427682694,
+      "lo": -0.0005727846395225056,
+      "hi": 0.0025039871688367224,
+      "p_two": 0.2656,
+      "mean_bps": 8.438830427682694
+    },
+    "HOLDOUT_2024_2026": {
+      "n": 193,
+      "blocks": 28,
+      "mean": 0.001255605100536567,
+      "lo": 0.00019578103938128422,
+      "hi": 0.0023235406098239385,
+      "p_two": 0.021,
+      "mean_bps": 12.55605100536567
+    }
+  },
+  "lead_lag": {
+    "TRAIN_2022_2023": {
+      "rel_fwd1": {
+        "n": 180,
+        "blocks": 21,
+        "mean": 0.0008589123624654265,
+        "lo": -0.0005298476624986572,
+        "hi": 0.002563648947315641,
+        "p_two": 0.2626,
+        "mean_bps": 8.589123624654265
+      },
+      "rel_d2_5": {
+        "n": 180,
+        "blocks": 21,
+        "mean": -0.0002257402616732009,
+        "lo": -0.005871612212539427,
+        "hi": 0.0054633634735969825,
+        "p_two": 0.9498,
+        "mean_bps": -2.257402616732009
+      },
+      "rel_d6_10": {
+        "n": 180,
+        "blocks": 21,
+        "mean": -0.0002022954871893927,
+        "lo": -0.00676357135023107,
+        "hi": 0.006104847713375817,
+        "p_two": 0.9492,
+        "mean_bps": -2.022954871893927
+      },
+      "rel_fwd5_ratio": {
+        "n": 180,
+        "blocks": 21,
+        "mean": 0.0006670257855607672,
+        "lo": -0.005205431245096166,
+        "hi": 0.006548042829330515,
+        "p_two": 0.8182,
+        "mean_bps": 6.670257855607671
+      },
+      "rel_fwd10_ratio": {
+        "n": 180,
+        "blocks": 21,
+        "mean": 0.000483274886203182,
+        "lo": -0.010795518428137455,
+        "hi": 0.011614458938608,
+        "p_two": 0.925,
+        "mean_bps": 4.832748862031821
+      }
+    },
+    "HOLDOUT_2024_2026": {
+      "rel_fwd1": {
+        "n": 193,
+        "blocks": 28,
+        "mean": 0.001283527960580324,
+        "lo": 0.0002557818994423577,
+        "hi": 0.0023099619413238415,
+        "p_two": 0.0152,
+        "mean_bps": 12.83527960580324
+      },
+      "rel_d2_5": {
+        "n": 193,
+        "blocks": 28,
+        "mean": 0.0026926098861179233,
+        "lo": -0.001626578084720756,
+        "hi": 0.0067636727504081905,
+        "p_two": 0.2138,
+        "mean_bps": 26.926098861179234
+      },
+      "rel_d6_10": {
+        "n": 193,
+        "blocks": 28,
+        "mean": 0.0007055571304225916,
+        "lo": -0.004519896562142784,
+        "hi": 0.006169827143572674,
+        "p_two": 0.8288,
+        "mean_bps": 7.055571304225915
+      },
+      "rel_fwd5_ratio": {
+        "n": 193,
+        "blocks": 28,
+        "mean": 0.00396713710298722,
+        "lo": -0.000586476509764864,
+        "hi": 0.008544426259039384,
+        "p_two": 0.0914,
+        "mean_bps": 39.67137102987221
+      },
+      "rel_fwd10_ratio": {
+        "n": 193,
+        "blocks": 28,
+        "mean": 0.004762683720429359,
+        "lo": -0.0028405580529988154,
+        "hi": 0.013014599574605733,
+        "p_two": 0.2334,
+        "mean_bps": 47.62683720429358
+      }
+    }
+  },
+  "baseline_alignment_holdout": {
+    "BASELINE_OPPOSED": {
+      "n": 85,
+      "blocks": 24,
+      "mean": 0.0021075438834660737,
+      "lo": 0.00047044943552196285,
+      "hi": 0.0037677936615098445,
+      "p_two": 0.0132,
+      "mean_bps": 21.075438834660737
+    },
+    "BASELINE_ALIGNED": {
+      "n": 108,
+      "blocks": 25,
+      "mean": 0.0006349969101609844,
+      "lo": -0.000676325575083589,
+      "hi": 0.0018202317475983132,
+      "p_two": 0.3356,
+      "mean_bps": 6.349969101609844
+    }
+  },
+  "feature_alignment_holdout": {
+    "price_score_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.01636834667922751,
+      "aligned_fraction": 0.5595854922279793
+    },
+    "price_rs63_rank_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.005887894488930769,
+      "aligned_fraction": 0.47668393782383417
+    },
+    "price_rs189_rank_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.02496467263306641,
+      "aligned_fraction": 0.5233160621761658
+    },
+    "internal_score_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.07972209138012246,
+      "aligned_fraction": 0.5440414507772021
+    },
+    "internal_delta20_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.043570419218087596,
+      "aligned_fraction": 0.5544041450777202
+    },
+    "flow20_pct_aum_xrank": {
+      "n": 193,
+      "mean_directional_gap": -0.04686764013188882,
+      "aligned_fraction": 0.40414507772020725
+    },
+    "rrg_trend_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.05793688177107866,
+      "aligned_fraction": 0.5699481865284974
+    },
+    "rrg_momentum_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.18181818181818182,
+      "aligned_fraction": 0.7202072538860104
+    },
+    "rrg_accel_xrank": {
+      "n": 193,
+      "mean_directional_gap": 0.11705134243994347,
+      "aligned_fraction": 0.6010362694300518
+    }
+  },
+  "model_metrics": {
+    "train": {
+      "n": 4448,
+      "baseline_mse": 7.146671441920597e-05,
+      "augmented_mse": 7.143732659322699e-05,
+      "mse_change_pct": -0.041120997680965665,
+      "baseline_daily_rank_ic": 0.04596960142094571,
+      "augmented_daily_rank_ic": 0.05196352599677736,
+      "active_four_baseline_mse": 0.00010030755377343711,
+      "active_four_augmented_mse": 0.00010010861617127722,
+      "active_four_mse_change_pct": -0.19832763802537512
+    },
+    "holdout": {
+      "n": 6116,
+      "baseline_mse": 6.136349948097447e-05,
+      "augmented_mse": 6.131050693478597e-05,
+      "mse_change_pct": -0.08635841605632022,
+      "baseline_daily_rank_ic": 0.007618128570075579,
+      "augmented_daily_rank_ic": 0.010642981415072309,
+      "active_four_baseline_mse": 6.536748042034859e-05,
+      "active_four_augmented_mse": 6.500689555444548e-05,
+      "active_four_mse_change_pct": -0.5516272978312031
+    },
+    "train_rate_overlay_coef_bps": 4.302763512691397
+  },
+  "holdout_residual_by_year": {
+    "2024": {
+      "n": 92,
+      "blocks": 13,
+      "mean": 0.0004891044655106182,
+      "lo": -0.0008797884927497411,
+      "hi": 0.0019076103922380835,
+      "p_two": 0.534,
+      "mean_bps": 4.891044655106182
+    },
+    "2025": {
+      "n": 84,
+      "blocks": 12,
+      "mean": 0.0019238770497652822,
+      "lo": -0.0005450879245342548,
+      "hi": 0.00421152569097153,
+      "p_two": 0.1396,
+      "mean_bps": 19.23877049765282
+    },
+    "2026": {
+      "n": 17,
+      "blocks": 3,
+      "mean": 0.0021016765527233465,
+      "lo": -7.409962566546422e-05,
+      "hi": 0.004295766301184622,
+      "p_two": 0.0716,
+      "mean_bps": 21.01676552723347
+    }
+  },
+  "holdout_residual_by_rate_direction": {
+    "TIGHTENING": {
+      "n": 94,
+      "blocks": 5,
+      "mean": 0.001138643901834576,
+      "lo": -5.83971155833039e-05,
+      "hi": 0.002488613511570504,
+      "p_two": 0.0776,
+      "mean_bps": 11.38643901834576
+    },
+    "EASING": {
+      "n": 99,
+      "blocks": 5,
+      "mean": 0.001366659167990983,
+      "lo": -0.0009930051714492846,
+      "hi": 0.004172687115674425,
+      "p_two": 0.3128,
+      "mean_bps": 13.66659167990983
+    }
+  },
+  "decision_rule": "Rate overlay is incremental only if holdout residual signed spread remains positive with 20-day block-bootstrap support and is not confined to baseline-aligned dates. No production adoption from this audit alone."
+}

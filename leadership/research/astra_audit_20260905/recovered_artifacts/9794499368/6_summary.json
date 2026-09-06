@@ -1,0 +1,281 @@
+{
+  "status": "V38_FINAL_EXECUTION_INTEGRATION",
+  "spec": "CURRENT30 + Normal Stock cap70 + SELECTIVE_FILL_NO_ZERO_OVERRIDE + Reset + Gross100",
+  "method": {
+    "ordinary_execution_stress": "Transfer the multiplicative 0bp->Xbp return-factor drag from the fresh exact-mechanics execution rerun onto the frozen ordinary component path. This isolates transaction-cost sensitivity while preserving the frozen research baseline and avoiding Yahoo history drift.",
+    "allocator_cost": "Existing 10bp allocated-sleeve-gross turnover drag retained for direct comparability; constituent execution cost is additional internal Normal Stock trading stress.",
+    "overnight_gap": "Already present through actual next-session Open execution; no extra gap penalty."
+  },
+  "drift_check": {
+    "frozen_ordinary_cagr": 0.16880398808902375,
+    "fresh_rerun_0bp_cagr": 0.16650893828192803,
+    "cagr_diff_pp": -0.2295049807095717,
+    "frozen_final_nav": 4.898365749410672,
+    "fresh_rerun_final_nav": 4.80126707823383
+  },
+  "allocation": {
+    "avg_tqqq": 0.3268739489566089,
+    "avg_ordinary": 0.3594631572480331,
+    "avg_reset": 0.05794734172980227,
+    "avg_gross": 0.7442844479344444,
+    "max_ordinary": 0.7,
+    "ordinary_over70_days": 0,
+    "fill_days": 71,
+    "gate_eligible_days": 1226,
+    "fill_day_definition": "days with actual extra TQQQ allocation versus the same CAP70 no-fill allocator"
+  },
+  "execution_stress": {
+    "0": {
+      "full": {
+        "cagr": 0.4637330439278906,
+        "mdd": -0.2571392737433198,
+        "sharpe": 1.4660238928442935,
+        "end": 48.47063676560154,
+        "mdd_peak": "2018-02-27",
+        "mdd_trough": "2018-04-04"
+      },
+      "tax_proxy": {
+        "cagr": 0.3723341210820261,
+        "end": 25.1325161820144,
+        "tax_paid": 6.73655331896114
+      },
+      "monthly": {
+        "geom": 0.03205556285523614,
+        "worst": -0.19260291259978635,
+        "ge7": 0.2926829268292683,
+        "positive": 0.6422764227642277
+      },
+      "rolling2y": {
+        "worst": -0.007810873018099795,
+        "p10": 0.2684680714753351,
+        "median": 1.0388656982891797,
+        "positive": 0.9995157384987894
+      },
+      "periods": {
+        "2016_2021": {
+          "cagr": 0.5196883894314503,
+          "mdd": -0.2571392737433198,
+          "sharpe": 1.5540440283727721,
+          "end": 12.276788560477069,
+          "mdd_peak": "2018-02-27",
+          "mdd_trough": "2018-04-04"
+        },
+        "2022_2026M3": {
+          "cagr": 0.38778210555081594,
+          "mdd": -0.21996590565926144,
+          "sharpe": 1.331949833702306,
+          "end": 3.9481527703135737,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-03-10"
+        },
+        "2022_2023": {
+          "cagr": 0.19271561018199312,
+          "mdd": -0.1346623646687437,
+          "sharpe": 0.9507917332266025,
+          "end": 1.4185966669949548,
+          "mdd_peak": "2023-02-02",
+          "mdd_trough": "2023-04-26"
+        },
+        "2024_2026M3": {
+          "cagr": 0.5916329641600424,
+          "mdd": -0.21996590565926177,
+          "sharpe": 1.6012181344799308,
+          "end": 2.7831397480138134,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-03-10"
+        }
+      }
+    },
+    "10": {
+      "full": {
+        "cagr": 0.45555264185236743,
+        "mdd": -0.2577155514520518,
+        "sharpe": 1.4464066964327746,
+        "end": 45.78098883740839,
+        "mdd_peak": "2018-02-27",
+        "mdd_trough": "2018-04-04"
+      },
+      "tax_proxy": {
+        "cagr": 0.3657121947910582,
+        "end": 23.924200655324594,
+        "tax_paid": 6.412745245535913
+      },
+      "monthly": {
+        "geom": 0.031576655290154854,
+        "worst": -0.19322903008951564,
+        "ge7": 0.2926829268292683,
+        "positive": 0.6422764227642277
+      },
+      "rolling2y": {
+        "worst": -0.017571239573552888,
+        "p10": 0.25465812225326256,
+        "median": 1.017802236672507,
+        "positive": 0.998547215496368
+      },
+      "periods": {
+        "2016_2021": {
+          "cagr": 0.5106454978163566,
+          "mdd": -0.2577155514520518,
+          "sharpe": 1.5338645868290275,
+          "end": 11.84550114608434,
+          "mdd_peak": "2018-02-27",
+          "mdd_trough": "2018-04-04"
+        },
+        "2022_2026M3": {
+          "cagr": 0.3807370574126705,
+          "mdd": -0.220823140306195,
+          "sharpe": 1.3131753538150608,
+          "end": 3.8648418731141536,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-03-10"
+        },
+        "2022_2023": {
+          "cagr": 0.18738868036150946,
+          "mdd": -0.1374355631046642,
+          "sharpe": 0.9290333195409466,
+          "end": 1.4060533336358125,
+          "mdd_peak": "2022-03-29",
+          "mdd_trough": "2022-12-28"
+        },
+        "2024_2026M3": {
+          "cagr": 0.5826640131633636,
+          "mdd": -0.22082314030619454,
+          "sharpe": 1.583498497913808,
+          "end": 2.7487164111480347,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-03-10"
+        }
+      }
+    },
+    "25": {
+      "full": {
+        "cagr": 0.4433724381985651,
+        "mdd": -0.2585798672785552,
+        "sharpe": 1.4169633880542398,
+        "end": 42.025164110663,
+        "mdd_peak": "2018-02-27",
+        "mdd_trough": "2018-04-04"
+      },
+      "tax_proxy": {
+        "cagr": 0.355853751032966,
+        "end": 22.222208330128396,
+        "tax_paid": 5.955612654947057
+      },
+      "monthly": {
+        "geom": 0.030858992020763587,
+        "worst": -0.1941680972049683,
+        "ge7": 0.2926829268292683,
+        "positive": 0.6422764227642277
+      },
+      "rolling2y": {
+        "worst": -0.03202512716072392,
+        "p10": 0.2342347692737338,
+        "median": 0.9816655085897503,
+        "positive": 0.9980629539951574
+      },
+      "periods": {
+        "2016_2021": {
+          "cagr": 0.49719093725430596,
+          "mdd": -0.2585798672785552,
+          "sharpe": 1.503582318961449,
+          "end": 11.227215241347167,
+          "mdd_peak": "2018-02-27",
+          "mdd_trough": "2018-04-04"
+        },
+        "2022_2026M3": {
+          "cagr": 0.3702357091823305,
+          "mdd": -0.2222507211407282,
+          "sharpe": 1.2849897682236038,
+          "end": 3.7431511917482636,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-05-07"
+        },
+        "2022_2023": {
+          "cagr": 0.17945090316651302,
+          "mdd": -0.14267194339736589,
+          "sharpe": 0.8964225151918694,
+          "end": 1.3874647521380983,
+          "mdd_peak": "2022-03-29",
+          "mdd_trough": "2022-12-28"
+        },
+        "2024_2026M3": {
+          "cagr": 0.5692939283669729,
+          "mdd": -0.22225072114072741,
+          "sharpe": 1.5568695044580483,
+          "end": 2.697835160122109,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-05-07"
+        }
+      }
+    },
+    "50": {
+      "full": {
+        "cagr": 0.4233243772304198,
+        "mdd": -0.26049852202164225,
+        "sharpe": 1.3678790714466755,
+        "end": 36.44443883222479,
+        "mdd_peak": "2021-11-05",
+        "mdd_trough": "2022-12-28"
+      },
+      "tax_proxy": {
+        "cagr": 0.33963034110359747,
+        "end": 19.657734188743593,
+        "tax_paid": 5.264374000501469
+      },
+      "monthly": {
+        "geom": 0.029665565585661913,
+        "worst": -0.19573291931512593,
+        "ge7": 0.2926829268292683,
+        "positive": 0.6422764227642277
+      },
+      "rolling2y": {
+        "worst": -0.055626149493684274,
+        "p10": 0.20082930136194452,
+        "median": 0.9274956245278212,
+        "positive": 0.9966101694915255
+      },
+      "periods": {
+        "2016_2021": {
+          "cagr": 0.4750473134763731,
+          "mdd": -0.26031712225765324,
+          "sharpe": 1.4530797748296282,
+          "end": 10.268239169749974,
+          "mdd_peak": "2021-02-09",
+          "mdd_trough": "2021-03-29"
+        },
+        "2022_2026M3": {
+          "cagr": 0.3529516776179722,
+          "mdd": -0.22520509850990034,
+          "sharpe": 1.2380370679910366,
+          "end": 3.5492393807488773,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-05-07"
+        },
+        "2022_2023": {
+          "cagr": 0.16636009919660322,
+          "mdd": -0.1513063489581079,
+          "sharpe": 0.8421577501872769,
+          "end": 1.3570769452382039,
+          "mdd_peak": "2022-03-29",
+          "mdd_trough": "2022-12-28"
+        },
+        "2024_2026M3": {
+          "cagr": 0.5473250664215852,
+          "mdd": -0.22520509850990011,
+          "sharpe": 1.5124860104680835,
+          "end": 2.61535603651854,
+          "mdd_peak": "2024-12-18",
+          "mdd_trough": "2025-05-07"
+        }
+      }
+    }
+  },
+  "survivorship_probe": {
+    "status": "UNAVAILABLE",
+    "reason": "HTTPError: HTTP Error 402: Payment Required",
+    "rows_partial": 100,
+    "page_sizes": [
+      100
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "primary": "Macro ON unless lagged DGS2<1% and 2s10s>1%; QID 30% when prior3 and prior5 eligible-event means are both >0, 15% when exactly one is >0, otherwise 0%; hold 2 sessions; spare gross only; Panic/Stage56 kills.",
+  "primary_gross100_cost5": {
+    "config": "S3_L5_M15",
+    "cost_bp": 5,
+    "cagr": 0.4970169794526933,
+    "mdd": -0.23233598301786917,
+    "delta_cagr": 0.026991184025731307,
+    "delta_mdd": 2.220446049250313e-16,
+    "active_weight_days": 44,
+    "avg_qid_weight_when_active": 0.265909090909091,
+    "TRAIN_2016_2021_delta_cagr": 0.012202863809426034,
+    "TRAIN_2016_2021_delta_mdd": 2.220446049250313e-16,
+    "HOLDOUT_2022_2026_delta_cagr": 0.046954238383335456,
+    "HOLDOUT_2022_2026_delta_mdd": 0.0035906111136637664,
+    "2016_2019_delta_cagr": 0.007014405778780652,
+    "2016_2019_delta_mdd": 2.220446049250313e-16,
+    "2020_2021_delta_cagr": 0.026134543824029244,
+    "2020_2021_delta_mdd": -2.220446049250313e-16,
+    "2022_2023_delta_cagr": 0.06162903161523947,
+    "2022_2023_delta_mdd": -4.440892098500626e-16,
+    "2024_2026_delta_cagr": 0.029442350235669323,
+    "2024_2026_delta_mdd": 0.0035906111136635444
+  },
+  "sizing_plateau_cost5": {
+    "configs": 9,
+    "positive_full": 9,
+    "positive_train_holdout": 9,
+    "delta_cagr_min": 0.024318061088058895,
+    "delta_cagr_max": 0.02796321911153643
+  },
+  "current": {
+    "latest_market_date": "2026-09-02",
+    "DGS2": 4.39,
+    "curve_2s10s": 0.40000000000000036,
+    "macro_on": true,
+    "prior3_mean_after_latest_event": -0.011230326284595533,
+    "prior5_mean_after_latest_event": 0.01815682765180928,
+    "prior3_on": false,
+    "prior5_on": true,
+    "next_signal_target_size": 0.15
+  },
+  "true_oos": [
+    {
+      "signal_date": "2026-03-30 00:00:00",
+      "qid2": -0.0365699497739125,
+      "target_size_3_5_15": 0.3,
+      "DGS2": 3.88,
+      "curve_2s10s": 0.5600000000000005
+    }
+  ],
+  "notes": [
+    "The 0/15/30 sizing rule was specified before this V11 run; 10/15/20 mid-sizes and 2/4,3/5,4/6 event-memory pairs are sensitivity checks, not an optimizer.",
+    "The 2026-03-30 true-OOS loss remains included. Its pre-event size under the primary rule was 30%; after observing that loss the next-signal size falls to 15%.",
+    "No production change."
+  ]
+}

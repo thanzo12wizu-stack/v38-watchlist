@@ -1,0 +1,38 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "membership_evidence": "CURRENT_MEMBERSHIP_RETROSPECTIVE_NOT_PIT",
+  "supplemental_zero_member_themes": {
+    "CIBR": "FIRSTTRUST_EXACT_SUPPLEMENT",
+    "SKYY": "FIRSTTRUST_EXACT_SUPPLEMENT",
+    "GRID": "FIRSTTRUST_EXACT_SUPPLEMENT",
+    "FAN": "FIRSTTRUST_EXACT_SUPPLEMENT"
+  },
+  "shard": 5,
+  "shards": 8,
+  "requested": 278,
+  "valid_lookup": 278,
+  "downloaded_common_close_volume": 264,
+  "coverage": 0.9496402877697842,
+  "invalid_normalization": [],
+  "missing": [
+    "600111.SS",
+    "600821.SS",
+    "601958.SS",
+    "688223.SS",
+    "ANTO.L",
+    "DEME.BB",
+    "EDV.L",
+    "GWIND.TI",
+    "HOLM B",
+    "KGH PW",
+    "RSW.L",
+    "SAJA.DE",
+    "SKFB.ST",
+    "UHALB"
+  ],
+  "errors": [],
+  "rows": 1220,
+  "start": "2022-01-03",
+  "end": "2026-09-04"
+}

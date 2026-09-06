@@ -1,0 +1,309 @@
+{
+  "status": "GROSS100_DDV_IMPLEMENTATION_MODE_AUDIT",
+  "analysis_start": "2016-01-04",
+  "analysis_end": "2026-03-20",
+  "tqqq_target": "target_M30_TOUCH30_F80_D10",
+  "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
+  "primary": {
+    "timing": "SAME_DAY_GROSS",
+    "cost": "BASE",
+    "policy": "SELECTIVE_FILL_NO_ZERO_OVERRIDE"
+  },
+  "modes": {
+    "VACANCY_TOP12": "Rank adopted Top12 first; DDV failures create vacancies; never reach rank 13+.",
+    "REFILL_TOP40": "Rank Top40 first; filter by DDV; then take the same market-mode cap. Already-held names can still leave vacancies, matching the single-stock DDV audit structure."
+  },
+  "guardrails": [
+    "No main/UI/live changes.",
+    "Existing positions are not exited only because DDV later falls.",
+    "Ordinary stock exit/partial-profit/NQSAR/Breadth mechanics are held fixed.",
+    "TQQQ F80 D10, final RSI30 Reset, Gross100 and Selective Fill are held fixed."
+  ],
+  "reset_turnover_value": 8.524177654952569,
+  "primary_ranking": [
+    {
+      "mode": "VACANCY_TOP12",
+      "ddv_m": 20,
+      "cagr": 0.5176349688688102,
+      "mdd": -0.2652632238044368,
+      "sharpe": 1.5801157662309402,
+      "calmar": 1.9514011834917324,
+      "avg_alloc_t": 0.3270305261339827,
+      "avg_alloc_o": 0.37878189565594533,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7352442757277743
+    },
+    {
+      "mode": "VACANCY_TOP12",
+      "ddv_m": 10,
+      "cagr": 0.4963139113896644,
+      "mdd": -0.2546758669100536,
+      "sharpe": 1.5296981253611048,
+      "calmar": 1.9488062116421596,
+      "avg_alloc_t": 0.327527230772401,
+      "avg_alloc_o": 0.37766671317063,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7346257978808772
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "ddv_m": 10,
+      "cagr": 0.4963139113896644,
+      "mdd": -0.2546758669100536,
+      "sharpe": 1.5296981253611048,
+      "calmar": 1.9488062116421596,
+      "avg_alloc_t": 0.327527230772401,
+      "avg_alloc_o": 0.37766671317063,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7346257978808772
+    },
+    {
+      "mode": "VACANCY_TOP12",
+      "ddv_m": 100,
+      "cagr": 0.5438051077360477,
+      "mdd": -0.29971176897261276,
+      "sharpe": 1.619261587343395,
+      "calmar": 1.8144269395898827,
+      "avg_alloc_t": 0.3402636752850951,
+      "avg_alloc_o": 0.35533450342793715,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7250300326508785
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "ddv_m": 20,
+      "cagr": 0.48929990894349307,
+      "mdd": -0.2782778080016288,
+      "sharpe": 1.5141355134593733,
+      "calmar": 1.7583145147550863,
+      "avg_alloc_t": 0.32745517403359164,
+      "avg_alloc_o": 0.3780672779916165,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7349543059630543
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "ddv_m": 50,
+      "cagr": 0.521061538883399,
+      "mdd": -0.29819861214870924,
+      "sharpe": 1.572177231150663,
+      "calmar": 1.7473640642685144,
+      "avg_alloc_t": 0.3273226011368842,
+      "avg_alloc_o": 0.38100662651665457,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7377610815913851
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "ddv_m": 100,
+      "cagr": 0.5320631460028138,
+      "mdd": -0.3156683661974179,
+      "sharpe": 1.630326780185198,
+      "calmar": 1.6855130351264382,
+      "avg_alloc_t": 0.32713159435117534,
+      "avg_alloc_o": 0.3819907744215841,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7385542227106057
+    },
+    {
+      "mode": "VACANCY_TOP12",
+      "ddv_m": 50,
+      "cagr": 0.5199003116573198,
+      "mdd": -0.3151813814696566,
+      "sharpe": 1.5678334568068149,
+      "calmar": 1.6495273586056418,
+      "avg_alloc_t": 0.32931428867086265,
+      "avg_alloc_o": 0.3758310961931446,
+      "avg_alloc_r": 0.029431853937846256,
+      "avg_total_gross": 0.7345772388018535
+    }
+  ],
+  "component_diagnostics": [
+    {
+      "mode": "VACANCY_TOP12",
+      "liquidity_floor": 10000000.0,
+      "entry_count": 744,
+      "blocked_top12_candidates": 0,
+      "refill_beyond12_entries": 0,
+      "refill_beyond12_share": 0.0,
+      "refill_beyond_cap_entries": 0,
+      "refill_beyond_cap_share": 0.0,
+      "avg_positions": 7.277258566978193,
+      "avg_gross": 0.5837582130020877,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "VACANCY_TOP12",
+      "liquidity_floor": 20000000.0,
+      "entry_count": 719,
+      "blocked_top12_candidates": 583,
+      "refill_beyond12_entries": 0,
+      "refill_beyond12_share": 0.0,
+      "refill_beyond_cap_entries": 0,
+      "refill_beyond_cap_share": 0.0,
+      "avg_positions": 7.297118380062305,
+      "avg_gross": 0.5838506593153667,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "VACANCY_TOP12",
+      "liquidity_floor": 50000000.0,
+      "entry_count": 711,
+      "blocked_top12_candidates": 2178,
+      "refill_beyond12_entries": 0,
+      "refill_beyond12_share": 0.0,
+      "refill_beyond_cap_entries": 0,
+      "refill_beyond_cap_share": 0.0,
+      "avg_positions": 7.070482866043614,
+      "avg_gross": 0.5675975212271794,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "VACANCY_TOP12",
+      "liquidity_floor": 100000000.0,
+      "entry_count": 617,
+      "blocked_top12_candidates": 5144,
+      "refill_beyond12_entries": 0,
+      "refill_beyond12_share": 0.0,
+      "refill_beyond_cap_entries": 0,
+      "refill_beyond_cap_share": 0.0,
+      "avg_positions": 6.165498442367602,
+      "avg_gross": 0.500915253814995,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "liquidity_floor": 10000000.0,
+      "entry_count": 744,
+      "blocked_top12_candidates": 0,
+      "refill_beyond12_entries": 0,
+      "refill_beyond12_share": 0.0,
+      "refill_beyond_cap_entries": 0,
+      "refill_beyond_cap_share": 0.0,
+      "avg_positions": 7.277258566978193,
+      "avg_gross": 0.5837582130020877,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "liquidity_floor": 20000000.0,
+      "entry_count": 725,
+      "blocked_top12_candidates": 527,
+      "refill_beyond12_entries": 30,
+      "refill_beyond12_share": 0.041379310344827586,
+      "refill_beyond_cap_entries": 61,
+      "refill_beyond_cap_share": 0.08413793103448276,
+      "avg_positions": 7.290498442367602,
+      "avg_gross": 0.5837988697790649,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "liquidity_floor": 50000000.0,
+      "entry_count": 711,
+      "blocked_top12_candidates": 1193,
+      "refill_beyond12_entries": 163,
+      "refill_beyond12_share": 0.22925457102672292,
+      "refill_beyond_cap_entries": 233,
+      "refill_beyond_cap_share": 0.32770745428973275,
+      "avg_positions": 7.336838006230529,
+      "avg_gross": 0.5857218775358556,
+      "max_gross": 1.0
+    },
+    {
+      "mode": "REFILL_TOP40",
+      "liquidity_floor": 100000000.0,
+      "entry_count": 674,
+      "blocked_top12_candidates": 1782,
+      "refill_beyond12_entries": 304,
+      "refill_beyond12_share": 0.45103857566765576,
+      "refill_beyond_cap_entries": 367,
+      "refill_beyond_cap_share": 0.5445103857566765,
+      "avg_positions": 7.359423676012461,
+      "avg_gross": 0.5867045686918029,
+      "max_gross": 1.0
+    }
+  ],
+  "combine_diagnostics": {
+    "VACANCY_TOP12_DDV10M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5837582130020877,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "VACANCY_TOP12_DDV20M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5838506593153667,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "VACANCY_TOP12_DDV50M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5675975212271794,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "VACANCY_TOP12_DDV100M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.500915253814995,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "REFILL_TOP40_DDV10M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5837582130020877,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "REFILL_TOP40_DDV20M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5837988697790649,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "REFILL_TOP40_DDV50M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5857218775358556,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "REFILL_TOP40_DDV100M": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5867045686918029,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    }
+  }
+}

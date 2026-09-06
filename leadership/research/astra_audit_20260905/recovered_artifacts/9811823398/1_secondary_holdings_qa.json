@@ -1,0 +1,129 @@
+{
+  "schema": 5,
+  "research_only": true,
+  "candidate_count": 10,
+  "pass_count": 10,
+  "pass_tickers": [
+    "WCLD",
+    "BLOK",
+    "PHO",
+    "TAN",
+    "IBUY",
+    "PKB",
+    "BOAT",
+    "WGMI",
+    "JETS",
+    "PEJ"
+  ],
+  "rows": [
+    {
+      "ticker": "WCLD",
+      "status": "PASS",
+      "rows": 66,
+      "declared_total": 65,
+      "coverage_vs_declared": 1.0153846153846153,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/WisdomTree%20Cloud%20Computing%20Fund",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "BLOK",
+      "status": "PASS",
+      "rows": 51,
+      "declared_total": 51,
+      "coverage_vs_declared": 1.0,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/Amplify%20Blockchain%20Technology%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "PHO",
+      "status": "PASS",
+      "rows": 40,
+      "declared_total": 42,
+      "coverage_vs_declared": 0.9523809523809523,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/Invesco%20Water%20Resources%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "TAN",
+      "status": "PASS",
+      "rows": 35,
+      "declared_total": 37,
+      "coverage_vs_declared": 0.9459459459459459,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/Invesco%20Solar%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "IBUY",
+      "status": "PASS",
+      "rows": 82,
+      "declared_total": 83,
+      "coverage_vs_declared": 0.9879518072289156,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/Amplify%20Online%20Retail%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "PKB",
+      "status": "PASS",
+      "rows": 29,
+      "declared_total": 30,
+      "coverage_vs_declared": 0.9666666666666667,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/Invesco%20Building%20%26%20Construction%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "BOAT",
+      "status": "PASS",
+      "rows": 50,
+      "declared_total": 53,
+      "coverage_vs_declared": 0.9433962264150944,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/SonicShares%20Global%20Shipping%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "WGMI",
+      "status": "PASS",
+      "rows": 28,
+      "declared_total": 28,
+      "coverage_vs_declared": 1.0,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/CoinShares%20Bitcoin%20Mining%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "JETS",
+      "status": "PASS",
+      "rows": 48,
+      "declared_total": 50,
+      "coverage_vs_declared": 0.96,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/U.S.%20Global%20Jets%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    },
+    {
+      "ticker": "PEJ",
+      "status": "PASS",
+      "rows": 30,
+      "declared_total": 31,
+      "coverage_vs_declared": 0.967741935483871,
+      "source_last_updated_age_days": 0.75,
+      "source_url": "https://www.quiverquant.com/etf/Invesco%20Leisure%20and%20Entertainment%20ETF",
+      "quality": "VALIDATED_CURRENT_FULL_LIST_SECONDARY"
+    }
+  ],
+  "quality_contract": "Issuer-exact current holdings remain preferred. Quiver is used only for the ten unresolved funds and only when its server-rendered full reported holdings page is fresh and broadly matches its own declared holding count.",
+  "guardrails": [
+    "This fallback is labeled VALIDATED_CURRENT_FULL_LIST_SECONDARY, never issuer-exact.",
+    "Quiver membership older than the configured freshness guard is rejected.",
+    "Cash, currencies and money-market collateral are excluded from constituent Internals.",
+    "Full Stack retains its independent 80% constituent market-price coverage requirement.",
+    "No stale ETF.com membership or price/volume inference is used to manufacture current membership.",
+    "DRAM is not part of this rescue; its short history is the accepted exception."
+  ]
+}

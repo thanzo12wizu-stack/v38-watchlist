@@ -1,0 +1,93 @@
+{
+  "repository": "thanzo12wizu-stack/v38-watchlist",
+  "artifacts": {
+    "rsi-reset-focused-robust-audit": {
+      "artifact_id": 9670178584,
+      "workflow_run_id": 33130531643,
+      "created_at": "2026-08-28T00:47:54Z",
+      "updated_at": "2026-08-28T00:47:54Z",
+      "files": [
+        "audit_trades.csv.gz",
+        "summary.json"
+      ]
+    },
+    "rsi-reset-portfolio-construction-audit": {
+      "artifact_id": 9650682813,
+      "workflow_run_id": 33081580366,
+      "created_at": "2026-08-27T14:29:49Z",
+      "updated_at": "2026-08-27T14:29:49Z",
+      "files": [
+        "handoff_diagnostics.csv",
+        "portfolio_scenarios.csv",
+        "selected_daily_series.csv.gz",
+        "summary.json"
+      ]
+    },
+    "rsi-strong-stock-threshold-interaction-audit": {
+      "artifact_id": 9670229132,
+      "workflow_run_id": 33130536827,
+      "created_at": "2026-08-28T00:50:35Z",
+      "updated_at": "2026-08-28T00:50:35Z",
+      "files": [
+        "portfolio_rule_comparison.csv",
+        "signal_strength_summary.csv",
+        "summary.json",
+        "threshold_pairwise.csv",
+        "threshold_summary.csv",
+        "threshold_trade_rows.csv.gz"
+      ]
+    },
+    "market-wide-rs189-rsi-reset-audit": {
+      "artifact_id": 9671218139,
+      "workflow_run_id": 33133427031,
+      "created_at": "2026-08-28T01:43:41Z",
+      "updated_at": "2026-08-28T01:43:41Z",
+      "files": [
+        "combined_theme_market_portfolio.csv",
+        "market_rs189_portfolio.csv",
+        "market_rs189_summary.csv",
+        "market_rs189_trades.csv.gz",
+        "summary.json"
+      ]
+    },
+    "rsi30-mc-nqsar-audit": {
+      "artifact_id": 9646287735,
+      "workflow_run_id": 33072221586,
+      "created_at": "2026-08-27T12:31:36Z",
+      "updated_at": "2026-08-27T12:31:36Z",
+      "files": [
+        "rsi30_mc_nqsar_trades.csv.gz",
+        "summary.json"
+      ]
+    },
+    "rsi30-vix-sequence-audit": {
+      "artifact_id": 9644832062,
+      "workflow_run_id": 33068729183,
+      "created_at": "2026-08-27T11:45:06Z",
+      "updated_at": "2026-08-27T11:45:06Z",
+      "files": [
+        "rsi30_vix_trades.csv.gz",
+        "sequence_validation.json",
+        "summary.json"
+      ]
+    },
+    "tqqq-stage56-mandate-fx-tax": {
+      "artifact_id": 9649902954,
+      "workflow_run_id": 33080590798,
+      "created_at": "2026-08-27T14:10:31Z",
+      "updated_at": "2026-08-27T14:10:31Z",
+      "files": [
+        "tqqq_stage56.log",
+        "tqqq_stage56_costs.csv",
+        "tqqq_stage56_daily.csv.gz",
+        "tqqq_stage56_dividend_tax.csv",
+        "tqqq_stage56_fx_tax.csv",
+        "tqqq_stage56_mandate_scan.csv",
+        "tqqq_stage56_mc.csv",
+        "tqqq_stage56_mc_summary.csv",
+        "tqqq_stage56_subperiods.csv",
+        "tqqq_stage56_summary.json"
+      ]
+    }
+  }
+}

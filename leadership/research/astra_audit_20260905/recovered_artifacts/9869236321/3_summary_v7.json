@@ -1,0 +1,242 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "technical_overlap": {
+    "rsi14": {
+      "n": 2567,
+      "corr": 0.9917764628096035,
+      "median_abs_diff": 5.4737037167740255e-05,
+      "p99_abs_diff": 0.6722778304839567
+    },
+    "atr_dist50": {
+      "n": 2519,
+      "corr": 0.9999999791916653,
+      "median_abs_diff": 6.947991719408186e-06,
+      "p99_abs_diff": 0.0019413332567038764
+    },
+    "dd20": {
+      "n": 2549,
+      "corr": 0.9999999999830816,
+      "median_abs_diff": 8.525945809903165e-08,
+      "p99_abs_diff": 6.509645294064391e-07
+    }
+  },
+  "qid_h2": [
+    {
+      "signal": "CORE_MC",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 9,
+      "mean": -0.03346337817324469,
+      "median": -0.030243420628259465,
+      "win": 0.2222222222222222,
+      "worst": -0.08509069646231715,
+      "best": 0.02483545182557645
+    },
+    {
+      "signal": "CORE_MC",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 25,
+      "mean": 0.030129455338691016,
+      "median": 0.015980636098775536,
+      "win": 0.68,
+      "worst": -0.05747938829575494,
+      "best": 0.12276136782649005
+    },
+    {
+      "signal": "CORE_MC_MCFLOOR20",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 3,
+      "mean": -0.015518167946498592,
+      "median": -0.028684289019390685,
+      "win": 0.3333333333333333,
+      "worst": -0.04270566664568154,
+      "best": 0.02483545182557645
+    },
+    {
+      "signal": "CORE_MC_MCFLOOR20",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 12,
+      "mean": 0.012865922241440805,
+      "median": 0.0028483688534119977,
+      "win": 0.5833333333333334,
+      "worst": -0.05618833542026225,
+      "best": 0.0834638302034636
+    },
+    {
+      "signal": "CORE_MC_MCFLOOR25",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 2,
+      "mean": -0.03569497783253611,
+      "median": -0.03569497783253611,
+      "win": 0.0,
+      "worst": -0.04270566664568154,
+      "best": -0.028684289019390685
+    },
+    {
+      "signal": "CORE_MC_MCFLOOR25",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 9,
+      "mean": 0.0009084450137618975,
+      "median": 0.00398266646912071,
+      "win": 0.5555555555555556,
+      "worst": -0.1186631222204072,
+      "best": 0.0834638302034636
+    },
+    {
+      "signal": "CORE_MC_RSI30",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 8,
+      "mean": -0.01816565014974683,
+      "median": -0.006937910760029642,
+      "win": 0.25,
+      "worst": -0.08509069646231715,
+      "best": 0.02483545182557645
+    },
+    {
+      "signal": "CORE_MC_RSI30",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 23,
+      "mean": 0.034417597320749935,
+      "median": 0.017033155558318525,
+      "win": 0.6956521739130435,
+      "worst": -0.05747938829575494,
+      "best": 0.12276136782649005
+    },
+    {
+      "signal": "CORE_MC_RSI34",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 7,
+      "mean": -0.041481839685714776,
+      "median": -0.04270566664568154,
+      "win": 0.0,
+      "worst": -0.08509069646231715,
+      "best": -0.0008662597745777711
+    },
+    {
+      "signal": "CORE_MC_RSI34",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 22,
+      "mean": 0.03153693835040858,
+      "median": 0.01650689582854703,
+      "win": 0.7272727272727273,
+      "worst": -0.04659098322008193,
+      "best": 0.12276136782649005
+    },
+    {
+      "signal": "CORE_MC_ATR2",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 3,
+      "mean": -0.011951948025325251,
+      "median": -0.01624658605334084,
+      "win": 0.3333333333333333,
+      "worst": -0.08509069646231715,
+      "best": 0.06548143843968224
+    },
+    {
+      "signal": "CORE_MC_ATR2",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 14,
+      "mean": 0.005508645607148858,
+      "median": 0.005547494426482391,
+      "win": 0.5714285714285714,
+      "worst": -0.061841147581041866,
+      "best": 0.10018744804641799
+    },
+    {
+      "signal": "CORE_MC_DD10",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 9,
+      "mean": -0.02531498942409258,
+      "median": -0.028684289019390685,
+      "win": 0.2222222222222222,
+      "worst": -0.08509069646231715,
+      "best": 0.02483545182557645
+    },
+    {
+      "signal": "CORE_MC_DD10",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 21,
+      "mean": 0.021661517186226394,
+      "median": 0.007112322383844072,
+      "win": 0.6190476190476191,
+      "worst": -0.08865022162998404,
+      "best": 0.12276136782649005
+    },
+    {
+      "signal": "CORE_MC_NOTDEEP",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 2,
+      "mean": -0.009804629011317456,
+      "median": -0.009804629011317456,
+      "win": 0.5,
+      "worst": -0.08509069646231715,
+      "best": 0.06548143843968224
+    },
+    {
+      "signal": "CORE_MC_NOTDEEP",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 14,
+      "mean": 0.005508645607148858,
+      "median": 0.005547494426482391,
+      "win": 0.5714285714285714,
+      "worst": -0.061841147581041866,
+      "best": 0.10018744804641799
+    },
+    {
+      "signal": "CORE_MC_MCFLOOR20_NOTDEEP",
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "hold": 2,
+      "n": 0,
+      "mean": NaN,
+      "median": NaN,
+      "win": NaN,
+      "worst": NaN,
+      "best": NaN
+    },
+    {
+      "signal": "CORE_MC_MCFLOOR20_NOTDEEP",
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "hold": 2,
+      "n": 7,
+      "mean": -0.011211665775306301,
+      "median": -0.0013069477289058273,
+      "win": 0.42857142857142855,
+      "worst": -0.05618833542026225,
+      "best": 0.015980636098775536
+    }
+  ],
+  "note": "Guard variants use only pre-existing V38/V4 panic-depth concepts. Cross-era result is diagnostic; no parameter is adopted solely because it fixes 2011-2015."
+}

@@ -1,0 +1,169 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "daily": [
+    {
+      "period": "PRE_2011_2015",
+      "product": "PSQ",
+      "n": 1258,
+      "corr_actual_synth": 0.9979875635976706,
+      "mean_actual": -0.0006882677418155468,
+      "mean_synth": -0.0006570002675127112,
+      "tracking_diff_mean_bp": -0.31267474302835646,
+      "tracking_diff_median_abs_bp": 4.009671850733754,
+      "tracking_diff_p99_abs_bp": 19.338359757299358
+    },
+    {
+      "period": "PRE_2011_2015",
+      "product": "QID",
+      "n": 1258,
+      "corr_actual_synth": 0.9981749566697344,
+      "mean_actual": -0.001337917729271859,
+      "mean_synth": -0.0013140005350254225,
+      "tracking_diff_mean_bp": -0.23917194246436416,
+      "tracking_diff_median_abs_bp": 5.265939362217309,
+      "tracking_diff_p99_abs_bp": 34.87845828160499
+    },
+    {
+      "period": "PRE_2011_2015",
+      "product": "SQQQ",
+      "n": 1258,
+      "corr_actual_synth": 0.9960975051010045,
+      "mean_actual": -0.001953809782205068,
+      "mean_synth": -0.0019710008025381337,
+      "tracking_diff_mean_bp": 0.17191020333065782,
+      "tracking_diff_median_abs_bp": 8.78696648509425,
+      "tracking_diff_p99_abs_bp": 68.79321759731782
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "product": "PSQ",
+      "n": 2568,
+      "corr_actual_synth": 0.9974003062362161,
+      "mean_actual": -0.0006567757684436939,
+      "mean_synth": -0.0007797574834882601,
+      "tracking_diff_mean_bp": 1.22981715044566,
+      "tracking_diff_median_abs_bp": 4.300348603978876,
+      "tracking_diff_p99_abs_bp": 28.654094119707853
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "product": "QID",
+      "n": 2568,
+      "corr_actual_synth": 0.9977297530526216,
+      "mean_actual": -0.0013847222259978293,
+      "mean_synth": -0.0015595149669765202,
+      "tracking_diff_mean_bp": 1.7479274097869069,
+      "tracking_diff_median_abs_bp": 6.260715126628624,
+      "tracking_diff_p99_abs_bp": 51.9623333323935
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "product": "SQQQ",
+      "n": 2568,
+      "corr_actual_synth": 0.9965554130864839,
+      "mean_actual": -0.0021217924516181825,
+      "mean_synth": -0.00233927245046478,
+      "tracking_diff_mean_bp": 2.174799988465974,
+      "tracking_diff_median_abs_bp": 8.963575489088772,
+      "tracking_diff_p99_abs_bp": 109.46855745311639
+    }
+  ],
+  "qid_events": [
+    {
+      "period": "PRE_2011_2015",
+      "hold": 1,
+      "product": "QID",
+      "n": 9,
+      "actual_mean": -0.018163172581833618,
+      "synth_mean": -0.017457576728546705,
+      "actual_win": 0.3333333333333333,
+      "synth_win": 0.3333333333333333,
+      "event_corr": 0.9971543554117263,
+      "mean_actual_minus_synth": -0.0007055958532869136
+    },
+    {
+      "period": "PRE_2011_2015",
+      "hold": 2,
+      "product": "QID",
+      "n": 9,
+      "actual_mean": -0.033463437672052954,
+      "synth_mean": -0.03151382885299056,
+      "actual_win": 0.2222222222222222,
+      "synth_win": 0.3333333333333333,
+      "event_corr": 0.9915306099168573,
+      "mean_actual_minus_synth": -0.0019496088190623898
+    },
+    {
+      "period": "PRE_2011_2015",
+      "hold": 3,
+      "product": "QID",
+      "n": 9,
+      "actual_mean": -0.04564834058477111,
+      "synth_mean": -0.043602939390680225,
+      "actual_win": 0.3333333333333333,
+      "synth_win": 0.3333333333333333,
+      "event_corr": 0.993921059325072,
+      "mean_actual_minus_synth": -0.0020454011940908875
+    },
+    {
+      "period": "PRE_2011_2015",
+      "hold": 4,
+      "product": "QID",
+      "n": 9,
+      "actual_mean": -0.05768064423725033,
+      "synth_mean": -0.055220639246982645,
+      "actual_win": 0.1111111111111111,
+      "synth_win": 0.1111111111111111,
+      "event_corr": 0.9936521644744283,
+      "mean_actual_minus_synth": -0.002460004990267686
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "hold": 1,
+      "product": "QID",
+      "n": 25,
+      "actual_mean": 0.015790884064055155,
+      "synth_mean": 0.01555464580609188,
+      "actual_win": 0.6,
+      "synth_win": 0.56,
+      "event_corr": 0.9993107322728734,
+      "mean_actual_minus_synth": 0.00023623825796327492
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "hold": 2,
+      "product": "QID",
+      "n": 25,
+      "actual_mean": 0.0301294835844203,
+      "synth_mean": 0.030098774927543367,
+      "actual_win": 0.68,
+      "synth_win": 0.68,
+      "event_corr": 0.9935911354314572,
+      "mean_actual_minus_synth": 3.070865687693214e-05
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "hold": 3,
+      "product": "QID",
+      "n": 25,
+      "actual_mean": 0.036663062155798266,
+      "synth_mean": 0.038145995061396945,
+      "actual_win": 0.6,
+      "synth_win": 0.64,
+      "event_corr": 0.9910317792324214,
+      "mean_actual_minus_synth": -0.0014829329055986796
+    },
+    {
+      "period": "OVERLAP_2016_2026",
+      "hold": 4,
+      "product": "QID",
+      "n": 25,
+      "actual_mean": 0.033475416256886055,
+      "synth_mean": 0.035046597484922504,
+      "actual_win": 0.6,
+      "synth_win": 0.6,
+      "event_corr": 0.9806276738805153,
+      "mean_actual_minus_synth": -0.0015711812280364468
+    }
+  ]
+}

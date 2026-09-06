@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "baseline_variant": "PEAK30_PART25_R3",
+  "distribution_trap_definition": "price_score>=70 AND internal_score<50 AND exact 20d flow_pct_aum<=0",
+  "strict_pit_trade_screen": {
+    "trades": 283,
+    "pit_sector_mapped": 23,
+    "pit_daily_state_matched": 23,
+    "pit_distribution_trap_entries": 0
+  },
+  "current_classification_validation": {
+    "latest_snapshot": "2026-08-31",
+    "n_common": 499,
+    "n_classified": 418,
+    "classification_coverage_common": 0.8376753507014028,
+    "accuracy": 0.9282296650717703,
+    "by_predicted": [
+      {
+        "pred_sector_etf": "XLB",
+        "n": 27,
+        "accuracy": 0.8888888888888888
+      },
+      {
+        "pred_sector_etf": "XLC",
+        "n": 12,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLE",
+        "n": 14,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLF",
+        "n": 66,
+        "accuracy": 0.9848484848484849
+      },
+      {
+        "pred_sector_etf": "XLI",
+        "n": 44,
+        "accuracy": 0.9090909090909091
+      },
+      {
+        "pred_sector_etf": "XLK",
+        "n": 81,
+        "accuracy": 0.8024691358024691
+      },
+      {
+        "pred_sector_etf": "XLP",
+        "n": 26,
+        "accuracy": 0.9615384615384616
+      },
+      {
+        "pred_sector_etf": "XLRE",
+        "n": 29,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLU",
+        "n": 32,
+        "accuracy": 0.96875
+      },
+      {
+        "pred_sector_etf": "XLV",
+        "n": 52,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLY",
+        "n": 35,
+        "accuracy": 0.8857142857142857
+      }
+    ],
+    "valid_for_sensitivity": true,
+    "guard": "n>=250 and >=90% accuracy against latest PIT S&P500 sector snapshot"
+  },
+  "lookahead_sensitivity": {
+    "total_trades_in_panel_window": 283,
+    "current_sector_classified": 246,
+    "daily_state_matched": 246,
+    "periods": {
+      "ALL_2022_PLUS": {
+        "trap": {
+          "n": 2,
+          "mean_return": 0.07652272656521025,
+          "median_return": 0.07652272656521025,
+          "win_rate": 1.0,
+          "loss8_rate": 0.0
+        },
+        "nontrap": {
+          "n": 244,
+          "mean_return": 0.04714767319804592,
+          "median_return": -0.05513791283447765,
+          "win_rate": 0.38524590163934425,
+          "loss8_rate": 0.38114754098360654
+        },
+        "mean_return_delta_trap_minus_nontrap": 0.029375053367164332,
+        "block20_bootstrap_ci95": [
+          -0.033766227848478936,
+          0.08463646831270964
+        ]
+      },
+      "DISCOVERY_2022_2023": {
+        "trap": {
+          "n": 1,
+          "mean_return": 0.0954655685734044,
+          "median_return": 0.0954655685734044,
+          "win_rate": 1.0,
+          "loss8_rate": 0.0
+        },
+        "nontrap": {
+          "n": 82,
+          "mean_return": 0.04978308507393933,
+          "median_return": -0.0270767870873374,
+          "win_rate": 0.4268292682926829,
+          "loss8_rate": 0.32926829268292684
+        },
+        "mean_return_delta_trap_minus_nontrap": 0.04568248349946506,
+        "block20_bootstrap_ci95": [
+          -0.016775344415093867,
+          0.11099791395014838
+        ]
+      },
+      "CONFIRMATION_2024_PLUS": {
+        "trap": {
+          "n": 1,
+          "mean_return": 0.0575798845570161,
+          "median_return": 0.0575798845570161,
+          "win_rate": 1.0,
+          "loss8_rate": 0.0
+        },
+        "nontrap": {
+          "n": 162,
+          "mean_return": 0.045813699285556675,
+          "median_return": -0.0652101445931244,
+          "win_rate": 0.36419753086419754,
+          "loss8_rate": 0.4074074074074074
+        },
+        "mean_return_delta_trap_minus_nontrap": 0.011766185271459423,
+        "block20_bootstrap_ci95": [
+          -0.05933874269328121,
+          0.07082512867127123
+        ]
+      }
+    }
+  },
+  "decision": "INCONCLUSIVE_TOO_FEW_TRAP_ENTRIES",
+  "interpretation_guard": {
+    "positive_screen": "cannot be adopted; requires historical full-universe PIT sector classification and then portfolio A/B",
+    "negative_screen": "sufficient to reject/deprioritize the veto hypothesis because the sensitivity already benefits from current-classification look-ahead",
+    "production_change": false
+  }
+}

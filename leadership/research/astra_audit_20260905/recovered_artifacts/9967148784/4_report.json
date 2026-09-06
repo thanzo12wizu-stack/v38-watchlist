@@ -1,0 +1,295 @@
+{
+  "status": "PROBE_CAPTURE_BOTTLENECKS",
+  "probe_diag": {
+    "capacity": 20,
+    "gate": "NOT_RED",
+    "entries": 6038,
+    "promoted_core": 136,
+    "promotion_rate": 0.022524014574362372,
+    "expired": 3276,
+    "stopped": 1446,
+    "red_exits": 1160
+  },
+  "summary": [
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.3,
+      "bottleneck": "DDV20_LATE",
+      "n": 2,
+      "total": 22,
+      "share": 0.09090909090909091
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.3,
+      "bottleneck": "FILLED_EARLY",
+      "n": 5,
+      "total": 22,
+      "share": 0.22727272727272727
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.3,
+      "bottleneck": "RADAR_LATE",
+      "n": 7,
+      "total": 22,
+      "share": 0.3181818181818182
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.3,
+      "bottleneck": "RANK_GT20",
+      "n": 5,
+      "total": 22,
+      "share": 0.22727272727272727
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.3,
+      "bottleneck": "SEAT_OCCUPANCY_OR_NEXT_OPEN_GAP",
+      "n": 3,
+      "total": 22,
+      "share": 0.13636363636363635
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.5,
+      "bottleneck": "DDV20_LATE",
+      "n": 2,
+      "total": 22,
+      "share": 0.09090909090909091
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.5,
+      "bottleneck": "FILLED_EARLY",
+      "n": 8,
+      "total": 22,
+      "share": 0.36363636363636365
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.5,
+      "bottleneck": "RADAR_LATE",
+      "n": 4,
+      "total": 22,
+      "share": 0.18181818181818182
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.5,
+      "bottleneck": "RANK_GT20",
+      "n": 4,
+      "total": 22,
+      "share": 0.18181818181818182
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.5,
+      "bottleneck": "RED_GATE",
+      "n": 1,
+      "total": 22,
+      "share": 0.045454545454545456
+    },
+    {
+      "event_set": "ANNUAL_400PLUS",
+      "threshold": 0.5,
+      "bottleneck": "SEAT_OCCUPANCY_OR_NEXT_OPEN_GAP",
+      "n": 3,
+      "total": 22,
+      "share": 0.13636363636363635
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.3,
+      "bottleneck": "DDV20_LATE",
+      "n": 4,
+      "total": 50,
+      "share": 0.08
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.3,
+      "bottleneck": "FILLED_EARLY",
+      "n": 11,
+      "total": 50,
+      "share": 0.22
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.3,
+      "bottleneck": "RADAR_LATE",
+      "n": 9,
+      "total": 50,
+      "share": 0.18
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.3,
+      "bottleneck": "RANK_GT20",
+      "n": 13,
+      "total": 50,
+      "share": 0.26
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.3,
+      "bottleneck": "RED_GATE",
+      "n": 2,
+      "total": 50,
+      "share": 0.04
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.3,
+      "bottleneck": "SEAT_OCCUPANCY_OR_NEXT_OPEN_GAP",
+      "n": 11,
+      "total": 50,
+      "share": 0.22
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.5,
+      "bottleneck": "DDV20_LATE",
+      "n": 3,
+      "total": 50,
+      "share": 0.06
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.5,
+      "bottleneck": "FILLED_EARLY",
+      "n": 22,
+      "total": 50,
+      "share": 0.44
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.5,
+      "bottleneck": "RADAR_LATE",
+      "n": 5,
+      "total": 50,
+      "share": 0.1
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.5,
+      "bottleneck": "RANK_GT20",
+      "n": 8,
+      "total": 50,
+      "share": 0.16
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.5,
+      "bottleneck": "RED_GATE",
+      "n": 2,
+      "total": 50,
+      "share": 0.04
+    },
+    {
+      "event_set": "ANNUAL_TOP5",
+      "threshold": 0.5,
+      "bottleneck": "SEAT_OCCUPANCY_OR_NEXT_OPEN_GAP",
+      "n": 10,
+      "total": 50,
+      "share": 0.2
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.3,
+      "bottleneck": "DDV20_LATE",
+      "n": 87,
+      "total": 705,
+      "share": 0.12340425531914893
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.3,
+      "bottleneck": "FILLED_EARLY",
+      "n": 160,
+      "total": 705,
+      "share": 0.22695035460992907
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.3,
+      "bottleneck": "RADAR_LATE",
+      "n": 27,
+      "total": 705,
+      "share": 0.03829787234042553
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.3,
+      "bottleneck": "RANK_GT20",
+      "n": 260,
+      "total": 705,
+      "share": 0.36879432624113473
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.3,
+      "bottleneck": "RED_GATE",
+      "n": 16,
+      "total": 705,
+      "share": 0.02269503546099291
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.3,
+      "bottleneck": "SEAT_OCCUPANCY_OR_NEXT_OPEN_GAP",
+      "n": 155,
+      "total": 705,
+      "share": 0.2198581560283688
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.5,
+      "bottleneck": "DDV20_LATE",
+      "n": 48,
+      "total": 705,
+      "share": 0.06808510638297872
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.5,
+      "bottleneck": "FILLED_EARLY",
+      "n": 318,
+      "total": 705,
+      "share": 0.451063829787234
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.5,
+      "bottleneck": "RADAR_LATE",
+      "n": 7,
+      "total": 705,
+      "share": 0.009929078014184398
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.5,
+      "bottleneck": "RANK_GT20",
+      "n": 141,
+      "total": 705,
+      "share": 0.2
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.5,
+      "bottleneck": "RED_GATE",
+      "n": 18,
+      "total": 705,
+      "share": 0.02553191489361702
+    },
+    {
+      "event_set": "ROLL126_TOP10_GE50",
+      "threshold": 0.5,
+      "bottleneck": "SEAT_OCCUPANCY_OR_NEXT_OPEN_GAP",
+      "n": 173,
+      "total": 705,
+      "share": 0.2453900709219858
+    }
+  ]
+}

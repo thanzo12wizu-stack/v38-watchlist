@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "source": "Wikipedia point-in-time page revisions at-or-before observation date + pitindex pinned S&P500 membership",
+  "pitindex_version": "0.2.1",
+  "window": {
+    "start": "2022-01-31",
+    "end": "2026-08-31",
+    "snapshots": 56
+  },
+  "quality": {
+    "min_roster_jaccard": 0.9881422924901185,
+    "median_roster_jaccard": 0.996031746031746,
+    "min_sector_mapping_rate": 0.9940357852882704,
+    "median_sector_mapping_rate": 0.9980119284294234,
+    "max_missing_sector_in_snapshot": 3
+  },
+  "decision": {
+    "usable_as_pit_sector_source_for_distribution_retest": true,
+    "thresholds": {
+      "min_roster_jaccard": 0.98,
+      "min_sector_mapping_rate": 0.98
+    },
+    "reason": "Clears strict PIT roster and sector coverage guards."
+  },
+  "limitations": [
+    "Wikipedia revisions are public-information snapshots, not official S&P/State Street constituent files.",
+    "Revision is chosen at or before end-of-calendar-day UTC to avoid using future revisions.",
+    "Monthly audit validates the reconstruction route; final backtest must densify PIT sectors across membership and GICS-classification change dates rather than freeze one current roster."
+  ]
+}

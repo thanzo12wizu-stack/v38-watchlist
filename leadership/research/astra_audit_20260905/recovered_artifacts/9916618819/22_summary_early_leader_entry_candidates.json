@@ -1,0 +1,1074 @@
+{
+  "status": "EARLY_LEADER_ENTRY_CANDIDATE_AUDIT",
+  "scope": "research only; Core rule unchanged; compare 9 Core + 3 Early / Selective 3+1 entry candidates",
+  "execution": "daily close signal -> next open; same market mode, -8% initial stop, +24% 25% partial, peak-close -30% trail, Red next-open exit; no rank/theme forced exit",
+  "early_variants": {
+    "EARLY_RS21": "base pool + close>=EMA21 + RS21>=90; rank RS21",
+    "EARLY_ACCEL": "base pool + close>=EMA21 + RS21>=85 + RS63>=60 + RS21 percentile improvement over 20 sessions>=5; rank RS21/RS42/acceleration",
+    "EARLY_PIONEER": "EMA21 trend + RS21>=88 + RS63>=72 + 20-session RS21 acceleration>=5 + within 20% of 63d high + near/recent 20/50d high breakout OR very strong RS21/acceleration; no >8% extended chase",
+    "EARLY_TIGHT_BREAK": "EMA21 trend + RS21>=85 + RS63>=65 + acceleration>=5 + within -1.5% to +4% of prior 20/50d high; no >8% extended chase",
+    "EARLY_PIONEER_THEME": "PIONEER eligibility; ranking adds strict leave-one-out Theme score as 15% bonus"
+  },
+  "labels": {
+    "ANNUAL_TOP5_2016_2025": 50,
+    "ANNUAL_TOP10_2016_2025": 100,
+    "ANNUAL_200_400": 105,
+    "ANNUAL_400PLUS": 22,
+    "ROLL126_TOP10_DEDUP": 707,
+    "ROLL126_TOP10_GE50_DEDUP": 705
+  },
+  "variants": {
+    "CORE12": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 5.107999174695352,
+          "cagr": 0.1854149476732776,
+          "mdd": -0.3014654133805982,
+          "sharpe": 0.7732952049126364,
+          "positive_days": 0.38194703468854907
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.8434910325257521,
+          "cagr": 0.10747044561264629,
+          "mdd": -0.2503422048447035,
+          "sharpe": 0.5394542494040845,
+          "positive_days": 0.4152317880794702
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 2.313278484640542,
+          "cagr": 0.2943614098337184,
+          "mdd": -0.27674790986576436,
+          "sharpe": 1.0340942641091242,
+          "positive_days": 0.33931623931623933
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.5033106619212537,
+          "cagr": 0.10762898057819204,
+          "mdd": -0.19963322790438798,
+          "sharpe": 0.5948597375859568,
+          "positive_days": 0.41592039800995023
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.22734414214230436,
+          "cagr": 0.107855650408619,
+          "mdd": -0.2503422048447035,
+          "sharpe": 0.4883726232811561,
+          "positive_days": 0.4146825396825397
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.2121857890823442,
+          "cagr": 0.1018408535435329,
+          "mdd": -0.1500378849808769,
+          "sharpe": 0.6804622759293764,
+          "positive_days": 0.244
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.8132854005254169,
+          "cagr": 0.47642223315493526,
+          "mdd": -0.27674790986576436,
+          "sharpe": 1.2704222073789533,
+          "positive_days": 0.4110612855007474
+        }
+      },
+      "entries": 780,
+      "early_entries": 0,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 26,
+          "capture_rate": 0.52,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.038461538461538464,
+          "within_50pct_of_captured": 0.07692307692307693,
+          "capture_gain_median": 2.26788947743389,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.038461538461538464
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 52,
+          "capture_rate": 0.52,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.038461538461538464,
+          "within_50pct_of_captured": 0.07692307692307693,
+          "capture_gain_median": 1.7150548324357022,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.019230769230769232
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 44,
+          "capture_rate": 0.41904761904761906,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.047619047619047616,
+          "within_30pct_of_captured": 0.045454545454545456,
+          "within_50pct_of_captured": 0.11363636363636363,
+          "capture_gain_median": 1.7150548324357022,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.045454545454545456
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 16,
+          "capture_rate": 0.7272727272727273,
+          "within_20pct_all": 0.09090909090909091,
+          "within_30pct_all": 0.09090909090909091,
+          "within_50pct_all": 0.13636363636363635,
+          "within_30pct_of_captured": 0.125,
+          "within_50pct_of_captured": 0.1875,
+          "capture_gain_median": 2.392231577902571,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.0625
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 180,
+          "capture_rate": 0.2545968882602546,
+          "within_20pct_all": 0.04667609618104668,
+          "within_30pct_all": 0.05799151343705799,
+          "within_50pct_all": 0.09335219236209336,
+          "within_30pct_of_captured": 0.22777777777777777,
+          "within_50pct_of_captured": 0.36666666666666664,
+          "capture_gain_median": 0.7343283531668818,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.09444444444444444
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 180,
+          "capture_rate": 0.2553191489361702,
+          "within_20pct_all": 0.04680851063829787,
+          "within_30pct_all": 0.05815602836879433,
+          "within_50pct_all": 0.09361702127659574,
+          "within_30pct_of_captured": 0.22777777777777777,
+          "within_50pct_of_captured": 0.36666666666666664,
+          "capture_gain_median": 0.7343283531668818,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.09444444444444444
+        }
+      }
+    },
+    "CORE9_ONLY": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 2.3541591072642394,
+          "cagr": 0.12047486700191445,
+          "mdd": -0.23664060058246572,
+          "sharpe": 0.6377122512058193,
+          "positive_days": 0.3785900783289817
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.4238905158742403,
+          "cagr": 0.06075066555222408,
+          "mdd": -0.23664060058246572,
+          "sharpe": 0.4028227760715803,
+          "positive_days": 0.419205298013245
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 1.3556299236987703,
+          "cagr": 0.2026690548607022,
+          "mdd": -0.22380098420527894,
+          "sharpe": 0.8890925777305908,
+          "positive_days": 0.3264957264957265
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.3313590773810713,
+          "cagr": 0.07440138261291107,
+          "mdd": -0.17630658834060386,
+          "sharpe": 0.5256125579015505,
+          "positive_days": 0.4109452736318408
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.06792289992676426,
+          "cagr": 0.03340355134224504,
+          "mdd": -0.23452139322392251,
+          "sharpe": 0.25701373701953306,
+          "positive_days": 0.43452380952380953
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.08271402477141954,
+          "cagr": 0.04086627262078779,
+          "mdd": -0.1473382535519473,
+          "sharpe": 0.36620576837556484,
+          "positive_days": 0.232
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.2243429151186676,
+          "cagr": 0.35140185985443484,
+          "mdd": -0.22380098420527894,
+          "sharpe": 1.1683924368257688,
+          "positive_days": 0.3976083707025411
+        }
+      },
+      "entries": 595,
+      "early_entries": 0,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 24,
+          "capture_rate": 0.48,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.041666666666666664,
+          "within_50pct_of_captured": 0.08333333333333333,
+          "capture_gain_median": 2.364509890795451,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.041666666666666664
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 45,
+          "capture_rate": 0.45,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.03,
+          "within_30pct_of_captured": 0.044444444444444446,
+          "within_50pct_of_captured": 0.06666666666666667,
+          "capture_gain_median": 1.7115897528343913,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.022222222222222223
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 35,
+          "capture_rate": 0.3333333333333333,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.02857142857142857,
+          "within_30pct_of_captured": 0.05714285714285714,
+          "within_50pct_of_captured": 0.08571428571428572,
+          "capture_gain_median": 1.7185199120370132,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.05714285714285714
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 16,
+          "capture_rate": 0.7272727272727273,
+          "within_20pct_all": 0.09090909090909091,
+          "within_30pct_all": 0.09090909090909091,
+          "within_50pct_all": 0.13636363636363635,
+          "within_30pct_of_captured": 0.125,
+          "within_50pct_of_captured": 0.1875,
+          "capture_gain_median": 2.392231577902571,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.0625
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 159,
+          "capture_rate": 0.2248939179632249,
+          "within_20pct_all": 0.04526166902404526,
+          "within_30pct_all": 0.05374823196605375,
+          "within_50pct_all": 0.08628005657708628,
+          "within_30pct_of_captured": 0.2389937106918239,
+          "within_50pct_of_captured": 0.3836477987421384,
+          "capture_gain_median": 0.7183713856026426,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.09433962264150944
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 159,
+          "capture_rate": 0.225531914893617,
+          "within_20pct_all": 0.04539007092198582,
+          "within_30pct_all": 0.05390070921985816,
+          "within_50pct_all": 0.08652482269503546,
+          "within_30pct_of_captured": 0.2389937106918239,
+          "within_50pct_of_captured": 0.3836477987421384,
+          "capture_gain_median": 0.7183713856026426,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.09433962264150944
+        }
+      }
+    },
+    "EARLY_RS21": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 3.3660106877082105,
+          "cagr": 0.14858893510589222,
+          "mdd": -0.33729562021552506,
+          "sharpe": 0.6198845090329129,
+          "positive_days": 0.3756061171204774
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.46222830748284816,
+          "cagr": 0.06546443689281167,
+          "mdd": -0.33589161004815793,
+          "sharpe": 0.37681369831911826,
+          "positive_days": 0.40794701986754967
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 1.9858611445049075,
+          "cagr": 0.2656764069680675,
+          "mdd": -0.33729562021552506,
+          "sharpe": 0.8690377938608511,
+          "positive_days": 0.33418803418803417
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.16700240669256816,
+          "cagr": 0.03948443685880587,
+          "mdd": -0.33589161004815793,
+          "sharpe": 0.2920017021174033,
+          "positive_days": 0.4019900497512438
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.25206942773951924,
+          "cagr": 0.11895908224542295,
+          "mdd": -0.3012895459409801,
+          "sharpe": 0.5043670355021135,
+          "positive_days": 0.41865079365079366
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.2680420868005007,
+          "cagr": 0.1271439097357896,
+          "mdd": -0.2616416513062816,
+          "sharpe": 0.6990511832705065,
+          "positive_days": 0.248
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.4116334522073726,
+          "cagr": 0.39318771888938997,
+          "mdd": -0.33729562021552506,
+          "sharpe": 1.0147955147813172,
+          "positive_days": 0.3991031390134529
+        }
+      },
+      "entries": 936,
+      "early_entries": 375,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 31,
+          "capture_rate": 0.62,
+          "within_20pct_all": 0.04,
+          "within_30pct_all": 0.04,
+          "within_50pct_all": 0.08,
+          "within_30pct_of_captured": 0.06451612903225806,
+          "within_50pct_of_captured": 0.12903225806451613,
+          "capture_gain_median": 1.9514924068577364,
+          "early_entry_share_of_captures": 0.3225806451612903,
+          "preheld_share_of_captures": 0.03225806451612903
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 55,
+          "capture_rate": 0.55,
+          "within_20pct_all": 0.03,
+          "within_30pct_all": 0.03,
+          "within_50pct_all": 0.06,
+          "within_30pct_of_captured": 0.05454545454545454,
+          "within_50pct_of_captured": 0.10909090909090909,
+          "capture_gain_median": 1.7115897528343913,
+          "early_entry_share_of_captures": 0.2727272727272727,
+          "preheld_share_of_captures": 0.01818181818181818
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 41,
+          "capture_rate": 0.3904761904761905,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.0380952380952381,
+          "within_30pct_of_captured": 0.04878048780487805,
+          "within_50pct_of_captured": 0.0975609756097561,
+          "capture_gain_median": 1.7343749883584678,
+          "early_entry_share_of_captures": 0.21951219512195122,
+          "preheld_share_of_captures": 0.04878048780487805
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 19,
+          "capture_rate": 0.8636363636363636,
+          "within_20pct_all": 0.09090909090909091,
+          "within_30pct_all": 0.09090909090909091,
+          "within_50pct_all": 0.13636363636363635,
+          "within_30pct_of_captured": 0.10526315789473684,
+          "within_50pct_of_captured": 0.15789473684210525,
+          "capture_gain_median": 2.3177516807685454,
+          "early_entry_share_of_captures": 0.3684210526315789,
+          "preheld_share_of_captures": 0.05263157894736842
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 212,
+          "capture_rate": 0.29985855728429983,
+          "within_20pct_all": 0.056577086280056574,
+          "within_30pct_all": 0.06930693069306931,
+          "within_50pct_all": 0.10608203677510608,
+          "within_30pct_of_captured": 0.23113207547169812,
+          "within_50pct_of_captured": 0.35377358490566035,
+          "capture_gain_median": 0.7750765519291914,
+          "early_entry_share_of_captures": 0.32075471698113206,
+          "preheld_share_of_captures": 0.08962264150943396
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 212,
+          "capture_rate": 0.300709219858156,
+          "within_20pct_all": 0.05673758865248227,
+          "within_30pct_all": 0.06950354609929078,
+          "within_50pct_all": 0.10638297872340426,
+          "within_30pct_of_captured": 0.23113207547169812,
+          "within_50pct_of_captured": 0.35377358490566035,
+          "capture_gain_median": 0.7750765519291914,
+          "early_entry_share_of_captures": 0.32075471698113206,
+          "preheld_share_of_captures": 0.08962264150943396
+        }
+      }
+    },
+    "EARLY_ACCEL": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 4.845471341714301,
+          "cagr": 0.18053001111632772,
+          "mdd": -0.3472379056586028,
+          "sharpe": 0.7666568516762505,
+          "positive_days": 0.381201044386423
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.8473395694731198,
+          "cagr": 0.10785595327698738,
+          "mdd": -0.26671059440585143,
+          "sharpe": 0.5468900306911876,
+          "positive_days": 0.41721854304635764
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 2.1642646746215095,
+          "cagr": 0.28159576973643374,
+          "mdd": -0.2330569691729809,
+          "sharpe": 1.011240092373504,
+          "positive_days": 0.335042735042735
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.6104600750197595,
+          "cagr": 0.1269170012773846,
+          "mdd": -0.16635142944607528,
+          "sharpe": 0.7323439027184834,
+          "positive_days": 0.4199004975124378
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.1499432051685048,
+          "cagr": 0.07235404842267679,
+          "mdd": -0.2523374152151825,
+          "sharpe": 0.37800166356914305,
+          "positive_days": 0.4126984126984127
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.2180117980745151,
+          "cagr": 0.10450669702483073,
+          "mdd": -0.1522624703616675,
+          "sharpe": 0.6590577093362655,
+          "positive_days": 0.238
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.6699728080986627,
+          "cagr": 0.44762903258395803,
+          "mdd": -0.2330569691729809,
+          "sharpe": 1.241799540413763,
+          "positive_days": 0.4080717488789238
+        }
+      },
+      "entries": 793,
+      "early_entries": 220,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 29,
+          "capture_rate": 0.58,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.04,
+          "within_50pct_all": 0.06,
+          "within_30pct_of_captured": 0.06896551724137931,
+          "within_50pct_of_captured": 0.10344827586206896,
+          "capture_gain_median": 1.9514924068577364,
+          "early_entry_share_of_captures": 0.27586206896551724,
+          "preheld_share_of_captures": 0.034482758620689655
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 51,
+          "capture_rate": 0.51,
+          "within_20pct_all": 0.03,
+          "within_30pct_all": 0.04,
+          "within_50pct_all": 0.05,
+          "within_30pct_of_captured": 0.0784313725490196,
+          "within_50pct_of_captured": 0.09803921568627451,
+          "capture_gain_median": 1.4641409308248,
+          "early_entry_share_of_captures": 0.27450980392156865,
+          "preheld_share_of_captures": 0.0196078431372549
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 42,
+          "capture_rate": 0.4,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.05714285714285714,
+          "within_30pct_of_captured": 0.047619047619047616,
+          "within_50pct_of_captured": 0.14285714285714285,
+          "capture_gain_median": 1.5437955231034768,
+          "early_entry_share_of_captures": 0.2619047619047619,
+          "preheld_share_of_captures": 0.047619047619047616
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 18,
+          "capture_rate": 0.8181818181818182,
+          "within_20pct_all": 0.09090909090909091,
+          "within_30pct_all": 0.09090909090909091,
+          "within_50pct_all": 0.13636363636363635,
+          "within_30pct_of_captured": 0.1111111111111111,
+          "within_50pct_of_captured": 0.16666666666666666,
+          "capture_gain_median": 1.9120536432495085,
+          "early_entry_share_of_captures": 0.3333333333333333,
+          "preheld_share_of_captures": 0.05555555555555555
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 217,
+          "capture_rate": 0.3069306930693069,
+          "within_20pct_all": 0.05233380480905234,
+          "within_30pct_all": 0.06506364922206506,
+          "within_50pct_all": 0.1188118811881188,
+          "within_30pct_of_captured": 0.2119815668202765,
+          "within_50pct_of_captured": 0.3870967741935484,
+          "capture_gain_median": 0.6565745003185566,
+          "early_entry_share_of_captures": 0.31797235023041476,
+          "preheld_share_of_captures": 0.07834101382488479
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 217,
+          "capture_rate": 0.3078014184397163,
+          "within_20pct_all": 0.0524822695035461,
+          "within_30pct_all": 0.06524822695035461,
+          "within_50pct_all": 0.11914893617021277,
+          "within_30pct_of_captured": 0.2119815668202765,
+          "within_50pct_of_captured": 0.3870967741935484,
+          "capture_gain_median": 0.6565745003185566,
+          "early_entry_share_of_captures": 0.31797235023041476,
+          "preheld_share_of_captures": 0.07834101382488479
+        }
+      }
+    },
+    "EARLY_PIONEER": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 2.95888760462955,
+          "cagr": 0.1380694297123941,
+          "mdd": -0.2653009841910311,
+          "sharpe": 0.657575761611526,
+          "positive_days": 0.3838120104438642
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.34482424354730234,
+          "cagr": 0.05068530432252216,
+          "mdd": -0.2653009841910311,
+          "sharpe": 0.33410442262619267,
+          "positive_days": 0.419205298013245
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 1.9437955358292895,
+          "cagr": 0.2618144374097142,
+          "mdd": -0.21783187818032834,
+          "sharpe": 1.015519757700604,
+          "positive_days": 0.3384615384615385
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.3990948996241537,
+          "cagr": 0.08785405399305746,
+          "mdd": -0.18913941383122101,
+          "sharpe": 0.551237800873388,
+          "positive_days": 0.41194029850746267
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": -0.04399034062253815,
+          "cagr": -0.022242535504094496,
+          "mdd": -0.2653009841910311,
+          "sharpe": 0.06411422686258628,
+          "positive_days": 0.43253968253968256
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.11290303995032036,
+          "cagr": 0.05539369093926072,
+          "mdd": -0.16153555963498134,
+          "sharpe": 0.4268970771093781,
+          "positive_days": 0.238
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.7327042564831716,
+          "cagr": 0.4603481939927725,
+          "mdd": -0.21783187818032834,
+          "sharpe": 1.341851128415767,
+          "positive_days": 0.414050822122571
+        }
+      },
+      "entries": 784,
+      "early_entries": 197,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 26,
+          "capture_rate": 0.52,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.038461538461538464,
+          "within_50pct_of_captured": 0.07692307692307693,
+          "capture_gain_median": 2.192306093488132,
+          "early_entry_share_of_captures": 0.11538461538461539,
+          "preheld_share_of_captures": 0.038461538461538464
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 52,
+          "capture_rate": 0.52,
+          "within_20pct_all": 0.03,
+          "within_30pct_all": 0.03,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.057692307692307696,
+          "within_50pct_of_captured": 0.07692307692307693,
+          "capture_gain_median": 1.6098967234607582,
+          "early_entry_share_of_captures": 0.17307692307692307,
+          "preheld_share_of_captures": 0.038461538461538464
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 39,
+          "capture_rate": 0.37142857142857144,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.0380952380952381,
+          "within_30pct_of_captured": 0.05128205128205128,
+          "within_50pct_of_captured": 0.10256410256410256,
+          "capture_gain_median": 1.7008388423655392,
+          "early_entry_share_of_captures": 0.10256410256410256,
+          "preheld_share_of_captures": 0.05128205128205128
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 17,
+          "capture_rate": 0.7727272727272727,
+          "within_20pct_all": 0.13636363636363635,
+          "within_30pct_all": 0.13636363636363635,
+          "within_50pct_all": 0.18181818181818182,
+          "within_30pct_of_captured": 0.17647058823529413,
+          "within_50pct_of_captured": 0.23529411764705882,
+          "capture_gain_median": 2.3177516807685454,
+          "early_entry_share_of_captures": 0.17647058823529413,
+          "preheld_share_of_captures": 0.11764705882352941
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 185,
+          "capture_rate": 0.26166902404526166,
+          "within_20pct_all": 0.05091937765205092,
+          "within_30pct_all": 0.06082036775106082,
+          "within_50pct_all": 0.10325318246110325,
+          "within_30pct_of_captured": 0.23243243243243245,
+          "within_50pct_of_captured": 0.3945945945945946,
+          "capture_gain_median": 0.643222763487211,
+          "early_entry_share_of_captures": 0.16756756756756758,
+          "preheld_share_of_captures": 0.08648648648648649
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 185,
+          "capture_rate": 0.2624113475177305,
+          "within_20pct_all": 0.05106382978723404,
+          "within_30pct_all": 0.06099290780141844,
+          "within_50pct_all": 0.10354609929078014,
+          "within_30pct_of_captured": 0.23243243243243245,
+          "within_50pct_of_captured": 0.3945945945945946,
+          "capture_gain_median": 0.643222763487211,
+          "early_entry_share_of_captures": 0.16756756756756758,
+          "preheld_share_of_captures": 0.08648648648648649
+        }
+      }
+    },
+    "EARLY_TIGHT_BREAK": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 2.771438547522152,
+          "cagr": 0.13289236745669442,
+          "mdd": -0.268767796418275,
+          "sharpe": 0.6393606005627384,
+          "positive_days": 0.3838120104438642
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.3235156053334449,
+          "cagr": 0.04788844026768002,
+          "mdd": -0.268767796418275,
+          "sharpe": 0.3231443242954199,
+          "positive_days": 0.4165562913907285
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 1.8495610722866997,
+          "cagr": 0.2530031938690087,
+          "mdd": -0.21783187818032834,
+          "sharpe": 0.9845049197912331,
+          "positive_days": 0.3418803418803419
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.31774732808581185,
+          "cagr": 0.071636415522919,
+          "mdd": -0.1891394138312209,
+          "sharpe": 0.4749601382607054,
+          "positive_days": 0.408955223880597
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.004076894945958864,
+          "cagr": 0.0020363740633164706,
+          "mdd": -0.26556077537505673,
+          "sharpe": 0.14977188703857508,
+          "positive_days": 0.4305555555555556
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.11200688470680076,
+          "cagr": 0.05496528280689339,
+          "mdd": -0.15139438016794882,
+          "sharpe": 0.4248681840899531,
+          "positive_days": 0.242
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.647358842763484,
+          "cagr": 0.44299827821921367,
+          "mdd": -0.21783187818032834,
+          "sharpe": 1.2971249955844195,
+          "positive_days": 0.4170403587443946
+        }
+      },
+      "entries": 787,
+      "early_entries": 199,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 25,
+          "capture_rate": 0.5,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.04,
+          "within_50pct_of_captured": 0.08,
+          "capture_gain_median": 2.247619144500248,
+          "early_entry_share_of_captures": 0.08,
+          "preheld_share_of_captures": 0.04
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 50,
+          "capture_rate": 0.5,
+          "within_20pct_all": 0.03,
+          "within_30pct_all": 0.03,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.06,
+          "within_50pct_of_captured": 0.08,
+          "capture_gain_median": 1.6098967234607582,
+          "early_entry_share_of_captures": 0.14,
+          "preheld_share_of_captures": 0.04
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 39,
+          "capture_rate": 0.37142857142857144,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.047619047619047616,
+          "within_30pct_of_captured": 0.05128205128205128,
+          "within_50pct_of_captured": 0.1282051282051282,
+          "capture_gain_median": 1.7008388423655392,
+          "early_entry_share_of_captures": 0.10256410256410256,
+          "preheld_share_of_captures": 0.05128205128205128
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 17,
+          "capture_rate": 0.7727272727272727,
+          "within_20pct_all": 0.13636363636363635,
+          "within_30pct_all": 0.13636363636363635,
+          "within_50pct_all": 0.18181818181818182,
+          "within_30pct_of_captured": 0.17647058823529413,
+          "within_50pct_of_captured": 0.23529411764705882,
+          "capture_gain_median": 2.3177516807685454,
+          "early_entry_share_of_captures": 0.17647058823529413,
+          "preheld_share_of_captures": 0.11764705882352941
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 182,
+          "capture_rate": 0.25742574257425743,
+          "within_20pct_all": 0.05091937765205092,
+          "within_30pct_all": 0.06082036775106082,
+          "within_50pct_all": 0.10183875530410184,
+          "within_30pct_of_captured": 0.23626373626373626,
+          "within_50pct_of_captured": 0.3956043956043956,
+          "capture_gain_median": 0.6480537454254854,
+          "early_entry_share_of_captures": 0.15384615384615385,
+          "preheld_share_of_captures": 0.08791208791208792
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 182,
+          "capture_rate": 0.2581560283687943,
+          "within_20pct_all": 0.05106382978723404,
+          "within_30pct_all": 0.06099290780141844,
+          "within_50pct_all": 0.10212765957446808,
+          "within_30pct_of_captured": 0.23626373626373626,
+          "within_50pct_of_captured": 0.3956043956043956,
+          "capture_gain_median": 0.6480537454254854,
+          "early_entry_share_of_captures": 0.15384615384615385,
+          "preheld_share_of_captures": 0.08791208791208792
+        }
+      }
+    },
+    "EARLY_PIONEER_THEME": {
+      "metrics": {
+        "full": {
+          "n": 2682,
+          "total_return": 3.204024242567,
+          "cagr": 0.1445144314483915,
+          "mdd": -0.2547393850052183,
+          "sharpe": 0.6792294365040993,
+          "positive_days": 0.3830660201417382
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.5171091412413706,
+          "cagr": 0.07203615007748043,
+          "mdd": -0.23984609240718668,
+          "sharpe": 0.42951606061919057,
+          "positive_days": 0.4152317880794702
+        },
+        "confirmation": {
+          "n": 1171,
+          "total_return": 1.7710756782646948,
+          "cagr": 0.24548830091432428,
+          "mdd": -0.2547393850052183,
+          "sharpe": 0.9461142686233638,
+          "positive_days": 0.3418803418803419
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.2799019870993682,
+          "cagr": 0.063834722011481,
+          "mdd": -0.1810436797976197,
+          "sharpe": 0.43288938386418446,
+          "positive_days": 0.4059701492537313
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.18264678572627058,
+          "cagr": 0.08749564860107406,
+          "mdd": -0.23984609240718668,
+          "sharpe": 0.4426039708769614,
+          "positive_days": 0.43253968253968256
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.11719755516192198,
+          "cagr": 0.05744431868801181,
+          "mdd": -0.15717580862524771,
+          "sharpe": 0.4411503417247506,
+          "positive_days": 0.232
+        },
+        "2024_2026H1": {
+          "n": 670,
+          "total_return": 1.5536686171120841,
+          "cagr": 0.42354564146975826,
+          "mdd": -0.2547393850052183,
+          "sharpe": 1.2297270164088372,
+          "positive_days": 0.42451420029895365
+        }
+      },
+      "entries": 764,
+      "early_entries": 174,
+      "leader_capture": {
+        "ANNUAL_TOP5_2016_2025": {
+          "n": 50,
+          "captured": 24,
+          "capture_rate": 0.48,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.06,
+          "within_30pct_of_captured": 0.041666666666666664,
+          "within_50pct_of_captured": 0.125,
+          "capture_gain_median": 2.364509890795451,
+          "early_entry_share_of_captures": 0.041666666666666664,
+          "preheld_share_of_captures": 0.041666666666666664
+        },
+        "ANNUAL_TOP10_2016_2025": {
+          "n": 100,
+          "captured": 46,
+          "capture_rate": 0.46,
+          "within_20pct_all": 0.02,
+          "within_30pct_all": 0.02,
+          "within_50pct_all": 0.04,
+          "within_30pct_of_captured": 0.043478260869565216,
+          "within_50pct_of_captured": 0.08695652173913043,
+          "capture_gain_median": 1.6833081387978313,
+          "early_entry_share_of_captures": 0.043478260869565216,
+          "preheld_share_of_captures": 0.021739130434782608
+        },
+        "ANNUAL_200_400": {
+          "n": 105,
+          "captured": 37,
+          "capture_rate": 0.3523809523809524,
+          "within_20pct_all": 0.01904761904761905,
+          "within_30pct_all": 0.01904761904761905,
+          "within_50pct_all": 0.047619047619047616,
+          "within_30pct_of_captured": 0.05405405405405406,
+          "within_50pct_of_captured": 0.13513513513513514,
+          "capture_gain_median": 1.7115897528343913,
+          "early_entry_share_of_captures": 0.10810810810810811,
+          "preheld_share_of_captures": 0.05405405405405406
+        },
+        "ANNUAL_400PLUS": {
+          "n": 22,
+          "captured": 16,
+          "capture_rate": 0.7272727272727273,
+          "within_20pct_all": 0.09090909090909091,
+          "within_30pct_all": 0.09090909090909091,
+          "within_50pct_all": 0.13636363636363635,
+          "within_30pct_of_captured": 0.125,
+          "within_50pct_of_captured": 0.1875,
+          "capture_gain_median": 2.392231577902571,
+          "early_entry_share_of_captures": 0.0,
+          "preheld_share_of_captures": 0.0625
+        },
+        "ROLL126_TOP10_DEDUP": {
+          "n": 707,
+          "captured": 173,
+          "capture_rate": 0.2446958981612447,
+          "within_20pct_all": 0.05374823196605375,
+          "within_30pct_all": 0.06364922206506365,
+          "within_50pct_all": 0.10325318246110325,
+          "within_30pct_of_captured": 0.26011560693641617,
+          "within_50pct_of_captured": 0.42196531791907516,
+          "capture_gain_median": 0.6393212212643213,
+          "early_entry_share_of_captures": 0.09826589595375723,
+          "preheld_share_of_captures": 0.09826589595375723
+        },
+        "ROLL126_TOP10_GE50_DEDUP": {
+          "n": 705,
+          "captured": 173,
+          "capture_rate": 0.2453900709219858,
+          "within_20pct_all": 0.05390070921985816,
+          "within_30pct_all": 0.06382978723404255,
+          "within_50pct_all": 0.10354609929078014,
+          "within_30pct_of_captured": 0.26011560693641617,
+          "within_50pct_of_captured": 0.42196531791907516,
+          "capture_gain_median": 0.6393212212643213,
+          "early_entry_share_of_captures": 0.09826589595375723,
+          "preheld_share_of_captures": 0.09826589595375723
+        }
+      }
+    }
+  },
+  "eligibility_components_on_annual_top5": {
+    "BASE_POOL": {
+      "reach_rate": 1.0,
+      "gain_median": 0.0,
+      "delay_median_sessions": 0.0,
+      "within_30pct_all": 0.84
+    },
+    "CLOSE_GT_EMA21": {
+      "reach_rate": 1.0,
+      "gain_median": 0.0,
+      "delay_median_sessions": 1.0,
+      "within_30pct_all": 0.94
+    },
+    "SMA50_GT_SMA200": {
+      "reach_rate": 1.0,
+      "gain_median": 0.11653973704214249,
+      "delay_median_sessions": 16.0,
+      "within_30pct_all": 0.58
+    },
+    "CLOSE_GT_SMA200": {
+      "reach_rate": 1.0,
+      "gain_median": 0.0559131256699279,
+      "delay_median_sessions": 3.0,
+      "within_30pct_all": 0.7
+    },
+    "RS21_GE85": {
+      "reach_rate": 1.0,
+      "gain_median": 0.13302004384270405,
+      "delay_median_sessions": 9.5,
+      "within_30pct_all": 0.76
+    },
+    "RS63_GE85": {
+      "reach_rate": 1.0,
+      "gain_median": 0.22602539516998477,
+      "delay_median_sessions": 24.5,
+      "within_30pct_all": 0.6
+    },
+    "RS189_GE85": {
+      "reach_rate": 1.0,
+      "gain_median": 0.3640003019574871,
+      "delay_median_sessions": 18.5,
+      "within_30pct_all": 0.46
+    },
+    "CURRENT_FULL_ELIG": {
+      "reach_rate": 1.0,
+      "gain_median": 0.5743599651246006,
+      "delay_median_sessions": 45.0,
+      "within_30pct_all": 0.24
+    }
+  },
+  "vs_CORE12_block20_win_probability": {
+    "CORE9_ONLY": 0.0088,
+    "EARLY_RS21": 0.2336,
+    "EARLY_ACCEL": 0.4176,
+    "EARLY_PIONEER": 0.0522,
+    "EARLY_TIGHT_BREAK": 0.03,
+    "EARLY_PIONEER_THEME": 0.0664
+  }
+}

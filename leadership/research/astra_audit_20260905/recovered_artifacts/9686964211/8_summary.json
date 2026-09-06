@@ -1,0 +1,55 @@
+{
+  "status": "SYSTEMATIC_ENTRY_EXIT_AUDIT",
+  "research_only": true,
+  "scope": {
+    "strong_uptrend": "MC65-80; existing leader recognition/shallow candidates; new work is exit/context only",
+    "good_market": "MC50-65; existing shallow candidates; new work is exit/context only",
+    "standard_correction": "MC35-50 exact split; new M10 RSI60 and M21 RSI55 comparison",
+    "recovery": "MC20-35; no duplicate retest; rely on completed RSI30/market-RS189 studies",
+    "panic": "MC<20; no duplicate retest; rely on completed RSI30/TQQQ panic studies"
+  },
+  "exit_methods": {
+    "FIX20": "exit at open 20 sessions after entry",
+    "FIX40": "exit at open 40 sessions after entry",
+    "EMA10": "first close below EMA10 -> next open, max 60",
+    "EMA21": "first close below EMA21 -> next open, max 60",
+    "ATR3": "close below highest-close minus 3 ATR14 -> next open, max 60",
+    "P25_AT20_EMA10": "sell 25% next open after first close >=+20%; remainder EMA10 trail, max 60",
+    "FAST20_EXTEND21": "if +20% within first 15 sessions, extend to EMA21/max40; otherwise fixed20"
+  },
+  "execution": "signal at close, next-open execution for dynamic exits; 5 bps each side",
+  "shallow_rows": 31787,
+  "correction_signals": 7068,
+  "deep_rows": 848,
+  "market_download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3298,
+    "start": "2013-07-18",
+    "end": "2026-08-27",
+    "failed_batches": 0
+  },
+  "qqq_download": {
+    "requested": 1,
+    "downloaded_common_ohlcvo": 1,
+    "rows": 2636,
+    "start": "2016-01-04",
+    "end": "2026-06-29",
+    "failed_batches": 0
+  },
+  "correction_volume_download": {
+    "requested": 2065,
+    "downloaded_common_ohlcvo": 2065,
+    "rows": 3120,
+    "start": "2014-03-10",
+    "end": "2026-08-04",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Current-universe/current-sector survivorship bias remains.",
+    "2022+ is confirmation, not pristine OOS.",
+    "Daily OHLC cannot resolve intraday order beyond next-open rules.",
+    "NOW is a leader-recognition benchmark, not the exact historical production normal-stock ledger.",
+    "This audit intentionally does not repeat previously rejected threshold/divergence/VWAP/VCP/tranche/STOP8 grids."
+  ]
+}

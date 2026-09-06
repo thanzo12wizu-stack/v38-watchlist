@@ -1,0 +1,73 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "event_alignment": {
+    "v4_events": 23,
+    "long_history_events_2016_freeze": 25,
+    "extra_long_history_dates": [
+      "2016-01-11",
+      "2016-02-09"
+    ],
+    "missing_long_history_dates": [],
+    "note": "Sensitivity configs are intersected with official V4 events; primary S3/L5 still aborts if nonzero on any non-V4 date."
+  },
+  "primary_rule": "QID from spare gross only; eligible V4 CORE_MC event; prior 3-event mean and prior 5-event mean both positive ->30%, exactly one positive ->15%, neither ->0%; hold2; Panic/Stage56 kill. Macro rate regime is not required.",
+  "primary_cost5": {
+    "config": "ADAPT_S3_L5_M15",
+    "cost_bp": 5,
+    "hold": 2,
+    "delay": 0,
+    "active_days": 46,
+    "avg_weight": 0.2608695652173914,
+    "cagr": 0.4968630240704084,
+    "mdd": -0.2323359830178694,
+    "delta_cagr": 0.026837228643446398,
+    "delta_mdd": 0.0,
+    "TRAIN_2016_2021_delta_cagr": 0.011936097123939282,
+    "TRAIN_2016_2021_delta_mdd": 0.0,
+    "HOLDOUT_2022_2026_delta_cagr": 0.04695429383441718,
+    "HOLDOUT_2022_2026_delta_mdd": 0.0035907188945059065,
+    "2016_2019_delta_cagr": 0.0066561717507043205,
+    "2016_2019_delta_mdd": 0.0,
+    "2020_2021_delta_cagr": 0.026134592768300546,
+    "2020_2021_delta_mdd": -2.220446049250313e-16,
+    "2022_2023_delta_cagr": 0.0616290203503842,
+    "2022_2023_delta_mdd": 5.551115123125783e-16,
+    "2024_2026_delta_cagr": 0.029442480685446082,
+    "2024_2026_delta_mdd": 0.0035907188945056845
+  },
+  "adaptive_plateau": {
+    "configs": 9,
+    "all_positive_full": true,
+    "all_positive_train_holdout": true,
+    "delta_cagr_min": 0.024009641841863827,
+    "delta_cagr_max": 0.027757575584305805
+  },
+  "event_bootstrap": {
+    "n": 23,
+    "mean": 0.00827525769502754,
+    "median": 0.00424527413472294,
+    "p_mean_positive": 0.99865,
+    "mean_p05": 0.003519446838215408,
+    "cum_p05": 0.0821748838740794,
+    "cum_median": 0.2055864008439625
+  },
+  "current": {
+    "latest_market_date": "2026-09-02",
+    "prior3_mean_after_latest_event": -0.011230326284595533,
+    "prior5_mean_after_latest_event": 0.01815682765180928,
+    "next_eligible_signal_target": 0.15
+  },
+  "true_oos": [
+    {
+      "signal_date": "2026-03-30 00:00:00",
+      "qid2": -0.0365699497739125,
+      "adaptive_only_size": 0.3
+    }
+  ],
+  "notes": [
+    "Macro filter is dropped from the primary rule if adaptive-only survives these stresses; this avoids relying on a post-hoc era separator.",
+    "Execution delay stress means entering one additional session later than the normal next-open convention.",
+    "The Mar-30 true-OOS loss remains included in the monitor state.",
+    "No production change."
+  ]
+}

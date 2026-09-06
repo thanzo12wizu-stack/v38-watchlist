@@ -1,0 +1,151 @@
+{
+  "schema": 3,
+  "research_only": true,
+  "window": {
+    "start": "2022-01-01",
+    "end": "2026-09-02"
+  },
+  "fred": {
+    "quality": "PARTIAL_OR_DATA_REQUIRED",
+    "series": [
+      {
+        "series": "DGS10",
+        "error": "ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=20)",
+        "valid_rows": 0,
+        "first_date": null,
+        "last_date": null,
+        "last_value": null
+      },
+      {
+        "series": "DFII10",
+        "error": "ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=20)",
+        "valid_rows": 0,
+        "first_date": null,
+        "last_date": null,
+        "last_value": null
+      },
+      {
+        "series": "DTWEXBGS",
+        "error": "ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=20)",
+        "valid_rows": 0,
+        "first_date": null,
+        "last_date": null,
+        "last_value": null
+      },
+      {
+        "series": "BAMLC0A0CM",
+        "error": "ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=20)",
+        "valid_rows": 0,
+        "first_date": null,
+        "last_date": null,
+        "last_value": null
+      },
+      {
+        "series": "BAMLH0A0HYM2",
+        "error": "ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=20)",
+        "valid_rows": 0,
+        "first_date": null,
+        "last_date": null,
+        "last_value": null
+      }
+    ]
+  },
+  "market_prices": {
+    "download_error": null,
+    "download": {
+      "requested": 2,
+      "downloaded_common_ohlcv": 2,
+      "rows": 1169,
+      "start": "2022-01-03",
+      "end": "2026-08-28",
+      "failed_batches": 0
+    },
+    "summary": [
+      {
+        "ticker": "^VIX",
+        "valid_rows": 1169,
+        "first_date": "2022-01-03",
+        "last_date": "2026-08-28",
+        "last_value": 14.430000305175781
+      },
+      {
+        "ticker": "DX-Y.NYB",
+        "valid_rows": 0,
+        "first_date": null,
+        "last_date": null,
+        "last_value": null
+      }
+    ],
+    "vix_quality": "MARKET_PRICE_SERIES",
+    "dxy_quality": "DATA_REQUIRED",
+    "note": "FRB DTWEXBGS broad-dollar series is not labeled DXY and is kept separate."
+  },
+  "fear_greed": {
+    "current_endpoint": "https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
+    "history_endpoint": "https://production.dataviz.cnn.io/index/fearandgreed/graphdata/2024-01-01",
+    "current_error": null,
+    "history_error": null,
+    "current_quality": "EXACT_CNN_COMPONENTS",
+    "history_quality": "EXACT_CNN_COMPONENT_HISTORY_2024PLUS",
+    "current_components": 8,
+    "history_components": 8,
+    "history_rows": 5328,
+    "history_first": "2024-01-02",
+    "history_last": "2026-08-28"
+  },
+  "macro_why_contract": {
+    "us10y": {
+      "source": "FRED",
+      "series": "DGS10",
+      "role": "WHY"
+    },
+    "real10y": {
+      "source": "FRED",
+      "series": "DFII10",
+      "role": "WHY"
+    },
+    "broad_usd": {
+      "source": "FRED",
+      "series": "DTWEXBGS",
+      "role": "WHY",
+      "not_dxy": true
+    },
+    "ig_oas": {
+      "source": "FRED",
+      "series": "BAMLC0A0CM",
+      "role": "WHY"
+    },
+    "hy_oas": {
+      "source": "FRED",
+      "series": "BAMLH0A0HYM2",
+      "role": "WHY",
+      "history_limit_note": "FRED/ICE series may expose a limited observation window; current WHY use remains valid when latest observations are available."
+    },
+    "vix": {
+      "source": "market price",
+      "ticker": "^VIX",
+      "role": "WHY/context"
+    },
+    "dxy": {
+      "source": "market price",
+      "ticker": "DX-Y.NYB",
+      "role": "WHY",
+      "quality": "DATA_REQUIRED"
+    },
+    "fear_greed": {
+      "source": "CNN",
+      "role": "WHY",
+      "components": [
+        "fear_and_greed",
+        "market_momentum_sp500",
+        "stock_price_strength",
+        "stock_price_breadth",
+        "put_call_options",
+        "market_volatility_vix",
+        "safe_haven_demand",
+        "junk_bond_demand"
+      ]
+    }
+  },
+  "guardrail": "Macro and Fear/Greed explain consistency and cross-market splits only. They do not alter V38 Market Mode, stock Gate, exit, or TQQQ logic."
+}

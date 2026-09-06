@@ -1,0 +1,46 @@
+{
+  "status": "GROSS100_FINAL_RESET_LIQUIDITY_COMPONENT_RECHECK",
+  "reset_rule": "RS63_TOP3_RISE30_SIGTOP3",
+  "liquidity_floor_definition": "ranking universe remains adopted DDV>=10M; higher floors only block lower-DDV new entries and allow next-ranked liquid candidates; no forced liquidity exit",
+  "liquidity_floors": [
+    10,
+    20,
+    50,
+    100
+  ],
+  "analysis_start": "2016-01-04",
+  "analysis_end": "2026-03-20",
+  "days": 2568,
+  "ordinary": {
+    "10": {
+      "avg_gross": 0.5837582115258573,
+      "max_gross": 1.0,
+      "avg_positions": 7.277258566978193,
+      "fill_allowed_days": 1309
+    },
+    "20": {
+      "avg_gross": 0.583850659538335,
+      "max_gross": 1.0,
+      "avg_positions": 7.297118380062305,
+      "fill_allowed_days": 1309
+    },
+    "50": {
+      "avg_gross": 0.567597519308703,
+      "max_gross": 1.0,
+      "avg_positions": 7.070482866043614,
+      "fill_allowed_days": 1309
+    },
+    "100": {
+      "avg_gross": 0.5009152506488183,
+      "max_gross": 1.0,
+      "avg_positions": 6.165498442367602,
+      "fill_allowed_days": 1309
+    }
+  },
+  "reset_avg_gross": 0.029431853931465062,
+  "reset_max_gross": 0.13511763387488482,
+  "reset_max_positions": 4,
+  "reset_trades_input": 209,
+  "reset_turnover_value": 8.524177526424673,
+  "guardrail": "Normal mechanics unchanged except entry-only DDV sensitivity; final reproducible Reset input unchanged."
+}

@@ -1,0 +1,206 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "asof": "2026-08-28",
+  "market_mode": {
+    "mode": "STOP",
+    "nqsar": "Yellow",
+    "nqsar_asof": "2026-08-28",
+    "breadth50": 54.24042272126817,
+    "breadth_valid": 3785,
+    "breadth_observed": 3825,
+    "new_entry_limit": 0,
+    "selective_existing_positions_not_force_trimmed": true
+  },
+  "formal_rules": {
+    "price_floor": 5.0,
+    "dvol20_floor_usd": 10000000.0,
+    "sma_rule": "SMA50>SMA200 and Close>SMA200",
+    "rs189_min": 85.0,
+    "rs63_min": 85.0,
+    "structural_biotech": "industry in Biotechnology/Pharmaceuticals: Other AND mcap<$10B AND known revenue<$50M; missing revenue fail-open",
+    "attack_rank": "0.70*Stock RS189 + 0.30*strict LOO Peer Theme; no valid Theme => neutral 50",
+    "selective_rank": "Stock RS189 only"
+  },
+  "loo": {
+    "status": "LIVE_CURRENT_TAXONOMY",
+    "taxonomy": "CURRENT_S2T_NOT_PIT",
+    "asof": "2026-08-28",
+    "themes": 281,
+    "mapped_stocks": 5197,
+    "scored_stocks": 3596,
+    "source_diagnostics": [
+      {
+        "path": "root.s2i",
+        "mapped": 5698,
+        "unique": 198
+      },
+      {
+        "path": "root.s2t",
+        "mapped": 5197,
+        "unique": 380
+      },
+      {
+        "chosen": "root.s2t",
+        "mapped": 5197,
+        "unique": 380
+      }
+    ],
+    "formula": "candidate-excluded Theme63 percentile + candidate-excluded 20d rank-acceleration percentile + candidate-excluded Breadth21, equal-weighted / 3; max valid membership"
+  },
+  "coverage": {
+    "source_universe": 3858,
+    "downloaded": 3828,
+    "failed": 30,
+    "formal_eligible": 128,
+    "structural_bio_excluded": 115,
+    "holdings_rows": 324,
+    "holdings_provider_diagnostics": [
+      {
+        "ticker": "XLC",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 25,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLY",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 48,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLP",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 36,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLE",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 23,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLF",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 78,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLV",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 62,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLI",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 84,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLB",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 27,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLRE",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 32,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLK",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 74,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XLU",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 32,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XBI",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 148,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "XME",
+        "source": "official State Street daily holdings",
+        "reported_asof": null,
+        "rows": 40,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "SOXX",
+        "source": "official iShares latest-holdings.csv",
+        "reported_asof": "Aug 28, 2026",
+        "rows": 30,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      },
+      {
+        "ticker": "IGV",
+        "source": "official iShares latest-holdings.csv",
+        "reported_asof": "Aug 28, 2026",
+        "rows": 106,
+        "quality": "EXACT_CURRENT_MEMBERSHIP"
+      }
+    ]
+  },
+  "industry_summary": [
+    {
+      "etf": "XBI",
+      "rotation_state": "CURRENT_STRENGTH",
+      "members": 148,
+      "formal_eligible": 17,
+      "formal_candidates_when_capacity": 0,
+      "top_candidates": []
+    },
+    {
+      "etf": "XME",
+      "rotation_state": "EARLY_ROTATION_WATCH",
+      "members": 40,
+      "formal_eligible": 0,
+      "formal_candidates_when_capacity": 0,
+      "top_candidates": []
+    },
+    {
+      "etf": "SOXX",
+      "rotation_state": "INTERNAL_WEAK_FLOW_OUT",
+      "members": 30,
+      "formal_eligible": 0,
+      "formal_candidates_when_capacity": 0,
+      "top_candidates": []
+    },
+    {
+      "etf": "IGV",
+      "rotation_state": "INTERNAL_LEAD_WATCH",
+      "members": 106,
+      "formal_eligible": 4,
+      "formal_candidates_when_capacity": 0,
+      "top_candidates": []
+    }
+  ],
+  "guardrails": [
+    "Rotation contributes zero points to V38 ranking and is not a Gate.",
+    "Strict LOO is current s2t taxonomy only; historical PIT taxonomy is not claimed.",
+    "FORMAL_V38_CANDIDATE_WHEN_CAPACITY is not BUY; actual entry still requires formal market mode, free slot/capacity, and next-open execution.",
+    "No Rotation state forces an exit from an existing V38 position."
+  ]
+}

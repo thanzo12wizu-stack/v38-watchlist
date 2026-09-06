@@ -1,0 +1,24 @@
+{
+  "status": "SHALLOW_DEFINED_RISK_AUDIT",
+  "research_only": true,
+  "stop": "touch-day low - 0.25 ATR14, fixed for 20 sessions; gap below planned stop invalidates entry; intraday stop fill at stop, gap fill at open",
+  "methods": [
+    "M5_RSI65_DD050",
+    "M10_RSI65_DD075"
+  ],
+  "input_rows": 3713,
+  "valid_rows": 3641,
+  "download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3298,
+    "start": "2013-07-18",
+    "end": "2026-08-27",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Daily OHLC cannot model intraday ordering beyond open/low.",
+    "Current-universe/current-sector survivorship bias remains.",
+    "2022+ is confirmation, not pristine OOS."
+  ]
+}

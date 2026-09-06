@@ -1,0 +1,35 @@
+{
+  "status": "ETF_BREADTH_NORMAL_MODES_V5",
+  "scope": "normal stock only",
+  "existing_dashboard_field": "above50 from the existing 57ETF Market Conditions daily frame",
+  "frozen_tests": {
+    "attack_thresholds_pct": [
+      50,
+      60,
+      65,
+      70,
+      75,
+      80
+    ],
+    "restart_thresholds_pct": [
+      50,
+      60,
+      65,
+      70
+    ],
+    "cross_checks": [
+      "ETF65+stock50",
+      "ETF65+stock60",
+      "ETF70+stock50",
+      "ETF65+MC30",
+      "ETF65+MC35"
+    ]
+  },
+  "purpose": "Check whether the normal-stock breadth effect survives on the existing 57ETF breadth measure and is not only a current-universe stock-breadth artifact.",
+  "limitations": [
+    "Normal-stock sleeve remains the comparison reconstruction, not the missing exact production ledger.",
+    "Stock outcome universe still has current-universe survivorship bias, but the 57ETF breadth state itself avoids the 3596-stock historical membership problem.",
+    "2022+ is robustness confirmation, not pristine OOS.",
+    "No RSI30, shallow-pullback, TQQQ, main-branch, or dashboard rules are changed."
+  ]
+}

@@ -1,0 +1,729 @@
+{
+  "status": "ROTATION_SECTOR_ALLOCATION_RESEARCH",
+  "research_only": true,
+  "question": "Do validated Rotation deterioration warnings improve an 11-sector ETF allocation if warned sector weight is moved to SPY rather than cash?",
+  "execution": "Prior session close signal; target applies from next open to following open. No same-close execution.",
+  "baseline": "Constant 1/11 target weight in each of 11 SPDR sector ETFs; no SPY allocation.",
+  "fallback": "Each warned sector's 1/11 target weight is moved to SPY; other sector target weights are unchanged.",
+  "spy_benchmark": {
+    "metrics": {
+      "2022_plus": {
+        "n": 1054,
+        "total_return": 0.7980269476560315,
+        "cagr": 0.15073909373101957,
+        "mdd": -0.21487683803921176,
+        "sharpe": 0.8935787598405349
+      },
+      "discovery_2022_2023": {
+        "n": 429,
+        "total_return": 0.12190046161340251,
+        "cagr": 0.07007042390652596,
+        "mdd": -0.21487683803921176,
+        "sharpe": 0.45244111087690486
+      },
+      "confirmation_2024_plus": {
+        "n": 625,
+        "total_return": 0.6173592511776462,
+        "cagr": 0.21429917712433255,
+        "mdd": -0.19766227672216474,
+        "sharpe": 1.2723304164880358
+      },
+      "recent_2025_plus": {
+        "n": 373,
+        "total_return": 0.2792561398563602,
+        "cagr": 0.1815581154736936,
+        "mdd": -0.19766227672216474,
+        "sharpe": 0.9978753477033777
+      }
+    },
+    "annual_returns": {
+      "2022": -0.11719680033623225,
+      "2023": 0.2585061413020797,
+      "2024": 0.2654121578073074,
+      "2025": 0.17954029845221808,
+      "2026": 0.08679967244980591
+    }
+  },
+  "variants": {
+    "SECTOR_EW_BASE": {
+      "0bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5411213237498222,
+            "cagr": 0.10916238794331456,
+            "mdd": -0.2071746753940924,
+            "sharpe": 0.7560365238293982
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.06123530324776372,
+            "cagr": 0.03569797677500186,
+            "mdd": -0.2071746753940924,
+            "sharpe": 0.28537899445022563
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4609129106473364,
+            "cagr": 0.16542116599329115,
+            "mdd": -0.16158113113347128,
+            "sharpe": 1.2298159430013886
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.2419693516812611,
+            "cagr": 0.1581172510217541,
+            "mdd": -0.1560581775620361,
+            "sharpe": 1.0606127141345685
+          }
+        },
+        "annual_returns": {
+          "2022": -0.09790652451801696,
+          "2023": 0.16758807916246443,
+          "2024": 0.17308278479664319,
+          "2025": 0.13772835809197126,
+          "2026": 0.09560986549046846
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 0,
+          "rebalance_days": 0,
+          "gross_traded_notional_fraction_sum": 0.0,
+          "annualized_gross_traded_notional_fraction": 0.0,
+          "warning_asset_days": 0,
+          "mean_warned_sectors_per_day": 0.0,
+          "days_with_any_warning": 0
+        }
+      },
+      "5bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5411213237498222,
+            "cagr": 0.10916238794331456,
+            "mdd": -0.2071746753940924,
+            "sharpe": 0.7560365238293982
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.06123530324776372,
+            "cagr": 0.03569797677500186,
+            "mdd": -0.2071746753940924,
+            "sharpe": 0.28537899445022563
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4609129106473364,
+            "cagr": 0.16542116599329115,
+            "mdd": -0.16158113113347128,
+            "sharpe": 1.2298159430013886
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.2419693516812611,
+            "cagr": 0.1581172510217541,
+            "mdd": -0.1560581775620361,
+            "sharpe": 1.0606127141345685
+          }
+        },
+        "annual_returns": {
+          "2022": -0.09790652451801696,
+          "2023": 0.16758807916246443,
+          "2024": 0.17308278479664319,
+          "2025": 0.13772835809197126,
+          "2026": 0.09560986549046846
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 5,
+          "rebalance_days": 0,
+          "gross_traded_notional_fraction_sum": 0.0,
+          "annualized_gross_traded_notional_fraction": 0.0,
+          "warning_asset_days": 0,
+          "mean_warned_sectors_per_day": 0.0,
+          "days_with_any_warning": 0
+        }
+      },
+      "10bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5411213237498222,
+            "cagr": 0.10916238794331456,
+            "mdd": -0.2071746753940924,
+            "sharpe": 0.7560365238293982
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.06123530324776372,
+            "cagr": 0.03569797677500186,
+            "mdd": -0.2071746753940924,
+            "sharpe": 0.28537899445022563
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4609129106473364,
+            "cagr": 0.16542116599329115,
+            "mdd": -0.16158113113347128,
+            "sharpe": 1.2298159430013886
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.2419693516812611,
+            "cagr": 0.1581172510217541,
+            "mdd": -0.1560581775620361,
+            "sharpe": 1.0606127141345685
+          }
+        },
+        "annual_returns": {
+          "2022": -0.09790652451801696,
+          "2023": 0.16758807916246443,
+          "2024": 0.17308278479664319,
+          "2025": 0.13772835809197126,
+          "2026": 0.09560986549046846
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 10,
+          "rebalance_days": 0,
+          "gross_traded_notional_fraction_sum": 0.0,
+          "annualized_gross_traded_notional_fraction": 0.0,
+          "warning_asset_days": 0,
+          "mean_warned_sectors_per_day": 0.0,
+          "days_with_any_warning": 0
+        }
+      }
+    },
+    "EXCLUDE_W20_TO_SPY": {
+      "0bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5531443037387573,
+            "cagr": 0.11122905700359875,
+            "mdd": -0.20326719743872645,
+            "sharpe": 0.758726815690489
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.05915043484188631,
+            "cagr": 0.034496687180040286,
+            "mdd": -0.20326719743872645,
+            "sharpe": 0.27761504719912794
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.474123321330284,
+            "cagr": 0.1696656440088622,
+            "mdd": -0.16580811150432984,
+            "sharpe": 1.236330914845754
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.2374341693036115,
+            "cagr": 0.15525076299352802,
+            "mdd": -0.15725708036610453,
+            "sharpe": 1.0209956253265513
+          }
+        },
+        "annual_returns": {
+          "2022": -0.09699573768527325,
+          "2023": 0.16411893614893192,
+          "2024": 0.18852441434625034,
+          "2025": 0.12734987878822168,
+          "2026": 0.10139624652381385
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 0,
+          "rebalance_days": 416,
+          "gross_traded_notional_fraction_sum": 85.09090909090935,
+          "annualized_gross_traded_notional_fraction": 20.26040061633288,
+          "warning_asset_days": 845,
+          "mean_warned_sectors_per_day": 0.8032319391634981,
+          "days_with_any_warning": 612
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.636,
+          "2024_plus": 0.7162,
+          "2025_plus": 0.326
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.0918,
+          "2024_plus": 0.2018,
+          "2025_plus": 0.2754
+        }
+      },
+      "5bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.4884475031292008,
+            "cagr": 0.09996085894032336,
+            "mdd": -0.20608714961303876,
+            "sharpe": 0.6929814136150522
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.042337948547410686,
+            "cagr": 0.02477375982592389,
+            "mdd": -0.20608714961303876,
+            "sharpe": 0.22547278929399933
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4356352495725653,
+            "cagr": 0.15723526881923977,
+            "mdd": -0.16808019075645497,
+            "sharpe": 1.1569661612045854
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.21812383085926612,
+            "cagr": 0.14300739383799987,
+            "mdd": -0.15809944032522882,
+            "sharpe": 0.9514876050003767
+          }
+        },
+        "annual_returns": {
+          "2022": -0.1018264292523886,
+          "2023": 0.15180188000026806,
+          "2024": 0.1758422684394101,
+          "2025": 0.11501625273078164,
+          "2026": 0.09620165235904432
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 5,
+          "rebalance_days": 416,
+          "gross_traded_notional_fraction_sum": 85.09090909090935,
+          "annualized_gross_traded_notional_fraction": 20.26040061633288,
+          "warning_asset_days": 845,
+          "mean_warned_sectors_per_day": 0.8032319391634981,
+          "days_with_any_warning": 612
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.033,
+          "2024_plus": 0.1204,
+          "2025_plus": 0.038
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.044,
+          "2024_plus": 0.131,
+          "2025_plus": 0.2284
+        }
+      },
+      "10bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.4264389032285336,
+            "cagr": 0.0888056862334774,
+            "mdd": -0.20889746747482574,
+            "sharpe": 0.6271894358360017
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.025790504614983112,
+            "cagr": 0.01514114564621849,
+            "mdd": -0.20889746747482574,
+            "sharpe": 0.17331900523690733
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.39814794157521605,
+            "cagr": 0.14493563027240342,
+            "mdd": -0.1703463010288282,
+            "sharpe": 1.077497958231843
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.19911264232873416,
+            "cagr": 0.13089238054531505,
+            "mdd": -0.15894103478099353,
+            "sharpe": 0.8819037898826232
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10663181776903996,
+          "2023": 0.13961379832612453,
+          "2024": 0.1632941395237142,
+          "2025": 0.10281611156420634,
+          "2026": 0.09103099865627162
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 10,
+          "rebalance_days": 416,
+          "gross_traded_notional_fraction_sum": 85.09090909090935,
+          "annualized_gross_traded_notional_fraction": 20.26040061633288,
+          "warning_asset_days": 845,
+          "mean_warned_sectors_per_day": 0.8032319391634981,
+          "days_with_any_warning": 612
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.0002,
+          "2024_plus": 0.0034,
+          "2025_plus": 0.0012
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.0228,
+          "2024_plus": 0.1016,
+          "2025_plus": 0.1808
+        }
+      }
+    },
+    "EXCLUDE_W20_FLOWOUT_TO_SPY": {
+      "0bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5334809736692756,
+            "cagr": 0.10784268361451899,
+            "mdd": -0.20812845253189316,
+            "sharpe": 0.7435892971727948
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.04686767404600767,
+            "cagr": 0.027399657905988306,
+            "mdd": -0.20812845253189316,
+            "sharpe": 0.24033927314875828
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4736209556151936,
+            "cagr": 0.16950465064218112,
+            "mdd": -0.16075169005642864,
+            "sharpe": 1.23810376804339
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.25467355080249,
+            "cagr": 0.1661290980670811,
+            "mdd": -0.15392760847981346,
+            "sharpe": 1.0860397310416485
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10336070421229981,
+          "2023": 0.1587867655743036,
+          "2024": 0.17179445942606475,
+          "2025": 0.14028811499378446,
+          "2026": 0.10406935525797789
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 0,
+          "rebalance_days": 228,
+          "gross_traded_notional_fraction_sum": 43.09090909090908,
+          "annualized_gross_traded_notional_fraction": 10.260074671091617,
+          "warning_asset_days": 318,
+          "mean_warned_sectors_per_day": 0.30228136882129275,
+          "days_with_any_warning": 288
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.3038,
+          "2024_plus": 0.7672,
+          "2025_plus": 0.8896
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.077,
+          "2024_plus": 0.2118,
+          "2025_plus": 0.3484
+        }
+      },
+      "5bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5007932310471639,
+            "cagr": 0.10213947168809989,
+            "mdd": -0.20971068478787702,
+            "sharpe": 0.7099894599688588
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.03918686024475759,
+            "cagr": 0.02294430358744215,
+            "mdd": -0.20971068478787702,
+            "sharpe": 0.21604368926539091
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.45286881466753237,
+            "cagr": 0.1628253968016231,
+            "mdd": -0.1628853595209223,
+            "sharpe": 1.1953477715237348
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.24388387121286725,
+            "cagr": 0.15932632015640014,
+            "mdd": -0.15477329639784065,
+            "sharpe": 1.0475865604353656
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10596543729546704,
+          "2023": 0.1536361148818961,
+          "2024": 0.16531398815464216,
+          "2025": 0.13418809249352925,
+          "2026": 0.10046177991010286
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 5,
+          "rebalance_days": 228,
+          "gross_traded_notional_fraction_sum": 43.09090909090908,
+          "annualized_gross_traded_notional_fraction": 10.260074671091617,
+          "warning_asset_days": 318,
+          "mean_warned_sectors_per_day": 0.30228136882129275,
+          "days_with_any_warning": 288
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.0236,
+          "2024_plus": 0.259,
+          "2025_plus": 0.5246
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.0546,
+          "2024_plus": 0.169,
+          "2025_plus": 0.301
+        }
+      },
+      "10bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.4687991656235617,
+            "cagr": 0.09646506645483033,
+            "mdd": -0.21128989902606954,
+            "sharpe": 0.676376796799177
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.03156165832069968,
+            "cagr": 0.01850783779197185,
+            "mdd": -0.21128989902606954,
+            "sharpe": 0.19174868304200765
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4324069247570408,
+            "cagr": 0.15618364097400783,
+            "mdd": -0.16501383911623735,
+            "sharpe": 1.1525558729052088
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.23318594889316713,
+            "cagr": 0.15256257535793427,
+            "mdd": -0.1556182157881898,
+            "sharpe": 1.0091137567880035
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10856283943572942,
+          "2023": 0.14850783597149997,
+          "2024": 0.15886871454106588,
+          "2025": 0.12812009619205322,
+          "2026": 0.09686566600896551
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 10,
+          "rebalance_days": 228,
+          "gross_traded_notional_fraction_sum": 43.09090909090908,
+          "annualized_gross_traded_notional_fraction": 10.260074671091617,
+          "warning_asset_days": 318,
+          "mean_warned_sectors_per_day": 0.30228136882129275,
+          "days_with_any_warning": 288
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.0004,
+          "2024_plus": 0.021,
+          "2025_plus": 0.1376
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.042,
+          "2024_plus": 0.1394,
+          "2025_plus": 0.2828
+        }
+      }
+    },
+    "EXCLUDE_DISTRIBUTION_TRAP_TO_SPY": {
+      "0bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.5252219123810524,
+            "cagr": 0.10641047439632434,
+            "mdd": -0.20676507888523654,
+            "sharpe": 0.7366646236652794
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.044743900574718776,
+            "cagr": 0.026169079861137368,
+            "mdd": -0.20676507888523654,
+            "sharpe": 0.23358550191475327
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4686637583280775,
+            "cagr": 0.1679142580073032,
+            "mdd": -0.1568067322268416,
+            "sharpe": 1.2354739773519443
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.2475180140025912,
+            "cagr": 0.16161972650784562,
+            "mdd": -0.1522039672523121,
+            "sharpe": 1.0692269796168288
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10282876161268617,
+          "2023": 0.1557502791213945,
+          "2024": 0.1740612807870654,
+          "2025": 0.14351269728671623,
+          "2026": 0.09493785997230542
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 0,
+          "rebalance_days": 245,
+          "gross_traded_notional_fraction_sum": 47.45454545454543,
+          "annualized_gross_traded_notional_fraction": 11.299069574493297,
+          "warning_asset_days": 336,
+          "mean_warned_sectors_per_day": 0.3193916349809886,
+          "days_with_any_warning": 308
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.2308,
+          "2024_plus": 0.7108,
+          "2025_plus": 0.7
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.0792,
+          "2024_plus": 0.194,
+          "2025_plus": 0.3336
+        }
+      },
+      "5bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.4894567143538413,
+            "cagr": 0.10013946601160884,
+            "mdd": -0.20863788837285258,
+            "sharpe": 0.6997199542355939
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.03641885532993827,
+            "cagr": 0.021335381012705934,
+            "mdd": -0.20863788837285258,
+            "sharpe": 0.20722764348961648
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4457452281014933,
+            "cagr": 0.16051950628465983,
+            "mdd": -0.15895043118553764,
+            "sharpe": 1.1878784231400075
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.2356659438873665,
+            "cagr": 0.15413222810396454,
+            "mdd": -0.1535902053607775,
+            "sharpe": 1.0265571659817267
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10584160867203951,
+          "2023": 0.15050851449796543,
+          "2024": 0.16682547774016365,
+          "2025": 0.13677515882001234,
+          "2026": 0.09096329987472296
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 5,
+          "rebalance_days": 245,
+          "gross_traded_notional_fraction_sum": 47.45454545454543,
+          "annualized_gross_traded_notional_fraction": 11.299069574493297,
+          "warning_asset_days": 336,
+          "mean_warned_sectors_per_day": 0.3193916349809886,
+          "days_with_any_warning": 308
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.0074,
+          "2024_plus": 0.1038,
+          "2025_plus": 0.2212
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.048,
+          "2024_plus": 0.1662,
+          "2025_plus": 0.2856
+        }
+      },
+      "10bp": {
+        "metrics": {
+          "2022_plus": {
+            "n": 1053,
+            "total_return": 0.45452665786953306,
+            "cagr": 0.09390336632543073,
+            "mdd": -0.21050648504405645,
+            "sharpe": 0.6627403686917107
+          },
+          "discovery_2022_2023": {
+            "n": 428,
+            "total_return": 0.028159281321835872,
+            "cagr": 0.0165239451386745,
+            "mdd": -0.21050648504405645,
+            "sharpe": 0.1808501812836647
+          },
+          "confirmation_2024_plus": {
+            "n": 625,
+            "total_return": 0.4231820950449201,
+            "cagr": 0.15317083980412893,
+            "mdd": -0.1610889158796358,
+            "sharpe": 1.1402286879698684
+          },
+          "recent_2025_plus": {
+            "n": 373,
+            "total_return": 0.22392529087902413,
+            "cagr": 0.14669224088859223,
+            "mdd": -0.15497431652432703,
+            "sharpe": 0.9838423998758329
+          }
+        },
+        "annual_returns": {
+          "2022": -0.10884465486582684,
+          "2023": 0.14528997415007328,
+          "2024": 0.15963355999053785,
+          "2025": 0.13007663577088913,
+          "2026": 0.08700277183800997
+        },
+        "diagnostics": {
+          "cost_bps_per_traded_dollar": 10,
+          "rebalance_days": 245,
+          "gross_traded_notional_fraction_sum": 47.45454545454543,
+          "annualized_gross_traded_notional_fraction": 11.299069574493297,
+          "warning_asset_days": 336,
+          "mean_warned_sectors_per_day": 0.3193916349809886,
+          "days_with_any_warning": 308
+        },
+        "block20_win_probability_vs_sector_ew": {
+          "2022_plus": 0.0,
+          "2024_plus": 0.0014,
+          "2025_plus": 0.015
+        },
+        "block20_win_probability_vs_spy": {
+          "2022_plus": 0.0334,
+          "2024_plus": 0.1258,
+          "2025_plus": 0.2542
+        }
+      }
+    }
+  },
+  "guardrails": [
+    "No stock selection, V38 entry/exit, Command Center, Leadership, or production files are modified.",
+    "Only thresholds already studied in strict PIT research are tested; there is no threshold grid search here.",
+    "Transaction costs are stressed at 0, 5, and 10 bp per traded dollar, charged only when warning-driven target weights change.",
+    "This is a separate sector-allocation research sleeve, not evidence for selling individual leaders."
+  ]
+}

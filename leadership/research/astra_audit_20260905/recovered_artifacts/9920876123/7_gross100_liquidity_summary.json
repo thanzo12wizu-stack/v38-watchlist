@@ -1,0 +1,248 @@
+{
+  "status": "GROSS100_LIQUIDITY_INTEGRATION_AUDIT",
+  "scope": "research only; no main/UI/live change",
+  "frozen_inputs": {
+    "normal": "PEAK30_PART25_R3; Attack 12 / Selective 4; Normal allocated max70%",
+    "reset": "RS63_TOP3_RISE30_SIGTOP3; 2.9% x max4",
+    "tqqq": "target_M30_TOUCH30_F80_D10",
+    "gross100_priority": "Reset -> protected/native TQQQ up to 80% -> Normal -> native TQQQ extra",
+    "selective_fill": "prior-day NQSAR Blue/Green + Breadth>=50; native TQQQ target must be >0; fill surplus only; never reduce Reset/Normal; never override native TQQQ=0"
+  },
+  "liquidity_definition": "Adopted DDV>=10M ranking universe remains unchanged. 20/50/100M are entry-only filters after ranking; next-ranked liquid candidates may fill; no forced liquidity exit.",
+  "coverage": {
+    "10": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5837582115258573,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "20": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.583850659538335,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "50": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.567597519308703,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    },
+    "100": {
+      "days": 2568,
+      "start": "2016-01-04",
+      "end": "2026-03-20",
+      "raw_o_avg": 0.5009152506488183,
+      "raw_o_max": 1.0,
+      "fill_gate_days": 1309,
+      "native_t_positive_days": 1985,
+      "fill_eligible_days": 1226
+    }
+  },
+  "baseline_reproduction": {
+    "observed_cagr": 0.49631389818902627,
+    "observed_mdd": -0.25467587264697555,
+    "expected_legacy_cagr": 0.4637,
+    "expected_legacy_mdd": -0.2571,
+    "cagr_abs_diff": 0.03261389818902627,
+    "mdd_abs_diff": 0.002424127353024441,
+    "pass_1ppt_tolerance": false,
+    "interpretation_guardrail": "Do not promote a DDV threshold if this reproduction check fails; first reconcile frozen-input or allocation differences."
+  },
+  "primary_same_day_base": [
+    {
+      "ddv_m": 10,
+      "timing": "SAME_DAY_GROSS",
+      "cost": "BASE",
+      "policy": "SELECTIVE_FILL_NO_ZERO_OVERRIDE",
+      "cagr": 0.49631389818902627,
+      "mdd": -0.25467587264697555,
+      "sharpe": 1.5296980996550722,
+      "calmar": 1.9488061159095447,
+      "end": 60.65550494693176,
+      "avg_alloc_t": 0.3275272307324469,
+      "avg_alloc_o": 0.3776667130871886,
+      "avg_alloc_r": 0.02943185393146504,
+      "avg_total_gross": 0.7346257977511006,
+      "max_total_gross": 1.0000000000000002,
+      "pct_at_100": 0.5907320872274143,
+      "selective_fill_days": 76,
+      "turn_t": 85.0723868172366,
+      "turn_o": NaN,
+      "turn_r": NaN,
+      "cost_mode": "TQQQ_5BP_ONLY_COMPONENT_RETURNS_AS_GENERATED"
+    },
+    {
+      "ddv_m": 20,
+      "timing": "SAME_DAY_GROSS",
+      "cost": "BASE",
+      "policy": "SELECTIVE_FILL_NO_ZERO_OVERRIDE",
+      "cagr": 0.5176349902900355,
+      "mdd": -0.26526324374258137,
+      "sharpe": 1.5801158273899838,
+      "calmar": 1.9514011175719561,
+      "end": 70.0587614217487,
+      "avg_alloc_t": 0.3270305261164413,
+      "avg_alloc_o": 0.3787818955284973,
+      "avg_alloc_r": 0.02943185393146504,
+      "avg_total_gross": 0.7352442755764036,
+      "max_total_gross": 1.0000000000000002,
+      "pct_at_100": 0.5942367601246106,
+      "selective_fill_days": 67,
+      "turn_t": 84.11566073645307,
+      "turn_o": NaN,
+      "turn_r": NaN,
+      "cost_mode": "TQQQ_5BP_ONLY_COMPONENT_RETURNS_AS_GENERATED"
+    },
+    {
+      "ddv_m": 50,
+      "timing": "SAME_DAY_GROSS",
+      "cost": "BASE",
+      "policy": "SELECTIVE_FILL_NO_ZERO_OVERRIDE",
+      "cagr": 0.5199003437366567,
+      "mdd": -0.31518141949502054,
+      "sharpe": 1.567833531252005,
+      "calmar": 1.649527261377381,
+      "end": 71.1313569669054,
+      "avg_alloc_t": 0.3293142890356691,
+      "avg_alloc_o": 0.3758310956493008,
+      "avg_alloc_r": 0.02943185393146504,
+      "avg_total_gross": 0.7345772386164349,
+      "max_total_gross": 1.0000000000000002,
+      "pct_at_100": 0.5977414330218068,
+      "selective_fill_days": 101,
+      "turn_t": 85.2632760994342,
+      "turn_o": NaN,
+      "turn_r": NaN,
+      "cost_mode": "TQQQ_5BP_ONLY_COMPONENT_RETURNS_AS_GENERATED"
+    },
+    {
+      "ddv_m": 100,
+      "timing": "SAME_DAY_GROSS",
+      "cost": "BASE",
+      "policy": "SELECTIVE_FILL_NO_ZERO_OVERRIDE",
+      "cagr": 0.5438051177540493,
+      "mdd": -0.2997117898401075,
+      "sharpe": 1.6192615990786623,
+      "calmar": 1.8144268466854858,
+      "end": 83.38707813760577,
+      "avg_alloc_t": 0.3402636762594377,
+      "avg_alloc_o": 0.3553345019260856,
+      "avg_alloc_r": 0.02943185393146504,
+      "avg_total_gross": 0.7250300321169885,
+      "max_total_gross": 1.0000000000000002,
+      "pct_at_100": 0.5728193146417445,
+      "selective_fill_days": 230,
+      "turn_t": 88.80116648996837,
+      "turn_o": NaN,
+      "turn_r": NaN,
+      "cost_mode": "TQQQ_5BP_ONLY_COMPONENT_RETURNS_AS_GENERATED"
+    }
+  ],
+  "development_selection_protocol": {
+    "period": "2016-2020",
+    "rule": "highest CAGR among DDV10/20/50/100 with MDD no more than 3ppt worse than DDV10 development MDD",
+    "development_choice_ddv_m": 100,
+    "warning": "DDV50 was already observed in earlier full-period liquidity sensitivity; this is robustness/confirmation discipline, not a pristine untouched OOS discovery."
+  },
+  "bootstrap_vs_ddv10": [
+    {
+      "a_ddv_m": 20,
+      "b_ddv_m": 10,
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.802,
+      "p_mdd_a_no_worse": 0.5376,
+      "p_calmar_a_gt_b": 0.6924,
+      "cagr_diff_median": 0.021284719815211628,
+      "cagr_diff_p05": -0.019708785061739852,
+      "cagr_diff_p95": 0.06391892183723878
+    },
+    {
+      "a_ddv_m": 20,
+      "b_ddv_m": 10,
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.8278,
+      "p_mdd_a_no_worse": 0.585,
+      "p_calmar_a_gt_b": 0.7398,
+      "cagr_diff_median": 0.020923513309227704,
+      "cagr_diff_p05": -0.015401886210305037,
+      "cagr_diff_p95": 0.06028675455414697
+    },
+    {
+      "a_ddv_m": 50,
+      "b_ddv_m": 10,
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.7068,
+      "p_mdd_a_no_worse": 0.4452,
+      "p_calmar_a_gt_b": 0.5784,
+      "cagr_diff_median": 0.02318137078426663,
+      "cagr_diff_p05": -0.046743948783316336,
+      "cagr_diff_p95": 0.10115935649109177
+    },
+    {
+      "a_ddv_m": 50,
+      "b_ddv_m": 10,
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.6738,
+      "p_mdd_a_no_worse": 0.4148,
+      "p_calmar_a_gt_b": 0.523,
+      "cagr_diff_median": 0.020953509260454917,
+      "cagr_diff_p05": -0.05389669125920107,
+      "cagr_diff_p95": 0.10581718819892326
+    },
+    {
+      "a_ddv_m": 100,
+      "b_ddv_m": 10,
+      "block": 20,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.8462,
+      "p_mdd_a_no_worse": 0.4348,
+      "p_calmar_a_gt_b": 0.6648,
+      "cagr_diff_median": 0.04783134803668565,
+      "cagr_diff_p05": -0.02811110483732193,
+      "cagr_diff_p95": 0.13290375019926207
+    },
+    {
+      "a_ddv_m": 100,
+      "b_ddv_m": 10,
+      "block": 60,
+      "nsim": 5000,
+      "p_return_a_gt_b": 0.8434,
+      "p_mdd_a_no_worse": 0.4998,
+      "p_calmar_a_gt_b": 0.69,
+      "cagr_diff_median": 0.04434451188996036,
+      "cagr_diff_p05": -0.02742025018534485,
+      "cagr_diff_p95": 0.14006809991692296
+    }
+  ],
+  "acceptance": {
+    "must_reproduce_baseline": true,
+    "must_not_depend_on_same_day_only": true,
+    "must_survive_cost_stress": true,
+    "must_be_directionally_supported_in_2021_2023_and_2024_2026M3": true,
+    "must_keep_gross_le_100": true
+  },
+  "latest_external_reference": {
+    "reported_2026_09_02_reproduction": {
+      "cagr": 0.47,
+      "mdd": -0.2323
+    },
+    "use": "reference only; not used as apples-to-apples acceptance benchmark because the frozen artifact period/input identity has not been verified here"
+  }
+}

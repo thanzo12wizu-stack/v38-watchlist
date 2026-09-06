@@ -1,0 +1,203 @@
+{
+  "proxy_definition": "QQQ observed 5m path -> 3x daily-reset transform, multiplicatively anchored to actual TQQQ daily close; proxy only",
+  "proxy_recent_validation": {
+    "status": "ok",
+    "n_bars": 1217,
+    "start": "2023-10-10",
+    "end": "2026-03-20",
+    "rsi_corr": 0.9990081217287057,
+    "rsi_mae": 0.2284767352032002,
+    "rsi_p95_abs": 0.8458173228358349,
+    "below20_agreement": 1.0,
+    "real_below20": 0,
+    "proxy_below20": 0,
+    "below25_agreement": 1.0,
+    "real_below25": 12,
+    "proxy_below25": 12,
+    "below30_agreement": 1.0,
+    "real_below30": 36,
+    "proxy_below30": 36,
+    "below35_agreement": 0.9983566146261298,
+    "real_below35": 96,
+    "proxy_below35": 96
+  },
+  "anchor_max_relative_error": 3.3306690738754696e-16,
+  "historical": [
+    {
+      "candidate": "QQQ_RSI30",
+      "pre_cagr": 0.46151771374400274,
+      "pre_mdd": -0.43756270675506015,
+      "tax_cagr": 0.3926574879579121,
+      "tax_end": 152.3282502675266,
+      "avg_exp": 0.7859121798222687,
+      "turnover": 95.6,
+      "signal_days": 80
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI30",
+      "pre_cagr": 0.46151771374400274,
+      "pre_mdd": -0.43756270675506015,
+      "tax_cagr": 0.3926574879579121,
+      "tax_end": 152.3282502675266,
+      "avg_exp": 0.7859121798222687,
+      "turnover": 95.6,
+      "signal_days": 86
+    },
+    {
+      "candidate": "OR_Q30_T30",
+      "pre_cagr": 0.46151771374400274,
+      "pre_mdd": -0.43756270675506015,
+      "tax_cagr": 0.3926574879579121,
+      "tax_end": 152.3282502675266,
+      "avg_exp": 0.7859121798222687,
+      "turnover": 95.6,
+      "signal_days": 92
+    },
+    {
+      "candidate": "AND_Q30_T30",
+      "pre_cagr": 0.46151771374400274,
+      "pre_mdd": -0.43756270675506015,
+      "tax_cagr": 0.3926574879579121,
+      "tax_end": 152.3282502675266,
+      "avg_exp": 0.7859121798222687,
+      "turnover": 95.6,
+      "signal_days": 74
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI35",
+      "pre_cagr": 0.4328233120720275,
+      "pre_mdd": -0.520394183178396,
+      "tax_cagr": 0.3712292698098998,
+      "tax_end": 120.39015653733354,
+      "avg_exp": 0.7894145321484579,
+      "turnover": 104.0,
+      "signal_days": 181
+    },
+    {
+      "candidate": "OR_Q30_T25",
+      "pre_cagr": 0.43175460157599743,
+      "pre_mdd": -0.43756270675506015,
+      "tax_cagr": 0.36572850793348355,
+      "tax_end": 113.2662892580043,
+      "avg_exp": 0.7890486147412441,
+      "turnover": 97.6,
+      "signal_days": 95
+    },
+    {
+      "candidate": "Q35_AND_T25",
+      "pre_cagr": 0.4214822309385118,
+      "pre_mdd": -0.4901572852707381,
+      "tax_cagr": 0.3588146424686016,
+      "tax_end": 104.87053147099056,
+      "avg_exp": 0.7771824359644537,
+      "turnover": 101.2,
+      "signal_days": 3
+    },
+    {
+      "candidate": "DAILY_R10",
+      "pre_cagr": 0.39753700538854186,
+      "pre_mdd": -0.4901572852707381,
+      "tax_cagr": 0.33811251826819966,
+      "tax_end": 83.0759889045538,
+      "avg_exp": 0.771955044432828,
+      "turnover": 103.2,
+      "signal_days": 0
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI20",
+      "pre_cagr": 0.39753700538854186,
+      "pre_mdd": -0.4901572852707381,
+      "tax_cagr": 0.33811251826819966,
+      "tax_end": 83.0759889045538,
+      "avg_exp": 0.771955044432828,
+      "turnover": 103.2,
+      "signal_days": 3
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI25",
+      "pre_cagr": 0.39410272088341225,
+      "pre_mdd": -0.4901572852707381,
+      "tax_cagr": 0.33391650244145166,
+      "tax_end": 79.20954892095169,
+      "avg_exp": 0.780475692629378,
+      "turnover": 103.2,
+      "signal_days": 27
+    }
+  ],
+  "pairwise_vs_qqq30": [
+    {
+      "candidate": "TQQQ_PROXY_RSI30",
+      "p_end_better_qqq30": 0.069,
+      "terminal_ratio_median": 1.0,
+      "terminal_ratio_p05": 1.0,
+      "p_mdd_no_worse_qqq30": 1.0,
+      "delta_tax_cagr_median": 0.0
+    },
+    {
+      "candidate": "AND_Q30_T30",
+      "p_end_better_qqq30": 0.0,
+      "terminal_ratio_median": 1.0,
+      "terminal_ratio_p05": 1.0,
+      "p_mdd_no_worse_qqq30": 1.0,
+      "delta_tax_cagr_median": 0.0
+    },
+    {
+      "candidate": "OR_Q30_T30",
+      "p_end_better_qqq30": 0.069,
+      "terminal_ratio_median": 1.0,
+      "terminal_ratio_p05": 1.0,
+      "p_mdd_no_worse_qqq30": 1.0,
+      "delta_tax_cagr_median": 0.0
+    },
+    {
+      "candidate": "OR_Q30_T25",
+      "p_end_better_qqq30": 0.012,
+      "terminal_ratio_median": 0.9130453931686519,
+      "terminal_ratio_p05": 0.5866784864895103,
+      "p_mdd_no_worse_qqq30": 0.765,
+      "delta_tax_cagr_median": -0.013481425032549121
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI35",
+      "p_end_better_qqq30": 0.252,
+      "terminal_ratio_median": 0.8471593230480314,
+      "terminal_ratio_p05": 0.5384974236146084,
+      "p_mdd_no_worse_qqq30": 0.21,
+      "delta_tax_cagr_median": -0.02325501795845053
+    },
+    {
+      "candidate": "Q35_AND_T25",
+      "p_end_better_qqq30": 0.054,
+      "terminal_ratio_median": 0.8300033766430355,
+      "terminal_ratio_p05": 0.6093267113259669,
+      "p_mdd_no_worse_qqq30": 0.695,
+      "delta_tax_cagr_median": -0.025675304570601187
+    },
+    {
+      "candidate": "DAILY_R10",
+      "p_end_better_qqq30": 0.02,
+      "terminal_ratio_median": 0.7148528042696238,
+      "terminal_ratio_p05": 0.49891588625062366,
+      "p_mdd_no_worse_qqq30": 0.478,
+      "delta_tax_cagr_median": -0.04574465589674437
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI20",
+      "p_end_better_qqq30": 0.02,
+      "terminal_ratio_median": 0.7148528042696238,
+      "terminal_ratio_p05": 0.49891588625062366,
+      "p_mdd_no_worse_qqq30": 0.478,
+      "delta_tax_cagr_median": -0.04574465589674437
+    },
+    {
+      "candidate": "TQQQ_PROXY_RSI25",
+      "p_end_better_qqq30": 0.027,
+      "terminal_ratio_median": 0.7108222653145526,
+      "terminal_ratio_p05": 0.4406309393244707,
+      "p_mdd_no_worse_qqq30": 0.537,
+      "delta_tax_cagr_median": -0.046484696111569024
+    }
+  ],
+  "winner": "TQQQ_PROXY_RSI30",
+  "note": "Do not replace QQQ RSI with TQQQ proxy unless it wins robustly and proxy validation is adequate."
+}

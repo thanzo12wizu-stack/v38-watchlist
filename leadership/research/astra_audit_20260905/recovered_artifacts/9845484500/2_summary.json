@@ -1,0 +1,103 @@
+{
+  "status": "RESEARCH_ONLY_NO_RULE_CHANGE",
+  "analysis_start": "2016-01-04",
+  "analysis_end": "2026-03-20",
+  "rate_series": {
+    "dgs2": "UST_PAR_2Y",
+    "dgs10": "UST_PAR_10Y",
+    "real10": "UST_REAL_PAR_10Y",
+    "be10": "UST_BE10_PROXY",
+    "dff": "UNUSED_DFF"
+  },
+  "feature_principles": [
+    "level via trailing-252 percentile",
+    "velocity via 5/10/20-day bp change and prior-only z-score",
+    "acceleration via change-in-5day-change and prior-only z-score",
+    "2s10s curve",
+    "real-vs-breakeven decomposition"
+  ],
+  "lookahead_control": "Daily strategy returns use rate data available by prior close; theme ignition rows use same-day close for next-open entries; panic episode starts use prior-day rates.",
+  "tqqq_panic_episodes": 56,
+  "tqqq_base_f80": {
+    "policy": "BASE_F80",
+    "subperiod": "ALL",
+    "n": 2568,
+    "mean_daily": 0.0015728018105347717,
+    "cagr": 0.45391724974390213,
+    "ann_vol": 0.2085602319413668,
+    "sharpe": 1.9003913285164953,
+    "maxdd": -0.23170560814223318,
+    "calmar": 1.9590257369397104,
+    "win_rate": 0.44353582554517135,
+    "final_nav": 45.32698505216978
+  },
+  "tqqq_policy_rank_all": [
+    {
+      "policy": "REAL_TIGHT_Z1_CAP50",
+      "subperiod": "ALL",
+      "n": 2568,
+      "mean_daily": 0.0015399672798370825,
+      "cagr": 0.44570842499544905,
+      "ann_vol": 0.19590249406660262,
+      "sharpe": 1.9809434094647551,
+      "maxdd": -0.17177105964778183,
+      "calmar": 2.594781832919808,
+      "win_rate": 0.44353582554517135,
+      "final_nav": 42.78570410356647
+    },
+    {
+      "policy": "EASING_Z1_F100",
+      "subperiod": "ALL",
+      "n": 2568,
+      "mean_daily": 0.0016265289800436455,
+      "cagr": 0.4722767413299134,
+      "ann_vol": 0.21327109283218507,
+      "sharpe": 1.9218980759550095,
+      "maxdd": -0.246310080847017,
+      "calmar": 1.9174072766564683,
+      "win_rate": 0.44353582554517135,
+      "final_nav": 51.51011308637638
+    },
+    {
+      "policy": "TIGHT_Z1_CAP50",
+      "subperiod": "ALL",
+      "n": 2568,
+      "mean_daily": 0.0015388707221622925,
+      "cagr": 0.44256819517046786,
+      "ann_vol": 0.2050898426016978,
+      "sharpe": 1.890856305048856,
+      "maxdd": -0.2317056081422333,
+      "calmar": 1.9100452454253756,
+      "win_rate": 0.44353582554517135,
+      "final_nav": 41.848048983871976
+    },
+    {
+      "policy": "ASYM_Z1_F100_F50",
+      "subperiod": "ALL",
+      "n": 2568,
+      "mean_daily": 0.001592597891671167,
+      "cagr": 0.46078437538715233,
+      "ann_vol": 0.2098808028130949,
+      "sharpe": 1.912202847149077,
+      "maxdd": -0.246310080847017,
+      "calmar": 1.8707491540849486,
+      "win_rate": 0.44353582554517135,
+      "final_nav": 47.556609669106784
+    },
+    {
+      "policy": "BASE_F100",
+      "subperiod": "ALL",
+      "n": 2568,
+      "mean_daily": 0.0015745463182339253,
+      "cagr": 0.4536638759800058,
+      "ann_vol": 0.2114506563605362,
+      "sharpe": 1.8764929796122531,
+      "maxdd": -0.2463100808470169,
+      "calmar": 1.841840473682343,
+      "win_rate": 0.44353582554517135,
+      "final_nav": 45.24655367524546
+    }
+  ],
+  "theme_rows_loaded": true,
+  "warning": "Candidate overlays are diagnostics until they pass subperiod/OOS consistency and are reproduced from exact trade/event logs. No dashboard/main logic is changed."
+}

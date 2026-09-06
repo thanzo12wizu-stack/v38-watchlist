@@ -1,0 +1,322 @@
+{
+  "status": "RESEARCH_ONLY_NO_RULE_CHANGE",
+  "train": "2016-01-04..2021-12-31",
+  "holdout": "2022-01-03..2026-03-20",
+  "state_cut_abs_z": 0.75,
+  "universes": {
+    "GICS11": [
+      "XLK",
+      "XLC",
+      "XLY",
+      "XLP",
+      "XLE",
+      "XLF",
+      "XLV",
+      "XLI",
+      "XLB",
+      "XLRE",
+      "XLU"
+    ],
+    "STYLE5": [
+      "IWM",
+      "IWF",
+      "IWD",
+      "RSP",
+      "MDY"
+    ]
+  },
+  "factors": [
+    "rate_shock_z5",
+    "duration_shock_z5",
+    "dgs2_chg5_z252",
+    "real10_chg5_z252",
+    "rate_accel_z5",
+    "duration_accel_z5"
+  ],
+  "method": "Rank ETFs in TRAIN by SPY-relative return difference on tightening vs easing days; freeze top/bottom groups; validate rank stability and directional top-bottom spread in HOLDOUT. Rate features are prior-close only. 20-trading-day block bootstrap is applied to full-daily signed rotation spread.",
+  "coverage": {
+    "SPY": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLK": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLC": {
+      "first": "2018-06-19",
+      "last": "2026-03-20",
+      "n": 1949
+    },
+    "XLY": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLP": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLE": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLF": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLV": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLI": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLB": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLRE": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "XLU": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "IWM": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "IWF": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "IWD": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "RSP": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    },
+    "MDY": {
+      "first": "2015-12-28",
+      "last": "2026-03-20",
+      "n": 2572
+    }
+  },
+  "summary": {
+    "GICS11": {
+      "rate_shock_z5": {
+        "universe": "GICS11",
+        "factor": "rate_shock_z5",
+        "top_train": "XLY,XLE",
+        "bottom_train": "XLRE,XLV",
+        "rank_spearman_train_hold": 0.15454545454545454,
+        "sign_agreement": 0.45454545454545453,
+        "hold_tight_top_minus_bottom_bps": 12.15286454606198,
+        "hold_ease_bottom_minus_top_bps": 1.122070808473308,
+        "hold_active_rotation_bps": 6.730498467825622,
+        "hold_active_days": 415,
+        "hold_full_daily_rotation_bps": 2.64253251101952,
+        "hold_full_daily_boot_lo_bps": -1.3358379532714624,
+        "hold_full_daily_boot_hi_bps": 6.679975106119052,
+        "hold_full_daily_boot_p": 0.19
+      },
+      "duration_shock_z5": {
+        "universe": "GICS11",
+        "factor": "duration_shock_z5",
+        "top_train": "XLF,XLE",
+        "bottom_train": "XLRE,XLV",
+        "rank_spearman_train_hold": 0.2545454545454546,
+        "sign_agreement": 0.45454545454545453,
+        "hold_tight_top_minus_bottom_bps": 18.051494426680783,
+        "hold_ease_bottom_minus_top_bps": 6.534944057886717,
+        "hold_active_rotation_bps": 12.30664179516113,
+        "hold_active_days": 429,
+        "hold_full_daily_rotation_bps": 4.994843264072021,
+        "hold_full_daily_boot_lo_bps": 1.018506025803547,
+        "hold_full_daily_boot_hi_bps": 9.219951576423952,
+        "hold_full_daily_boot_p": 0.016
+      },
+      "dgs2_chg5_z252": {
+        "universe": "GICS11",
+        "factor": "dgs2_chg5_z252",
+        "top_train": "XLY,XLE",
+        "bottom_train": "XLV,XLP",
+        "rank_spearman_train_hold": 0.16363636363636366,
+        "sign_agreement": 0.45454545454545453,
+        "hold_tight_top_minus_bottom_bps": 8.674408218717838,
+        "hold_ease_bottom_minus_top_bps": -4.857570076227388,
+        "hold_active_rotation_bps": 2.0490516401303376,
+        "hold_active_days": 433,
+        "hold_full_daily_rotation_bps": 0.8393939074516898,
+        "hold_full_daily_boot_lo_bps": -3.5423984675116578,
+        "hold_full_daily_boot_hi_bps": 5.349998686543817,
+        "hold_full_daily_boot_p": 0.7072
+      },
+      "real10_chg5_z252": {
+        "universe": "GICS11",
+        "factor": "real10_chg5_z252",
+        "top_train": "XLC,XLE",
+        "bottom_train": "XLRE,XLU",
+        "rank_spearman_train_hold": 0.22727272727272727,
+        "sign_agreement": 0.36363636363636365,
+        "hold_tight_top_minus_bottom_bps": 9.340798368228544,
+        "hold_ease_bottom_minus_top_bps": 2.1630493657664043,
+        "hold_active_rotation_bps": 5.645161009981447,
+        "hold_active_days": 437,
+        "hold_full_daily_rotation_bps": 2.3339028962742594,
+        "hold_full_daily_boot_lo_bps": -2.048004630206678,
+        "hold_full_daily_boot_hi_bps": 7.021182226693232,
+        "hold_full_daily_boot_p": 0.3172
+      },
+      "rate_accel_z5": {
+        "universe": "GICS11",
+        "factor": "rate_accel_z5",
+        "top_train": "XLY,XLE",
+        "bottom_train": "XLRE,XLU",
+        "rank_spearman_train_hold": 0.11818181818181818,
+        "sign_agreement": 0.5454545454545454,
+        "hold_tight_top_minus_bottom_bps": 0.830546588762553,
+        "hold_ease_bottom_minus_top_bps": -4.088821238722533,
+        "hold_active_rotation_bps": -1.6233498334182423,
+        "hold_active_days": 425,
+        "hold_full_daily_rotation_bps": -0.652718712585386,
+        "hold_full_daily_boot_lo_bps": -5.746175219704158,
+        "hold_full_daily_boot_hi_bps": 4.591848918499031,
+        "hold_full_daily_boot_p": 0.8096
+      },
+      "duration_accel_z5": {
+        "universe": "GICS11",
+        "factor": "duration_accel_z5",
+        "top_train": "XLY,XLE",
+        "bottom_train": "XLRE,XLU",
+        "rank_spearman_train_hold": 0.5,
+        "sign_agreement": 0.7272727272727273,
+        "hold_tight_top_minus_bottom_bps": 4.334234272638131,
+        "hold_ease_bottom_minus_top_bps": 3.2087831258174377,
+        "hold_active_rotation_bps": 3.772767593128031,
+        "hold_active_days": 447,
+        "hold_full_daily_rotation_bps": 1.5954844977561304,
+        "hold_full_daily_boot_lo_bps": -3.267219048801323,
+        "hold_full_daily_boot_hi_bps": 6.402020198731074,
+        "hold_full_daily_boot_p": 0.5188
+      }
+    },
+    "GICS11_STYLE5": {
+      "rate_shock_z5": {
+        "universe": "GICS11_STYLE5",
+        "factor": "rate_shock_z5",
+        "top_train": "IWM,XLF,XLY,XLE",
+        "bottom_train": "XLRE,XLV,XLI,XLP",
+        "rank_spearman_train_hold": 0.09411764705882353,
+        "sign_agreement": 0.5625,
+        "hold_tight_top_minus_bottom_bps": 3.85375434756802,
+        "hold_ease_bottom_minus_top_bps": 0.6659539302823867,
+        "hold_active_rotation_bps": 2.2867392026854434,
+        "hold_active_days": 415,
+        "hold_full_daily_rotation_bps": 0.8978209736182204,
+        "hold_full_daily_boot_lo_bps": -2.3131955566144806,
+        "hold_full_daily_boot_hi_bps": 4.176675857808447,
+        "hold_full_daily_boot_p": 0.5864
+      },
+      "duration_shock_z5": {
+        "universe": "GICS11_STYLE5",
+        "factor": "duration_shock_z5",
+        "top_train": "XLC,XLY,XLF,XLE",
+        "bottom_train": "XLRE,XLV,XLP,XLI",
+        "rank_spearman_train_hold": 0.15294117647058825,
+        "sign_agreement": 0.5,
+        "hold_tight_top_minus_bottom_bps": 3.69853641148598,
+        "hold_ease_bottom_minus_top_bps": -0.3780719302115115,
+        "hold_active_rotation_bps": 1.6649835324107745,
+        "hold_active_days": 429,
+        "hold_full_daily_rotation_bps": 0.6757596361440135,
+        "hold_full_daily_boot_lo_bps": -2.3398774678070837,
+        "hold_full_daily_boot_hi_bps": 3.710229219228918,
+        "hold_full_daily_boot_p": 0.6544
+      },
+      "dgs2_chg5_z252": {
+        "universe": "GICS11_STYLE5",
+        "factor": "dgs2_chg5_z252",
+        "top_train": "XLF,IWM,XLY,XLE",
+        "bottom_train": "XLV,XLP,XLI,XLU",
+        "rank_spearman_train_hold": 0.06764705882352941,
+        "sign_agreement": 0.4375,
+        "hold_tight_top_minus_bottom_bps": 3.8503376575821027,
+        "hold_ease_bottom_minus_top_bps": -1.8914070523440403,
+        "hold_active_rotation_bps": 1.0391370143850076,
+        "hold_active_days": 433,
+        "hold_full_daily_rotation_bps": 0.42568242878780344,
+        "hold_full_daily_boot_lo_bps": -2.888848023673821,
+        "hold_full_daily_boot_hi_bps": 4.070933274112217,
+        "hold_full_daily_boot_p": 0.8132
+      },
+      "real10_chg5_z252": {
+        "universe": "GICS11_STYLE5",
+        "factor": "real10_chg5_z252",
+        "top_train": "IWM,XLF,XLC,XLE",
+        "bottom_train": "XLRE,XLU,XLV,XLP",
+        "rank_spearman_train_hold": 0.1176470588235294,
+        "sign_agreement": 0.4375,
+        "hold_tight_top_minus_bottom_bps": 5.850054019496343,
+        "hold_ease_bottom_minus_top_bps": -0.9940970545967801,
+        "hold_active_rotation_bps": 2.3261776083499988,
+        "hold_active_days": 437,
+        "hold_full_daily_rotation_bps": 0.9617214899233202,
+        "hold_full_daily_boot_lo_bps": -2.80558124877063,
+        "hold_full_daily_boot_hi_bps": 4.917851777125054,
+        "hold_full_daily_boot_p": 0.6468
+      },
+      "rate_accel_z5": {
+        "universe": "GICS11_STYLE5",
+        "factor": "rate_accel_z5",
+        "top_train": "IWM,XLF,XLY,XLE",
+        "bottom_train": "XLRE,XLU,XLP,XLV",
+        "rank_spearman_train_hold": 0.2441176470588235,
+        "sign_agreement": 0.625,
+        "hold_tight_top_minus_bottom_bps": 3.609196040847828,
+        "hold_ease_bottom_minus_top_bps": 2.5646470959247076,
+        "hold_active_rotation_bps": 3.088150449497942,
+        "hold_active_days": 425,
+        "hold_full_daily_rotation_bps": 1.241687739864357,
+        "hold_full_daily_boot_lo_bps": -2.6317775252013482,
+        "hold_full_daily_boot_hi_bps": 5.267983556742322,
+        "hold_full_daily_boot_p": 0.5412
+      },
+      "duration_accel_z5": {
+        "universe": "GICS11_STYLE5",
+        "factor": "duration_accel_z5",
+        "top_train": "IWM,XLC,XLY,XLE",
+        "bottom_train": "XLRE,XLU,XLI,XLV",
+        "rank_spearman_train_hold": 0.45,
+        "sign_agreement": 0.6875,
+        "hold_tight_top_minus_bottom_bps": 2.0475598662679233,
+        "hold_ease_bottom_minus_top_bps": 1.7317146566382213,
+        "hold_active_rotation_bps": 1.8899905558710026,
+        "hold_active_days": 447,
+        "hold_full_daily_rotation_bps": 0.7992675293040097,
+        "hold_full_daily_boot_lo_bps": -2.375330691344184,
+        "hold_full_daily_boot_hi_bps": 3.768027438051891,
+        "hold_full_daily_boot_p": 0.6176
+      }
+    }
+  }
+}

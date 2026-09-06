@@ -1,0 +1,274 @@
+{
+  "status": "PRELIMINARY_FIXED_CURRENT_TAXONOMY",
+  "frozen_definition": {
+    "base": "continuous Subtheme Momentum + new within-theme RS21 top-third ignition + at least 5% below prior 20-day intraday high + Industry RS<80",
+    "followthrough_at_Dn": "stock close above ignition close AND stock outperforms equal-weight same-theme peers since ignition AND distance to prior 20-day intraday high shrinks",
+    "primary_prebreakout": "same three conditions AND no close above prior 20-day intraday high from D+1 through D+n",
+    "fast_breakout": "any close above prior 20-day intraday high from D+1 through D+n; reported separately",
+    "entry": "D+n close when primary pre-breakout follow-through is first assessed",
+    "delays": [
+      2,
+      3
+    ],
+    "horizons": [
+      5,
+      10,
+      20
+    ]
+  },
+  "coverage": {
+    "excluded_first": 0,
+    "selected": 1500,
+    "overlap_with_excluded": 0,
+    "hidden_rows": 327,
+    "hidden_dates": 286,
+    "hidden_themes": 145
+  },
+  "download": {
+    "requested": 1501,
+    "downloaded_common_ohlcv": 1501,
+    "rows": 3109,
+    "start": "2014-04-24",
+    "end": "2026-09-02",
+    "failed_batches": 0
+  },
+  "taxonomy_candidates": [
+    {
+      "path": "root.s2i",
+      "mapped": 5698,
+      "unique": 198
+    },
+    {
+      "path": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    },
+    {
+      "chosen": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    }
+  ],
+  "delays": {
+    "2": {
+      "eligible": 327,
+      "fast_breakout": 34,
+      "any_followthrough": 128,
+      "prebreakout_followthrough": 100,
+      "prebreakout_followthrough_rate": 0.3058103975535168,
+      "forward": {
+        "5": {
+          "n": 100,
+          "dates": 94,
+          "themes": 74,
+          "peer_mean": 0.00837685573507981,
+          "peer_median": -0.004638698442815143,
+          "peer_positive_rate": 0.47,
+          "peer_date_ci95": [
+            -0.0155452768327592,
+            0.03425414403461404
+          ],
+          "peer_theme_ci95": [
+            -0.015547655299778713,
+            0.027665541039530936
+          ],
+          "spy_mean": 0.012811348256997541,
+          "mfe_mean": 0.08634192831971682,
+          "mae_mean": -0.06124247529240126
+        },
+        "10": {
+          "n": 100,
+          "dates": 94,
+          "themes": 74,
+          "peer_mean": 0.01010844392724935,
+          "peer_median": -0.0024494086726528363,
+          "peer_positive_rate": 0.49,
+          "peer_date_ci95": [
+            -0.016407212465427416,
+            0.03284020145902196
+          ],
+          "peer_theme_ci95": [
+            -0.018263867774877644,
+            0.031037548224074382
+          ],
+          "spy_mean": 0.022916113264084617,
+          "mfe_mean": 0.13072297356609958,
+          "mae_mean": -0.08381902811460591
+        },
+        "20": {
+          "n": 100,
+          "dates": 94,
+          "themes": 74,
+          "peer_mean": 0.04008926367892256,
+          "peer_median": -0.008960056202915158,
+          "peer_positive_rate": 0.44,
+          "peer_date_ci95": [
+            -0.01591234359070104,
+            0.10305108689226368
+          ],
+          "peer_theme_ci95": [
+            -0.019611044094024477,
+            0.07178893271139064
+          ],
+          "spy_mean": 0.06652310907887364,
+          "mfe_mean": 0.2161754142236634,
+          "mae_mean": -0.11314758819987655
+        }
+      },
+      "paired_wait_vs_ignite": {
+        "5": {
+          "n": 100,
+          "confirm_peer_mean": 0.00837685573507981,
+          "ignition_peer_mean": 0.03166582571161199,
+          "wait_minus_ignite": -0.02328896997653218,
+          "date_ci95": [
+            -0.040667485130007175,
+            0.0031766546615245154
+          ],
+          "theme_ci95": [
+            -0.041750721649090244,
+            -0.007520613808414285
+          ]
+        },
+        "10": {
+          "n": 100,
+          "confirm_peer_mean": 0.01010844392724935,
+          "ignition_peer_mean": 0.0499112283254568,
+          "wait_minus_ignite": -0.03980278439820745,
+          "date_ci95": [
+            -0.049997202793549675,
+            -0.021567633169295303
+          ],
+          "theme_ci95": [
+            -0.057815001272852176,
+            -0.021922668813168938
+          ]
+        },
+        "20": {
+          "n": 100,
+          "confirm_peer_mean": 0.04008926367892256,
+          "ignition_peer_mean": 0.06471155800506233,
+          "wait_minus_ignite": -0.024622294326139764,
+          "date_ci95": [
+            -0.035546695581828165,
+            -0.000771438578309362
+          ],
+          "theme_ci95": [
+            -0.04451636122085497,
+            -0.014921490551987089
+          ]
+        }
+      }
+    },
+    "3": {
+      "eligible": 327,
+      "fast_breakout": 43,
+      "any_followthrough": 114,
+      "prebreakout_followthrough": 87,
+      "prebreakout_followthrough_rate": 0.26605504587155965,
+      "forward": {
+        "5": {
+          "n": 87,
+          "dates": 85,
+          "themes": 66,
+          "peer_mean": 0.010542416056114308,
+          "peer_median": -0.015624309884359935,
+          "peer_positive_rate": 0.39080459770114945,
+          "peer_date_ci95": [
+            -0.014449441311702482,
+            0.03860997552257131
+          ],
+          "peer_theme_ci95": [
+            -0.013795959616129751,
+            0.042585841806889
+          ],
+          "spy_mean": 0.01524514189262064,
+          "mfe_mean": 0.08382573404551366,
+          "mae_mean": -0.05586424869087986
+        },
+        "10": {
+          "n": 87,
+          "dates": 85,
+          "themes": 66,
+          "peer_mean": 0.01835018266081256,
+          "peer_median": -0.001280719017173466,
+          "peer_positive_rate": 0.4942528735632184,
+          "peer_date_ci95": [
+            -0.010680544947148912,
+            0.04476254056125371
+          ],
+          "peer_theme_ci95": [
+            -0.00931109905485248,
+            0.05328100447865757
+          ],
+          "spy_mean": 0.025145900509856267,
+          "mfe_mean": 0.12995851641066863,
+          "mae_mean": -0.07789863462429479
+        },
+        "20": {
+          "n": 87,
+          "dates": 85,
+          "themes": 66,
+          "peer_mean": 0.029517408518482748,
+          "peer_median": -0.02583918922833868,
+          "peer_positive_rate": 0.39080459770114945,
+          "peer_date_ci95": [
+            -0.035438959714374184,
+            0.10208703291072603
+          ],
+          "peer_theme_ci95": [
+            -0.03552378806138242,
+            0.11074119278995481
+          ],
+          "spy_mean": 0.04201911077649942,
+          "mfe_mean": 0.20165229987482805,
+          "mae_mean": -0.11605136869318496
+        }
+      },
+      "paired_wait_vs_ignite": {
+        "5": {
+          "n": 87,
+          "confirm_peer_mean": 0.010542416056114308,
+          "ignition_peer_mean": 0.044209075695531196,
+          "wait_minus_ignite": -0.03366665963941688,
+          "date_ci95": [
+            -0.05396324925924469,
+            -0.012619697651042792
+          ],
+          "theme_ci95": [
+            -0.05622329992488569,
+            -0.01561496921921103
+          ]
+        },
+        "10": {
+          "n": 87,
+          "confirm_peer_mean": 0.01835018266081256,
+          "ignition_peer_mean": 0.06634911776080539,
+          "wait_minus_ignite": -0.047998935099992826,
+          "date_ci95": [
+            -0.06586175778260081,
+            -0.030435128194953632
+          ],
+          "theme_ci95": [
+            -0.07095364564052473,
+            -0.03181136036908242
+          ]
+        },
+        "20": {
+          "n": 87,
+          "confirm_peer_mean": 0.029517408518482748,
+          "ignition_peer_mean": 0.06874849292251861,
+          "wait_minus_ignite": -0.039231084404035874,
+          "date_ci95": [
+            -0.05769327162221353,
+            -0.016762476150055532
+          ],
+          "theme_ci95": [
+            -0.06783807648726058,
+            -0.02547606908014609
+          ]
+        }
+      }
+    }
+  }
+}

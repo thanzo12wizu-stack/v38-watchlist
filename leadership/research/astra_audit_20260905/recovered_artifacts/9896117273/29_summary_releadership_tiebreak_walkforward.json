@@ -1,0 +1,1033 @@
+{
+  "status": "RELEADERSHIP_TIEBREAK_WALKFORWARD_AUDIT",
+  "analysis_window": {
+    "start": "2020-01-02",
+    "end": "2026-09-02",
+    "leader_start": "2021-01-04",
+    "downloaded": 3595
+  },
+  "freeze": {
+    "rows": 414,
+    "sha256": "a45c8c139d43ef02f582fd63598af5355fd6b0a28546a91958c8adf0eefbe06c"
+  },
+  "design": {
+    "signal": "THREE4 BASE fixed for every variant; only the tie-break among simultaneous valid Core Re-Leadership signals changes.",
+    "dev": "2021-2023 leader labels select one tie-break by pre-registered lexicographic objective: annual Top10 early hits, rolling126 early hits, annual Top10 hits, rolling126 hits.",
+    "oos": "2024-2026YTD is not used to reselect the tie-break. This is OOS for tie-break selection only, not a claim that the already-researched THREE4 signal itself is fully OOS.",
+    "modes": [
+      "V38",
+      "RS63",
+      "THEME",
+      "PRICE20",
+      "PERSIST10",
+      "CONSENSUS"
+    ],
+    "portfolio": "9 Core + 3 Emerging; SELECTIVE 3+1; one priority only on vacant Core fill; no forced sale; exits unchanged."
+  },
+  "validation": {
+    "v38_reproduction_max_abs_diff": 0.0
+  },
+  "evaluations": {
+    "V38": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.11764705882352941,
+          "median_capture_progress": 0.5891508725943311
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 29,
+          "hit_rate": 0.48333333333333334,
+          "early_n": 5,
+          "early_rate_all": 0.08333333333333333,
+          "early_share_of_hits": 0.1724137931034483,
+          "median_capture_progress": 0.6652409321624921
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 35,
+          "hit_rate": 0.2229299363057325,
+          "early_n": 12,
+          "early_rate_all": 0.07643312101910828,
+          "early_share_of_hits": 0.34285714285714286,
+          "median_capture_progress": 0.5155233654370476
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 19,
+          "hit_rate": 0.6333333333333333,
+          "early_n": 11,
+          "early_rate_all": 0.36666666666666664,
+          "early_share_of_hits": 0.5789473684210527,
+          "median_capture_progress": 0.27980445020651845
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 30,
+          "hit_rate": 0.5,
+          "early_n": 16,
+          "early_rate_all": 0.26666666666666666,
+          "early_share_of_hits": 0.5333333333333333,
+          "median_capture_progress": 0.28305015619107454
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 33,
+          "hit_rate": 0.24087591240875914,
+          "early_n": 15,
+          "early_rate_all": 0.10948905109489052,
+          "early_share_of_hits": 0.45454545454545453,
+          "median_capture_progress": 0.36431414959748254
+        }
+      }
+    },
+    "RS63": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.11764705882352941,
+          "median_capture_progress": 0.573912977096184
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 29,
+          "hit_rate": 0.48333333333333334,
+          "early_n": 4,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.13793103448275862,
+          "median_capture_progress": 0.6652409321624921
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 36,
+          "hit_rate": 0.22929936305732485,
+          "early_n": 10,
+          "early_rate_all": 0.06369426751592357,
+          "early_share_of_hits": 0.2777777777777778,
+          "median_capture_progress": 0.5706479648319549
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 19,
+          "hit_rate": 0.6333333333333333,
+          "early_n": 10,
+          "early_rate_all": 0.3333333333333333,
+          "early_share_of_hits": 0.5263157894736842,
+          "median_capture_progress": 0.28629586217563063
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 30,
+          "hit_rate": 0.5,
+          "early_n": 17,
+          "early_rate_all": 0.2833333333333333,
+          "early_share_of_hits": 0.5666666666666667,
+          "median_capture_progress": 0.2792816788154109
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 43,
+          "hit_rate": 0.31386861313868614,
+          "early_n": 16,
+          "early_rate_all": 0.11678832116788321,
+          "early_share_of_hits": 0.37209302325581395,
+          "median_capture_progress": 0.4074690801613851
+        }
+      }
+    },
+    "THEME": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 15,
+          "hit_rate": 0.5,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.13333333333333333,
+          "median_capture_progress": 0.573912977096184
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 27,
+          "hit_rate": 0.45,
+          "early_n": 5,
+          "early_rate_all": 0.08333333333333333,
+          "early_share_of_hits": 0.18518518518518517,
+          "median_capture_progress": 0.627836479695418
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 35,
+          "hit_rate": 0.2229299363057325,
+          "early_n": 10,
+          "early_rate_all": 0.06369426751592357,
+          "early_share_of_hits": 0.2857142857142857,
+          "median_capture_progress": 0.5155233654370476
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 8,
+          "early_rate_all": 0.26666666666666666,
+          "early_share_of_hits": 0.47058823529411764,
+          "median_capture_progress": 0.3406785411037323
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 24,
+          "hit_rate": 0.4,
+          "early_n": 12,
+          "early_rate_all": 0.2,
+          "early_share_of_hits": 0.5,
+          "median_capture_progress": 0.31348720163968147
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 36,
+          "hit_rate": 0.26277372262773724,
+          "early_n": 14,
+          "early_rate_all": 0.10218978102189781,
+          "early_share_of_hits": 0.3888888888888889,
+          "median_capture_progress": 0.37222910675459925
+        }
+      }
+    },
+    "PRICE20": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 16,
+          "hit_rate": 0.5333333333333333,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.125,
+          "median_capture_progress": 0.549974269136063
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 28,
+          "hit_rate": 0.4666666666666667,
+          "early_n": 4,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.14285714285714285,
+          "median_capture_progress": 0.6768646684437527
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 34,
+          "hit_rate": 0.21656050955414013,
+          "early_n": 11,
+          "early_rate_all": 0.07006369426751592,
+          "early_share_of_hits": 0.3235294117647059,
+          "median_capture_progress": 0.5088401086111372
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 8,
+          "early_rate_all": 0.26666666666666666,
+          "early_share_of_hits": 0.47058823529411764,
+          "median_capture_progress": 0.3406785411037323
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 23,
+          "hit_rate": 0.38333333333333336,
+          "early_n": 12,
+          "early_rate_all": 0.2,
+          "early_share_of_hits": 0.5217391304347826,
+          "median_capture_progress": 0.28629586217563063
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 35,
+          "hit_rate": 0.25547445255474455,
+          "early_n": 14,
+          "early_rate_all": 0.10218978102189781,
+          "early_share_of_hits": 0.4,
+          "median_capture_progress": 0.3826169715400085
+        }
+      }
+    },
+    "PERSIST10": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 16,
+          "hit_rate": 0.5333333333333333,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.125,
+          "median_capture_progress": 0.5815319248452575
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 27,
+          "hit_rate": 0.45,
+          "early_n": 4,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.14814814814814814,
+          "median_capture_progress": 0.6652409321624921
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 30,
+          "hit_rate": 0.1910828025477707,
+          "early_n": 9,
+          "early_rate_all": 0.05732484076433121,
+          "early_share_of_hits": 0.3,
+          "median_capture_progress": 0.5410671994539911
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 16,
+          "hit_rate": 0.5333333333333333,
+          "early_n": 8,
+          "early_rate_all": 0.26666666666666666,
+          "early_share_of_hits": 0.5,
+          "median_capture_progress": 0.31348720163968147
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 21,
+          "hit_rate": 0.35,
+          "early_n": 11,
+          "early_rate_all": 0.18333333333333332,
+          "early_share_of_hits": 0.5238095238095238,
+          "median_capture_progress": 0.28629586217563063
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 34,
+          "hit_rate": 0.24817518248175183,
+          "early_n": 15,
+          "early_rate_all": 0.10948905109489052,
+          "early_share_of_hits": 0.4411764705882353,
+          "median_capture_progress": 0.39276436706044215
+        }
+      }
+    },
+    "CONSENSUS": {
+      "DEV": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 16,
+          "hit_rate": 0.5333333333333333,
+          "early_n": 2,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.125,
+          "median_capture_progress": 0.5815319248452575
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 28,
+          "hit_rate": 0.4666666666666667,
+          "early_n": 4,
+          "early_rate_all": 0.06666666666666667,
+          "early_share_of_hits": 0.14285714285714285,
+          "median_capture_progress": 0.6768646684437527
+        },
+        "rolling126": {
+          "n": 157,
+          "hit_n": 33,
+          "hit_rate": 0.21019108280254778,
+          "early_n": 9,
+          "early_rate_all": 0.05732484076433121,
+          "early_share_of_hits": 0.2727272727272727,
+          "median_capture_progress": 0.5746848961929752
+        }
+      },
+      "OOS": {
+        "annual_top10": {
+          "n": 30,
+          "hit_n": 17,
+          "hit_rate": 0.5666666666666667,
+          "early_n": 8,
+          "early_rate_all": 0.26666666666666666,
+          "early_share_of_hits": 0.47058823529411764,
+          "median_capture_progress": 0.3406785411037323
+        },
+        "annual_top20": {
+          "n": 60,
+          "hit_n": 22,
+          "hit_rate": 0.36666666666666664,
+          "early_n": 11,
+          "early_rate_all": 0.18333333333333332,
+          "early_share_of_hits": 0.5,
+          "median_capture_progress": 0.31348720163968147
+        },
+        "rolling126": {
+          "n": 137,
+          "hit_n": 35,
+          "hit_rate": 0.25547445255474455,
+          "early_n": 14,
+          "early_rate_all": 0.10218978102189781,
+          "early_share_of_hits": 0.4,
+          "median_capture_progress": 0.3826169715400085
+        }
+      }
+    }
+  },
+  "dev_selected": "V38",
+  "selected_dev_key": [
+    2,
+    12,
+    17,
+    35,
+    1,
+    0
+  ],
+  "oos_guardrails": {
+    "annual_top10_hit_not_worse": true,
+    "annual_top10_early_not_worse": true,
+    "rolling_hit_not_worse": true,
+    "rolling_early_not_worse": true,
+    "cagr_not_worse_by_gt_1pp": true,
+    "mdd_not_worse_by_gt_2pp": true
+  },
+  "oos_guardrails_all_pass": true,
+  "oos_portfolio": {
+    "selected": {
+      "n": 670,
+      "total_return": 2.290967099582093,
+      "cagr": 0.5662686900761398,
+      "mdd": -0.2375136194302837,
+      "sharpe": 1.4635183543902037,
+      "positive_days": 0.4499252615844544
+    },
+    "v38": {
+      "n": 670,
+      "total_return": 2.290967099582093,
+      "cagr": 0.5662686900761398,
+      "mdd": -0.2375136194302837,
+      "sharpe": 1.4635183543902037,
+      "positive_days": 0.4499252615844544
+    },
+    "block_bootstrap_vs_v38": 0.0
+  },
+  "oos_paired": {
+    "annual_top10": {
+      "n": 30,
+      "hit_selected_only": 0,
+      "hit_baseline_only": 0,
+      "early_selected_only": 0,
+      "early_baseline_only": 0
+    },
+    "rolling126": {
+      "n": 137,
+      "hit_selected_only": 0,
+      "hit_baseline_only": 0,
+      "early_selected_only": 0,
+      "early_baseline_only": 0
+    }
+  },
+  "calendar_returns": {
+    "V38": {
+      "2021": 0.31171104991493914,
+      "2022": 0.05442494954628607,
+      "2023": 0.19723888528480016,
+      "2024": 0.4353111572165149,
+      "2025": 0.44074994604555684,
+      "2026": 0.564918507707072
+    },
+    "RS63": {
+      "2021": 0.3522915953787942,
+      "2022": 0.057509273547092565,
+      "2023": 0.292486261490869,
+      "2024": 0.26833444116925764,
+      "2025": 0.38410578007603213,
+      "2026": 0.5402415352049834
+    },
+    "THEME": {
+      "2021": 0.2829572300495362,
+      "2022": 0.04612613225852091,
+      "2023": 0.19332560963790701,
+      "2024": 0.4445997312394532,
+      "2025": 0.42242588333426334,
+      "2026": 0.5623914361468789
+    },
+    "PRICE20": {
+      "2021": 0.3261248965264112,
+      "2022": 0.05365275899466715,
+      "2023": 0.2109216077873428,
+      "2024": 0.24059903989509213,
+      "2025": 0.4941190152328998,
+      "2026": 0.3710927034469831
+    },
+    "PERSIST10": {
+      "2021": 0.28558066469511356,
+      "2022": 0.04203196070628712,
+      "2023": 0.20465860047684736,
+      "2024": 0.2875554943275571,
+      "2025": 0.3964400842392457,
+      "2026": 0.45760772304286057
+    },
+    "CONSENSUS": {
+      "2021": 0.3649797937748218,
+      "2022": 0.03804495479014425,
+      "2023": 0.1854508074431973,
+      "2024": 0.2637197721087978,
+      "2025": 0.3825475770390827,
+      "2026": 0.4286325690540913
+    }
+  },
+  "trade_stats": {
+    "V38": {
+      "closed_trades": 453,
+      "mean_return": 0.06872608528016448,
+      "median_return": -0.029297603521460824,
+      "win_rate": 0.4304635761589404,
+      "mean_hold_calendar_days": 37.428256070640174,
+      "median_hold_calendar_days": 23.0,
+      "exit_reasons": {
+        "RED": 215,
+        "HARD8": 204,
+        "PEAK30": 34
+      },
+      "by_period": {
+        "discovery": {
+          "n": 155,
+          "mean_return": 0.07324568088059179,
+          "median_return": -0.06785511094253749,
+          "win_rate": 0.4064516129032258
+        },
+        "confirmation": {
+          "n": 298,
+          "mean_return": 0.06637528891081473,
+          "median_return": -0.021971761159492453,
+          "win_rate": 0.4429530201342282
+        }
+      }
+    },
+    "RS63": {
+      "closed_trades": 465,
+      "mean_return": 0.07105641282948424,
+      "median_return": -0.04935397768997174,
+      "win_rate": 0.4129032258064516,
+      "mean_hold_calendar_days": 36.39784946236559,
+      "median_hold_calendar_days": 22.0,
+      "exit_reasons": {
+        "HARD8": 215,
+        "RED": 212,
+        "PEAK30": 38
+      },
+      "by_period": {
+        "discovery": {
+          "n": 152,
+          "mean_return": 0.09513569981130732,
+          "median_return": -0.058343933236253254,
+          "win_rate": 0.40131578947368424
+        },
+        "confirmation": {
+          "n": 313,
+          "mean_return": 0.05936295717057976,
+          "median_return": -0.04116357710069862,
+          "win_rate": 0.4185303514376997
+        }
+      }
+    },
+    "THEME": {
+      "closed_trades": 454,
+      "mean_return": 0.06850868306879336,
+      "median_return": -0.027564747322856464,
+      "win_rate": 0.43171806167400884,
+      "mean_hold_calendar_days": 37.23568281938326,
+      "median_hold_calendar_days": 23.0,
+      "exit_reasons": {
+        "RED": 219,
+        "HARD8": 201,
+        "PEAK30": 34
+      },
+      "by_period": {
+        "discovery": {
+          "n": 155,
+          "mean_return": 0.07733792243256,
+          "median_return": -0.06539146630175141,
+          "win_rate": 0.3935483870967742
+        },
+        "confirmation": {
+          "n": 299,
+          "mean_return": 0.06393165262938255,
+          "median_return": -0.018188564507150784,
+          "win_rate": 0.451505016722408
+        }
+      }
+    },
+    "PRICE20": {
+      "closed_trades": 464,
+      "mean_return": 0.06336057223459694,
+      "median_return": -0.03532120491548424,
+      "win_rate": 0.4224137931034483,
+      "mean_hold_calendar_days": 36.38146551724138,
+      "median_hold_calendar_days": 22.0,
+      "exit_reasons": {
+        "HARD8": 215,
+        "RED": 211,
+        "PEAK30": 38
+      },
+      "by_period": {
+        "discovery": {
+          "n": 153,
+          "mean_return": 0.08365846087168774,
+          "median_return": -0.06081066802825397,
+          "win_rate": 0.41830065359477125
+        },
+        "confirmation": {
+          "n": 311,
+          "mean_return": 0.05337479422342367,
+          "median_return": -0.02748908330420985,
+          "win_rate": 0.42443729903536975
+        }
+      }
+    },
+    "PERSIST10": {
+      "closed_trades": 442,
+      "mean_return": 0.0638192726915778,
+      "median_return": -0.025713250215009475,
+      "win_rate": 0.4343891402714932,
+      "mean_hold_calendar_days": 38.33710407239819,
+      "median_hold_calendar_days": 24.0,
+      "exit_reasons": {
+        "RED": 217,
+        "HARD8": 192,
+        "PEAK30": 33
+      },
+      "by_period": {
+        "discovery": {
+          "n": 150,
+          "mean_return": 0.07749787577645281,
+          "median_return": -0.06140664932204731,
+          "win_rate": 0.4266666666666667
+        },
+        "confirmation": {
+          "n": 292,
+          "mean_return": 0.05679259302469,
+          "median_return": -0.020453455593432812,
+          "win_rate": 0.4383561643835616
+        }
+      }
+    },
+    "CONSENSUS": {
+      "closed_trades": 468,
+      "mean_return": 0.062481475130359045,
+      "median_return": -0.052257488703654376,
+      "win_rate": 0.41239316239316237,
+      "mean_hold_calendar_days": 35.952991452991455,
+      "median_hold_calendar_days": 21.5,
+      "exit_reasons": {
+        "HARD8": 219,
+        "RED": 211,
+        "PEAK30": 38
+      },
+      "by_period": {
+        "discovery": {
+          "n": 155,
+          "mean_return": 0.08562907125574379,
+          "median_return": -0.06572964520398816,
+          "win_rate": 0.4129032258064516
+        },
+        "confirmation": {
+          "n": 313,
+          "mean_return": 0.05101860803951356,
+          "median_return": -0.030651521665812975,
+          "win_rate": 0.41214057507987223
+        }
+      }
+    }
+  },
+  "named_diagnostics": {
+    "V38": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "mode": "V38",
+        "signal_days": 20,
+        "first_signal": "2024-01-18",
+        "winner_days": 1,
+        "first_winner": "2024-01-18",
+        "actual_entry": true,
+        "actual_entry_date": "2024-01-19"
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "mode": "V38",
+        "signal_days": 6,
+        "first_signal": "2024-07-12",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "CRWD",
+        "start": "2023-08-18",
+        "peak": "2024-02-09",
+        "mode": "V38",
+        "signal_days": 1,
+        "first_signal": "2023-11-30",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "mode": "V38",
+        "signal_days": 27,
+        "first_signal": "2024-02-14",
+        "winner_days": 5,
+        "first_winner": "2024-05-20",
+        "actual_entry": true,
+        "actual_entry_date": "2024-05-22"
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-07-01",
+        "peak": "2026-01-31",
+        "mode": "V38",
+        "signal_days": 11,
+        "first_signal": "2025-10-01",
+        "winner_days": 3,
+        "first_winner": "2026-01-05",
+        "actual_entry": true,
+        "actual_entry_date": "2026-01-06"
+      }
+    ],
+    "RS63": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "mode": "RS63",
+        "signal_days": 20,
+        "first_signal": "2024-01-18",
+        "winner_days": 1,
+        "first_winner": "2024-01-26",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "mode": "RS63",
+        "signal_days": 6,
+        "first_signal": "2024-07-12",
+        "winner_days": 4,
+        "first_winner": "2024-08-16",
+        "actual_entry": true,
+        "actual_entry_date": "2024-08-20"
+      },
+      {
+        "symbol": "CRWD",
+        "start": "2023-08-18",
+        "peak": "2024-02-09",
+        "mode": "RS63",
+        "signal_days": 1,
+        "first_signal": "2023-11-30",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "mode": "RS63",
+        "signal_days": 27,
+        "first_signal": "2024-02-14",
+        "winner_days": 2,
+        "first_winner": "2024-02-22",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-07-01",
+        "peak": "2026-01-31",
+        "mode": "RS63",
+        "signal_days": 11,
+        "first_signal": "2025-10-01",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      }
+    ],
+    "THEME": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "mode": "THEME",
+        "signal_days": 20,
+        "first_signal": "2024-01-18",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "mode": "THEME",
+        "signal_days": 6,
+        "first_signal": "2024-07-12",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "CRWD",
+        "start": "2023-08-18",
+        "peak": "2024-02-09",
+        "mode": "THEME",
+        "signal_days": 1,
+        "first_signal": "2023-11-30",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "mode": "THEME",
+        "signal_days": 27,
+        "first_signal": "2024-02-14",
+        "winner_days": 5,
+        "first_winner": "2024-05-20",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-07-01",
+        "peak": "2026-01-31",
+        "mode": "THEME",
+        "signal_days": 11,
+        "first_signal": "2025-10-01",
+        "winner_days": 3,
+        "first_winner": "2026-01-05",
+        "actual_entry": true,
+        "actual_entry_date": "2026-01-06"
+      }
+    ],
+    "PRICE20": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "mode": "PRICE20",
+        "signal_days": 20,
+        "first_signal": "2024-01-18",
+        "winner_days": 2,
+        "first_winner": "2024-01-22",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "mode": "PRICE20",
+        "signal_days": 6,
+        "first_signal": "2024-07-12",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "CRWD",
+        "start": "2023-08-18",
+        "peak": "2024-02-09",
+        "mode": "PRICE20",
+        "signal_days": 1,
+        "first_signal": "2023-11-30",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "mode": "PRICE20",
+        "signal_days": 27,
+        "first_signal": "2024-02-14",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-07-01",
+        "peak": "2026-01-31",
+        "mode": "PRICE20",
+        "signal_days": 11,
+        "first_signal": "2025-10-01",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": true,
+        "actual_entry_date": "2026-02-02"
+      }
+    ],
+    "PERSIST10": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "mode": "PERSIST10",
+        "signal_days": 20,
+        "first_signal": "2024-01-18",
+        "winner_days": 12,
+        "first_winner": "2024-01-22",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "mode": "PERSIST10",
+        "signal_days": 6,
+        "first_signal": "2024-07-12",
+        "winner_days": 1,
+        "first_winner": "2024-07-12",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "CRWD",
+        "start": "2023-08-18",
+        "peak": "2024-02-09",
+        "mode": "PERSIST10",
+        "signal_days": 1,
+        "first_signal": "2023-11-30",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "mode": "PERSIST10",
+        "signal_days": 27,
+        "first_signal": "2024-02-14",
+        "winner_days": 7,
+        "first_winner": "2024-02-27",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-07-01",
+        "peak": "2026-01-31",
+        "mode": "PERSIST10",
+        "signal_days": 11,
+        "first_signal": "2025-10-01",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      }
+    ],
+    "CONSENSUS": [
+      {
+        "symbol": "NVDA",
+        "start": "2023-12-22",
+        "peak": "2024-06-18",
+        "mode": "CONSENSUS",
+        "signal_days": 20,
+        "first_signal": "2024-01-18",
+        "winner_days": 1,
+        "first_winner": "2024-01-26",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "PLTR",
+        "start": "2024-05-09",
+        "peak": "2024-11-07",
+        "mode": "CONSENSUS",
+        "signal_days": 6,
+        "first_signal": "2024-07-12",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "CRWD",
+        "start": "2023-08-18",
+        "peak": "2024-02-09",
+        "mode": "CONSENSUS",
+        "signal_days": 1,
+        "first_signal": "2023-11-30",
+        "winner_days": 0,
+        "first_winner": null,
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "HOOD",
+        "start": "2024-01-02",
+        "peak": "2024-12-31",
+        "mode": "CONSENSUS",
+        "signal_days": 27,
+        "first_signal": "2024-02-14",
+        "winner_days": 7,
+        "first_winner": "2024-02-23",
+        "actual_entry": false,
+        "actual_entry_date": null
+      },
+      {
+        "symbol": "MU",
+        "start": "2025-07-01",
+        "peak": "2026-01-31",
+        "mode": "CONSENSUS",
+        "signal_days": 11,
+        "first_signal": "2025-10-01",
+        "winner_days": 1,
+        "first_winner": "2025-10-21",
+        "actual_entry": true,
+        "actual_entry_date": "2026-02-02"
+      }
+    ]
+  }
+}

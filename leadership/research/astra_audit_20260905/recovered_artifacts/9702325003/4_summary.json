@@ -1,0 +1,32 @@
+{
+  "status": "CUSTOM_MARKET_MODE_AUDIT_V3_NORMAL_ONLY",
+  "scope": "normal-stock mode only; no shallow/RSI30/TQQQ rule changes",
+  "fixed_tests": {
+    "attack_breadth": [
+      0.5,
+      0.55,
+      0.6,
+      0.65,
+      0.7
+    ],
+    "attack_mc_check": [
+      20,
+      30,
+      35,
+      50
+    ],
+    "post_red_restart_breadth": [
+      0.45,
+      0.5,
+      0.55
+    ]
+  },
+  "method": "NQSAR Blue/Green for ongoing new-entry/rebalance gates; NQSAR Red forces exit; post-Red restart waits for not-Red plus the tested broad >50MA threshold, then remains reopened until next Red.",
+  "validation": "Local plateau check only. No broad parameter search.",
+  "limitations": [
+    "Normal-stock sleeve is the comparison reconstruction, not the missing exact production ledger.",
+    "Current-universe survivorship bias remains.",
+    "2022+ is robustness confirmation, not untouched OOS.",
+    "No main/dashboard change."
+  ]
+}

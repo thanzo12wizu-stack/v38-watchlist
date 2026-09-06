@@ -1,0 +1,928 @@
+{
+  "status": "ROTATION_EXIT_OVERLAY_RESEARCH",
+  "research_only": true,
+  "guardrails": [
+    "Entry, ranking, market mode, -8% initial stop, +24%/25% adopted partial and baseline PeakClose-30% trail are unchanged.",
+    "Rotation signal is prior-close PIT 11-sector state, executed next open; no Theme56 current-membership retrospective is used for the primary test.",
+    "Monthly PIT sector snapshot must be <=40 calendar days old; otherwise the stock is unmapped and Rotation cannot act.",
+    "Rotation variants change exits only; they do not block or promote entries."
+  ],
+  "warning_core": "sector PriceScore>=70 AND InternalScore 20-session delta <= threshold; optional exact 20D Flow/AUM<=0",
+  "variants": {
+    "BASE": {
+      "definition": {
+        "name": "BASE",
+        "threshold": null,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": null,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 0,
+        "rotation_action_rate": 0.0,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": null,
+        "rotation_exit_post40_ge20_rate": null,
+        "rotation_exit_post63_ge50_rate": null,
+        "rotation_exit_mean_post40_max": null
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 0
+      }
+    },
+    "TRAIL25_LATCH_W10": {
+      "definition": {
+        "name": "TRAIL25_LATCH_W10",
+        "threshold": -10,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 25,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 16,
+        "rotation_action_rate": 0.05653710247349823,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.25,
+        "rotation_exit_post63_ge50_rate": 0.1875,
+        "rotation_exit_mean_post40_max": 0.1310473862077694
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 207
+      }
+    },
+    "TRAIL25_LATCH_W15": {
+      "definition": {
+        "name": "TRAIL25_LATCH_W15",
+        "threshold": -15,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 25,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 16,
+        "rotation_action_rate": 0.05653710247349823,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.25,
+        "rotation_exit_post63_ge50_rate": 0.1875,
+        "rotation_exit_mean_post40_max": 0.1310473862077694
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 206
+      }
+    },
+    "TRAIL25_LATCH_W20": {
+      "definition": {
+        "name": "TRAIL25_LATCH_W20",
+        "threshold": -20,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 25,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 13,
+        "rotation_action_rate": 0.045936395759717315,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.3076923076923077,
+        "rotation_exit_post63_ge50_rate": 0.23076923076923078,
+        "rotation_exit_mean_post40_max": 0.15519714701298556
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 163
+      }
+    },
+    "TRAIL20_DYNAMIC_W10": {
+      "definition": {
+        "name": "TRAIL20_DYNAMIC_W10",
+        "threshold": -10,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 20,
+        "trail_latched": false,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 0,
+        "rotation_action_rate": 0.0,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": null,
+        "rotation_exit_post40_ge20_rate": null,
+        "rotation_exit_post63_ge50_rate": null,
+        "rotation_exit_mean_post40_max": null
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 207
+      }
+    },
+    "TRAIL20_LATCH_W10": {
+      "definition": {
+        "name": "TRAIL20_LATCH_W10",
+        "threshold": -10,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 20,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 16,
+        "rotation_action_rate": 0.05653710247349823,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.25,
+        "rotation_exit_post63_ge50_rate": 0.1875,
+        "rotation_exit_mean_post40_max": 0.1310473862077694
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 207
+      }
+    },
+    "TRAIL20_LATCH_W15": {
+      "definition": {
+        "name": "TRAIL20_LATCH_W15",
+        "threshold": -15,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 20,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 16,
+        "rotation_action_rate": 0.05653710247349823,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.25,
+        "rotation_exit_post63_ge50_rate": 0.1875,
+        "rotation_exit_mean_post40_max": 0.1310473862077694
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 206
+      }
+    },
+    "TRAIL20_LATCH_W20": {
+      "definition": {
+        "name": "TRAIL20_LATCH_W20",
+        "threshold": -20,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 20,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.5245233038781425,
+          "cagr": 0.43859700568955673,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.4080795535075536,
+          "positive_days": 0.3546845124282983
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.7836762470644985,
+          "cagr": 0.7220120064803379,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.7340068566689337,
+          "positive_days": 0.41491085899513774
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.6499585000481884,
+          "cagr": 0.9597870970573736,
+          "mdd": -0.16460487230521603,
+          "sharpe": 1.9619864624254433,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.052090716071820656,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 13,
+        "rotation_action_rate": 0.045936395759717315,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.673445686465852,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.3076923076923077,
+        "rotation_exit_post63_ge50_rate": 0.23076923076923078,
+        "rotation_exit_mean_post40_max": 0.15519714701298556
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 163
+      }
+    },
+    "EXTRA25_W10": {
+      "definition": {
+        "name": "EXTRA25_W10",
+        "threshold": -10,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": null,
+        "trail_latched": true,
+        "extra_partial": 0.25,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.3775142945935084,
+          "cagr": 0.4271943726780498,
+          "mdd": -0.17734391040497388,
+          "sharpe": 1.388556544141627,
+          "positive_days": 0.35372848948374763
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.6828516239910565,
+          "cagr": 0.7031206698141537,
+          "mdd": -0.17734391040497388,
+          "sharpe": 1.713195029813048,
+          "positive_days": 0.413290113452188
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.574345587354085,
+          "cagr": 0.9210067544883582,
+          "mdd": -0.16308165766356353,
+          "sharpe": 1.9311480557118064,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.050937143373685254,
+        "median_total_return": -0.02835069404137258,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 16,
+        "rotation_action_rate": 0.05653710247349823,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.6418246083745036,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.25,
+        "rotation_exit_post63_ge50_rate": 0.1875,
+        "rotation_exit_mean_post40_max": 0.1310473862077694
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 207
+      }
+    },
+    "EXTRA25_W20": {
+      "definition": {
+        "name": "EXTRA25_W20",
+        "threshold": -20,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": null,
+        "trail_latched": true,
+        "extra_partial": 0.25,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.3939793940301106,
+          "cagr": 0.4284857992124964,
+          "mdd": -0.1773439104049741,
+          "sharpe": 1.3901095614699561,
+          "positive_days": 0.3527724665391969
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.6860466113908736,
+          "cagr": 0.7037239711952854,
+          "mdd": -0.1773439104049741,
+          "sharpe": 1.7122392933239006,
+          "positive_days": 0.41166936790923825
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.5847891050060734,
+          "cagr": 0.9263838060451053,
+          "mdd": -0.16446643709604947,
+          "sharpe": 1.935568174025309,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.05106959280671087,
+        "median_total_return": -0.02835069404137247,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 13,
+        "rotation_action_rate": 0.045936395759717315,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.6629743361859997,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.3076923076923077,
+        "rotation_exit_post63_ge50_rate": 0.23076923076923078,
+        "rotation_exit_mean_post40_max": 0.15519714701298556
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 163
+      }
+    },
+    "FULL_W20": {
+      "definition": {
+        "name": "FULL_W20",
+        "threshold": -20,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": null,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": true
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 2.9991234129064854,
+          "cagr": 0.3964456132125427,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.3118630856855162,
+          "positive_days": 0.3489483747609943
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.4468098770667255,
+          "cagr": 0.6576629033697525,
+          "mdd": -0.17734391040497366,
+          "sharpe": 1.6389300909681173,
+          "positive_days": 0.41166936790923825
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.519507828173102,
+          "cagr": 0.8926607053966269,
+          "mdd": -0.16645200471476207,
+          "sharpe": 1.900737840544196,
+          "positive_days": 0.38904109589041097
+        }
+      },
+      "trade_summary": {
+        "n": 309,
+        "mean_total_return": 0.0519531446085985,
+        "median_total_return": -0.02602414050734181,
+        "win_rate": 0.4401294498381877,
+        "rotation_action_trades": 26,
+        "rotation_action_rate": 0.08414239482200647,
+        "mean_mfe_to_exit": 0.2126275080770633,
+        "mean_peak_capture": -1.5535721658613837,
+        "mfe_ge50_n": 31,
+        "mfe_ge100_n": 16,
+        "rotation_exit_post20_ge20_rate": 0.2692307692307692,
+        "rotation_exit_post40_ge20_rate": 0.34615384615384615,
+        "rotation_exit_post63_ge50_rate": 0.23076923076923078,
+        "rotation_exit_mean_post40_max": 0.18144363347913955
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6638,
+        "mapped_sector_days": 493,
+        "state_days": 493,
+        "warning_days": 26
+      }
+    },
+    "FULL_W10_P2": {
+      "definition": {
+        "name": "FULL_W10_P2",
+        "threshold": -10,
+        "require_flow_out": false,
+        "persistence": 2,
+        "trail_pct": null,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": true
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 2.9585650970985764,
+          "cagr": 0.3930204091423779,
+          "mdd": -0.17734391040497377,
+          "sharpe": 1.3015512836469223,
+          "positive_days": 0.3479923518164436
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.4156464087210323,
+          "cagr": 0.6515252053803315,
+          "mdd": -0.17734391040497377,
+          "sharpe": 1.6256491851824528,
+          "positive_days": 0.40842787682333875
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.5259919860219915,
+          "cagr": 0.8960223009113948,
+          "mdd": -0.16738875655126928,
+          "sharpe": 1.9009204877030137,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 306,
+        "mean_total_return": 0.05203726262050235,
+        "median_total_return": -0.02571308944214884,
+        "win_rate": 0.43790849673202614,
+        "rotation_action_trades": 22,
+        "rotation_action_rate": 0.0718954248366013,
+        "mean_mfe_to_exit": 0.21388749561894135,
+        "mean_peak_capture": -1.57554399314047,
+        "mfe_ge50_n": 31,
+        "mfe_ge100_n": 15,
+        "rotation_exit_post20_ge20_rate": 0.22727272727272727,
+        "rotation_exit_post40_ge20_rate": 0.3181818181818182,
+        "rotation_exit_post63_ge50_rate": 0.18181818181818182,
+        "rotation_exit_mean_post40_max": 0.19451125243314596
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6640,
+        "mapped_sector_days": 503,
+        "state_days": 503,
+        "warning_days": 57
+      }
+    },
+    "FULL_W20_FLOW": {
+      "definition": {
+        "name": "FULL_W20_FLOW",
+        "threshold": -20,
+        "require_flow_out": true,
+        "persistence": 1,
+        "trail_pct": null,
+        "trail_latched": true,
+        "extra_partial": 0.0,
+        "full_exit": true
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.1437600784411712,
+          "cagr": 0.40844968874621923,
+          "mdd": -0.17734391040497421,
+          "sharpe": 1.3471091371181971,
+          "positive_days": 0.35372848948374763
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.534498284389086,
+          "cagr": 0.6747591106689037,
+          "mdd": -0.17734391040497421,
+          "sharpe": 1.6700619359778885,
+          "positive_days": 0.413290113452188
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.5389995001214944,
+          "cagr": 0.902757771013369,
+          "mdd": -0.16701984298391492,
+          "sharpe": 1.9109950804796707,
+          "positive_days": 0.38904109589041097
+        }
+      },
+      "trade_summary": {
+        "n": 298,
+        "mean_total_return": 0.05512025692289999,
+        "median_total_return": -0.025713089442148784,
+        "win_rate": 0.4429530201342282,
+        "rotation_action_trades": 13,
+        "rotation_action_rate": 0.0436241610738255,
+        "mean_mfe_to_exit": 0.21969122794717175,
+        "mean_peak_capture": -1.6238774462329375,
+        "mfe_ge50_n": 31,
+        "mfe_ge100_n": 16,
+        "rotation_exit_post20_ge20_rate": 0.5384615384615384,
+        "rotation_exit_post40_ge20_rate": 0.6153846153846154,
+        "rotation_exit_post63_ge50_rate": 0.38461538461538464,
+        "rotation_exit_mean_post40_max": 0.2855263254492383
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6684,
+        "mapped_sector_days": 611,
+        "state_days": 611,
+        "warning_days": 13
+      }
+    },
+    "COMBO_EXTRA25_TRAIL20_W10": {
+      "definition": {
+        "name": "COMBO_EXTRA25_TRAIL20_W10",
+        "threshold": -10,
+        "require_flow_out": false,
+        "persistence": 1,
+        "trail_pct": 20,
+        "trail_latched": true,
+        "extra_partial": 0.25,
+        "full_exit": false
+      },
+      "metrics": {
+        "panel_2022_plus": {
+          "n": 1047,
+          "total_return": 3.3775142945935084,
+          "cagr": 0.4271943726780498,
+          "mdd": -0.17734391040497388,
+          "sharpe": 1.388556544141627,
+          "positive_days": 0.35372848948374763
+        },
+        "confirmation_2024_plus": {
+          "n": 618,
+          "total_return": 2.6828516239910565,
+          "cagr": 0.7031206698141537,
+          "mdd": -0.17734391040497388,
+          "sharpe": 1.713195029813048,
+          "positive_days": 0.413290113452188
+        },
+        "recent_2025_plus": {
+          "n": 366,
+          "total_return": 1.574345587354085,
+          "cagr": 0.9210067544883582,
+          "mdd": -0.16308165766356353,
+          "sharpe": 1.9311480557118064,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "trade_summary": {
+        "n": 283,
+        "mean_total_return": 0.050937143373685254,
+        "median_total_return": -0.02835069404137258,
+        "win_rate": 0.43462897526501765,
+        "rotation_action_trades": 16,
+        "rotation_action_rate": 0.05653710247349823,
+        "mean_mfe_to_exit": 0.2188327625347702,
+        "mean_peak_capture": -1.6418246083745036,
+        "mfe_ge50_n": 29,
+        "mfe_ge100_n": 13,
+        "rotation_exit_post20_ge20_rate": 0.0,
+        "rotation_exit_post40_ge20_rate": 0.25,
+        "rotation_exit_post63_ge50_rate": 0.1875,
+        "rotation_exit_mean_post40_max": 0.1310473862077694
+      },
+      "pit_position_day_coverage": {
+        "held_days_panel": 6716,
+        "mapped_sector_days": 772,
+        "state_days": 772,
+        "warning_days": 207
+      }
+    }
+  },
+  "vs_base_block20": {
+    "TRAIL25_LATCH_W10": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "TRAIL25_LATCH_W15": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "TRAIL25_LATCH_W20": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "TRAIL20_DYNAMIC_W10": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "TRAIL20_LATCH_W10": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "TRAIL20_LATCH_W15": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "TRAIL20_LATCH_W20": {
+      "2022_plus": 0.0,
+      "2024_plus": 0.0,
+      "2025_plus": 0.0
+    },
+    "EXTRA25_W10": {
+      "2022_plus": 0.0886,
+      "2024_plus": 0.2684,
+      "2025_plus": 0.1116
+    },
+    "EXTRA25_W20": {
+      "2022_plus": 0.1002,
+      "2024_plus": 0.2076,
+      "2025_plus": 0.1374
+    },
+    "FULL_W20": {
+      "2022_plus": 0.0948,
+      "2024_plus": 0.2266,
+      "2025_plus": 0.594
+    },
+    "FULL_W10_P2": {
+      "2022_plus": 0.0394,
+      "2024_plus": 0.1188,
+      "2025_plus": 0.477
+    },
+    "FULL_W20_FLOW": {
+      "2022_plus": 0.1538,
+      "2024_plus": 0.3058,
+      "2025_plus": 0.5416
+    },
+    "COMBO_EXTRA25_TRAIL20_W10": {
+      "2022_plus": 0.092,
+      "2024_plus": 0.241,
+      "2025_plus": 0.1114
+    }
+  },
+  "strict_pit_coverage": {
+    "held_days_panel": 6716,
+    "mapped_sector_days": 772,
+    "state_days": 772,
+    "warning_days": 0,
+    "state_coverage_of_held_position_days": 0.11494937462775462,
+    "interpretation": "Strict-PIT primary evidence applies only to position-days with contemporaneous S&P500 sector membership and audited 11-sector state."
+  }
+}

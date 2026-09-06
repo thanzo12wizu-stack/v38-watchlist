@@ -1,0 +1,23 @@
+{
+  "status": "V38_TQQQ_FIXED30_SPEC_AUDIT",
+  "coverage": {
+    "start": "2011-01-03",
+    "end": "2026-03-20",
+    "sessions": 3826
+  },
+  "definitions": {
+    "CURRENT30": "Stage34 PCUR hierarchy: 30% normal exposure, risk locks can set 0%, bull/reentry hierarchy can raise exposure.",
+    "FIXED30": "Exactly 30% normal TQQQ exposure outside Panic; no CURRENT30 risk locks or bull boosts.",
+    "PANIC": "Same Stage56 M30_TOUCH30_F80_D10 overlay; floor 80% for active Panic sessions.",
+    "execution": "Completed signal bar/day -> next-session open; portfolio machinery uses the existing Stage36/56 target timing convention."
+  },
+  "diagnostics": {
+    "current30_zero_target_days": 815,
+    "current30_above30_days": 592,
+    "current30_exact30_days": 2419,
+    "panic_active_days": 110,
+    "panic_entries": 11,
+    "parity_rows_with_next_session": 11,
+    "same_session_execution_rows": 0
+  }
+}

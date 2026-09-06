@@ -1,0 +1,22 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "window": {
+    "start": "2024-01-01",
+    "end": "2026-09-02"
+  },
+  "official_reference_tickers": 19,
+  "measured_tickers": 0,
+  "yahoo_observations_total": 0,
+  "decision": "DO_NOT_USE_AS_FLOW_FALLBACK",
+  "decision_reason": "Yahoo get_shares_full returned no usable ETF share history on the validation set",
+  "median_of_etf_median_share_rel_error": null,
+  "median_share_cr20_sign_agreement_vs_official_shares": null,
+  "median_share_cr20_corr_vs_exact_flow_aum": null,
+  "median_share_cr20_sign_agreement_vs_exact_flow_aum": null,
+  "guardrails": [
+    "This test does not relabel Yahoo data as official Exact Flow.",
+    "The candidate metric is Creation/Redemption from shares outstanding; no dollar-volume proxy is used.",
+    "No-data is a valid negative validation result and must not be converted into a proxy."
+  ]
+}

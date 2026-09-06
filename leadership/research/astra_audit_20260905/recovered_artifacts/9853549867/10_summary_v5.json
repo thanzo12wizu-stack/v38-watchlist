@@ -1,0 +1,103 @@
+{
+  "status": "RESEARCH_ONLY_NO_PRODUCTION_CHANGE",
+  "baseline": {
+    "cagr": 0.470025795426962,
+    "mdd": -0.2323359830178694,
+    "sharpe": 1.5056789840391789,
+    "calmar": 2.023043479196296,
+    "end": 50.63571987576175
+  },
+  "fixed_mc3_qid30": [],
+  "event_cluster_bootstrap": [
+    {
+      "signal": "MC-3",
+      "design": "QID_CASH15",
+      "hold": 2,
+      "clusters": 21,
+      "events": 23,
+      "mean": 0.004575879103011956,
+      "median": 0.0023341473060694007,
+      "win": 0.6956521739130435,
+      "boot_mean_p05": 0.0022889909780236936,
+      "boot_mean_median": 0.004562435082172295,
+      "boot_mean_p95": 0.006886637722160677,
+      "p_mean_positive": 0.9999
+    },
+    {
+      "signal": "MC-3",
+      "design": "QID_CASH30",
+      "hold": 2,
+      "clusters": 21,
+      "events": 23,
+      "mean": 0.009124318349630534,
+      "median": 0.004649485613188009,
+      "win": 0.6956521739130435,
+      "boot_mean_p05": 0.004614586726052631,
+      "boot_mean_median": 0.009193198084834493,
+      "boot_mean_p95": 0.013933452854054198,
+      "p_mean_positive": 0.9999
+    },
+    {
+      "signal": "MC-3",
+      "design": "QID_CASH15",
+      "hold": 3,
+      "clusters": 21,
+      "events": 23,
+      "mean": 0.0056312588349944565,
+      "median": 0.003154743494815815,
+      "win": 0.6086956521739131,
+      "boot_mean_p05": 0.0019034061612583193,
+      "boot_mean_median": 0.005541389653232878,
+      "boot_mean_p95": 0.00969349599908837,
+      "p_mean_positive": 0.9959
+    },
+    {
+      "signal": "MC-3",
+      "design": "QID_CASH30",
+      "hold": 3,
+      "clusters": 21,
+      "events": 23,
+      "mean": 0.011252972141609455,
+      "median": 0.006155503831729137,
+      "win": 0.5652173913043478,
+      "boot_mean_p05": 0.0038698440695774682,
+      "boot_mean_median": 0.010868195054598847,
+      "boot_mean_p95": 0.019372097312215904,
+      "p_mean_positive": 0.9965
+    },
+    {
+      "signal": "MC-3",
+      "design": "QID_CASH15",
+      "hold": 4,
+      "clusters": 21,
+      "events": 23,
+      "mean": 0.005579593252363969,
+      "median": 0.004706265895662032,
+      "win": 0.6086956521739131,
+      "boot_mean_p05": 0.0017319188398917367,
+      "boot_mean_median": 0.005555526239094619,
+      "boot_mean_p95": 0.009620679967883574,
+      "p_mean_positive": 0.9915
+    },
+    {
+      "signal": "MC-3",
+      "design": "QID_CASH30",
+      "hold": 4,
+      "clusters": 21,
+      "events": 23,
+      "mean": 0.011096693445544276,
+      "median": 0.00939373044623193,
+      "win": 0.6086956521739131,
+      "boot_mean_p05": 0.0032490625420580985,
+      "boot_mean_median": 0.011060544312859438,
+      "boot_mean_p95": 0.019182307945760327,
+      "p_mean_positive": 0.9907
+    }
+  ],
+  "core_rule": "NQSAR Red AND QQQ below SMA50 AND SMA50 slope<0 AND MC57 5d change<-3; eventized; 10d cooldown; skip/kill panic; QID from spare gross only; gross<=100",
+  "notes": [
+    "V5 is confirmatory robustness after V4 discovery; no production change.",
+    "Cost stress changes inverse sleeve friction only; audited baseline TQQQ friction remains 5bp.",
+    "JPY event sensitivity is incremental QID sleeve only, not a full portfolio JPY conversion."
+  ]
+}

@@ -1,0 +1,274 @@
+{
+  "status": "PRELIMINARY_FIXED_CURRENT_TAXONOMY",
+  "frozen_definition": {
+    "base": "continuous Subtheme Momentum + new within-theme RS21 top-third ignition + at least 5% below prior 20-day intraday high + Industry RS<80",
+    "followthrough_at_Dn": "stock close above ignition close AND stock outperforms equal-weight same-theme peers since ignition AND distance to prior 20-day intraday high shrinks",
+    "primary_prebreakout": "same three conditions AND no close above prior 20-day intraday high from D+1 through D+n",
+    "fast_breakout": "any close above prior 20-day intraday high from D+1 through D+n; reported separately",
+    "entry": "D+n close when primary pre-breakout follow-through is first assessed",
+    "delays": [
+      2,
+      3
+    ],
+    "horizons": [
+      5,
+      10,
+      20
+    ]
+  },
+  "coverage": {
+    "excluded_first": 1500,
+    "selected": 1500,
+    "overlap_with_excluded": 0,
+    "hidden_rows": 229,
+    "hidden_dates": 196,
+    "hidden_themes": 77
+  },
+  "download": {
+    "requested": 1501,
+    "downloaded_common_ohlcv": 1501,
+    "rows": 3109,
+    "start": "2014-04-24",
+    "end": "2026-09-02",
+    "failed_batches": 0
+  },
+  "taxonomy_candidates": [
+    {
+      "path": "root.s2i",
+      "mapped": 5698,
+      "unique": 198
+    },
+    {
+      "path": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    },
+    {
+      "chosen": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    }
+  ],
+  "delays": {
+    "2": {
+      "eligible": 229,
+      "fast_breakout": 12,
+      "any_followthrough": 85,
+      "prebreakout_followthrough": 75,
+      "prebreakout_followthrough_rate": 0.32751091703056767,
+      "forward": {
+        "5": {
+          "n": 75,
+          "dates": 67,
+          "themes": 42,
+          "peer_mean": 0.02444549034080607,
+          "peer_median": 0.00010565445113956684,
+          "peer_positive_rate": 0.5066666666666667,
+          "peer_date_ci95": [
+            -0.007210875154800266,
+            0.07181181075920716
+          ],
+          "peer_theme_ci95": [
+            -0.014057167540571002,
+            0.03608686993335187
+          ],
+          "spy_mean": 0.024706652440684533,
+          "mfe_mean": 0.09988889408941683,
+          "mae_mean": -0.057915789779212676
+        },
+        "10": {
+          "n": 75,
+          "dates": 67,
+          "themes": 42,
+          "peer_mean": 0.021242733357272024,
+          "peer_median": 0.005859863143025088,
+          "peer_positive_rate": 0.52,
+          "peer_date_ci95": [
+            -0.0077358351483777,
+            0.05566290264632387
+          ],
+          "peer_theme_ci95": [
+            -0.02381909611866308,
+            0.04080080588207108
+          ],
+          "spy_mean": 0.036352999378651954,
+          "mfe_mean": 0.13304656729499958,
+          "mae_mean": -0.07802658142562058
+        },
+        "20": {
+          "n": 75,
+          "dates": 67,
+          "themes": 42,
+          "peer_mean": 0.010728442656697418,
+          "peer_median": -0.0073398891724334725,
+          "peer_positive_rate": 0.4533333333333333,
+          "peer_date_ci95": [
+            -0.0300278400738813,
+            0.04566739630835675
+          ],
+          "peer_theme_ci95": [
+            -0.046972045453093525,
+            0.038113820050030035
+          ],
+          "spy_mean": 0.03589537947131346,
+          "mfe_mean": 0.19120154880041124,
+          "mae_mean": -0.10757588054759583
+        }
+      },
+      "paired_wait_vs_ignite": {
+        "5": {
+          "n": 75,
+          "confirm_peer_mean": 0.02444549034080607,
+          "ignition_peer_mean": 0.058665150206074636,
+          "wait_minus_ignite": -0.03421965986526857,
+          "date_ci95": [
+            -0.05790184723171401,
+            -0.007498776289944097
+          ],
+          "theme_ci95": [
+            -0.05900384882706012,
+            -0.02022748703584158
+          ]
+        },
+        "10": {
+          "n": 75,
+          "confirm_peer_mean": 0.021242733357272024,
+          "ignition_peer_mean": 0.04656173253365892,
+          "wait_minus_ignite": -0.02531899917638689,
+          "date_ci95": [
+            -0.04431183030706378,
+            -0.007765399272995141
+          ],
+          "theme_ci95": [
+            -0.04588526206635172,
+            -0.01469507307939894
+          ]
+        },
+        "20": {
+          "n": 75,
+          "confirm_peer_mean": 0.010728442656697418,
+          "ignition_peer_mean": 0.049342057809129494,
+          "wait_minus_ignite": -0.038613615152432085,
+          "date_ci95": [
+            -0.05984505073420574,
+            -0.021772691864997504
+          ],
+          "theme_ci95": [
+            -0.05688946258105718,
+            -0.02244772390396902
+          ]
+        }
+      }
+    },
+    "3": {
+      "eligible": 229,
+      "fast_breakout": 24,
+      "any_followthrough": 87,
+      "prebreakout_followthrough": 68,
+      "prebreakout_followthrough_rate": 0.29694323144104806,
+      "forward": {
+        "5": {
+          "n": 68,
+          "dates": 63,
+          "themes": 41,
+          "peer_mean": 0.006425619473685517,
+          "peer_median": 0.000685232858915738,
+          "peer_positive_rate": 0.5,
+          "peer_date_ci95": [
+            -0.013296393165570916,
+            0.03290573159465586
+          ],
+          "peer_theme_ci95": [
+            -0.011551476921757047,
+            0.025806250168490304
+          ],
+          "spy_mean": 0.0015068246634048863,
+          "mfe_mean": 0.08095460004949824,
+          "mae_mean": -0.06269505587411513
+        },
+        "10": {
+          "n": 68,
+          "dates": 63,
+          "themes": 41,
+          "peer_mean": 0.017359097447645654,
+          "peer_median": -0.0015073162853394117,
+          "peer_positive_rate": 0.4852941176470588,
+          "peer_date_ci95": [
+            -0.015124505771021817,
+            0.04565729698784661
+          ],
+          "peer_theme_ci95": [
+            -0.014720338279306236,
+            0.04912175120929448
+          ],
+          "spy_mean": 0.02506334933753946,
+          "mfe_mean": 0.12325143432801594,
+          "mae_mean": -0.08175355088427859
+        },
+        "20": {
+          "n": 68,
+          "dates": 63,
+          "themes": 41,
+          "peer_mean": 0.04186707898959868,
+          "peer_median": -0.009477335255594865,
+          "peer_positive_rate": 0.45588235294117646,
+          "peer_date_ci95": [
+            -0.01539959091389437,
+            0.07947435362509658
+          ],
+          "peer_theme_ci95": [
+            -0.021620935022648516,
+            0.0900305586010817
+          ],
+          "spy_mean": 0.05769456988525041,
+          "mfe_mean": 0.21204204813609903,
+          "mae_mean": -0.11545867975038035
+        }
+      },
+      "paired_wait_vs_ignite": {
+        "5": {
+          "n": 68,
+          "confirm_peer_mean": 0.006425619473685517,
+          "ignition_peer_mean": 0.05473400154304019,
+          "wait_minus_ignite": -0.04830838206935468,
+          "date_ci95": [
+            -0.06466022375803217,
+            -0.03470048000416184
+          ],
+          "theme_ci95": [
+            -0.06352939675197153,
+            -0.03269931826560812
+          ]
+        },
+        "10": {
+          "n": 68,
+          "confirm_peer_mean": 0.017359097447645654,
+          "ignition_peer_mean": 0.04486110663446747,
+          "wait_minus_ignite": -0.02750200918682181,
+          "date_ci95": [
+            -0.057156024243036486,
+            -0.008107709833248123
+          ],
+          "theme_ci95": [
+            -0.05001103743749547,
+            -0.00032336244267115516
+          ]
+        },
+        "20": {
+          "n": 68,
+          "confirm_peer_mean": 0.04186707898959868,
+          "ignition_peer_mean": 0.0627704049504139,
+          "wait_minus_ignite": -0.02090332596081522,
+          "date_ci95": [
+            -0.054519223739939,
+            0.006744963172315098
+          ],
+          "theme_ci95": [
+            -0.0507501885844781,
+            0.005455766959981109
+          ]
+        }
+      }
+    }
+  }
+}

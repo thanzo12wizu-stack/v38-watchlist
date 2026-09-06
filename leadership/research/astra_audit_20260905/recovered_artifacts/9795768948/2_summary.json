@@ -1,0 +1,130 @@
+{
+  "status": "TQQQ_BASE30_VS40_FINAL_STRESS_AUDIT",
+  "scope": "Only normal Stage34 base exposure differs: 30% vs 40%. Final portfolio rules remain fixed for integrated bootstrap; TQQQ hierarchy/risk rules remain fixed for Stage34 normal/adversarial stress.",
+  "integrated_historical": {
+    "B30": {
+      "cagr": 0.4553398873186101,
+      "mdd": -0.25771555145205083,
+      "sharpe": 1.4464066964327724,
+      "end": 45.78098883740754
+    },
+    "B40": {
+      "cagr": 0.47093091395146724,
+      "mdd": -0.25538340749001165,
+      "sharpe": 1.4541578003105429,
+      "end": 51.03229418126982
+    }
+  },
+  "integrated_paired_block": {
+    "nsim": 2000,
+    "block": 120,
+    "horizon": 2520,
+    "prob_b40_cagr_better": 0.9135,
+    "delta_cagr_median": 0.018298811253736447,
+    "delta_cagr_p05": -0.004065866281520036,
+    "delta_cagr_p95": 0.04501720360421043,
+    "prob_b40_terminal_wealth_better": 0.9135,
+    "delta_log_terminal_wealth_median": 0.12274003020005653,
+    "prob_b40_mdd_no_worse": 0.4725,
+    "delta_mdd_median": -0.0010622881689668628,
+    "delta_mdd_p05": -0.02437118656143499,
+    "prob_b40_both_cagr_better_and_mdd_no_worse": 0.4445
+  },
+  "stage34_tqqq": {
+    "historical": [
+      {
+        "candidate": "B30",
+        "cagr": 0.2764808686341702,
+        "mdd": -0.20264540737233772,
+        "end": 45.27334243740125,
+        "avg_exp": 0.33392585068562725,
+        "turnover": 153.2,
+        "ext_days": 0
+      },
+      {
+        "candidate": "B40",
+        "cagr": 0.29999727504593654,
+        "mdd": -0.2537491172552241,
+        "end": 60.21052680179096,
+        "avg_exp": 0.3961655662772982,
+        "turnover": 144.0,
+        "ext_days": 0
+      }
+    ],
+    "normal_pair": {
+      "prob_b40_cagr_better": 0.964,
+      "delta_cagr_median": 0.02402821990929882,
+      "delta_cagr_p05": 0.0019503759015694687,
+      "delta_cagr_p95": 0.04827783230888003,
+      "prob_b40_mdd_no_worse": 0.077,
+      "delta_mdd_median": -0.024559570869802372,
+      "delta_mdd_p05": -0.05225497961004607,
+      "prob_b40_both": 0.075
+    },
+    "bear_pair": {
+      "prob_b40_cagr_better": 0.798,
+      "delta_cagr_median": 0.011009905110177631,
+      "delta_cagr_p05": -0.009462378661722526,
+      "delta_cagr_p95": 0.036861562960118305,
+      "prob_b40_mdd_no_worse": 0.015,
+      "delta_mdd_median": -0.0502145646976786,
+      "delta_mdd_p05": -0.08727810050567343,
+      "prob_b40_both": 0.015
+    },
+    "bear_family_pair": [
+      {
+        "family": "2022_like",
+        "prob_b40_cagr_better": 0.888,
+        "delta_cagr_median": 0.01548691852781714,
+        "delta_cagr_p05": -0.003928851340349592,
+        "delta_cagr_p95": 0.03889923097400727,
+        "prob_b40_mdd_no_worse": 0.028,
+        "delta_mdd_median": -0.03593752390373772,
+        "delta_mdd_p05": -0.06473609015734956,
+        "prob_b40_both": 0.028
+      },
+      {
+        "family": "covid_like",
+        "prob_b40_cagr_better": 0.956,
+        "delta_cagr_median": 0.021524096274678217,
+        "delta_cagr_p05": 0.00044823440800381155,
+        "delta_cagr_p95": 0.04262417684801002,
+        "prob_b40_mdd_no_worse": 0.032,
+        "delta_mdd_median": -0.037818358720211886,
+        "delta_mdd_p05": -0.057119624132030575,
+        "prob_b40_both": 0.032
+      },
+      {
+        "family": "dotcom_like",
+        "prob_b40_cagr_better": 0.64,
+        "delta_cagr_median": 0.003846766724729833,
+        "delta_cagr_p05": -0.01253693505079707,
+        "delta_cagr_p95": 0.02195518050810474,
+        "prob_b40_mdd_no_worse": 0.0,
+        "delta_mdd_median": -0.07516148493393499,
+        "delta_mdd_p05": -0.09867132185962613,
+        "prob_b40_both": 0.0
+      },
+      {
+        "family": "gfc_like",
+        "prob_b40_cagr_better": 0.708,
+        "delta_cagr_median": 0.00524528612232833,
+        "delta_cagr_p05": -0.011527980883926413,
+        "delta_cagr_p95": 0.025106628179221387,
+        "prob_b40_mdd_no_worse": 0.0,
+        "delta_mdd_median": -0.055049862515012093,
+        "delta_mdd_p05": -0.07062758149000996,
+        "prob_b40_both": 0.0
+      }
+    ],
+    "nsim": 1000,
+    "block": 120,
+    "horizon": 2520,
+    "cost_oneway_bps": 5
+  },
+  "limitations": [
+    "Integrated block bootstrap resamples the observed final-portfolio daily return pairs and does not synthesize individual-stock behavior inside artificial bear episodes.",
+    "Adversarial Bear stress is therefore applied to the TQQQ hierarchy itself using the exact Stage34 synthetic episode machinery; stock/Reset sleeves are held outside that synthetic test.",
+    "Existing MC57 PIT/survivorship and NQSAR proxy caveats remain unchanged."
+  ]
+}

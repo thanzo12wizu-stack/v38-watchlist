@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "research_only": true,
+  "membership_evidence": "CURRENT_MEMBERSHIP_RETROSPECTIVE_NOT_PIT",
+  "supplemental_zero_member_themes": {
+    "CIBR": "FIRSTTRUST_EXACT_SUPPLEMENT",
+    "SKYY": "FIRSTTRUST_EXACT_SUPPLEMENT",
+    "GRID": "FIRSTTRUST_EXACT_SUPPLEMENT",
+    "FAN": "FIRSTTRUST_EXACT_SUPPLEMENT"
+  },
+  "shard": 0,
+  "shards": 8,
+  "requested": 279,
+  "valid_lookup": 279,
+  "downloaded_common_close_volume": 261,
+  "coverage": 0.9354838709677419,
+  "invalid_normalization": [],
+  "missing": [
+    ".PHOR1 RU",
+    "600392.SS",
+    "600995.SS",
+    "603663.SS",
+    "688390.SS",
+    "AVZ.AX",
+    "BA.L",
+    "CVV.TO",
+    "EU.TO",
+    "H.CT",
+    "HEIA",
+    "HPS/A.CT",
+    "IAG-L",
+    "IXPU6",
+    "KDCREIT.SI",
+    "LAND.SE",
+    "NANO.SI",
+    "VER.AV"
+  ],
+  "errors": [],
+  "rows": 1221,
+  "start": "2022-01-03",
+  "end": "2026-09-04"
+}

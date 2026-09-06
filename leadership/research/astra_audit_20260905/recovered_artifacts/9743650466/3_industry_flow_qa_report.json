@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "research_only": true,
+  "quality": "EXACT_OFFICIAL_SHARES_OUTSTANDING_DERIVED_ON_ACTUAL_ETF_TRADING_DAYS",
+  "window": {
+    "start": "2022-01-01",
+    "end": "2026-08-17"
+  },
+  "providers": {
+    "XBI": "SSGA",
+    "XME": "SSGA",
+    "SOXX": "ISHARES",
+    "IGV": "ISHARES"
+  },
+  "price_calendar_download": {
+    "requested": 4,
+    "downloaded_common_ohlcv": 4,
+    "rows": 1205,
+    "start": "2021-11-02",
+    "end": "2026-08-21",
+    "failed_batches": 0
+  },
+  "diagnostics": [
+    {
+      "ticker": "XBI",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xbi.xlsx",
+      "official_history_first": "2006-02-21",
+      "official_history_last": "2026-08-27",
+      "trading_days": 1159,
+      "valid_flow_1d": 1159,
+      "trading_day_coverage": 1.0,
+      "valid_flow_20d": 1159,
+      "last_date": "2026-08-17",
+      "last_flow_20d_usd": 286443813.8000001,
+      "last_flow_20d_pct_aum": 2.648287968310033,
+      "split_events": 1
+    },
+    {
+      "ticker": "XME",
+      "provider": "SSGA",
+      "source_url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-xme.xlsx",
+      "official_history_first": "2006-06-20",
+      "official_history_last": "2026-08-27",
+      "trading_days": 1159,
+      "valid_flow_1d": 1159,
+      "trading_day_coverage": 1.0,
+      "valid_flow_20d": 1159,
+      "last_date": "2026-08-17",
+      "last_flow_20d_usd": -21799124.099999957,
+      "last_flow_20d_pct_aum": -0.4813876526670823,
+      "split_events": 0
+    },
+    {
+      "ticker": "SOXX",
+      "provider": "ISHARES",
+      "source_url": "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=fundDownload&locale=en_US&portfolioId=239705&targetSite=us-ishares&userType=individual&excludeContent=true",
+      "official_history_first": "2001-07-10",
+      "official_history_last": "2026-08-28",
+      "trading_days": 1159,
+      "valid_flow_1d": 1159,
+      "trading_day_coverage": 1.0,
+      "valid_flow_20d": 1159,
+      "last_date": "2026-08-17",
+      "last_flow_20d_usd": -5766611404.699999,
+      "last_flow_20d_pct_aum": -13.10295482168932,
+      "split_events": 0
+    },
+    {
+      "ticker": "IGV",
+      "provider": "ISHARES",
+      "source_url": "https://www.ishares.com/varnish-api/blk-one01-product-data/product-data/api/v2/get-product-data?appSubType=ISHARES&appType=PRODUCT_PAGE&component=fundDownload&locale=en_US&portfolioId=239771&targetSite=us-ishares&userType=individual&excludeContent=true",
+      "official_history_first": "2001-07-10",
+      "official_history_last": "2026-08-28",
+      "trading_days": 1159,
+      "valid_flow_1d": 1159,
+      "trading_day_coverage": 1.0,
+      "valid_flow_20d": 1159,
+      "last_date": "2026-08-17",
+      "last_flow_20d_usd": -514387809.0000004,
+      "last_flow_20d_pct_aum": -3.59161509969888,
+      "split_events": 0
+    }
+  ],
+  "failures": [],
+  "usable_for_rotation_flow_layer": true,
+  "guardrail": "Dollar Volume is never substituted for Fund Flow. 5D/20D sums use actual ETF trading dates, not provider weekend/stale rows."
+}

@@ -1,0 +1,22 @@
+{
+  "status": "NORMAL_STOCK_TIERED_MODES_V4",
+  "scope": "normal stock only",
+  "fixed_boundaries": {
+    "attack_pa50": 0.6,
+    "selective_pa50": [
+      0.5,
+      0.6
+    ],
+    "post_red_restart_pa50": 0.5,
+    "defense": "NQSAR Red"
+  },
+  "selective_capacity_tests": [
+    4,
+    6,
+    8
+  ],
+  "sizing": "each slot remains 1/12 of normal-stock sleeve NAV; 4/6/8 slots target about 33/50/67% sleeve exposure rather than concentration",
+  "repair": "Yellow/non-Red with breadth>=50 tested on/off",
+  "downgrade_trim": "entry-only vs immediate trim tested at N=6",
+  "note": "Thresholds frozen from V3 before this sizing test. No RSI30/TQQQ/shallow rule changes. No main/dashboard changes."
+}

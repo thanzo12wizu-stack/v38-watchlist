@@ -1,0 +1,40 @@
+{
+  "status": "RSI_STRENGTH_THRESHOLD_INTERACTION_AUDIT",
+  "coverage": {
+    "candidate_rows": 12175,
+    "symbols": 2192,
+    "group_sizes": {
+      "RS63_TOP3": 9675,
+      "RS63_TOP1": 3225,
+      "DUAL_TOP3": 7175,
+      "DUAL_TOP2": 3880,
+      "DUAL_TOP1": 1515,
+      "DUAL_OUTPERFORM": 5372
+    }
+  },
+  "definitions": {
+    "strength_freeze": "all strength groups use only Theme Momentum Day0 fields",
+    "RS63_TOP3": "top three 63-day returns inside the Day0 theme",
+    "RS63_TOP1": "top one 63-day return inside the Day0 theme",
+    "DUAL_TOP3": "top three on both 63-day and 189-day returns",
+    "DUAL_TOP2": "top two on both 63-day and 189-day returns",
+    "DUAL_TOP1": "top one on both 63-day and 189-day returns",
+    "DUAL_OUTPERFORM": "DUAL_TOP3 and both 63-day/189-day return above SPY on Day0",
+    "TOUCH": "first RSI14 observation at or below threshold within 20 sessions of Day0",
+    "RISE": "first RSI14 up-day after TOUCH, still searched inside the same 20-session window",
+    "entry": "signal known at close; buy next open; 5 bps per side"
+  },
+  "download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3298,
+    "start": "2013-07-18",
+    "end": "2026-08-27",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Current-universe/current-taxonomy retrospective bias remains.",
+    "Nested strength groups and six thresholds create multiple comparisons; require discovery/confirmation agreement and clustered intervals.",
+    "Yahoo adjusted OHLCV may differ from TradingView."
+  ]
+}

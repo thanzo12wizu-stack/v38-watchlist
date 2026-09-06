@@ -1,0 +1,28 @@
+{
+  "status": "CUSTOM_MARKET_MODE_AUDIT_V2",
+  "coverage": {
+    "start": "2016-01-04",
+    "end": "2026-03-20",
+    "sessions": 2568
+  },
+  "focus": {
+    "normal_structure": "NQSAR Blue/Green",
+    "temperature": "MC57 fixed at 30/35 only after V1 plateau review",
+    "broad_breadth": "current-universe percent above 50MA fixed at 40/50/60 after V1 plateau review",
+    "direction": "10-session change in broad 50MA breadth only for focused restart tests",
+    "damage": "F3<60 tested once as optional veto; F1/F2 removed after V1 trading-gate failure"
+  },
+  "mode_families": {
+    "MC30_PA50": "ATTACK=NQSAR Blue/Green + MC>=30 + >50MA breadth>=50%; SELECTIVE=remaining Blue/Green; REPAIR=not Blue/Green + MC20-50 rising + 10d broad breadth nonnegative; DEFENSE=remainder",
+    "MC35_PA40": "same, ATTACK uses MC>=35 and >50MA breadth>=40%",
+    "MC35_PA50": "same, ATTACK uses MC>=35 and >50MA breadth>=50%"
+  },
+  "validation_policy": "No broad optimization in V2. Only V1 plateau-adjacent thresholds are compared on full normal-stock portfolio and the existing shallow signal set.",
+  "limitations": [
+    "Normal-stock sleeve is the existing comparison reconstruction, not the missing exact production ledger.",
+    "Current-universe survivorship bias remains in broad breadth and stock outcomes.",
+    "2022+ has already been inspected and is robustness confirmation rather than pristine OOS.",
+    "Shallow sleeve uses the already-frozen mature M10 RSI60 micro-pullback condition; V2 changes only market-mode labeling.",
+    "No main-branch or dashboard logic is changed."
+  ]
+}

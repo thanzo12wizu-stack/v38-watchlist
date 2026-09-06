@@ -1,0 +1,720 @@
+{
+  "status": "ROTATION_NEW_ENTRY_BLOCK_RESEARCH",
+  "research_only": true,
+  "decision": "Does a Sector Rotation warning add value by blocking only fresh entries while leaving held leaders and all adopted exits unchanged?",
+  "variants": [
+    {
+      "name": "BASE",
+      "kind": "NONE"
+    },
+    {
+      "name": "BLOCK_STRONG_DETERIORATION_W10",
+      "kind": "W10"
+    },
+    {
+      "name": "BLOCK_STRONG_DETERIORATION_W20",
+      "kind": "W20"
+    },
+    {
+      "name": "BLOCK_STRONG_DETERIORATION_W20_FLOWOUT",
+      "kind": "W20_FLOW"
+    },
+    {
+      "name": "BLOCK_DISTRIBUTION_TRAP",
+      "kind": "DIST_TRAP"
+    }
+  ],
+  "strict_pit": {
+    "BASE": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.524522725751007,
+          "cagr": 0.43859696140436233,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.4080794600666982,
+          "positive_days": 0.3546845124282983
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.783676066473508,
+          "cagr": 0.722011972911704,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7340068110932099,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.64995843721286,
+          "cagr": 0.9597870649738995,
+          "mdd": -0.1646048759399764,
+          "sharpe": 1.9619864274093402,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 294,
+        "mapped_sector": 23,
+        "state_available": 23,
+        "blocked_decisions": 0
+      },
+      "blocked_forward": {
+        "decisions": 0,
+        "unique20d_events": 0
+      }
+    },
+    "BLOCK_STRONG_DETERIORATION_W10": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.5820931737713924,
+          "cagr": 0.4429857836446711,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.4219227955945986,
+          "positive_days": 0.35372848948374763
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.8148664110484565,
+          "cagr": 0.7277956250007096,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7475747995681123,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.6850380751134617,
+          "cagr": 0.977662098852146,
+          "mdd": -0.15506933288822367,
+          "sharpe": 1.9909437639384158,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 295,
+        "mapped_sector": 23,
+        "state_available": 23,
+        "blocked_decisions": 3
+      },
+      "blocked_forward": {
+        "decisions": 3,
+        "unique20d_events": 3,
+        "ret_20": {
+          "n": 3,
+          "mean": -0.07448902266057866,
+          "median": -0.03692302973108397,
+          "negative_rate": 1.0
+        },
+        "max_up_20": {
+          "mean": -0.005155595317393735,
+          "ge20_rate": 0.0,
+          "ge50_rate": 0.0
+        },
+        "ret_40": {
+          "n": 3,
+          "mean": 0.11151938282145284,
+          "median": 0.10224493849964844,
+          "negative_rate": 0.0
+        },
+        "max_up_40": {
+          "mean": 0.14947815307645676,
+          "ge20_rate": 0.0,
+          "ge50_rate": 0.0
+        },
+        "ret_63": {
+          "n": 3,
+          "mean": 0.2738107425185646,
+          "median": 0.25079743257195086,
+          "negative_rate": 0.0
+        },
+        "max_up_63": {
+          "mean": 0.34011146817712995,
+          "ge20_rate": 0.6666666666666666,
+          "ge50_rate": 0.0
+        }
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.716,
+        "2024_plus": 0.6802,
+        "2025_plus": 0.8492
+      }
+    },
+    "BLOCK_STRONG_DETERIORATION_W20": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.5222287827027756,
+          "cagr": 0.4384212089333521,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.408805498180504,
+          "positive_days": 0.35372848948374763
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.7650257277527115,
+          "cagr": 0.7185401408620709,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7291179067045535,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.64995843721286,
+          "cagr": 0.9597870649738995,
+          "mdd": -0.16460487593997652,
+          "sharpe": 1.9619864274093395,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 295,
+        "mapped_sector": 23,
+        "state_available": 23,
+        "blocked_decisions": 2
+      },
+      "blocked_forward": {
+        "decisions": 2,
+        "unique20d_events": 2,
+        "ret_20": {
+          "n": 2,
+          "mean": -0.09327201912532601,
+          "median": -0.09327201912532601,
+          "negative_rate": 1.0
+        },
+        "max_up_20": {
+          "mean": -0.009640396161949838,
+          "ge20_rate": 0.0,
+          "ge50_rate": 0.0
+        },
+        "ret_40": {
+          "n": 2,
+          "mean": 0.09481501681988669,
+          "median": 0.09481501681988669,
+          "negative_rate": 0.0
+        },
+        "max_up_40": {
+          "mean": 0.14972547831746463,
+          "ge20_rate": 0.0,
+          "ge50_rate": 0.0
+        },
+        "ret_63": {
+          "n": 2,
+          "mean": 0.28531739749187146,
+          "median": 0.28531739749187146,
+          "negative_rate": 0.0
+        },
+        "max_up_63": {
+          "mean": 0.3118005006324731,
+          "ge20_rate": 0.5,
+          "ge50_rate": 0.0
+        }
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.4988,
+        "2024_plus": 0.4022,
+        "2025_plus": 0.5898
+      }
+    },
+    "BLOCK_STRONG_DETERIORATION_W20_FLOWOUT": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.524522725751007,
+          "cagr": 0.43859696140436233,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.4080794600666982,
+          "positive_days": 0.3546845124282983
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.783676066473508,
+          "cagr": 0.722011972911704,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7340068110932099,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.64995843721286,
+          "cagr": 0.9597870649738995,
+          "mdd": -0.1646048759399764,
+          "sharpe": 1.9619864274093402,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 294,
+        "mapped_sector": 23,
+        "state_available": 23,
+        "blocked_decisions": 0
+      },
+      "blocked_forward": {
+        "decisions": 0,
+        "unique20d_events": 0
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.0,
+        "2024_plus": 0.0,
+        "2025_plus": 0.0
+      }
+    },
+    "BLOCK_DISTRIBUTION_TRAP": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.524522725751007,
+          "cagr": 0.43859696140436233,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.4080794600666982,
+          "positive_days": 0.3546845124282983
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.783676066473508,
+          "cagr": 0.722011972911704,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7340068110932099,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.64995843721286,
+          "cagr": 0.9597870649738995,
+          "mdd": -0.1646048759399764,
+          "sharpe": 1.9619864274093402,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 294,
+        "mapped_sector": 23,
+        "state_available": 23,
+        "blocked_decisions": 0
+      },
+      "blocked_forward": {
+        "decisions": 0,
+        "unique20d_events": 0
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.0,
+        "2024_plus": 0.0,
+        "2025_plus": 0.0
+      }
+    }
+  },
+  "broad_current_classification_sensitivity": {
+    "BASE": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.524522725751007,
+          "cagr": 0.43859696140436233,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.4080794600666982,
+          "positive_days": 0.3546845124282983
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.783676066473508,
+          "cagr": 0.722011972911704,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7340068110932099,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.64995843721286,
+          "cagr": 0.9597870649738995,
+          "mdd": -0.1646048759399764,
+          "sharpe": 1.9619864274093402,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 294,
+        "mapped_sector": 258,
+        "state_available": 258,
+        "blocked_decisions": 0
+      },
+      "blocked_forward": {
+        "decisions": 0,
+        "unique20d_events": 0
+      }
+    },
+    "BLOCK_STRONG_DETERIORATION_W10": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.180281771826313,
+          "cagr": 0.4114303922088458,
+          "mdd": -0.20467663431341776,
+          "sharpe": 1.3607977631724424,
+          "positive_days": 0.35564053537284895
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.5788976074827876,
+          "cagr": 0.6833198317297979,
+          "mdd": -0.20467663431341776,
+          "sharpe": 1.694824967112877,
+          "positive_days": 0.419773095623987
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.5090944610434298,
+          "cagr": 0.8872564710120154,
+          "mdd": -0.20467663431341776,
+          "sharpe": 1.898216805679762,
+          "positive_days": 0.40273972602739727
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 334,
+        "mapped_sector": 297,
+        "state_available": 297,
+        "blocked_decisions": 46
+      },
+      "blocked_forward": {
+        "decisions": 46,
+        "unique20d_events": 35,
+        "ret_20": {
+          "n": 35,
+          "mean": 0.03705081903205022,
+          "median": 0.05497807731419324,
+          "negative_rate": 0.42857142857142855
+        },
+        "max_up_20": {
+          "mean": 0.16152455882605327,
+          "ge20_rate": 0.37142857142857144,
+          "ge50_rate": 0.05714285714285714
+        },
+        "ret_40": {
+          "n": 35,
+          "mean": 0.0592468182705738,
+          "median": 0.08036675822762662,
+          "negative_rate": 0.4
+        },
+        "max_up_40": {
+          "mean": 0.28987293699788536,
+          "ge20_rate": 0.6,
+          "ge50_rate": 0.14285714285714285
+        },
+        "ret_63": {
+          "n": 35,
+          "mean": 0.12747662142357255,
+          "median": 0.023535777522139645,
+          "negative_rate": 0.45714285714285713
+        },
+        "max_up_63": {
+          "mean": 0.4041812690574334,
+          "ge20_rate": 0.6571428571428571,
+          "ge50_rate": 0.2571428571428571
+        }
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.137,
+        "2024_plus": 0.1954,
+        "2025_plus": 0.188
+      }
+    },
+    "BLOCK_STRONG_DETERIORATION_W20": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.284235413410123,
+          "cagr": 0.4198076779773565,
+          "mdd": -0.18034328936902044,
+          "sharpe": 1.3809574056379947,
+          "positive_days": 0.35372848948374763
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.6625599971906766,
+          "cagr": 0.6992818059478307,
+          "mdd": -0.18034328936902044,
+          "sharpe": 1.7229134237641202,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.5948132615538961,
+          "cagr": 0.931538618515235,
+          "mdd": -0.18034328936902044,
+          "sharpe": 1.9689750815349756,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 321,
+        "mapped_sector": 284,
+        "state_available": 284,
+        "blocked_decisions": 34
+      },
+      "blocked_forward": {
+        "decisions": 34,
+        "unique20d_events": 23,
+        "ret_20": {
+          "n": 23,
+          "mean": 0.005963497306183517,
+          "median": 0.02173916799284603,
+          "negative_rate": 0.4782608695652174
+        },
+        "max_up_20": {
+          "mean": 0.12442830842139527,
+          "ge20_rate": 0.21739130434782608,
+          "ge50_rate": 0.043478260869565216
+        },
+        "ret_40": {
+          "n": 23,
+          "mean": 0.08396216120469924,
+          "median": 0.09466699750798702,
+          "negative_rate": 0.34782608695652173
+        },
+        "max_up_40": {
+          "mean": 0.27854801389498235,
+          "ge20_rate": 0.4782608695652174,
+          "ge50_rate": 0.13043478260869565
+        },
+        "ret_63": {
+          "n": 23,
+          "mean": 0.1463791983866658,
+          "median": 0.025095017266558717,
+          "negative_rate": 0.43478260869565216
+        },
+        "max_up_63": {
+          "mean": 0.40887921528378507,
+          "ge20_rate": 0.5652173913043478,
+          "ge50_rate": 0.21739130434782608
+        }
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.1582,
+        "2024_plus": 0.2258,
+        "2025_plus": 0.2696
+      }
+    },
+    "BLOCK_STRONG_DETERIORATION_W20_FLOWOUT": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.2822247587018207,
+          "cagr": 0.41964711703151547,
+          "mdd": -0.17734391928462634,
+          "sharpe": 1.3689072031102336,
+          "positive_days": 0.35372848948374763
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.5810520386039117,
+          "cagr": 0.6837336294042318,
+          "mdd": -0.17734391928462634,
+          "sharpe": 1.679117317070037,
+          "positive_days": 0.413290113452188
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.5657431388565302,
+          "cagr": 0.9165725397996229,
+          "mdd": -0.1646048759399764,
+          "sharpe": 1.9197788247841834,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 296,
+        "mapped_sector": 260,
+        "state_available": 260,
+        "blocked_decisions": 3
+      },
+      "blocked_forward": {
+        "decisions": 3,
+        "unique20d_events": 2,
+        "ret_20": {
+          "n": 2,
+          "mean": 0.16665192795649808,
+          "median": 0.16665192795649808,
+          "negative_rate": 0.0
+        },
+        "max_up_20": {
+          "mean": 0.20133434800817696,
+          "ge20_rate": 0.5,
+          "ge50_rate": 0.0
+        },
+        "ret_40": {
+          "n": 2,
+          "mean": 0.033352188984240194,
+          "median": 0.033352188984240194,
+          "negative_rate": 0.5
+        },
+        "max_up_40": {
+          "mean": 0.2770071249993624,
+          "ge20_rate": 1.0,
+          "ge50_rate": 0.0
+        },
+        "ret_63": {
+          "n": 2,
+          "mean": 0.22917174176812338,
+          "median": 0.22917174176812338,
+          "negative_rate": 0.0
+        },
+        "max_up_63": {
+          "mean": 0.3588252927009391,
+          "ge20_rate": 1.0,
+          "ge50_rate": 0.0
+        }
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.1206,
+        "2024_plus": 0.1174,
+        "2025_plus": 0.2324
+      }
+    },
+    "BLOCK_DISTRIBUTION_TRAP": {
+      "metrics": {
+        "2022_plus": {
+          "n": 1047,
+          "total_return": 3.4023483122242375,
+          "cagr": 0.42914080084376915,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.3919762315123587,
+          "positive_days": 0.35372848948374763
+        },
+        "2024_plus": {
+          "n": 618,
+          "total_return": 2.7043556595939773,
+          "cagr": 0.7071752710830053,
+          "mdd": -0.1773439192846269,
+          "sharpe": 1.7238982512754946,
+          "positive_days": 0.41491085899513774
+        },
+        "2025_plus": {
+          "n": 366,
+          "total_return": 1.5657431388565284,
+          "cagr": 0.916572539799622,
+          "mdd": -0.16460487593997652,
+          "sharpe": 1.9197788247841825,
+          "positive_days": 0.3917808219178082
+        }
+      },
+      "coverage": {
+        "candidate_decisions": 295,
+        "mapped_sector": 259,
+        "state_available": 259,
+        "blocked_decisions": 4
+      },
+      "blocked_forward": {
+        "decisions": 4,
+        "unique20d_events": 4,
+        "ret_20": {
+          "n": 4,
+          "mean": 0.09712033271031442,
+          "median": 0.08442970577713793,
+          "negative_rate": 0.25
+        },
+        "max_up_20": {
+          "mean": 0.19122957023714665,
+          "ge20_rate": 0.5,
+          "ge50_rate": 0.0
+        },
+        "ret_40": {
+          "n": 4,
+          "mean": -0.15163583593004384,
+          "median": -0.14964493186257777,
+          "negative_rate": 1.0
+        },
+        "max_up_40": {
+          "mean": 0.20550697762951098,
+          "ge20_rate": 0.5,
+          "ge50_rate": 0.0
+        },
+        "ret_63": {
+          "n": 4,
+          "mean": -0.07006834101984133,
+          "median": -0.1156216982963223,
+          "negative_rate": 0.75
+        },
+        "max_up_63": {
+          "mean": 0.20550697762951098,
+          "ge20_rate": 0.5,
+          "ge50_rate": 0.0
+        }
+      },
+      "block20_win_probability_vs_base": {
+        "2022_plus": 0.3084,
+        "2024_plus": 0.334,
+        "2025_plus": 0.236
+      }
+    }
+  },
+  "current_mapper_validation": {
+    "latest_snapshot": "2026-08-31",
+    "n_common": 497,
+    "n_classified": 416,
+    "classification_coverage_common": 0.8370221327967807,
+    "accuracy": 0.9278846153846154,
+    "by_predicted": [
+      {
+        "pred_sector_etf": "XLB",
+        "n": 27,
+        "accuracy": 0.8888888888888888
+      },
+      {
+        "pred_sector_etf": "XLC",
+        "n": 12,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLE",
+        "n": 14,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLF",
+        "n": 65,
+        "accuracy": 0.9846153846153847
+      },
+      {
+        "pred_sector_etf": "XLI",
+        "n": 44,
+        "accuracy": 0.9090909090909091
+      },
+      {
+        "pred_sector_etf": "XLK",
+        "n": 81,
+        "accuracy": 0.8024691358024691
+      },
+      {
+        "pred_sector_etf": "XLP",
+        "n": 25,
+        "accuracy": 0.96
+      },
+      {
+        "pred_sector_etf": "XLRE",
+        "n": 29,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLU",
+        "n": 32,
+        "accuracy": 0.96875
+      },
+      {
+        "pred_sector_etf": "XLV",
+        "n": 52,
+        "accuracy": 1.0
+      },
+      {
+        "pred_sector_etf": "XLY",
+        "n": 35,
+        "accuracy": 0.8857142857142857
+      }
+    ]
+  },
+  "guardrails": [
+    "Existing holdings are never sold, trimmed, or trail-tightened by Rotation.",
+    "Entry eligibility, ranking, market mode, and adopted V38 exits are unchanged; only a candidate can be skipped when its Sector warning is active.",
+    "Strict PIT is primary evidence but only covers contemporaneous S&P500 historical sector membership.",
+    "Broad current-classification mapping is look-ahead sensitivity only and cannot establish a production rule.",
+    "Blocked-candidate forward returns are deduplicated with a 20-session symbol cooldown for diagnostics."
+  ]
+}

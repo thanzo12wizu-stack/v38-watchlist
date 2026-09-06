@@ -1,0 +1,487 @@
+{
+  "status": "EARLY1_VALUE_FALSIFICATION",
+  "design": {
+    "purpose": "Test whether LIQ_ACCEL's portfolio improvement is genuine Early1 value or merely a move toward Core-only by reducing harmful Early trades.",
+    "architecture": "WITHIN12 only; identical DDV20 Core and exits. EARLY0 is created by making the Early Radar empty. No parameter selection.",
+    "dev": "2016-2020",
+    "oos": "2021-2025",
+    "block_bootstrap": "20 sessions, 10,000 reps",
+    "no_main_change": true,
+    "no_live_change": true
+  },
+  "variants": {
+    "EARLY0": {
+      "dev_2016_2020": {
+        "n": 1259,
+        "total_return": 1.2080638651396614,
+        "cagr": 0.17195708745459304,
+        "mdd": -0.27289306085965226,
+        "sharpe": 0.8105225021356467
+      },
+      "oos_2021_2025": {
+        "n": 1255,
+        "total_return": 1.512741810299655,
+        "cagr": 0.20340687940626445,
+        "mdd": -0.24921171970169187,
+        "sharpe": 0.8386883538323652
+      },
+      "full": {
+        "n": 2514,
+        "total_return": 4.556597769953976,
+        "cagr": 0.18764970089062882,
+        "mdd": -0.27289306085965226,
+        "sharpe": 0.8242283735321283
+      },
+      "year_metrics": {
+        "2016": {
+          "return": 0.03245355041308451,
+          "mdd": -0.1693594180991007,
+          "sessions": 252
+        },
+        "2017": {
+          "return": 0.012254084378724439,
+          "mdd": -0.1691250876395446,
+          "sessions": 251
+        },
+        "2018": {
+          "return": 0.04639973472575787,
+          "mdd": -0.1884826797650313,
+          "sessions": 251
+        },
+        "2019": {
+          "return": 0.18799481960444298,
+          "mdd": -0.12317857744650651,
+          "sessions": 252
+        },
+        "2020": {
+          "return": 0.6540096121077845,
+          "mdd": -0.27289306085965226,
+          "sessions": 253
+        },
+        "2021": {
+          "return": -0.009512748683106365,
+          "mdd": -0.22818462114323135,
+          "sessions": 252
+        },
+        "2022": {
+          "return": -0.017336732323543602,
+          "mdd": -0.08880944553623737,
+          "sessions": 251
+        },
+        "2023": {
+          "return": 0.21049699276109113,
+          "mdd": -0.09366346130942627,
+          "sessions": 250
+        },
+        "2024": {
+          "return": 0.4790982351987132,
+          "mdd": -0.15609094173711657,
+          "sessions": 252
+        },
+        "2025": {
+          "return": 0.48607519575101454,
+          "mdd": -0.15294628662496557,
+          "sessions": 250
+        }
+      },
+      "entries": 710,
+      "early_entries": 0,
+      "promotions": {
+        "early_entries": 0,
+        "promotions": 0,
+        "promotion_rate": null
+      },
+      "early_trade_oos": {
+        "n": 0
+      },
+      "pnl_concentration_oos": {
+        "n": 349,
+        "symbols": 243,
+        "top1_positive_pnl_share": 0.10551100326971943,
+        "top5_positive_pnl_share": 0.3362685018114833,
+        "top_positive_symbols": [
+          {
+            "symbol": "QBTS",
+            "pnl_proxy": 0.8529854067460119
+          },
+          {
+            "symbol": "CLS",
+            "pnl_proxy": 0.6135742582388751
+          },
+          {
+            "symbol": "QUBT",
+            "pnl_proxy": 0.5116320931776746
+          },
+          {
+            "symbol": "OKLO",
+            "pnl_proxy": 0.43452220671540254
+          },
+          {
+            "symbol": "AEVA",
+            "pnl_proxy": 0.3057904176489149
+          },
+          {
+            "symbol": "EOSE",
+            "pnl_proxy": 0.22898033158359626
+          },
+          {
+            "symbol": "HOOD",
+            "pnl_proxy": 0.20600804455292368
+          },
+          {
+            "symbol": "PLUG",
+            "pnl_proxy": 0.2021788849484927
+          },
+          {
+            "symbol": "PLTR",
+            "pnl_proxy": 0.1640026247245487
+          },
+          {
+            "symbol": "NTLA",
+            "pnl_proxy": 0.1568341877784962
+          }
+        ]
+      }
+    },
+    "EARLY1_BASE": {
+      "dev_2016_2020": {
+        "n": 1259,
+        "total_return": 0.9311017248989129,
+        "cagr": 0.14091136523716052,
+        "mdd": -0.21967141413351232,
+        "sharpe": 0.7113548619670074
+      },
+      "oos_2021_2025": {
+        "n": 1255,
+        "total_return": 0.7616162624471849,
+        "cagr": 0.12051476603654065,
+        "mdd": -0.40982218867249887,
+        "sharpe": 0.5627033306705242
+      },
+      "full": {
+        "n": 2514,
+        "total_return": 2.4070819800885173,
+        "cagr": 0.13080196459647353,
+        "mdd": -0.40982218867249887,
+        "sharpe": 0.6281504310659034
+      },
+      "year_metrics": {
+        "2016": {
+          "return": 0.012049286318786434,
+          "mdd": -0.16469375982068524,
+          "sessions": 252
+        },
+        "2017": {
+          "return": 0.061058002675482115,
+          "mdd": -0.12973815614986073,
+          "sessions": 251
+        },
+        "2018": {
+          "return": 0.008685809761702412,
+          "mdd": -0.18423070310863632,
+          "sessions": 251
+        },
+        "2019": {
+          "return": 0.17196638489624405,
+          "mdd": -0.12983900690144423,
+          "sessions": 252
+        },
+        "2020": {
+          "return": 0.48175375857553626,
+          "mdd": -0.21967141413351232,
+          "sessions": 253
+        },
+        "2021": {
+          "return": -0.21840654090239842,
+          "mdd": -0.3574445946734156,
+          "sessions": 252
+        },
+        "2022": {
+          "return": -0.05412528267209826,
+          "mdd": -0.09331808446310441,
+          "sessions": 251
+        },
+        "2023": {
+          "return": 0.2161984898230136,
+          "mdd": -0.105642047425766,
+          "sessions": 250
+        },
+        "2024": {
+          "return": 0.4500739165336445,
+          "mdd": -0.12896272658025743,
+          "sessions": 252
+        },
+        "2025": {
+          "return": 0.39686856055425346,
+          "mdd": -0.19354598030903825,
+          "sessions": 250
+        }
+      },
+      "entries": 738,
+      "early_entries": 108,
+      "promotions": {
+        "early_entries": 108,
+        "early_symbols": 102,
+        "promotions": 15,
+        "promotion_rate": 0.1388888888888889,
+        "median_sessions_to_promotion": 4.0
+      },
+      "early_trade_oos": {
+        "n": 61,
+        "mean_return": -0.03527204604033336,
+        "median_return": -0.0820189131006751,
+        "win_rate": 0.2459016393442623,
+        "promoted_n": 7,
+        "promoted": {
+          "n": 7,
+          "mean_return": 0.09004680873712588,
+          "median_return": -0.07439816852819359,
+          "win_rate": 0.42857142857142855
+        },
+        "not_promoted": {
+          "n": 54,
+          "mean_return": -0.051517082770744745,
+          "median_return": -0.08517475860423201,
+          "win_rate": 0.2222222222222222
+        }
+      },
+      "pnl_concentration_oos": {
+        "n": 369,
+        "symbols": 267,
+        "top1_positive_pnl_share": 0.10383147532241606,
+        "top5_positive_pnl_share": 0.32767983753891516,
+        "top_positive_symbols": [
+          {
+            "symbol": "QBTS",
+            "pnl_proxy": 0.5633844835661826
+          },
+          {
+            "symbol": "CLS",
+            "pnl_proxy": 0.39907781070262993
+          },
+          {
+            "symbol": "QUBT",
+            "pnl_proxy": 0.3338306440879397
+          },
+          {
+            "symbol": "OKLO",
+            "pnl_proxy": 0.28066927551054843
+          },
+          {
+            "symbol": "AEVA",
+            "pnl_proxy": 0.20101248478418945
+          },
+          {
+            "symbol": "PLUG",
+            "pnl_proxy": 0.19303945920814233
+          },
+          {
+            "symbol": "EOSE",
+            "pnl_proxy": 0.14059656985419794
+          },
+          {
+            "symbol": "HOOD",
+            "pnl_proxy": 0.13507303155372524
+          },
+          {
+            "symbol": "FLNC",
+            "pnl_proxy": 0.1290276958011073
+          },
+          {
+            "symbol": "IONQ",
+            "pnl_proxy": 0.12424913006937964
+          }
+        ]
+      }
+    },
+    "EARLY1_LIQ_ACCEL": {
+      "dev_2016_2020": {
+        "n": 1259,
+        "total_return": 1.1857818039902526,
+        "cagr": 0.16957841423400932,
+        "mdd": -0.1983729306484332,
+        "sharpe": 0.8277699661696795
+      },
+      "oos_2021_2025": {
+        "n": 1255,
+        "total_return": 1.1552355678899136,
+        "cagr": 0.16685820087367942,
+        "mdd": -0.3323290089318125,
+        "sharpe": 0.7350369601509055
+      },
+      "full": {
+        "n": 2514,
+        "total_return": 3.7181057717603805,
+        "cagr": 0.16832708865507673,
+        "mdd": -0.3323290089318125,
+        "sharpe": 0.7764279458242908
+      },
+      "year_metrics": {
+        "2016": {
+          "return": 0.0149831419110662,
+          "mdd": -0.15809243103150816,
+          "sessions": 252
+        },
+        "2017": {
+          "return": 0.0515236292504595,
+          "mdd": -0.12973815614986095,
+          "sessions": 251
+        },
+        "2018": {
+          "return": 0.06196329167844539,
+          "mdd": -0.18123557841011928,
+          "sessions": 251
+        },
+        "2019": {
+          "return": 0.22909127425132447,
+          "mdd": -0.11747768180125862,
+          "sessions": 252
+        },
+        "2020": {
+          "return": 0.5257162204823884,
+          "mdd": -0.1983729306484332,
+          "sessions": 253
+        },
+        "2021": {
+          "return": -0.1420794121162009,
+          "mdd": -0.28736686952076707,
+          "sessions": 252
+        },
+        "2022": {
+          "return": -0.02349105020501352,
+          "mdd": -0.0931636156783352,
+          "sessions": 251
+        },
+        "2023": {
+          "return": 0.21114047499917565,
+          "mdd": -0.1051373524089082,
+          "sessions": 250
+        },
+        "2024": {
+          "return": 0.49966350387914926,
+          "mdd": -0.12227393213880156,
+          "sessions": 252
+        },
+        "2025": {
+          "return": 0.44724182687183167,
+          "mdd": -0.1728712321745861,
+          "sessions": 250
+        }
+      },
+      "entries": 721,
+      "early_entries": 88,
+      "promotions": {
+        "early_entries": 88,
+        "early_symbols": 81,
+        "promotions": 17,
+        "promotion_rate": 0.19318181818181818,
+        "median_sessions_to_promotion": 2.0
+      },
+      "early_trade_oos": {
+        "n": 44,
+        "mean_return": -0.02846648338936587,
+        "median_return": -0.05356612051789256,
+        "win_rate": 0.3409090909090909,
+        "promoted_n": 7,
+        "promoted": {
+          "n": 7,
+          "mean_return": -0.06673783567331215,
+          "median_return": -0.04706894447063581,
+          "win_rate": 0.2857142857142857
+        },
+        "not_promoted": {
+          "n": 37,
+          "mean_return": -0.021225957281592257,
+          "median_return": -0.060063296565149304,
+          "win_rate": 0.35135135135135137
+        }
+      },
+      "pnl_concentration_oos": {
+        "n": 357,
+        "symbols": 256,
+        "top1_positive_pnl_share": 0.10949952660308501,
+        "top5_positive_pnl_share": 0.3450635520727109,
+        "top_positive_symbols": [
+          {
+            "symbol": "QBTS",
+            "pnl_proxy": 0.756679748317309
+          },
+          {
+            "symbol": "CLS",
+            "pnl_proxy": 0.5296603099151331
+          },
+          {
+            "symbol": "QUBT",
+            "pnl_proxy": 0.44783032451553756
+          },
+          {
+            "symbol": "OKLO",
+            "pnl_proxy": 0.3799962593893083
+          },
+          {
+            "symbol": "AEVA",
+            "pnl_proxy": 0.2703423127032468
+          },
+          {
+            "symbol": "PLUG",
+            "pnl_proxy": 0.21849814121592318
+          },
+          {
+            "symbol": "EOSE",
+            "pnl_proxy": 0.20030301100381986
+          },
+          {
+            "symbol": "HOOD",
+            "pnl_proxy": 0.18179573571757987
+          },
+          {
+            "symbol": "NTLA",
+            "pnl_proxy": 0.16895184635628385
+          },
+          {
+            "symbol": "MOD",
+            "pnl_proxy": 0.12341384432300787
+          }
+        ]
+      }
+    }
+  },
+  "pairwise": {
+    "EARLY0": {
+      "EARLY1_BASE": {
+        "full_win_prob": 0.9804,
+        "dev_win_prob": 0.8033,
+        "oos_win_prob": 0.9791
+      },
+      "EARLY1_LIQ_ACCEL": {
+        "full_win_prob": 0.7859,
+        "dev_win_prob": 0.5127,
+        "oos_win_prob": 0.9233
+      }
+    },
+    "EARLY1_BASE": {
+      "EARLY0": {
+        "full_win_prob": 0.0198,
+        "dev_win_prob": 0.1915,
+        "oos_win_prob": 0.0212
+      },
+      "EARLY1_LIQ_ACCEL": {
+        "full_win_prob": 0.0218,
+        "dev_win_prob": 0.0185,
+        "oos_win_prob": 0.089
+      }
+    },
+    "EARLY1_LIQ_ACCEL": {
+      "EARLY0": {
+        "full_win_prob": 0.2152,
+        "dev_win_prob": 0.4964,
+        "oos_win_prob": 0.0757
+      },
+      "EARLY1_BASE": {
+        "full_win_prob": 0.9773,
+        "dev_win_prob": 0.9811,
+        "oos_win_prob": 0.9124
+      }
+    }
+  }
+}

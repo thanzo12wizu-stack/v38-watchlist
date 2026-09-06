@@ -1,0 +1,587 @@
+{
+  "status": "ORDINARY_EXECUTION_PIT_SURVIVORSHIP_AUDIT",
+  "coverage": {
+    "start": "2016-01-04",
+    "end": "2026-03-20",
+    "selected_current_universe": 3595,
+    "downloaded_current_universe": 3595
+  },
+  "data_quality": {
+    "pit_taxonomy": "FAIL",
+    "survivorship_free": "FAIL",
+    "reason": "FAIL: the historical ordinary-stock research builds the ticker universe from the current universe.csv / current industry_map.json and applies the current sector_snapshot.json theme memberships retrospectively. Therefore the 2016-2026 ordinary-stock result is not point-in-time taxonomy clean and is not survivorship-free. STOCK_RS_ONLY removes Theme-ranking dependence but does not repair the current-survivor universe denominator.",
+    "fmp_delisted_probe": {
+      "status": "READY",
+      "endpoint": "https://financialmodelingprep.com/stable/delisted-companies",
+      "rows_downloaded": 100,
+      "delisted_2016_to_2026M3": 0,
+      "exchange_counts_window": {},
+      "date_field": "delistedDate"
+    },
+    "what_is_quantified": "execution-cost sensitivity and a Theme-removal dependency bound inside the same current-survivor universe",
+    "what_is_not_proven": "a fully survivorship-free/PIT-clean CAGR, because a complete historical eligible-universe + historical taxonomy source is not present in the research inputs"
+  },
+  "execution_method": "Actual next-session Open prices already include overnight gaps; extra 0/10/25/50bp is charged on each constituent buy/sell gross.",
+  "variants": {
+    "FINAL_THEME_ATTACK_0BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 3.8012670782338303,
+          "cagr": 0.16650893828192692,
+          "mdd": -0.28949194151498403,
+          "sharpe": 0.7432146588001135,
+          "positive_days": 0.37865212310089597
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.8784948479477497,
+          "cagr": 0.11095238359029036,
+          "mdd": -0.2482779201013684,
+          "sharpe": 0.5529696558752805,
+          "positive_days": 0.4152317880794702
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.5559117628026509,
+          "cagr": 0.2509940994186335,
+          "mdd": -0.17734391668936178,
+          "sharpe": 1.0041763113791216,
+          "positive_days": 0.32670454545454547
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.5276488862803299,
+          "cagr": 0.11209840519693803,
+          "mdd": -0.2085897577040262,
+          "sharpe": 0.6158005169183729,
+          "positive_days": 0.41592039800995023
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.2307235571486579,
+          "cagr": 0.10937980743686593,
+          "mdd": -0.2482779201013684,
+          "sharpe": 0.4930134920673184,
+          "positive_days": 0.4146825396825397
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.16577081859277132,
+          "cagr": 0.08037130999953046,
+          "mdd": -0.1354687114637224,
+          "sharpe": 0.5561643008666292,
+          "positive_days": 0.24
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 1.2566162034549024,
+          "cagr": 0.4470678762406015,
+          "mdd": -0.17734391668936178,
+          "sharpe": 1.3275925620671343,
+          "positive_days": 0.40540540540540543
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.7594991364421416,
+        "worst": -0.23526043728719137,
+        "median": 0.1203457172479887,
+        "n": 2316
+      },
+      "turnover_gross": 240.98346569678208,
+      "execution_cost_paid": 0.0,
+      "entries": 745,
+      "trade_actions": 900
+    },
+    "FINAL_THEME_ATTACK_10BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 3.249686588488352,
+          "cagr": 0.15261750783656436,
+          "mdd": -0.3034455125556321,
+          "sharpe": 0.6949645184085758,
+          "positive_days": 0.3782625633034671
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.7432269395880766,
+          "cagr": 0.09718265613124699,
+          "mdd": -0.25309877565490024,
+          "sharpe": 0.5019426491269201,
+          "positive_days": 0.41456953642384103
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.4378275094191406,
+          "cagr": 0.23695238501419613,
+          "mdd": -0.17915967321927373,
+          "sharpe": 0.9595765243974536,
+          "positive_days": 0.32670454545454547
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.45525956340903484,
+          "cagr": 0.09864330331886584,
+          "mdd": -0.21601144489510338,
+          "sharpe": 0.5570963616550959,
+          "positive_days": 0.41492537313432837
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.1989092877553369,
+          "cagr": 0.09494716208378606,
+          "mdd": -0.25309877565490024,
+          "sharpe": 0.4501667972869316,
+          "positive_days": 0.4146825396825397
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.14415573237539703,
+          "cagr": 0.07022849750906857,
+          "mdd": -0.14412162876201906,
+          "sharpe": 0.49751249686457233,
+          "positive_days": 0.24
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 1.192972587970747,
+          "cagr": 0.4283923264049787,
+          "mdd": -0.17915967321927373,
+          "sharpe": 1.2862061634618707,
+          "positive_days": 0.40540540540540543
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.7374784110535406,
+        "worst": -0.24345724763604415,
+        "median": 0.10803227386345693,
+        "n": 2316
+      },
+      "turnover_gross": 223.23678692228617,
+      "execution_cost_paid": 0.22323678692228613,
+      "entries": 745,
+      "trade_actions": 900
+    },
+    "FINAL_THEME_ATTACK_25BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 2.5388211595427688,
+          "cagr": 0.13208996106603377,
+          "mdd": -0.3238618361542127,
+          "sharpe": 0.6225876520119847,
+          "positive_days": 0.37631476431632255
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.5584524048889543,
+          "cagr": 0.0768572288602678,
+          "mdd": -0.2602340926721829,
+          "sharpe": 0.4254334067770205,
+          "positive_days": 0.41324503311258276
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.2707277735536127,
+          "cagr": 0.21616902382557868,
+          "mdd": -0.18188172845665473,
+          "sharpe": 0.8926265224749974,
+          "positive_days": 0.32386363636363635
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.35304031670854163,
+          "cagr": 0.07876209360643616,
+          "mdd": -0.227015099020215,
+          "sharpe": 0.4690058898917586,
+          "positive_days": 0.4129353233830846
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.1527997155246601,
+          "cagr": 0.07368511004142175,
+          "mdd": -0.2602340926721829,
+          "sharpe": 0.3860084292688232,
+          "positive_days": 0.4146825396825397
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.11249002526198892,
+          "cagr": 0.055196270017666915,
+          "mdd": -0.15694360338387325,
+          "sharpe": 0.4099354544051765,
+          "positive_days": 0.236
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 1.1007280212472401,
+          "cagr": 0.40079095080446936,
+          "mdd": -0.18188172845665473,
+          "sharpe": 1.223977273058382,
+          "positive_days": 0.4036036036036036
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.6895509499136442,
+        "worst": -0.25558231155797284,
+        "median": 0.08874827175809741,
+        "n": 2316
+      },
+      "turnover_gross": 199.50580151190164,
+      "execution_cost_paid": 0.4987645037797533,
+      "entries": 745,
+      "trade_actions": 900
+    },
+    "FINAL_THEME_ATTACK_50BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 1.608376750252197,
+          "cagr": 0.09868877304803059,
+          "mdd": -0.35656333544854013,
+          "sharpe": 0.5020690197872525,
+          "positive_days": 0.37475652512660695
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.2929812352704597,
+          "cagr": 0.04381452939230024,
+          "mdd": -0.28219652365319103,
+          "sharpe": 0.29802415645805286,
+          "positive_days": 0.4119205298013245
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.0173353480312413,
+          "cagr": 0.18230938538889196,
+          "mdd": -0.18641427713106218,
+          "sharpe": 0.7811247910359581,
+          "positive_days": 0.32196969696969696
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.19834097006826612,
+          "cagr": 0.04641448804610637,
+          "mdd": -0.24501623823404628,
+          "sharpe": 0.3222912657576206,
+          "positive_days": 0.4109452736318408
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.07989078729022836,
+          "cagr": 0.0391779382233961,
+          "mdd": -0.2719575556704682,
+          "sharpe": 0.2792001714546573,
+          "positive_days": 0.4146825396825397
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.061668800538517976,
+          "cagr": 0.030619804477453494,
+          "mdd": -0.17790051657694195,
+          "sharpe": 0.2652850151564853,
+          "positive_days": 0.234
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 0.9555357704489471,
+          "cagr": 0.3559709991352433,
+          "mdd": -0.18641427713106218,
+          "sharpe": 1.1201036212955364,
+          "positive_days": 0.4018018018018018
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.6066493955094991,
+        "worst": -0.2753458022593217,
+        "median": 0.05838486191874259,
+        "n": 2316
+      },
+      "turnover_gross": 166.48233763165265,
+      "execution_cost_paid": 0.8324116881582604,
+      "entries": 745,
+      "trade_actions": 900
+    },
+    "STOCK_RS_ONLY_0BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 2.5032251431740846,
+          "cagr": 0.13096696990919066,
+          "mdd": -0.48920770436751126,
+          "sharpe": 0.5497975609706571,
+          "positive_days": 0.36657576938059994
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.2959184129907091,
+          "cagr": 0.044209872665089245,
+          "mdd": -0.4610925838369233,
+          "sharpe": 0.29418230204358253,
+          "positive_days": 0.40264900662251657
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.7032759995201956,
+          "cagr": 0.2678408825375478,
+          "mdd": -0.25501293864330765,
+          "sharpe": 0.8859618813917794,
+          "positive_days": 0.3153409090909091
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.10127131341255158,
+          "cagr": 0.024483211939368532,
+          "mdd": -0.4610925838369233,
+          "sharpe": 0.22126727612851882,
+          "positive_days": 0.40298507462686567
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.1716315688757042,
+          "cagr": 0.0824193128708044,
+          "mdd": -0.45536125684339757,
+          "sharpe": 0.3973790361472818,
+          "positive_days": 0.4007936507936508
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.35432115055820423,
+          "cagr": 0.16516576887862322,
+          "mdd": -0.1761785737670557,
+          "sharpe": 0.9233795057705055,
+          "positive_days": 0.234
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 1.039796900332985,
+          "cagr": 0.382194624158106,
+          "mdd": -0.25501293864330765,
+          "sharpe": 0.9814087989765489,
+          "positive_days": 0.3891891891891892
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.6208981001727115,
+        "worst": -0.4693623262543676,
+        "median": 0.0819000206219811,
+        "n": 2316
+      },
+      "turnover_gross": 230.89561360836618,
+      "execution_cost_paid": 0.0,
+      "entries": 912,
+      "trade_actions": 1114
+    },
+    "STOCK_RS_ONLY_10BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 2.0351500674133036,
+          "cagr": 0.11515485178454599,
+          "mdd": -0.49829949037644716,
+          "sharpe": 0.5044125343150324,
+          "positive_days": 0.366186209583171
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.18988251049254634,
+          "cagr": 0.029439151075276948,
+          "mdd": -0.47669822885897595,
+          "sharpe": 0.24659871922897872,
+          "positive_days": 0.4019867549668874
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.5507981171661371,
+          "cagr": 0.2503963657857968,
+          "mdd": -0.2581769267554235,
+          "sharpe": 0.8433068263307975,
+          "positive_days": 0.3153409090909091
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": 0.04375462925806972,
+          "cagr": 0.010795926582592763,
+          "mdd": -0.47669822885897595,
+          "sharpe": 0.1656455713480012,
+          "positive_days": 0.4019900497512438
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.13506092097091305,
+          "cagr": 0.06539237887780724,
+          "mdd": -0.4636186589712228,
+          "sharpe": 0.3567273917934266,
+          "positive_days": 0.4007936507936508
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.32692234187319635,
+          "cagr": 0.15322523019163903,
+          "mdd": -0.18571313231454034,
+          "sharpe": 0.8661162871943158,
+          "positive_days": 0.234
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 0.9644533384036895,
+          "cagr": 0.3587751342940768,
+          "mdd": -0.2581769267554235,
+          "sharpe": 0.9401094049693081,
+          "positive_days": 0.3891891891891892
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.5936960276338514,
+        "worst": -0.47811311558019753,
+        "median": 0.06621528821718048,
+        "n": 2316
+      },
+      "turnover_gross": 211.74304256243104,
+      "execution_cost_paid": 0.2117430425624317,
+      "entries": 912,
+      "trade_actions": 1114
+    },
+    "STOCK_RS_ONLY_25BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 1.448209785233916,
+          "cagr": 0.09187496376529802,
+          "mdd": -0.5183278647547453,
+          "sharpe": 0.43646690078755657,
+          "positive_days": 0.36423841059602646
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": 0.04705759839864587,
+          "cagr": 0.007703663203090905,
+          "mdd": -0.4991985956843481,
+          "sharpe": 0.1754018055940941,
+          "positive_days": 0.39933774834437086
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.3381806206059448,
+          "cagr": 0.22469436068959703,
+          "mdd": -0.2628966677172352,
+          "sharpe": 0.7794058078684539,
+          "positive_days": 0.3143939393939394
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": -0.036790472529840135,
+          "cagr": -0.009355018596454712,
+          "mdd": -0.4991985956843481,
+          "sharpe": 0.08240566056769412,
+          "positive_days": 0.3990049751243781
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": 0.08236050045712018,
+          "cagr": 0.04036556097225752,
+          "mdd": -0.47574475136310057,
+          "sharpe": 0.2958837235883133,
+          "positive_days": 0.39880952380952384
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.28686172845064006,
+          "cagr": 0.1355442697497662,
+          "mdd": -0.19980916766354528,
+          "sharpe": 0.7804415448282416,
+          "positive_days": 0.232
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 0.8567211975876998,
+          "cagr": 0.32441937873975357,
+          "mdd": -0.2628966677172352,
+          "sharpe": 0.8782423974131995,
+          "positive_days": 0.3891891891891892
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.5647668393782384,
+        "worst": -0.4909440346981788,
+        "median": 0.04597251094512911,
+        "n": 2316
+      },
+      "turnover_gross": 186.60190312397202,
+      "execution_cost_paid": 0.4665047578099289,
+      "entries": 912,
+      "trade_actions": 1114
+    },
+    "STOCK_RS_ONLY_50BP": {
+      "metrics": {
+        "full": {
+          "n": 2568,
+          "total_return": 0.7110918253629532,
+          "cagr": 0.05414468719622856,
+          "mdd": -0.5556503018929639,
+          "sharpe": 0.32342008325331406,
+          "positive_days": 0.36151149201402416
+        },
+        "discovery": {
+          "n": 1511,
+          "total_return": -0.153849253855879,
+          "cagr": -0.02749478024157548,
+          "mdd": -0.534591886180992,
+          "sharpe": 0.0570686587452474,
+          "positive_days": 0.39602649006622515
+        },
+        "confirmation": {
+          "n": 1057,
+          "total_return": 1.0222068386281502,
+          "cagr": 0.18299008056900146,
+          "mdd": -0.2731306987629154,
+          "sharpe": 0.6729438377586016,
+          "positive_days": 0.3125
+        },
+        "2016_2019": {
+          "n": 1006,
+          "total_return": -0.15744709741414464,
+          "cagr": -0.042047951915385795,
+          "mdd": -0.534591886180992,
+          "sharpe": -0.05609115110236384,
+          "positive_days": 0.39601990049751246
+        },
+        "2020_2021": {
+          "n": 505,
+          "total_return": -2.9982104800763132e-05,
+          "cagr": -1.4991164767885756e-05,
+          "mdd": -0.49528335794930545,
+          "sharpe": 0.1948682116487936,
+          "positive_days": 0.3948412698412698
+        },
+        "2022_2023": {
+          "n": 501,
+          "total_return": 0.22276768922746903,
+          "cagr": 0.10667819468862683,
+          "mdd": -0.22276444187359667,
+          "sharpe": 0.6384413158863905,
+          "positive_days": 0.23
+        },
+        "2024_2026H1": {
+          "n": 556,
+          "total_return": 0.6899132543068525,
+          "cagr": 0.26900332536166305,
+          "mdd": -0.2731306987629154,
+          "sharpe": 0.7750472166325968,
+          "positive_days": 0.38738738738738737
+        }
+      },
+      "rolling_252": {
+        "positive_rate": 0.5189982728842832,
+        "worst": -0.5115676284859646,
+        "median": 0.012801511219546868,
+        "n": 2316
+      },
+      "turnover_gross": 152.54546737347954,
+      "execution_cost_paid": 0.7627273368673954,
+      "entries": 912,
+      "trade_actions": 1114
+    }
+  }
+}

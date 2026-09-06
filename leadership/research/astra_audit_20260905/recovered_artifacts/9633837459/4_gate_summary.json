@@ -1,0 +1,561 @@
+{
+  "status": "THEME_LTR_MIXTURE_OF_EXPERTS_GATE",
+  "replicate": "B",
+  "warning": "2022+ was inspected in preceding LTR research, so this is not a pristine untouched holdout. This gate specification was locked before this run; treat 2022+ as secondary confirmation, not a new discovery sample.",
+  "design": {
+    "stock_experts": [
+      "RS63_TOP1",
+      "8-seed multi-target LambdaMART TOP1"
+    ],
+    "gate_inputs": [
+      "theme_rs_pct",
+      "theme_rank_delta20",
+      "theme_breadth",
+      "parent_rs_pct",
+      "theme_member_count",
+      "theme_disp20",
+      "theme_disp63",
+      "theme_disp_ratio",
+      "parent_theme_gap",
+      "breadth_rank_interaction",
+      "spy_ret5",
+      "spy_ret20",
+      "spy_ret63",
+      "spy_ret126",
+      "spy_vol20",
+      "spy_vol63",
+      "spy_dist50",
+      "spy_dist200",
+      "qqq_ret5",
+      "qqq_ret20",
+      "qqq_ret63",
+      "qqq_ret126",
+      "qqq_vol20",
+      "qqq_vol63",
+      "qqq_dist50",
+      "qqq_dist200",
+      "iwm_ret5",
+      "iwm_ret20",
+      "iwm_ret63",
+      "iwm_ret126",
+      "iwm_vol20",
+      "iwm_vol63",
+      "iwm_dist50",
+      "iwm_dist200",
+      "hyg_ret5",
+      "hyg_ret20",
+      "hyg_ret63",
+      "hyg_ret126",
+      "hyg_vol20",
+      "hyg_vol63",
+      "hyg_dist50",
+      "hyg_dist200",
+      "tlt_ret5",
+      "tlt_ret20",
+      "tlt_ret63",
+      "tlt_ret126",
+      "tlt_vol20",
+      "tlt_vol63",
+      "tlt_dist50",
+      "tlt_dist200",
+      "qqq_vs_spy20",
+      "qqq_vs_spy63",
+      "iwm_vs_spy20",
+      "iwm_vs_spy63",
+      "hyg_vs_spy20",
+      "hyg_vs_spy63",
+      "tlt_vs_spy20",
+      "tlt_vs_spy63",
+      "hyg_vs_tlt20",
+      "hyg_vs_tlt63",
+      "vix_level",
+      "vix_chg5",
+      "vix_chg20",
+      "vix_z63"
+    ],
+    "gate_target": "mean(AI-RS63 realized return across 20/40/63d)",
+    "gate_candidates": [
+      "RIDGE",
+      "LGB_HUBER"
+    ],
+    "selection_rule": "Walk-forward 2020/2021 within pre-2022 data; best combined composite advantage, else RS_ONLY if <=0.",
+    "decision_rule": "Use AI only when predicted AI-RS63 composite advantage > 0.",
+    "purge": "63 trading sessions for stock labels and final gate training."
+  },
+  "download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3297,
+    "start": "2013-07-18",
+    "end": "2026-08-26",
+    "failed_batches": 0
+  },
+  "market_download": {
+    "requested": 6,
+    "downloaded_common_ohlcvo": 6,
+    "rows": 2918,
+    "start": "2014-12-01",
+    "end": "2026-07-09",
+    "failed_batches": 0
+  },
+  "taxonomy": [
+    {
+      "path": "root.s2i",
+      "mapped": 5698,
+      "unique": 198
+    },
+    {
+      "path": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    },
+    {
+      "chosen": "root.s2t",
+      "mapped": 5197,
+      "unique": 380
+    }
+  ],
+  "purge": {
+    "first_test_date": "2022-01-03",
+    "train_last_event": "2021-09-29",
+    "test_first_event": "2022-01-03",
+    "rule": "train event +63 sessions must end before 2022"
+  },
+  "coverage": {
+    "rows": 28261,
+    "train_rows": 13797,
+    "test_rows": 13797,
+    "gate_dev_events": 895,
+    "holdout_events": 1442
+  },
+  "oof_ai": {
+    "2019": {
+      "train_events": 804,
+      "test_events": 354,
+      "iterations": {
+        "ret20": 56,
+        "ret40": 1,
+        "ret63": 16,
+        "mfe63": 5
+      }
+    },
+    "2020": {
+      "train_events": 1117,
+      "test_events": 271,
+      "iterations": {
+        "ret20": 14,
+        "ret40": 40,
+        "ret63": 87,
+        "mfe63": 10
+      }
+    },
+    "2021": {
+      "train_events": 1393,
+      "test_events": 353,
+      "iterations": {
+        "ret20": 3,
+        "ret40": 5,
+        "ret63": 1,
+        "mfe63": 18
+      }
+    }
+  },
+  "final_iterations": {
+    "ret20": 6,
+    "ret40": 5,
+    "ret63": 17,
+    "mfe63": 75
+  },
+  "internal_gate": {
+    "RIDGE": {
+      "n": 541,
+      "ai_share": 0.6746765249537893,
+      "mean_advantage_composite": -0.009578598408337897,
+      "by_year": {
+        "2020": {
+          "n": 271,
+          "ai_share": 0.5313653136531366,
+          "mean_advantage_composite": -0.002487168151918967
+        },
+        "2021": {
+          "n": 270,
+          "ai_share": 0.8185185185185185,
+          "mean_advantage_composite": -0.016696293221262083
+        }
+      }
+    },
+    "LGB_HUBER": {
+      "n": 541,
+      "ai_share": 0.5415896487985212,
+      "mean_advantage_composite": -0.00716056744220816,
+      "by_year": {
+        "2020": {
+          "n": 271,
+          "ai_share": 0.46863468634686345,
+          "mean_advantage_composite": -0.00037948595015077093
+        },
+        "2021": {
+          "n": 270,
+          "ai_share": 0.6148148148148148,
+          "mean_advantage_composite": -0.013966764050902802
+        }
+      }
+    }
+  },
+  "selected_gate": "RS_ONLY",
+  "gate_importance": [],
+  "vs_rs63": {
+    "n": 1442,
+    "ai_share": 0.0,
+    "by_year": {
+      "2022": {
+        "n": 318,
+        "ai_share": 0.0,
+        "diff_rs_20": 0.0,
+        "diff_rs_40": 0.0,
+        "diff_rs_63": 0.0,
+        "diff_rs_composite": 0.0
+      },
+      "2023": {
+        "n": 376,
+        "ai_share": 0.0,
+        "diff_rs_20": 0.0,
+        "diff_rs_40": 0.0,
+        "diff_rs_63": 0.0,
+        "diff_rs_composite": 0.0
+      },
+      "2024": {
+        "n": 314,
+        "ai_share": 0.0,
+        "diff_rs_20": 0.0,
+        "diff_rs_40": 0.0,
+        "diff_rs_63": 0.0,
+        "diff_rs_composite": 0.0
+      },
+      "2025": {
+        "n": 288,
+        "ai_share": 0.0,
+        "diff_rs_20": 0.0,
+        "diff_rs_40": 0.0,
+        "diff_rs_63": 0.0,
+        "diff_rs_composite": 0.0
+      },
+      "2026": {
+        "n": 146,
+        "ai_share": 0.0,
+        "diff_rs_20": 0.0,
+        "diff_rs_40": 0.0,
+        "diff_rs_63": 0.0,
+        "diff_rs_composite": 0.0
+      }
+    },
+    "metrics": {
+      "20": {
+        "gate_return": {
+          "n": 1442,
+          "mean": 0.0148457152700666,
+          "median": 5.291406934837539e-08,
+          "p10": -0.16427972967128623,
+          "p90": 0.18714097545176664,
+          "positive_rate": 0.5
+        },
+        "vs_rs63": {
+          "n": 1442,
+          "mean": 0.0,
+          "median": 0.0,
+          "p10": 0.0,
+          "p90": 0.0,
+          "positive_rate": 0.0
+        },
+        "date_cluster": {
+          "n_units": 739,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "block20_cluster": {
+          "n_units": 56,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "theme_cluster": {
+          "n_units": 264,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "40": {
+        "gate_return": {
+          "n": 1442,
+          "mean": 0.024085139188657196,
+          "median": 0.00660931036756196,
+          "p10": -0.21830047779409031,
+          "p90": 0.2478833813154684,
+          "positive_rate": 0.5201109570041609
+        },
+        "vs_rs63": {
+          "n": 1442,
+          "mean": 0.0,
+          "median": 0.0,
+          "p10": 0.0,
+          "p90": 0.0,
+          "positive_rate": 0.0
+        },
+        "date_cluster": {
+          "n_units": 739,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "block20_cluster": {
+          "n_units": 56,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "theme_cluster": {
+          "n_units": 264,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "63": {
+        "gate_return": {
+          "n": 1442,
+          "mean": 0.023908371970106677,
+          "median": 0.004424858653435226,
+          "p10": -0.2774435433159284,
+          "p90": 0.3181495309912014,
+          "positive_rate": 0.5090152565880721
+        },
+        "vs_rs63": {
+          "n": 1442,
+          "mean": 0.0,
+          "median": 0.0,
+          "p10": 0.0,
+          "p90": 0.0,
+          "positive_rate": 0.0
+        },
+        "date_cluster": {
+          "n_units": 739,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "block20_cluster": {
+          "n_units": 56,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "theme_cluster": {
+          "n_units": 264,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "composite": {
+        "gate_return": {
+          "n": 1442,
+          "mean": 0.020946408809610156,
+          "median": 0.0070314349020716245,
+          "p10": -0.19768004511041845,
+          "p90": 0.2431056384260486,
+          "positive_rate": 0.521497919556172
+        },
+        "vs_rs63": {
+          "n": 1442,
+          "mean": 0.0,
+          "median": 0.0,
+          "p10": 0.0,
+          "p90": 0.0,
+          "positive_rate": 0.0
+        },
+        "date_cluster": {
+          "n_units": 739,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "block20_cluster": {
+          "n_units": 56,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "theme_cluster": {
+          "n_units": 264,
+          "point": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        }
+      }
+    }
+  },
+  "vs_rs189": {
+    "20": {
+      "point": {
+        "n": 1442,
+        "mean": 0.0024604286361557415,
+        "median": 0.0,
+        "p10": -0.10472025040400197,
+        "p90": 0.1110510179828582,
+        "positive_rate": 0.2766990291262136
+      },
+      "date_cluster": {
+        "n_units": 739,
+        "point": 0.0024604286361557415,
+        "ci95": [
+          -0.0030824692279741565,
+          0.012399807193518948
+        ]
+      },
+      "block20_cluster": {
+        "n_units": 56,
+        "point": 0.0024604286361557415,
+        "ci95": [
+          -0.0031677512525689604,
+          0.010206114172178544
+        ]
+      },
+      "theme_cluster": {
+        "n_units": 264,
+        "point": 0.0024604286361557415,
+        "ci95": [
+          -0.006060942162749816,
+          0.011838166981239424
+        ]
+      }
+    },
+    "40": {
+      "point": {
+        "n": 1442,
+        "mean": 0.006915493912019175,
+        "median": 0.0,
+        "p10": -0.14600802158198284,
+        "p90": 0.16404101781617852,
+        "positive_rate": 0.27600554785020803
+      },
+      "date_cluster": {
+        "n_units": 739,
+        "point": 0.006915493912019175,
+        "ci95": [
+          -0.004420250356912533,
+          0.018067287443304467
+        ]
+      },
+      "block20_cluster": {
+        "n_units": 56,
+        "point": 0.006915493912019175,
+        "ci95": [
+          -0.0024066627669182155,
+          0.019108627045937243
+        ]
+      },
+      "theme_cluster": {
+        "n_units": 264,
+        "point": 0.006915493912019175,
+        "ci95": [
+          -0.009177693006332088,
+          0.018752244862831925
+        ]
+      }
+    },
+    "63": {
+      "point": {
+        "n": 1442,
+        "mean": 0.0007011639735585264,
+        "median": 0.0,
+        "p10": -0.1937909910976985,
+        "p90": 0.19473859988830441,
+        "positive_rate": 0.268377253814147
+      },
+      "date_cluster": {
+        "n_units": 739,
+        "point": 0.0007011639735585264,
+        "ci95": [
+          -0.011289078592210742,
+          0.016092874357119362
+        ]
+      },
+      "block20_cluster": {
+        "n_units": 56,
+        "point": 0.0007011639735585264,
+        "ci95": [
+          -0.011561300875610463,
+          0.014599466729749912
+        ]
+      },
+      "theme_cluster": {
+        "n_units": 264,
+        "point": 0.0007011639735585264,
+        "ci95": [
+          -0.01512772635235223,
+          0.018620456165581636
+        ]
+      }
+    },
+    "composite": {
+      "point": {
+        "n": 1442,
+        "mean": 0.003359028840577813,
+        "median": 0.0,
+        "p10": -0.13785083279250443,
+        "p90": 0.13589385001695153,
+        "positive_rate": 0.27184466019417475
+      },
+      "date_cluster": {
+        "n_units": 739,
+        "point": 0.003359028840577813,
+        "ci95": [
+          -0.004934457702641789,
+          0.013768102643284225
+        ]
+      },
+      "block20_cluster": {
+        "n_units": 56,
+        "point": 0.003359028840577813,
+        "ci95": [
+          -0.004885414981852898,
+          0.013230070538195665
+        ]
+      },
+      "theme_cluster": {
+        "n_units": 264,
+        "point": 0.003359028840577813,
+        "ci95": [
+          -0.008981521284443437,
+          0.014031551785594232
+        ]
+      }
+    }
+  }
+}

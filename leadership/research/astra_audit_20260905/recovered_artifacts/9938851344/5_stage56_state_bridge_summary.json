@@ -1,0 +1,39 @@
+{
+  "status": "STAGE56_STATE_INHERITANCE_BRIDGE_AUDIT",
+  "cutoff_state": {
+    "date": "2026-03-20",
+    "slot": 1,
+    "close": 582.11,
+    "rsi": 33.46475186976386,
+    "au": 1.2997211346091213,
+    "ad": 2.5841299683881434
+  },
+  "hourly_coverage": {
+    "start": "2026-03-23",
+    "end": "2026-09-03",
+    "bars": 230
+  },
+  "immediate_independent_1m_check": {
+    "bars": 8,
+    "start": "2026-03-23",
+    "end": "2026-03-26",
+    "close_abs_diff_bps_max": 0.3490033407627102,
+    "rsi_abs_diff_max_with_same_state": 0.011300733044350864,
+    "touch30_all_match": true
+  },
+  "current_5m_hourly_check": {
+    "bars": 118,
+    "close_abs_diff_bps_max": 0.0
+  },
+  "live_60d_reseed_vs_continuous_state": {
+    "compare_bars": 79,
+    "rsi_abs_diff_median": 0.1126197174438488,
+    "rsi_abs_diff_p99": 1.919913260356831,
+    "touch30_mismatches": 1
+  },
+  "hourly_bar_bridge_supported": true,
+  "wilder_state_inheritance_supported": false,
+  "historical_extension_status": "REJECTED",
+  "limitation": "There is no independent 1m/5m source for every session from 2026-03-27 through the start of Yahoo's current 60d 5m window. Hourly closes are independently exact immediately after cutoff and again in the current overlap, but the middle gap remains proxy data.",
+  "guardrail": "Do not call the Mar-Sep extension pristine OOS. Use only as a sensitivity extension unless continuous exact intraday history is obtained."
+}

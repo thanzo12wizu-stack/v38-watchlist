@@ -1,0 +1,967 @@
+{
+  "status": "EARLY_SLOT_CAPACITY_ORACLE",
+  "scope": "research only; perfect future knowledge; production/main/UI untouched",
+  "question": "If Early staging receives only true future leaders at first Any(RS21,RS42,RS63)>=85, are 3 slots physically sufficient until current Core accepts them?",
+  "interpretation": "This is an optimistic upper bound, not a tradable strategy. If K3 is high, selection/ranking is the bottleneck. If K3 is materially below the qualifying-radar rate, capacity itself is a bottleneck.",
+  "endpoints": {
+    "eligibility_date": "first current Full Eligibility after radar; shortest optimistic bridge",
+    "attack12_date": "first current ATTACK Top12 ranking after radar, ignoring market mode",
+    "policy_candidate_date": "first date name is in current Core candidate list under actual market mode; closest current-Core bridge endpoint"
+  },
+  "labels": {
+    "ANNUAL_TOP5_2016_2025": {
+      "n": 50,
+      "eligibility_date": {
+        "ANY_RADAR": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 22,
+            "oracle_capture_rate_all_events": 0.44,
+            "oracle_capture_rate_given_qualifying_radar": 0.44,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 28
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 33,
+            "oracle_capture_rate_all_events": 0.66,
+            "oracle_capture_rate_given_qualifying_radar": 0.66,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 17
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 42,
+            "oracle_capture_rate_all_events": 0.84,
+            "oracle_capture_rate_given_qualifying_radar": 0.84,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 8
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 48,
+            "oracle_capture_rate_all_events": 0.96,
+            "oracle_capture_rate_given_qualifying_radar": 0.96,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 2
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 50,
+            "oracle_capture_rate_all_events": 1.0,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        },
+        "RADAR_BY_30PCT": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 18,
+            "oracle_capture_rate_all_events": 0.36,
+            "oracle_capture_rate_given_qualifying_radar": 0.47368421052631576,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 20
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 27,
+            "oracle_capture_rate_all_events": 0.54,
+            "oracle_capture_rate_given_qualifying_radar": 0.7105263157894737,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 11
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 33,
+            "oracle_capture_rate_all_events": 0.66,
+            "oracle_capture_rate_given_qualifying_radar": 0.868421052631579,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 5
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 37,
+            "oracle_capture_rate_all_events": 0.74,
+            "oracle_capture_rate_given_qualifying_radar": 0.9736842105263158,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 1
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 38,
+            "oracle_capture_rate_all_events": 0.76,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        },
+        "RADAR_BY_50PCT": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 21,
+            "oracle_capture_rate_all_events": 0.42,
+            "oracle_capture_rate_given_qualifying_radar": 0.4666666666666667,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 24
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 31,
+            "oracle_capture_rate_all_events": 0.62,
+            "oracle_capture_rate_given_qualifying_radar": 0.6888888888888889,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 14
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 39,
+            "oracle_capture_rate_all_events": 0.78,
+            "oracle_capture_rate_given_qualifying_radar": 0.8666666666666667,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 6
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 44,
+            "oracle_capture_rate_all_events": 0.88,
+            "oracle_capture_rate_given_qualifying_radar": 0.9777777777777777,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 1
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 45,
+            "oracle_capture_rate_all_events": 0.9,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        }
+      },
+      "attack12_date": {
+        "ANY_RADAR": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 15,
+            "oracle_capture_rate_all_events": 0.3,
+            "oracle_capture_rate_given_qualifying_radar": 0.3,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 35
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 25,
+            "oracle_capture_rate_all_events": 0.5,
+            "oracle_capture_rate_given_qualifying_radar": 0.5,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 25
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 35,
+            "oracle_capture_rate_all_events": 0.7,
+            "oracle_capture_rate_given_qualifying_radar": 0.7,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 15
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 45,
+            "oracle_capture_rate_all_events": 0.9,
+            "oracle_capture_rate_given_qualifying_radar": 0.9,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 5
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 50,
+            "oracle_capture_rate_all_events": 1.0,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        },
+        "RADAR_BY_30PCT": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 12,
+            "oracle_capture_rate_all_events": 0.24,
+            "oracle_capture_rate_given_qualifying_radar": 0.3157894736842105,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 26
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 21,
+            "oracle_capture_rate_all_events": 0.42,
+            "oracle_capture_rate_given_qualifying_radar": 0.5526315789473685,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 17
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 29,
+            "oracle_capture_rate_all_events": 0.58,
+            "oracle_capture_rate_given_qualifying_radar": 0.7631578947368421,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 9
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 35,
+            "oracle_capture_rate_all_events": 0.7,
+            "oracle_capture_rate_given_qualifying_radar": 0.9210526315789473,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 3
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 38,
+            "oracle_capture_rate_all_events": 0.76,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        },
+        "RADAR_BY_50PCT": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 15,
+            "oracle_capture_rate_all_events": 0.3,
+            "oracle_capture_rate_given_qualifying_radar": 0.3333333333333333,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 30
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 25,
+            "oracle_capture_rate_all_events": 0.5,
+            "oracle_capture_rate_given_qualifying_radar": 0.5555555555555556,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 20
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 34,
+            "oracle_capture_rate_all_events": 0.68,
+            "oracle_capture_rate_given_qualifying_radar": 0.7555555555555555,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 11
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 41,
+            "oracle_capture_rate_all_events": 0.82,
+            "oracle_capture_rate_given_qualifying_radar": 0.9111111111111111,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 4
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 45,
+            "oracle_capture_rate_all_events": 0.9,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        }
+      },
+      "policy_candidate_date": {
+        "ANY_RADAR": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 13,
+            "oracle_capture_rate_all_events": 0.26,
+            "oracle_capture_rate_given_qualifying_radar": 0.26,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 37
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 23,
+            "oracle_capture_rate_all_events": 0.46,
+            "oracle_capture_rate_given_qualifying_radar": 0.46,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 27
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 33,
+            "oracle_capture_rate_all_events": 0.66,
+            "oracle_capture_rate_given_qualifying_radar": 0.66,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 17
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 43,
+            "oracle_capture_rate_all_events": 0.86,
+            "oracle_capture_rate_given_qualifying_radar": 0.86,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 7
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 50,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 50,
+            "oracle_capture_rate_all_events": 1.0,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        },
+        "RADAR_BY_30PCT": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 12,
+            "oracle_capture_rate_all_events": 0.24,
+            "oracle_capture_rate_given_qualifying_radar": 0.3157894736842105,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 26
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 21,
+            "oracle_capture_rate_all_events": 0.42,
+            "oracle_capture_rate_given_qualifying_radar": 0.5526315789473685,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 17
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 29,
+            "oracle_capture_rate_all_events": 0.58,
+            "oracle_capture_rate_given_qualifying_radar": 0.7631578947368421,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 9
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 35,
+            "oracle_capture_rate_all_events": 0.7,
+            "oracle_capture_rate_given_qualifying_radar": 0.9210526315789473,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 3
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 38,
+            "radar_qualifying_rate": 0.76,
+            "oracle_schedulable": 38,
+            "oracle_capture_rate_all_events": 0.76,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        },
+        "RADAR_BY_50PCT": {
+          "K1": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 13,
+            "oracle_capture_rate_all_events": 0.26,
+            "oracle_capture_rate_given_qualifying_radar": 0.28888888888888886,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 32
+          },
+          "K2": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 23,
+            "oracle_capture_rate_all_events": 0.46,
+            "oracle_capture_rate_given_qualifying_radar": 0.5111111111111111,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 22
+          },
+          "K3": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 33,
+            "oracle_capture_rate_all_events": 0.66,
+            "oracle_capture_rate_given_qualifying_radar": 0.7333333333333333,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 12
+          },
+          "K4": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 40,
+            "oracle_capture_rate_all_events": 0.8,
+            "oracle_capture_rate_given_qualifying_radar": 0.8888888888888888,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 5
+          },
+          "K5": {
+            "n_events": 50,
+            "radar_qualifying": 45,
+            "radar_qualifying_rate": 0.9,
+            "oracle_schedulable": 45,
+            "oracle_capture_rate_all_events": 0.9,
+            "oracle_capture_rate_given_qualifying_radar": 1.0,
+            "peak_true_leader_slot_demand": 5,
+            "capacity_loss_events": 0
+          }
+        }
+      }
+    },
+    "ROLL126_TOP10_DEDUP": {
+      "n": 707,
+      "eligibility_date": {
+        "ANY_RADAR": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 141,
+            "oracle_capture_rate_all_events": 0.19943422913719944,
+            "oracle_capture_rate_given_qualifying_radar": 0.19943422913719944,
+            "peak_true_leader_slot_demand": 28,
+            "capacity_loss_events": 566
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 230,
+            "oracle_capture_rate_all_events": 0.32531824611032534,
+            "oracle_capture_rate_given_qualifying_radar": 0.32531824611032534,
+            "peak_true_leader_slot_demand": 28,
+            "capacity_loss_events": 477
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 294,
+            "oracle_capture_rate_all_events": 0.4158415841584158,
+            "oracle_capture_rate_given_qualifying_radar": 0.4158415841584158,
+            "peak_true_leader_slot_demand": 28,
+            "capacity_loss_events": 413
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 350,
+            "oracle_capture_rate_all_events": 0.49504950495049505,
+            "oracle_capture_rate_given_qualifying_radar": 0.49504950495049505,
+            "peak_true_leader_slot_demand": 28,
+            "capacity_loss_events": 357
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 393,
+            "oracle_capture_rate_all_events": 0.5558698727015559,
+            "oracle_capture_rate_given_qualifying_radar": 0.5558698727015559,
+            "peak_true_leader_slot_demand": 28,
+            "capacity_loss_events": 314
+          }
+        },
+        "RADAR_BY_30PCT": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 133,
+            "oracle_capture_rate_all_events": 0.18811881188118812,
+            "oracle_capture_rate_given_qualifying_radar": 0.19910179640718562,
+            "peak_true_leader_slot_demand": 24,
+            "capacity_loss_events": 535
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 221,
+            "oracle_capture_rate_all_events": 0.3125884016973126,
+            "oracle_capture_rate_given_qualifying_radar": 0.33083832335329344,
+            "peak_true_leader_slot_demand": 24,
+            "capacity_loss_events": 447
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 284,
+            "oracle_capture_rate_all_events": 0.4016973125884017,
+            "oracle_capture_rate_given_qualifying_radar": 0.4251497005988024,
+            "peak_true_leader_slot_demand": 24,
+            "capacity_loss_events": 384
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 339,
+            "oracle_capture_rate_all_events": 0.4794908062234795,
+            "oracle_capture_rate_given_qualifying_radar": 0.5074850299401198,
+            "peak_true_leader_slot_demand": 24,
+            "capacity_loss_events": 329
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 381,
+            "oracle_capture_rate_all_events": 0.5388967468175389,
+            "oracle_capture_rate_given_qualifying_radar": 0.5703592814371258,
+            "peak_true_leader_slot_demand": 24,
+            "capacity_loss_events": 287
+          }
+        },
+        "RADAR_BY_50PCT": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 137,
+            "oracle_capture_rate_all_events": 0.19377652050919378,
+            "oracle_capture_rate_given_qualifying_radar": 0.19797687861271676,
+            "peak_true_leader_slot_demand": 26,
+            "capacity_loss_events": 555
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 225,
+            "oracle_capture_rate_all_events": 0.31824611032531824,
+            "oracle_capture_rate_given_qualifying_radar": 0.32514450867052025,
+            "peak_true_leader_slot_demand": 26,
+            "capacity_loss_events": 467
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 289,
+            "oracle_capture_rate_all_events": 0.4087694483734088,
+            "oracle_capture_rate_given_qualifying_radar": 0.41763005780346824,
+            "peak_true_leader_slot_demand": 26,
+            "capacity_loss_events": 403
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 345,
+            "oracle_capture_rate_all_events": 0.48797736916548795,
+            "oracle_capture_rate_given_qualifying_radar": 0.4985549132947977,
+            "peak_true_leader_slot_demand": 26,
+            "capacity_loss_events": 347
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 387,
+            "oracle_capture_rate_all_events": 0.5473833097595474,
+            "oracle_capture_rate_given_qualifying_radar": 0.5592485549132948,
+            "peak_true_leader_slot_demand": 26,
+            "capacity_loss_events": 305
+          }
+        }
+      },
+      "attack12_date": {
+        "ANY_RADAR": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 88,
+            "oracle_capture_rate_all_events": 0.12446958981612447,
+            "oracle_capture_rate_given_qualifying_radar": 0.12446958981612447,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 619
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 140,
+            "oracle_capture_rate_all_events": 0.19801980198019803,
+            "oracle_capture_rate_given_qualifying_radar": 0.19801980198019803,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 567
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 187,
+            "oracle_capture_rate_all_events": 0.26449787835926447,
+            "oracle_capture_rate_given_qualifying_radar": 0.26449787835926447,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 520
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 228,
+            "oracle_capture_rate_all_events": 0.32248939179632247,
+            "oracle_capture_rate_given_qualifying_radar": 0.32248939179632247,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 479
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 263,
+            "oracle_capture_rate_all_events": 0.371994342291372,
+            "oracle_capture_rate_given_qualifying_radar": 0.371994342291372,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 444
+          }
+        },
+        "RADAR_BY_30PCT": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 86,
+            "oracle_capture_rate_all_events": 0.12164073550212164,
+            "oracle_capture_rate_given_qualifying_radar": 0.12874251497005987,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 582
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 137,
+            "oracle_capture_rate_all_events": 0.19377652050919378,
+            "oracle_capture_rate_given_qualifying_radar": 0.20508982035928144,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 531
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 184,
+            "oracle_capture_rate_all_events": 0.26025459688826025,
+            "oracle_capture_rate_given_qualifying_radar": 0.2754491017964072,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 484
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 223,
+            "oracle_capture_rate_all_events": 0.31541725601131543,
+            "oracle_capture_rate_given_qualifying_radar": 0.3338323353293413,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 445
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 258,
+            "oracle_capture_rate_all_events": 0.3649222065063649,
+            "oracle_capture_rate_given_qualifying_radar": 0.38622754491017963,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 410
+          }
+        },
+        "RADAR_BY_50PCT": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 87,
+            "oracle_capture_rate_all_events": 0.12305516265912306,
+            "oracle_capture_rate_given_qualifying_radar": 0.12572254335260116,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 605
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 138,
+            "oracle_capture_rate_all_events": 0.19519094766619519,
+            "oracle_capture_rate_given_qualifying_radar": 0.1994219653179191,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 554
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 185,
+            "oracle_capture_rate_all_events": 0.26166902404526166,
+            "oracle_capture_rate_given_qualifying_radar": 0.26734104046242774,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 507
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 225,
+            "oracle_capture_rate_all_events": 0.31824611032531824,
+            "oracle_capture_rate_given_qualifying_radar": 0.32514450867052025,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 467
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 260,
+            "oracle_capture_rate_all_events": 0.36775106082036774,
+            "oracle_capture_rate_given_qualifying_radar": 0.37572254335260113,
+            "peak_true_leader_slot_demand": 34,
+            "capacity_loss_events": 432
+          }
+        }
+      },
+      "policy_candidate_date": {
+        "ANY_RADAR": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 68,
+            "oracle_capture_rate_all_events": 0.09618104667609619,
+            "oracle_capture_rate_given_qualifying_radar": 0.09618104667609619,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 639
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 117,
+            "oracle_capture_rate_all_events": 0.16548797736916548,
+            "oracle_capture_rate_given_qualifying_radar": 0.16548797736916548,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 590
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 158,
+            "oracle_capture_rate_all_events": 0.22347949080622348,
+            "oracle_capture_rate_given_qualifying_radar": 0.22347949080622348,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 549
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 194,
+            "oracle_capture_rate_all_events": 0.2743988684582744,
+            "oracle_capture_rate_given_qualifying_radar": 0.2743988684582744,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 513
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 707,
+            "radar_qualifying_rate": 1.0,
+            "oracle_schedulable": 225,
+            "oracle_capture_rate_all_events": 0.31824611032531824,
+            "oracle_capture_rate_given_qualifying_radar": 0.31824611032531824,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 482
+          }
+        },
+        "RADAR_BY_30PCT": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 68,
+            "oracle_capture_rate_all_events": 0.09618104667609619,
+            "oracle_capture_rate_given_qualifying_radar": 0.10179640718562874,
+            "peak_true_leader_slot_demand": 37,
+            "capacity_loss_events": 600
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 117,
+            "oracle_capture_rate_all_events": 0.16548797736916548,
+            "oracle_capture_rate_given_qualifying_radar": 0.1751497005988024,
+            "peak_true_leader_slot_demand": 37,
+            "capacity_loss_events": 551
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 156,
+            "oracle_capture_rate_all_events": 0.22065063649222066,
+            "oracle_capture_rate_given_qualifying_radar": 0.23353293413173654,
+            "peak_true_leader_slot_demand": 37,
+            "capacity_loss_events": 512
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 190,
+            "oracle_capture_rate_all_events": 0.26874115983026875,
+            "oracle_capture_rate_given_qualifying_radar": 0.2844311377245509,
+            "peak_true_leader_slot_demand": 37,
+            "capacity_loss_events": 478
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 668,
+            "radar_qualifying_rate": 0.9448373408769448,
+            "oracle_schedulable": 221,
+            "oracle_capture_rate_all_events": 0.3125884016973126,
+            "oracle_capture_rate_given_qualifying_radar": 0.33083832335329344,
+            "peak_true_leader_slot_demand": 37,
+            "capacity_loss_events": 447
+          }
+        },
+        "RADAR_BY_50PCT": {
+          "K1": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 68,
+            "oracle_capture_rate_all_events": 0.09618104667609619,
+            "oracle_capture_rate_given_qualifying_radar": 0.09826589595375723,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 624
+          },
+          "K2": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 117,
+            "oracle_capture_rate_all_events": 0.16548797736916548,
+            "oracle_capture_rate_given_qualifying_radar": 0.16907514450867053,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 575
+          },
+          "K3": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 156,
+            "oracle_capture_rate_all_events": 0.22065063649222066,
+            "oracle_capture_rate_given_qualifying_radar": 0.2254335260115607,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 536
+          },
+          "K4": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 192,
+            "oracle_capture_rate_all_events": 0.27157001414427157,
+            "oracle_capture_rate_given_qualifying_radar": 0.2774566473988439,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 500
+          },
+          "K5": {
+            "n_events": 707,
+            "radar_qualifying": 692,
+            "radar_qualifying_rate": 0.9787835926449788,
+            "oracle_schedulable": 223,
+            "oracle_capture_rate_all_events": 0.31541725601131543,
+            "oracle_capture_rate_given_qualifying_radar": 0.3222543352601156,
+            "peak_true_leader_slot_demand": 38,
+            "capacity_loss_events": 469
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "status": "TRUE_SHALLOW_GOOD_MARKET_AUDIT",
+  "research_only": true,
+  "market_definition": "signal-day production MC57 >=50; primary bands 50-65 and 65-80; MC<50 excluded from shallow study",
+  "mature": "age>=189, RS189>=85, RS63>=80, sector>=50, close>EMA21>EMA50",
+  "young": "age 63-188, RS63>=90, sector>=50, close>EMA21>EMA50; reported separately",
+  "liquidity": "price>=5, AvgVol20>=1M, ADR20 3-15%",
+  "methods": {
+    "NOW": {
+      "kind": "now"
+    },
+    "M5_RSI65_DD050": {
+      "kind": "pull",
+      "ema": 5,
+      "rsi": 65.0,
+      "ddatr": 0.5
+    },
+    "M10_RSI65_DD075": {
+      "kind": "pull",
+      "ema": 10,
+      "rsi": 65.0,
+      "ddatr": 0.75
+    },
+    "M10_RSI60_DD075": {
+      "kind": "pull",
+      "ema": 10,
+      "rsi": 60.0,
+      "ddatr": 0.75
+    },
+    "M10_RSI55_DD075": {
+      "kind": "pull",
+      "ema": 10,
+      "rsi": 55.0,
+      "ddatr": 0.75
+    },
+    "M21_RSI55_DD100": {
+      "kind": "pull",
+      "ema": 21,
+      "rsi": 55.0,
+      "ddatr": 1.0
+    }
+  },
+  "episode_count": 15114,
+  "trade_count": 43067,
+  "download": {
+    "requested": 3596,
+    "downloaded_common_ohlcvo": 3596,
+    "rows": 3298,
+    "start": "2013-07-18",
+    "end": "2026-08-27",
+    "failed_batches": 0
+  },
+  "volume_download": {
+    "requested": 3094,
+    "downloaded_common_ohlcvo": 3094,
+    "rows": 2692,
+    "start": "2015-10-16",
+    "end": "2026-07-02",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Current-universe/current-sector survivorship bias remains.",
+    "2022+ is confirmation, not pristine OOS.",
+    "MC57 is current 57ETF/12-metric historical reconstruction.",
+    "No tax model."
+  ]
+}

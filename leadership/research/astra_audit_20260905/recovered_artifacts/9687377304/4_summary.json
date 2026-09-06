@@ -1,0 +1,19 @@
+{
+  "status": "STANDARD_CORRECTION_V2",
+  "period_filter": "2016-01-04..2026-06-30 applied to signal_date before liquidity/exit analysis",
+  "signals": 5716,
+  "liquid_signals": 1581,
+  "volume_download": {
+    "requested": 1821,
+    "downloaded_common_ohlcvo": 1821,
+    "rows": 2626,
+    "start": "2016-01-04",
+    "end": "2026-06-12",
+    "failed_batches": 0
+  },
+  "limitations": [
+    "Current-universe/current-sector survivorship bias remains.",
+    "2022+ is confirmation, not pristine OOS.",
+    "This fixes only the date-boundary bug in the first systematic audit; entry/exit definitions are unchanged."
+  ]
+}

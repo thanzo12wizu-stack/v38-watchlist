@@ -1,0 +1,164 @@
+{
+  "reference": {
+    "pre_cagr": 0.46151762221804304,
+    "pre_mdd": -0.4375634148408195,
+    "tax_cagr": 0.3926574135083143,
+    "tax_end": 152.3281266967805,
+    "avg_exp": 0.7859121798222687,
+    "turnover": 95.6
+  },
+  "nqsar": {
+    "recent_validation": [
+      {
+        "variant": "ARCHIVED",
+        "n": 42,
+        "state_accuracy": 0.9761904761904762,
+        "transition_accuracy": 0.9523809523809523,
+        "mismatches": 1
+      },
+      {
+        "variant": "CLAMPED",
+        "n": 42,
+        "state_accuracy": 0.9761904761904762,
+        "transition_accuracy": 0.9523809523809523,
+        "mismatches": 1
+      }
+    ],
+    "strategy_sensitivity": [
+      {
+        "variant": "ARCHIVED",
+        "pre_cagr": 0.46151762221804304,
+        "pre_mdd": -0.4375634148408195,
+        "tax_cagr": 0.3926574135083143,
+        "tax_end": 152.3281266967805,
+        "avg_exp": 0.7859121798222687,
+        "turnover": 95.6,
+        "target_diff_days_vs_ref": 0,
+        "tax_cagr_delta_vs_ref": 0.0,
+        "mdd_delta_vs_ref": 0.0
+      },
+      {
+        "variant": "CLAMPED",
+        "pre_cagr": 0.45710601079299873,
+        "pre_mdd": -0.4375634148408195,
+        "tax_cagr": 0.3888734345985043,
+        "tax_end": 146.167029788843,
+        "avg_exp": 0.7846314688970204,
+        "turnover": 95.6,
+        "target_diff_days_vs_ref": 7,
+        "tax_cagr_delta_vs_ref": -0.0037839789098099708,
+        "mdd_delta_vs_ref": 0.0
+      },
+      {
+        "variant": "NO_NQSAR_RED_BLOCK",
+        "pre_cagr": 0.4320078859174663,
+        "pre_mdd": -0.4438478705268497,
+        "tax_cagr": 0.3666397497433518,
+        "tax_end": 114.41852708230708,
+        "avg_exp": 0.7847882906429692,
+        "turnover": 88.19999999999999,
+        "target_diff_days_vs_ref": 213,
+        "tax_cagr_delta_vs_ref": -0.026017663764962506,
+        "mdd_delta_vs_ref": -0.006284455686030199
+      }
+    ],
+    "archived_recent_state_accuracy": 0.9761904761904762,
+    "material_sensitivity": false,
+    "remaining_caveat": "Recent trend_history can validate the reconstruction only over the committed recent window; full-history TradingView EXP_STATE_ID is still unavailable."
+  },
+  "mc57": {
+    "cohort_sensitivity": [
+      {
+        "cohort": "EARLIEST_40",
+        "n_tickers": 40,
+        "valid_days": 3826,
+        "error": "",
+        "score_corr": 0.9867695002447103,
+        "median_abs_score_diff": 2.136744064997959,
+        "p95_abs_score_diff": 7.000106928635404,
+        "gate20_agreement": 0.9918975431259801,
+        "gate35_agreement": 0.9715107161526398,
+        "strategy_start": "2011-01-03",
+        "cohort_pre_cagr": 0.40194395500930447,
+        "cohort_pre_mdd": -0.4530555079418108,
+        "cohort_tax_cagr": 0.3405791055081333,
+        "full_samewindow_pre_cagr": 0.46151762221804304,
+        "full_samewindow_pre_mdd": -0.4375634148408195,
+        "full_samewindow_tax_cagr": 0.3926574135083143,
+        "tax_cagr_delta": -0.052078308000180984,
+        "mdd_delta": -0.015492093100991311,
+        "target_diff_days": 150
+      },
+      {
+        "cohort": "EARLIEST_47",
+        "n_tickers": 47,
+        "valid_days": 3826,
+        "error": "",
+        "score_corr": 0.9979756994180731,
+        "median_abs_score_diff": 0.6646678195050839,
+        "p95_abs_score_diff": 2.806335438921179,
+        "gate20_agreement": 0.9947726084683742,
+        "gate35_agreement": 0.9903293256664925,
+        "strategy_start": "2011-01-03",
+        "cohort_pre_cagr": 0.4709170271525569,
+        "cohort_pre_mdd": -0.4375634148408195,
+        "cohort_tax_cagr": 0.3998149910152309,
+        "full_samewindow_pre_cagr": 0.46151762221804304,
+        "full_samewindow_pre_mdd": -0.4375634148408195,
+        "full_samewindow_tax_cagr": 0.3926574135083143,
+        "tax_cagr_delta": 0.00715757750691659,
+        "mdd_delta": 0.0,
+        "target_diff_days": 80
+      },
+      {
+        "cohort": "EARLIEST_50",
+        "n_tickers": 50,
+        "valid_days": 3826,
+        "error": "",
+        "score_corr": 0.9988506379591634,
+        "median_abs_score_diff": 0.44069599629117917,
+        "p95_abs_score_diff": 2.1926278807973993,
+        "gate20_agreement": 0.9958180867746994,
+        "gate35_agreement": 0.992681651855724,
+        "strategy_start": "2011-01-03",
+        "cohort_pre_cagr": 0.45677524527432767,
+        "cohort_pre_mdd": -0.4375634148408195,
+        "cohort_tax_cagr": 0.38769954663060435,
+        "full_samewindow_pre_cagr": 0.46151762221804304,
+        "full_samewindow_pre_mdd": -0.4375634148408195,
+        "full_samewindow_tax_cagr": 0.3926574135083143,
+        "tax_cagr_delta": -0.004957866877709938,
+        "mdd_delta": 0.0,
+        "target_diff_days": 51
+      },
+      {
+        "cohort": "EARLIEST_57",
+        "n_tickers": 57,
+        "valid_days": 3826,
+        "error": "",
+        "score_corr": 1.0,
+        "median_abs_score_diff": 0.0,
+        "p95_abs_score_diff": 0.0,
+        "gate20_agreement": 1.0,
+        "gate35_agreement": 1.0,
+        "strategy_start": "2011-01-03",
+        "cohort_pre_cagr": 0.46151762221804304,
+        "cohort_pre_mdd": -0.4375634148408195,
+        "cohort_tax_cagr": 0.3926574135083143,
+        "full_samewindow_pre_cagr": 0.46151762221804304,
+        "full_samewindow_pre_mdd": -0.4375634148408195,
+        "full_samewindow_tax_cagr": 0.3926574135083143,
+        "tax_cagr_delta": 0.0,
+        "mdd_delta": 0.0,
+        "target_diff_days": 0
+      }
+    ],
+    "material_sensitivity_earliest47": false,
+    "remaining_caveat": "This pressure test excludes later-listed current ETFs but still cannot reconstruct delisted historical ETFs; universe survivorship is therefore not fully eliminated."
+  },
+  "decision": {
+    "strategy_change": "NONE",
+    "candidate": "QQQ_RSI30 / RSI30_ANY",
+    "reason": "Stage55 is a validity sensitivity audit only. It does not optimize new thresholds or alter the proven execution hierarchy."
+  }
+}
