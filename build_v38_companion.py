@@ -183,6 +183,8 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
     tqqq_ready = _ready_live(tqqq_live, asof, "live_generation_status")
     sleeve_live = _load_json(sleeve_state_path, {})
     sleeve_ready = _ready_live(sleeve_live, asof, "status")
+    early1_live = _load_json(Path("v38-early1-live.json"), {})
+    early1_ready = _ready_live(early1_live, asof, "status")
     normal_sleeve = sleeve_live.get("normal_stock", {}) if sleeve_ready else {}
     reset_sleeve = sleeve_live.get("rsi_reset", {}) if sleeve_ready else {}
     sleeve_refresh = sleeve_live.get("refresh", {}) if isinstance(sleeve_live, dict) else {}
@@ -234,11 +236,14 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "ticker": ticker,
             "price": row.get("px"),
             "daily_dollar_volume_m": row.get("dvol"),
+            "entry_ddv20_pass": _finite(row.get("dvol")) and float(row["dvol"]) >= 20,
             "sma50_gt_sma200": bool(row.get("ma5020")),
             "close_vs_sma200_pct": row.get("v200"),
             "eligibility_checks": {
                 "price_gte_5": _finite(row.get("px")) and float(row["px"]) >= 5,
                 "dollar_volume_gte_10m": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,
+                "dollar_volume_gte_10m_rank_pool": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,
+                "dollar_volume_gte_20m_entry": _finite(row.get("dvol")) and float(row["dvol"]) >= 20,
                 "sma50_gt_sma200": bool(row.get("ma5020")),
                 "close_gt_sma200": _finite(row.get("v200")) and float(row["v200"]) > 0,
                 "rs189_gte_85": _finite(row.get("rs189")) and float(row["rs189"]) >= 85,
@@ -432,6 +437,17 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         "remaining_capacity_pct": (gross_live.remaining_capacity * 100 if gross_live else None),
     }
 
+    early1_state = dict(early1_live) if early1_ready else {
+        "schema": "v38-early1-live-1", "asof": asof, "status": "DATA REQUIRED",
+        "reason": "EARLY1_LIVE_REQUIRED",
+    }
+    early1_state["entry_allowed_now"] = bool(early1_ready and mode.name in {"ATTACK", "SELECTIVE"})
+    early1_state["slot_plan"] = (
+        "ATTACK: 本命11 + 先回り1 / SELECTIVE: 本命3 + 先回り1 / STOP・DEFENSE: 新規なし"
+    )
+    early1_state["total_slot_cap"] = 12 if mode.name == "ATTACK" else 4 if mode.name == "SELECTIVE" else 0
+    early1_state["core_slot_cap"] = 11 if mode.name == "ATTACK" else 3 if mode.name == "SELECTIVE" else 0
+
     return {
         "schema": "v38-live-state-1",
         "source": source_label,
@@ -470,15 +486,28 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
             "full_eligible_count": len(candidates),
             "display_limit_applied_after_full_sort": 50,
             "selective_watch_status": "READY" if bool(candidates) else "DATA REQUIRED",
-            "selective_watch_semantics": "STOP/DEFENSE REOPEN TO SELECTIVE: RS189 ONLY; TOP4",
+            "canonical_rule": "DDV20_VACANCY_TOP12_EARLY1_RS21_HIGH_ACCEL",
+            "total_slots_attack": 12,
+            "core_slots_attack": 11,
+            "early_slots_attack": 1,
+            "total_slots_selective": 4,
+            "core_slots_selective": 3,
+            "early_slots_selective": 1,
+            "ddv_entry_floor_m": 20,
+            "ddv_rank_pool_floor_m": 10,
+            "ddv_application": "RANK_FULL_DDV10_ELIGIBLE_UNIVERSE_THEN_TOP12_THEN_DDV20; NO_REFILL_BELOW_TOP12",
+            "selective_watch_semantics": "STOP/DEFENSE REOPEN TO SELECTIVE: RS189; TOP12 FIRST -> DDV20 -> CORE3 + EARLY1",
             "selective_reopen_top4": [row["ticker"] for row in selective_order[:4]],
+            "selective_core_top3": [row["ticker"] for row in selective_order[:12] if row.get("entry_ddv20_pass")][:3],
             "attack_watch_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
-            "attack_watch_semantics": "STOP/DEFENSE REOPEN TO ATTACK: 70/30 STRICT LOO; TOP12",
+            "attack_watch_semantics": "STOP/DEFENSE REOPEN TO ATTACK: 70/30 STRICT LOO; TOP12 FIRST -> DDV20 -> CORE11 + EARLY1",
             "attack_reopen_top12": [row["ticker"] for row in attack_order[:12]] if all_attack_watch_ready else [],
+            "attack_core_top11": [row["ticker"] for row in attack_order[:12] if row.get("entry_ddv20_pass")][:11] if all_attack_watch_ready else [],
             "strict_loo_live_status": "READY" if all_attack_watch_ready else "DATA REQUIRED",
             "strict_loo_source_status": "READY" if loo_live else "DATA REQUIRED",
         },
         "candidates": candidates,
+        "early1": early1_state,
         "panic_reset": {
             "status": ("READY / LIVE" if sleeve_ready and reset_sleeve.get("status") == "READY" else "DATA REQUIRED"),
             "separate_sleeve": True, "strategy": "RS63_TOP3_RISE30_SIGTOP3",
@@ -496,7 +525,7 @@ def build_state(legacy_html: Path, *, sector_snapshot_path: Path | None = None,
         },
         "normal_stock_sleeve": {
             "status": normal_sleeve.get("status") if sleeve_ready else "DATA REQUIRED",
-            "strategy": normal_sleeve.get("strategy") if sleeve_ready else "PEAK30_PART25_R3",
+            "strategy": normal_sleeve.get("strategy") if sleeve_ready else "CANONICAL_DDV20_EARLY1_RS21_HIGH_ACCEL",
             "desired_pct": normal_desired_pct,
             "standalone_desired_pct": normal_desired_pct,
             "portfolio_desired_pct": normal_portfolio_desired_pct,

@@ -241,6 +241,8 @@ def _normal_from_seed(seed: dict[str, Any]) -> dict[str, Any]:
                 "entry_date": str(p["entry_date"]),
                 "peak_close": float(p["peak_close"]),
                 "partial_done": bool(p.get("partial_done", False)),
+                "sleeve": str(p.get("sleeve") or "CORE"),
+                "early_sessions": int(p.get("early_sessions") or 0),
             }
             for p in seed.get("positions", [])
         ],
@@ -265,8 +267,15 @@ def _ranked_entry_symbols(companion: dict[str, Any]) -> list[str]:
 
 def _normal_pending(normal: dict[str, Any], companion: dict[str, Any], close_map: dict[str, float]) -> dict[str, Any]:
     positions = {p["symbol"]: p for p in normal["positions"]}
+    for p in positions.values():
+        p.setdefault("sleeve", "CORE")
+        p.setdefault("early_sessions", 0)
     market = companion.get("market", {})
     mode = str(market.get("mode") or "STOP")
+    total_cap = 12 if mode == "ATTACK" else 4 if mode == "SELECTIVE" else 0
+    core_cap = 11 if mode == "ATTACK" else 3 if mode == "SELECTIVE" else 0
+    early_cap = 1 if mode in {"ATTACK", "SELECTIVE"} else 0
+
     full_exits: list[dict[str, Any]] = []
     partials: list[dict[str, Any]] = []
     if mode == "DEFENSE":
@@ -276,6 +285,10 @@ def _normal_pending(normal: dict[str, Any], companion: dict[str, Any], close_map
             close = close_map.get(sym)
             if close is None or not _finite(close):
                 continue
+            # Research order: Early expiry is evaluated before partial/stop.
+            if str(p.get("sleeve") or "CORE") == "EARLY" and int(p.get("early_sessions") or 0) >= 10:
+                full_exits.append({"symbol": sym, "reason": "EARLY_EXPIRY_D10"})
+                continue
             peak = max(float(p["peak_close"]), float(close))
             p["peak_close"] = peak
             stop = max(float(p["entry_price"]) * 0.92, peak * 0.70)
@@ -283,19 +296,75 @@ def _normal_pending(normal: dict[str, Any], companion: dict[str, Any], close_map
                 full_exits.append({"symbol": sym, "reason": "INITIAL_OR_PEAK30_STOP"})
             elif (not p.get("partial_done")) and float(close) >= float(p["entry_price"]) * 1.24:
                 partials.append({"symbol": sym, "fraction": 0.25, "reason": "PARTIAL25"})
-    cap = int(market.get("new_entry_limit") or 0)
-    expected_positions = len(positions) - len(full_exits)
-    room = max(0, cap - expected_positions)
-    ranked = _ranked_entry_symbols(companion)
-    entries = []
-    if room > 0:
-        for sym in ranked:
-            if sym in positions and not any(x["symbol"] == sym for x in full_exits):
-                continue
-            entries.append(sym)
-            if len(entries) >= room:
+
+    exiting = {row["symbol"] for row in full_exits}
+    ranked_rows = [row for row in companion.get("candidates", []) if row.get("final_rank") is not None]
+    ranked_rows.sort(key=lambda row: int(row["final_rank"]))
+    # Canonical VACANCY_TOP12: cut to Top12 BEFORE the DDV20 entry filter.
+    top12 = ranked_rows[:12]
+    liquid_top12 = [row for row in top12 if _finite(row.get("daily_dollar_volume_m")) and float(row["daily_dollar_volume_m"]) >= 20.0]
+    core_take = [str(row["ticker"]) for row in liquid_top12[:core_cap]]
+    core_set = set(core_take)
+
+    promotions: list[str] = []
+    if core_cap > 0:
+        core_count = sum(
+            str(p.get("sleeve") or "CORE") == "CORE" and sym not in exiting
+            for sym, p in positions.items()
+        )
+        for sym, p in positions.items():
+            if core_count >= core_cap:
                 break
-    return {"full_exits": full_exits, "partial25": partials, "entries": entries, "entry_cap": cap}
+            if sym in exiting:
+                continue
+            if str(p.get("sleeve") or "CORE") == "EARLY" and sym in core_set:
+                p["sleeve"] = "CORE"
+                p["promoted_to_core_asof"] = str(companion.get("asof") or "")
+                promotions.append(sym)
+                core_count += 1
+
+    surviving = {sym: p for sym, p in positions.items() if sym not in exiting}
+    expected_total = len(surviving)
+    core_count = sum(str(p.get("sleeve") or "CORE") == "CORE" for p in surviving.values())
+    early_count = sum(str(p.get("sleeve") or "CORE") == "EARLY" for p in surviving.values())
+    entries: list[dict[str, Any]] = []
+
+    if total_cap > 0 and expected_total < total_cap and core_count < core_cap:
+        for sym in core_take:
+            if core_count >= core_cap or expected_total >= total_cap:
+                break
+            if sym in surviving:
+                continue
+            entries.append({"symbol": sym, "sleeve": "CORE", "signal_date": companion.get("asof")})
+            expected_total += 1
+            core_count += 1
+
+    early = companion.get("early1") or {}
+    early_ready = early.get("status") == "READY" and bool(early.get("entry_allowed_now"))
+    if early_ready and early_cap > 0 and early_count < early_cap and expected_total < total_cap:
+        for row in early.get("candidates") or []:
+            sym = str(row.get("ticker") or "")
+            if not sym or sym in surviving or any(e["symbol"] == sym for e in entries):
+                continue
+            entries.append({
+                "symbol": sym, "sleeve": "EARLY", "signal_date": companion.get("asof"),
+                "early_score": row.get("score"), "early_rank": row.get("rank"),
+            })
+            expected_total += 1
+            early_count += 1
+            break
+
+    return {
+        "full_exits": full_exits,
+        "partial25": partials,
+        "entries": entries,
+        "entry_cap": total_cap,
+        "core_cap": core_cap,
+        "early_cap": early_cap,
+        "promotions": promotions,
+        "ddv_policy": "TOP12_THEN_DDV20_NO_REFILL_BELOW_TOP12",
+        "early_policy": "RS21_HIGH_ACCEL_NOT_RED_BREADTH50_D10_DIRECT_PROMOTION",
+    }
 
 
 def _normal_mark(normal: dict[str, Any], closes: dict[str, float]) -> tuple[float, float, float]:
@@ -317,6 +386,9 @@ def advance_normal(previous: dict[str, Any], companion: dict[str, Any], asof: st
     prev_asof = str(previous.get("asof") or "")
     current = dict(previous)
     current["positions"] = [dict(p) for p in previous.get("positions", [])]
+    for p in current["positions"]:
+        p.setdefault("sleeve", "CORE")
+        p.setdefault("early_sessions", 0)
     current["pending"] = dict(previous.get("pending") or {"full_exits": [], "partial25": [], "entries": []})
     date = pd.Timestamp(asof)
     if prev_asof > asof:
@@ -361,9 +433,10 @@ def advance_normal(previous: dict[str, Any], companion: dict[str, Any], asof: st
                 raise RuntimeError(f"NORMAL_OPEN_REQUIRED {sym}")
             nav_open += float(p["shares"]) * px
         slot_cash = nav_open / NORMAL_MAX_POSITIONS
-        for sym0 in pending.get("entries", []):
-            sym = str(sym0)
-            if len(pos) >= cap or cash <= 1e-12 or sym in pos:
+        for entry0 in pending.get("entries", []):
+            entry = entry0 if isinstance(entry0, dict) else {"symbol": str(entry0), "sleeve": "CORE"}
+            sym = str(entry.get("symbol") or "")
+            if len(pos) >= cap or cash <= 1e-12 or not sym or sym in pos:
                 continue
             px = _px(op, date, sym)
             if px is None:
@@ -375,7 +448,15 @@ def advance_normal(previous: dict[str, Any], companion: dict[str, Any], asof: st
             pos[sym] = {
                 "symbol": sym, "shares": amount / px, "entry_price": px,
                 "entry_date": asof, "peak_close": px, "partial_done": False,
+                "sleeve": str(entry.get("sleeve") or "CORE"),
+                "early_sessions": 0,
+                "entry_signal_date": entry.get("signal_date"),
+                "early_score": entry.get("early_score"),
+                "early_rank": entry.get("early_rank"),
             }
+        for p in pos.values():
+            if str(p.get("sleeve") or "CORE") == "EARLY":
+                p["early_sessions"] = int(p.get("early_sessions") or 0) + 1
         current["cash"] = cash
         current["positions"] = list(pos.values())
         current["asof"] = asof
@@ -401,7 +482,7 @@ def advance_normal(previous: dict[str, Any], companion: dict[str, Any], asof: st
     current["position_count"] = len(current["positions"])
     current["pending"] = _normal_pending(current, companion, close_map)
     current["status"] = "READY"
-    current["strategy"] = "PEAK30_PART25_R3"
+    current["strategy"] = "CANONICAL_DDV20_EARLY1_RS21_HIGH_ACCEL"
     return current
 
 
@@ -756,7 +837,7 @@ def main() -> None:
                 if _finite(seed_pos.get(p["symbol"], {}).get("close")):
                     p["close"] = float(seed_pos[p["symbol"]]["close"])
         symbols_normal = sorted(({p["symbol"] for p in prior_normal.get("positions", [])}
-                                 | set((prior_normal.get("pending") or {}).get("entries", []))
+                                 | {str(x.get("symbol") if isinstance(x, dict) else x) for x in (prior_normal.get("pending") or {}).get("entries", [])}
                                  | {"SPY"}))
         op_n = cl_n = None
         if str(prior_normal.get("asof")) <= asof:
