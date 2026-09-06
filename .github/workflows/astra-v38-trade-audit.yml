@@ -1,0 +1,49 @@
+name: Astra frozen Early trade attribution
+on:
+  push:
+    branches: [research/astra-v38-full-audit-20260905]
+    paths: [.github/workflows/astra-v38-trade-audit.yml, leadership/research/astra_audit_20260905/trade_audit.py]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/research/astra-v38-full-audit-20260905'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: 898a684142239fa77ce6dd28b2c35b43e3b188ec
+          path: research_source
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install pandas==3.0.5 numpy==2.4.6 scipy==1.17.1 yfinance==1.7.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: astra-v38-full-audit-20260905
+          path: frozen/audit
+          github-token: ${{ github.token }}
+          run-id: 33972198145
+      - run: python leadership/research/astra_audit_20260905/trade_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astra-early-trade-audit
+          path: trade_output/
+          retention-days: 90
+      - name: Preserve research evidence
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/research/astra-v38-full-audit-20260905
+          destination=leadership/research/astra_audit_20260905/trade_results
+          mkdir -p "$destination"
+          cp trade_output/* "$destination/"
+          git config user.name 'V38 Research Audit'
+          git config user.email 'audit@users.noreply.github.com'
+          git add -- "$destination"
+          git diff --cached --quiet && exit 0
+          git commit -m 'research: preserve exact Early trade events and symbol clusters'
+          git push origin HEAD:refs/heads/research/astra-v38-full-audit-20260905
