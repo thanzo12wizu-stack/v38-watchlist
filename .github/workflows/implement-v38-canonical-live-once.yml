@@ -1,0 +1,74 @@
+name: Implement V38 canonical live once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/implement-v38-canonical-live-once.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: implement-v38-canonical-live-once
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+      - name: Apply canonical migration
+        run: python scripts/implement_v38_canonical_live_once.py
+      - name: Compile and test affected V38 code
+        run: |
+          python -m py_compile \
+            build_v38_early1_live.py \
+            build_v38_companion.py \
+            build_v38_sleeve_live.py \
+            build_v38_sleeve_refresh.py \
+            v38_rules.py
+          pytest -q \
+            tests/test_v38_rules.py \
+            tests/test_v38_companion.py \
+            tests/test_v38_sleeve_live.py \
+            tests/test_v38_sleeve_refresh.py \
+            tests/test_v38_early1_live.py
+          python - <<'PY'
+          from pathlib import Path
+          h=Path('command-center-v38.html').read_text(encoding='utf-8')
+          required=['本命11＋先回り1','本命3＋先回り1','DDV20','RS21_HIGH_ACCEL','earlyPick']
+          missing=[x for x in required if x not in h]
+          if missing:
+              raise SystemExit('V38 page canonical text missing: '+repr(missing))
+          print('V38_PAGE_CANONICAL_STATIC_PASS')
+          PY
+      - name: Commit implementation to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            build_v38_companion.py \
+            build_v38_sleeve_live.py \
+            command-center-v38.html \
+            .github/workflows/v38-live.yml \
+            .github/workflows/v38-sleeve-refresh.yml \
+            .github/workflows/production-downstream-chain.yml
+          if git diff --cached --quiet; then
+            echo 'No migration changes'
+            exit 0
+          fi
+          git commit -m 'Implement canonical DDV20 Early1 V38 live rules'
+          git push origin HEAD:main
