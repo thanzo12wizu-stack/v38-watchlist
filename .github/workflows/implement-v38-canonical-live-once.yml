@@ -101,12 +101,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
+            build_v38_early1_live.py \
             build_v38_companion.py \
             build_v38_sleeve_live.py \
             command-center-v38.html \
-            .github/workflows/v38-live.yml \
-            .github/workflows/v38-sleeve-refresh.yml \
-            .github/workflows/production-downstream-chain.yml
+            tests/test_v38_early1_live.py
           if git diff --cached --quiet; then
             echo 'No migration changes'
             exit 0
