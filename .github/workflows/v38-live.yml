@@ -21,6 +21,7 @@ jobs:
         v38-live-state.json
         v38-strict-loo-history.json
         v38-strict-loo-live.json
+        v38-early1-live.json
         tqqq-panic-state.json
         v38-tqqq-live-source-cache.json
       V38_BUILD_INPUTS: >-
@@ -31,6 +32,7 @@ jobs:
         v38_rules.py
         build_v38_companion.py
         build_v38_strict_loo_live.py
+        build_v38_early1_live.py
         build_v38_tqqq_live.py
         requirements.txt
 
@@ -87,11 +89,13 @@ jobs:
             v38_rules.py \
             build_v38_companion.py \
             build_v38_strict_loo_live.py \
+            build_v38_early1_live.py \
             build_v38_tqqq_live.py
           pytest -q \
             tests/test_v38_rules.py \
             tests/test_v38_companion.py \
             tests/test_v38_strict_loo_live.py \
+            tests/test_v38_early1_live.py \
             tests/test_v38_tqqq_live.py
 
       - name: Prefetch dedicated TQQQ market inputs
@@ -164,6 +168,25 @@ jobs:
             --sector-snapshot sector_snapshot.json \
             --history v38-strict-loo-history.json \
             --out v38-strict-loo-live.json
+
+      - name: Restore canonical Early1 OHLCV cache
+        uses: actions/cache@v5
+        with:
+          path: .cache/v38-early1
+          key: ${{ runner.os }}-v38-early1-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-v38-early1-
+
+      - name: Build canonical Early1 live signal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python build_v38_early1_live.py \
+            --state state.json \
+            --universe universe.csv \
+            --industry industry_map.json \
+            --cache .cache/v38-early1/early1-ohlcv.pkl.gz \
+            --out v38-early1-live.json
 
       - name: Build CURRENT30 and Stage56 TQQQ live state
         env:
@@ -261,6 +284,7 @@ jobs:
           live = json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
           loo = json.loads(Path('v38-strict-loo-live.json').read_text(encoding='utf-8'))
           tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+          early = json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))
           asof = str(state.get('date') or '')
           if not asof:
               raise SystemExit('state date missing')
@@ -270,6 +294,8 @@ jobs:
               raise SystemExit(f'strict LOO mismatch: {loo.get("asof")} != {asof}')
           if tqqq.get('schema') != 'v38-tqqq-panic-state-1' or tqqq.get('asof') != asof:
               raise SystemExit(f'TQQQ mismatch: {tqqq.get("asof")} != {asof}')
+          if early.get('schema') != 'v38-early1-live-1' or early.get('asof') != asof or early.get('status') != 'READY':
+              raise SystemExit(f'EARLY1 mismatch/not ready: {early.get("asof")} {early.get("status")}')
           if tqqq.get('live_generation_status') != 'READY':
               raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")} {tqqq.get("reason")}')
           if tqqq.get('current30', {}).get('status') != 'READY':

@@ -40,6 +40,7 @@ jobs:
         v38-live-state.json
         v38-strict-loo-history.json
         v38-strict-loo-live.json
+        v38-early1-live.json
         tqqq-panic-state.json
         v38-tqqq-live-source-cache.json
         v38-sleeve-state.json
@@ -122,12 +123,14 @@ jobs:
           live=json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
           tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
           sleeve=json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))
+          early=json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))
           if str(state.get('date') or '') != target:
               raise SystemExit(f'Command Center advanced while V38 family was building: {state.get("date")} != {target}')
           dates={
               'V38': str(live.get('asof') or ''),
               'TQQQ': str(tqqq.get('asof') or ''),
               'Sleeve': str(sleeve.get('asof') or ''),
+              'Early1': str(early.get('asof') or ''),
               'Normal Stock': str((sleeve.get('normal_stock') or {}).get('asof') or ''),
               'RSI Reset': str((sleeve.get('rsi_reset') or {}).get('asof') or ''),
           }
@@ -138,6 +141,8 @@ jobs:
               raise SystemExit(f'TQQQ not READY: {tqqq.get("live_generation_status")}')
           if (tqqq.get('current30') or {}).get('status') != 'READY':
               raise SystemExit('CURRENT30 not READY')
+          if early.get('status') != 'READY':
+              raise SystemExit(f'Early1 not READY: {early.get("status")}')
           if sleeve.get('status') != 'READY':
               raise SystemExit(f'Sleeve not READY: {sleeve.get("status")}')
           if (sleeve.get('normal_stock') or {}).get('status') != 'READY':

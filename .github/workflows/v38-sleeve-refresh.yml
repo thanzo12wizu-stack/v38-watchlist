@@ -21,6 +21,7 @@ jobs:
         v38-live-state.json
         v38-strict-loo-history.json
         v38-strict-loo-live.json
+        v38-early1-live.json
         tqqq-panic-state.json
         v38-sleeve-state.json
 
@@ -82,11 +83,13 @@ jobs:
             run_v38_sleeve_refresh_live.py \
             build_v38_companion.py \
             build_v38_strict_loo_live.py \
+            build_v38_early1_live.py \
             v38_rules.py
           pytest -q \
             tests/test_v38_sleeve_live.py \
             tests/test_v38_sleeve_refresh.py \
-            tests/test_v38_companion.py
+            tests/test_v38_companion.py \
+            tests/test_v38_early1_live.py
 
       - name: Preserve pre-refresh READY inputs
         shell: bash
