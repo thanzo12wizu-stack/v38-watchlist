@@ -33,6 +33,7 @@ jobs:
         industry_map.json
         universe.csv
         options_targets.json
+        options-rs-leaders.json
         commit_manifest.json
 
     steps:
@@ -57,7 +58,7 @@ jobs:
 
       - name: Dashboard preflight tests
         run: |
-          python -m py_compile build_dashboard.py
+          python -m py_compile build_dashboard.py build_dashboard_with_options_rs.py
           pytest -q \
             tests/test_dashboard_build_regressions.py \
             tests/test_eps_acceleration.py
@@ -92,10 +93,11 @@ jobs:
           V38_OPT_JSON: options_positioning.json
           V38_OPT_SCAN_HISTORY: options_scan_history.csv
           V38_OPT_TARGETS: options_targets.json
+          V38_OPTIONS_RS_JSON: options-rs-leaders.json
         shell: bash
         run: |
           set -euo pipefail
-          python build_dashboard.py 2>&1 | tee build-dashboard.log
+          python build_dashboard_with_options_rs.py 2>&1 | tee build-dashboard.log
 
           if grep -q "::warning::as-of regression:" build-dashboard.log; then
             echo "skipped=true" >> "$GITHUB_OUTPUT"
@@ -149,6 +151,7 @@ jobs:
               "trend_history.json": 100,
               "daily_log.csv": 100,
               "options_targets.json": 2,
+              "options-rs-leaders.json": 100,
               "commit_manifest.json": 2,
           }
           for name, minimum in required.items():
@@ -161,6 +164,20 @@ jobs:
           iso = re.compile(r"^\d{4}-\d{2}-\d{2}$")
           if not iso.fullmatch(state_date):
               raise SystemExit(f"invalid state date: {state_date!r}")
+
+          rs = json.loads(Path("options-rs-leaders.json").read_text(encoding="utf-8"))
+          if rs.get("source") != "command-center.rs_pool":
+              raise SystemExit(f"invalid RS sidecar source: {rs.get('source')!r}")
+          if str(rs.get("asof") or "") != state_date:
+              raise SystemExit(f"RS sidecar date mismatch: state={state_date} rs={rs.get('asof')}")
+          expected_mapping = {"short": "RS63", "swing": "RS126", "medium": "RS189"}
+          for mode, metric in expected_mapping.items():
+              got = ((rs.get("mapping") or {}).get(mode) or {}).get("metric")
+              rows = (((rs.get("rankings") or {}).get(mode) or {}).get("rows") or [])
+              if got != metric:
+                  raise SystemExit(f"RS mapping mismatch: {mode}={got!r} expected={metric!r}")
+              if len(rows) != 12 or [row.get("rank") for row in rows] != list(range(1, 13)):
+                  raise SystemExit(f"RS Top12 invalid: {mode} rows={len(rows)}")
 
           log_dates = []
           with Path("daily_log.csv").open(encoding="utf-8", newline="") as fh:
@@ -213,7 +230,7 @@ jobs:
           if failed:
               raise SystemExit(f"critical persistence did not complete: {failed}")
 
-          print(f"COMMAND_CENTER_VALIDATE_PASS {state_date} comparison={prev_date or 'none'}")
+          print(f"COMMAND_CENTER_VALIDATE_PASS {state_date} comparison={prev_date or 'none'} rs12=ok")
           PY
 
       - name: Publish Command Center artifacts only to main
@@ -239,7 +256,7 @@ jobs:
             git fetch --depth=1 origin main
 
             if ! git diff --quiet "$DASHBOARD_SOURCE_SHA" origin/main -- \
-              build_dashboard.py requirements.txt sar_state.txt equity.csv .github/workflows/dashboard.yml; then
+              build_dashboard.py build_dashboard_with_options_rs.py requirements.txt sar_state.txt equity.csv .github/workflows/dashboard.yml; then
               echo "::warning::Command Center source changed during this run; retain current main and let the newer workflow build it"
               echo "retained=true" >> "$GITHUB_OUTPUT"
               exit 0
@@ -318,6 +335,7 @@ jobs:
 
           state = load_json("state.json")
           manifest = load_json("commit_manifest.json")
+          rs = load_json("options-rs-leaders.json")
           prevday = state.get("prevday") if isinstance(state.get("prevday"), dict) else {}
           status = "retained last-known-good" if os.environ["BUILD_SKIPPED"] == "true" or os.environ["PUBLISH_RETAINED"] == "true" else "published"
           manifest_status = "READY" if all(manifest.get(key) == "ok" for key in ("html", "share", "state", "trend", "log")) else "DATA REQUIRED"
@@ -330,6 +348,7 @@ jobs:
               f"- Main HTML: {Path('command-center.html').stat().st_size if Path('command-center.html').is_file() else 0} bytes",
               f"- Share HTML: {Path('command-center_share.html').stat().st_size if Path('command-center_share.html').is_file() else 0} bytes",
               f"- Persistence manifest: {manifest_status}",
+              f"- Options RS sidecar: {rs.get('asof') or 'missing'} / RS63-RS126-RS189 Top12",
               f"- Published commit: {os.environ['PUBLISHED_SHA'] or 'unchanged'}",
               "- Ownership: this workflow is the only writer of Command Center artifacts",
           ]
