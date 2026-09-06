@@ -166,12 +166,21 @@ function settleAnchorPosition() {
   });
 }
 
+function activeSelectedCard() {
+  return document.querySelector('.inlineAnalysis .selectedCard') || document.querySelector('#selected .selectedCard');
+}
+
 async function mountCurrent() {
   scheduled = false;
-  const selected = document.querySelector('#selected');
-  const card = selected?.querySelector('.selectedCard');
+  const card = activeSelectedCard();
   const ticker = card?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
-  if (!card || !ticker) return;
+  if (!card || !ticker) {
+    if (activeChart) {
+      try { activeChart.destroy(); } catch (_) {}
+      activeChart = null;
+    }
+    return;
+  }
   const token = ++mountToken;
 
   if (activeChart) {
@@ -199,7 +208,7 @@ async function mountCurrent() {
   const broadP = loadShard(ticker).catch(() => []);
   const [payload, broadRows] = await Promise.all([payloadP, broadP]);
 
-  const currentCard = document.querySelector('#selected .selectedCard');
+  const currentCard = activeSelectedCard();
   const currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
   if (token !== mountToken || currentTicker !== ticker || !currentCard) return;
 
@@ -264,6 +273,7 @@ function boot() {
   installNavigationBehavior();
   loadPayload(false).catch(() => ({ tickers: {} }));
   new MutationObserver(() => { restoreAnchorPosition(); schedule(); }).observe(selected, { childList: true });
+  window.addEventListener('options:inline-selected-change', schedule);
   schedule();
 }
 

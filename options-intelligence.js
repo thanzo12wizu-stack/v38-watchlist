@@ -57,6 +57,7 @@ let scanRows = [];
 let activeSuggestion = -1;
 let activePeriod = 'swing';
 let selectedTicker = null;
+let expandedTickerCard = null;
 let leaderFresh = false;
 let leaderAsOf = '';
 let leaderHealthReason = '';
@@ -690,7 +691,49 @@ function renderAll() {
   }).join('');
   bind($('#allRecords'));
 }
-function bind(root) { for (const e of root.querySelectorAll('[data-ticker]')) e.addEventListener('click', () => selectTicker(e.dataset.ticker, false)); }
+function closeInlineCard() {
+  const card = expandedTickerCard;
+  if (!card) return;
+  card.querySelector(':scope > .inlineAnalysis')?.remove();
+  card.classList.remove('inlineExpanded');
+  card.setAttribute('aria-expanded', 'false');
+  expandedTickerCard = null;
+  window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
+}
+function toggleInlineCard(card, t) {
+  t = String(t || '').trim().toUpperCase();
+  if (!card || !t) return;
+  if (expandedTickerCard === card && card.classList.contains('inlineExpanded')) {
+    closeInlineCard();
+    return;
+  }
+  closeInlineCard();
+  $('#selectedSection').hidden = true;
+  $('#selected').innerHTML = '';
+  const inline = document.createElement('div');
+  inline.className = 'inlineAnalysis';
+  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${selectedHtml(t)}`;
+  inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
+  card.appendChild(inline);
+  card.classList.add('inlineExpanded');
+  card.setAttribute('aria-expanded', 'true');
+  expandedTickerCard = card;
+  inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    closeInlineCard();
+  });
+  window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
+}
+function bind(root) {
+  for (const e of root.querySelectorAll('[data-ticker]')) {
+    e.setAttribute('aria-expanded', 'false');
+    e.addEventListener('click', ev => {
+      if (ev.target.closest('.inlineAnalysis')) return;
+      toggleInlineCard(e, e.dataset.ticker);
+    });
+  }
+}
 function fmtTime(x) {
   if (!x) return '—';
   const d = new Date(x);
@@ -747,6 +790,7 @@ function bindExpiryPicker(t) {
 function selectTicker(t, scroll) {
   t = String(t || '').trim().toUpperCase();
   if (!t) return;
+  closeInlineCard();
   selectedTicker = t;
   $('#selected').innerHTML = selectedHtml(t);
   $('#selectedSection').hidden = false;
@@ -795,6 +839,7 @@ function updatePeriodUi() {
 }
 function setPeriod(mode, rerender = true) {
   if (!PERIODS[mode]) return;
+  if (rerender && expandedTickerCard) closeInlineCard();
   activePeriod = mode;
   updatePeriodUi();
   if (rerender) rebuildAndRender(selectedTicker, false);
