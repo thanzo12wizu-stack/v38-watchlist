@@ -1,0 +1,183 @@
+name: Patch Options leaders by RS horizon
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/patch-options-period-leaders.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Apply period-aware Leadership patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('options-intelligence.js')
+          s = path.read_text()
+
+          def must_replace(old, new, label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'missing replacement anchor: {label}')
+              s = s.replace(old, new, 1)
+
+          def replace_func(name, next_name, new_body):
+              global s
+              start = s.find(f'function {name}')
+              end = s.find(f'\nfunction {next_name}', start)
+              if start < 0 or end < 0:
+                  raise SystemExit(f'missing function anchors: {name} -> {next_name}')
+              s = s[:start] + new_body.rstrip() + '\n' + s[end+1:]
+
+          must_replace(
+              "let leaderHealthReason = '';\nconst exactExpiryByTicker = {};",
+              "let leaderHealthReason = '';\nlet leaderRanks = { short: {}, swing: {}, medium: {} };\nconst exactExpiryByTicker = {};",
+              'leader rank state'
+          )
+
+          must_replace(
+              "  short: { label: '短期 0–6DTE', hint: '直近需給。イベント・0DTE/週次ノイズの影響を受けやすい。' },\n  swing: { label: 'スイング 7–21DTE', hint: 'デフォルト。1〜3週間の売買判断に使う主期間。' },\n  medium: { label: '中期 22–45DTE', hint: '短期ノイズを薄め、数週間先の構造を確認。' },\n  multi: { label: '複数満期統合', hint: '0〜45DTEを合算し、満期間の方向一致とWall集中を確認。' },\n  exact: { label: '満期指定', hint: '銘柄詳細の満期プルダウンで実在満期を直接指定。未指定銘柄はスイング基準満期。' }",
+              "  short: { label: '短期 0–6DTE', hint: 'Options 0–6DTE × RS21リーダー。短期の値動きと短期相対強度を同じタブで見る。' },\n  swing: { label: 'スイング 7–21DTE', hint: 'Options 7–21DTE × RS63リーダー。1〜3週間の主期間。' },\n  medium: { label: '中期 22–45DTE', hint: 'Options 22–45DTE × RS189リーダー。数週間先の構造と中期相対強度を見る。' },\n  multi: { label: '複数満期統合', hint: 'Optionsは0〜45DTEを統合。LeadershipはRS21/63/189を勝手に混ぜず、各期間タブで確認する。' },\n  exact: { label: '満期指定', hint: '銘柄ごとの実在満期を指定。Leadershipは単一RSへ自動混合せず、RS21/63/189を個別表示する。' }",
+              'period hints'
+          )
+
+          helper = r'''
+const LEADER_PERIOD_METRIC = {
+  short: { key: 'rs21', label: 'RS21' },
+  swing: { key: 'rs63', label: 'RS63' },
+  medium: { key: 'rs189', label: 'RS189' },
+};
+function leaderMetric(mode = activePeriod) { return LEADER_PERIOD_METRIC[mode] || null; }
+function leaderValue(l, mode = activePeriod) {
+  const m = leaderMetric(mode);
+  return m ? num(l?.[m.key]) : null;
+}
+function rebuildLeaderRanks() {
+  leaderRanks = { short: {}, swing: {}, medium: {} };
+  for (const mode of Object.keys(leaderRanks)) {
+    const rows = Object.values(leaderMap)
+      .map(l => ({ l, value: leaderValue(l, mode) }))
+      .filter(x => x.value !== null)
+      .sort((a, b) => b.value - a.value || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.l.ticker.localeCompare(b.l.ticker));
+    rows.forEach((x, i) => { leaderRanks[mode][x.l.ticker] = i + 1; });
+  }
+}
+function leaderRank(l, mode = activePeriod) {
+  if (!l?.ticker || !leaderRanks[mode]) return null;
+  return leaderRanks[mode][l.ticker] || null;
+}
+function leaderContextText(l, mode = activePeriod) {
+  const m = leaderMetric(mode), v = leaderValue(l, mode), rank = leaderRank(l, mode);
+  if (!m || v === null) return '';
+  return `${m.label} ${v.toFixed(1)}${rank ? ` #${rank}` : ''}`;
+}
+function leaderStatsHtml(l) {
+  if (!l) return '';
+  const active = leaderMetric();
+  const activeText = active ? `<span class="statPill">${active.label}<b>${leaderValue(l) === null ? '—' : leaderValue(l).toFixed(1)}${leaderRank(l) ? ` #${leaderRank(l)}` : ''}</b></span>` : '';
+  return `<div class="leaderStats">${activeText}<span class="statPill">RS21<b>${num(l.rs21) ?? '—'}</b></span><span class="statPill">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class="statPill">RS189<b>${num(l.rs189) ?? '—'}</b></span></div>`;
+}
+'''
+          anchor = '\nfunction updateLeaderFreshness(leaders) {'
+          if anchor not in s:
+              raise SystemExit('missing helper insertion anchor')
+          s = s.replace(anchor, '\n' + helper.rstrip() + anchor, 1)
+
+          must_replace(
+              "  if (leaderFresh && l?.leaderScore >= 75) { s += 6; why.push('同日Leadership上位'); }\n  else if (leaderFresh && l?.leaderScore >= 60) s += 3;",
+              "  const lv = leaderFresh ? leaderValue(l) : null, lm = leaderMetric();\n  if (lv !== null && lv >= 95) { s += 6; why.push(`${lm.label}上位`); }\n  else if (lv !== null && lv >= 85) { s += 3; why.push(`${lm.label}上位`); }",
+              'direction leader bonus'
+          )
+
+          must_replace(
+              "  const lead = leaderFresh && l?.leaderScore >= 70 ? ' Leadershipも同日データで上位。' : '';",
+              "  const lv = leaderFresh ? leaderValue(l) : null, lm = leaderMetric();\n  const lead = lv !== null && lv >= 85 ? ` ${lm.label} ${lv.toFixed(1)}で同日上位。` : '';",
+              'analysis leader text'
+          )
+
+          must_replace(
+              "function leaderBadge(l) { return leaderFresh && l ? `<span class=\"badge bLeader\">主導株 ${l.leaderScore ?? l.leader_score ?? '—'}</span>` : ''; }",
+              "function leaderBadge(l) {\n  const text = leaderFresh ? leaderContextText(l) : '';\n  return text ? `<span class=\"badge bLeader\">${esc(text)}</span>` : '';\n}",
+              'leader badge'
+          )
+
+          must_replace(
+              "<div class=\"score\">${verified ? (combined ?? o?.direction?.confidence ?? '—') : '—'}</div>",
+              "<div class=\"score\">${combined ?? (verified ? (o?.direction?.confidence ?? '—') : '—')}</div>",
+              'leader card score visibility'
+          )
+
+          replace_func('buildLeaderRows()', 'renderLeaders()', r'''function buildLeaderRows() {
+  if (!leaderFresh) return [];
+  const metric = leaderMetric();
+  if (!metric) return [];
+  return Object.entries(leaderMap)
+    .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l) }))
+    .filter(x => x.metricValue !== null)
+    .sort((a, b) => b.metricValue - a.metricValue || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.t.localeCompare(b.t))
+    .slice(0, 8);
+}''')
+
+          replace_func('renderLeaders()', 'directionalRows(dir)', r'''function renderLeaders() {
+  if (!leaderFresh) {
+    $('#leaders').innerHTML = `<div class="noData"><strong>Leadership更新待ち</strong>${esc(leaderHealthReason)} 古いLeadershipを今日のランキングへ流用しません。</div>`;
+    return;
+  }
+  const metric = leaderMetric();
+  if (!metric) {
+    $('#leaders').innerHTML = '<div class="noData"><strong>RSランキングは混合しません。</strong>複数満期・満期指定では単一のLeadership順位を作らず、短期=RS21 / スイング=RS63 / 中期=RS189 の各タブで確認してください。</div>';
+    return;
+  }
+  const a = buildLeaderRows();
+  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.metricValue.toFixed(1))).join('') : `<div class="empty">${metric.label} Leadershipデータなし。</div>`;
+  bind($('#leaders'));
+}''')
+
+          old_stats = "  const leaderStats = l ? `<div class=\"leaderStats\"><span class=\"statPill\">Leader<b>${l.leaderScore}</b></span><span class=\"statPill\">RS189<b>${num(l.rs189) ?? '—'}</b></span><span class=\"statPill\">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class=\"statPill\">RS21<b>${num(l.rs21) ?? '—'}</b></span></div>` : '';"
+          must_replace(old_stats, "  const leaderStats = leaderStatsHtml(l);", 'selected leader stats')
+
+          must_replace(
+              "    leaderMap = leaders ? collectLeaders(leaders) : {};\n    updateLeaderFreshness(leaders || {});",
+              "    leaderMap = leaders ? collectLeaders(leaders) : {};\n    rebuildLeaderRanks();\n    updateLeaderFreshness(leaders || {});",
+              'rank cache init'
+          )
+
+          path.write_text(s)
+
+          html = Path('options-intelligence.html')
+          h = html.read_text()
+          old = '<div class="sectionHead"><div><span class="eyebrow">TODAY\'S LEADERS</span><h2>見るべきリーダー</h2></div><p>選択中の期間でOptionsを再評価。Leadershipは上流から読み取りのみ。</p></div>'
+          new = '<div class="sectionHead"><div><span class="eyebrow">TODAY\'S LEADERS</span><h2>見るべきリーダー</h2></div><p>短期=RS21 / スイング=RS63 / 中期=RS189。Optionsと同じ期間タブで同期。</p></div>'
+          if old not in h:
+              raise SystemExit('missing HTML leaders copy anchor')
+          h = h.replace(old, new, 1)
+          if 'options-intelligence.js?v=20260905-sync2' not in h:
+              raise SystemExit('missing HTML JS cache anchor')
+          h = h.replace('options-intelligence.js?v=20260905-sync2', 'options-intelligence.js?v=20260906-rsperiod1', 1)
+          html.write_text(h)
+          PY
+          node --check options-intelligence.js
+          git diff --check
+      - name: Commit period-aware Leadership UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- options-intelligence.js options-intelligence.html
+          git diff --staged --stat
+          git commit -m "Sync Options leaders to RS horizon"
+          git push origin HEAD:main
