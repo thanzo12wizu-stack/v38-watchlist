@@ -639,9 +639,11 @@ function horizonLabel(c) {
 }
 function miniCard(t, o, l, combined) {
   const u = universeMap[t] || {}, d = dirView(o?.direction), c = o?.current, verified = isUsable(o), periodMissing = o?.period_unavailable;
+  const muted = !!l && !verified && ['short', 'swing', 'medium'].includes(activePeriod);
+  const optionState = !o ? 'Optionsなし' : periodMissing ? '期間なし' : !verified ? '時点・品質NG' : '';
   const levels = verified && c ? `<div class="miniLevels"><div class="miniLv"><span>終値</span><b>${money(c.spot)}</b></div><div class="miniLv"><span>支持</span><b>${money(c.put_wall)}</b></div><div class="miniLv"><span>上値壁</span><b>${money(c.call_wall)}</b></div><div class="miniLv"><span>織込み</span><b>${expectedLabel(c)}</b></div></div>` : '';
   const note = periodMissing ? 'この期間の満期データは未取得。' : o ? (verified ? o.analysis : (o.source === 'DETAIL' ? 'Options詳細はあるが時点・品質条件を満たさない。' : '履歴のみ。現在の方向判定には使用しない。')) : 'Options詳細未取得。';
-  return `<article class="miniCard" data-ticker="${esc(t)}"><div class="miniHead"><div class="ticker">${esc(t)}</div><div class="company">${esc(u.name || l?.name || '')}</div><div class="score">${combined ?? (verified ? (o?.direction?.confidence ?? '—') : '—')}</div></div><div class="badges">${leaderBadge(l)}<span class="badge ${d.cls}">${verified ? `${d.arrow} ${d.label}` : '? 未判定'}</span>${periodMissing ? '<span class="badge bLow">期間データなし</span>' : o && !verified ? '<span class="badge bLow">参考外</span>' : ''}</div>${verified ? `<div class="miniDirection"><strong class="${d.cls}">${d.arrow} ${d.label}</strong><span>方向 ${o.direction.score}/100 · 確度 ${o.direction.confidence}</span></div>` : ''}<div class="miniThesis">${esc(note)}</div>${levels}<div class="miniMeta">${esc(u.sector || '')} · ${esc(u.industry || '')}${c ? ` · ${esc(horizonLabel(c))}` : ''}</div></article>`;
+  return `<article class="miniCard${muted ? ' leaderMuted' : ''}" data-ticker="${esc(t)}"><div class="miniHead"><div class="ticker">${esc(t)}</div><div class="company">${esc(u.name || l?.name || '')}</div><div class="score">${combined ?? (verified ? (o?.direction?.confidence ?? '—') : '—')}</div></div><div class="badges">${leaderBadge(l)}${verified ? `<span class="badge ${d.cls}">${d.arrow} ${d.label}</span>` : `<span class="badge bLow">${esc(optionState || 'Optionsなし')}</span>`}</div>${verified ? `<div class="miniDirection"><strong class="${d.cls}">${d.arrow} ${d.label}</strong><span>方向 ${o.direction.score}/100 · 確度 ${o.direction.confidence}</span></div>` : ''}<div class="miniThesis">${esc(note)}</div>${levels}<div class="miniMeta">${esc(u.sector || '')} · ${esc(u.industry || '')}${c ? ` · ${esc(horizonLabel(c))}` : ''}</div></article>`;
 }
 function buildLeaderRows() {
   if (!leaderFresh) return [];
@@ -649,7 +651,7 @@ function buildLeaderRows() {
   if (!metric) return [];
   return Object.entries(leaderMap)
     .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l) }))
-    .filter(x => x.metricValue !== null && isUsable(x.o))
+    .filter(x => x.metricValue !== null)
     .sort((a, b) => b.metricValue - a.metricValue || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.t.localeCompare(b.t))
     .slice(0, 8);
 }
@@ -664,7 +666,7 @@ function renderLeaders() {
     return;
   }
   const a = buildLeaderRows();
-  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.metricValue.toFixed(1))).join('') : `<div class="empty">この期間で有効Optionsを持つ${metric.label}リーダーなし。</div>`;
+  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.metricValue.toFixed(1))).join('') : `<div class="empty">${metric.label} Leadershipデータなし。</div>`;
   bind($('#leaders'));
 }
 function directionalRows(dir) {
