@@ -1,0 +1,298 @@
+name: Patch Options to Dashboard RS12 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-options-dashboard-rs-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Patch implementation files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'missing patch anchor: {label}')
+              return text.replace(old, new, 1)
+
+          wrapper = r'''#!/usr/bin/env python3
+          """Build Command Center and export the exact Dashboard RS pool Top12 for Options."""
+          import json
+          import math
+          import os
+          from pathlib import Path
+
+          import build_dashboard as dashboard
+
+          OUT = Path(os.environ.get("V38_OPTIONS_RS_JSON", "options-rs-leaders.json"))
+          _exported = False
+          _orig_rs_compare_tab = dashboard._rs_compare_tab
+
+          def _finite(v):
+              try:
+                  x = float(v)
+                  return x if math.isfinite(x) else None
+              except (TypeError, ValueError):
+                  return None
+
+          def _export_dashboard_rs(m):
+              global _exported
+              if _exported or m is None or getattr(m, "empty", True):
+                  return
+              df = m.copy()
+              if "rs_pool" in df.columns:
+                  df = df[df["rs_pool"].fillna(False)]
+
+              specs = (
+                  ("short", "RS63", "rs63", "rank_rs63"),
+                  ("swing", "RS126", "rs126", "rank_rs126"),
+                  ("medium", "RS189", "rs189", "rank_rs189"),
+              )
+              rankings = {}
+              union = {}
+              for mode, label, col, rank_key in specs:
+                  if col not in df.columns:
+                      raise RuntimeError(f"Dashboard RS column missing: {col}")
+                  top = df.dropna(subset=[col]).sort_values(col, ascending=False).head(12)
+                  if len(top) != 12:
+                      raise RuntimeError(f"Dashboard {label} Top12 incomplete: {len(top)}")
+                  rows = []
+                  for rank, (ticker, row) in enumerate(top.iterrows(), 1):
+                      ticker = str(ticker).strip().upper()
+                      value = _finite(row.get(col))
+                      rec = union.setdefault(ticker, {
+                          "symbol": ticker,
+                          "ticker": ticker,
+                          "role": "DASHBOARD_RS",
+                      })
+                      rec[rank_key] = rank
+                      for metric in ("rs63", "rs126", "rs189"):
+                          v = _finite(row.get(metric))
+                          if v is not None:
+                              rec[metric] = round(v, 6)
+                      rows.append({"ticker": ticker, "rank": rank, "value": round(value, 6) if value is not None else None})
+                  rankings[mode] = {"label": label, "metric": col, "rows": rows}
+                  # This is intentionally the same pool + sort expression used by the Dashboard RS tab.
+                  dashboard_top10 = [str(t).strip().upper() for t in df.dropna(subset=[col]).sort_values(col, ascending=False).head(10).index]
+                  if dashboard_top10 != [r["ticker"] for r in rows[:10]]:
+                      raise RuntimeError(f"{label} Top10 parity check failed")
+
+              asof = str(getattr(dashboard, "_ANALYSIS_ASOF", None) or "")[:10]
+              if not asof:
+                  raise RuntimeError("Dashboard analysis as-of is unavailable")
+              payload = {
+                  "schema_version": 1,
+                  "asof": asof,
+                  "source": "command-center.rs_pool",
+                  "mapping": {
+                      "short": {"dte": "0-6", "metric": "RS63"},
+                      "swing": {"dte": "7-21", "metric": "RS126"},
+                      "medium": {"dte": "22-45", "metric": "RS189"},
+                  },
+                  "leadership_market": {"asof": asof},
+                  "rankings": rankings,
+                  "leaders": list(union.values()),
+              }
+              tmp = OUT.with_suffix(OUT.suffix + ".tmp")
+              tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              tmp.replace(OUT)
+              _exported = True
+              print("OPTIONS_RS_EXPORT", asof, " ".join(f"{k}=12" for k in ("RS63", "RS126", "RS189")))
+
+          def _rs_compare_tab_with_export(m, *args, **kwargs):
+              _export_dashboard_rs(m)
+              return _orig_rs_compare_tab(m, *args, **kwargs)
+
+          dashboard._rs_compare_tab = _rs_compare_tab_with_export
+
+          if __name__ == "__main__":
+              dashboard.main()
+              if not _exported or not OUT.is_file():
+                  raise SystemExit("Options RS Top12 export did not run")
+          '''
+          # Strip heredoc indentation introduced by YAML.
+          import textwrap
+          Path('build_dashboard_with_options_rs.py').write_text(textwrap.dedent(wrapper), encoding='utf-8')
+
+          p = Path('.github/workflows/dashboard.yml')
+          y = p.read_text(encoding='utf-8')
+          y = replace_once(y, '        options_targets.json\n        commit_manifest.json', '        options_targets.json\n        options-rs-leaders.json\n        commit_manifest.json', 'dashboard artifacts')
+          y = replace_once(y, 'python -m py_compile build_dashboard.py', 'python -m py_compile build_dashboard.py build_dashboard_with_options_rs.py', 'dashboard pycompile')
+          y = replace_once(y, 'python build_dashboard.py 2>&1 | tee build-dashboard.log', 'python build_dashboard_with_options_rs.py 2>&1 | tee build-dashboard.log', 'dashboard build command')
+          y = replace_once(y, '              "options_targets.json": 2,\n              "commit_manifest.json": 2,', '              "options_targets.json": 2,\n              "options-rs-leaders.json": 100,\n              "commit_manifest.json": 2,', 'dashboard validation')
+          y = replace_once(y, '              build_dashboard.py requirements.txt sar_state.txt equity.csv .github/workflows/dashboard.yml;', '              build_dashboard.py build_dashboard_with_options_rs.py requirements.txt sar_state.txt equity.csv .github/workflows/dashboard.yml;', 'dashboard source guard')
+          p.write_text(y, encoding='utf-8')
+
+          p = Path('options-intelligence.js')
+          js = p.read_text(encoding='utf-8')
+          js = js.replace('./rotation/data/rotation-theme56-stock-context.json', './options-rs-leaders.json')
+          js = js.replace('https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/rotation/data/rotation-theme56-stock-context.json', 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options-rs-leaders.json')
+          js = js.replace("short: { label: '短期 0–6DTE', hint: 'Options 0–6DTE × RS21リーダー。短期の値動きと短期相対強度を同じタブで見る。' }", "short: { label: '短期 0–6DTE', hint: 'Options 0–6DTE × RS63リーダー。約3か月RSで短期Options配置を見る。' }")
+          js = js.replace("swing: { label: 'スイング 7–21DTE', hint: 'Options 7–21DTE × RS63リーダー。1〜3週間の主期間。' }", "swing: { label: 'スイング 7–21DTE', hint: 'Options 7–21DTE × RS126リーダー。1〜3週間の主期間を半年RSと組み合わせる。' }")
+          js = js.replace("medium: { label: '中期 22–45DTE', hint: 'Options 22–45DTE × RS189リーダー。数週間先の構造と中期相対強度を見る。' }", "medium: { label: '中期 22–45DTE', hint: 'Options 22–45DTE × RS189リーダー。数週間先の構造を主RSで見る。' }")
+          js = js.replace('LeadershipはRS21/63/189を勝手に混ぜず、各期間タブで確認する。', 'LeadershipはRS63/126/189を勝手に混ぜず、各期間タブで確認する。')
+          js = js.replace('Leadershipは単一RSへ自動混合せず、RS21/63/189を個別表示する。', 'Leadershipは単一RSへ自動混合せず、RS63/126/189を個別表示する。')
+
+          js, n = re.subn(r"const LEADER_PERIOD_METRIC = \{.*?\n\};", """const LEADER_PERIOD_METRIC = {
+            short: { key: 'rs63', label: 'RS63', rankKey: 'rank_rs63' },
+            swing: { key: 'rs126', label: 'RS126', rankKey: 'rank_rs126' },
+            medium: { key: 'rs189', label: 'RS189', rankKey: 'rank_rs189' },
+          };""", js, count=1, flags=re.S)
+          if n != 1: raise SystemExit('LEADER_PERIOD_METRIC patch failed')
+
+          js, n = re.subn(r"function leaderRank\(l, mode = activePeriod\) \{.*?\n\}", """function leaderRank(l, mode = activePeriod) {
+            if (!l?.ticker || !leaderRanks[mode]) return null;
+            const m = leaderMetric(mode);
+            const explicit = m ? num(l?.[m.rankKey]) : null;
+            if (explicit !== null) return explicit;
+            return leaderRanks[mode][l.ticker] || null;
+          }""", js, count=1, flags=re.S)
+          if n != 1: raise SystemExit('leaderRank patch failed')
+
+          js = js.replace("<span class=\"statPill\">RS21<b>${num(l.rs21) ?? '—'}</b></span><span class=\"statPill\">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class=\"statPill\">RS189<b>${num(l.rs189) ?? '—'}</b></span>", "<span class=\"statPill\">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class=\"statPill\">RS126<b>${num(l.rs126) ?? '—'}</b></span><span class=\"statPill\">RS189<b>${num(l.rs189) ?? '—'}</b></span>")
+
+          js, n = re.subn(r"function updateLeaderFreshness\(leaders\) \{.*?\n\}\n\nfunction expiryEntries", """function updateLeaderFreshness(leaders) {
+            const session = day(state.date || intelMeta?.session_date || '');
+            const dashboardAsOf = day(leaders?.asof || leaders?.leadership_market?.asof);
+            leaderAsOf = dashboardAsOf;
+            leaderFresh = !!session && !!dashboardAsOf && dashboardAsOf === session;
+            if (leaderFresh) leaderHealthReason = '';
+            else if (!session) leaderHealthReason = '基準セッション不明のためDashboard RSをランキングへ使用しません。';
+            else leaderHealthReason = `Dashboard RS ${leaderAsOf || '—'} / 基準 ${session}。同一セッションになるまでリーダー順位とDirectionへの加点を停止。`;
+          }
+
+          function expiryEntries""", js, count=1, flags=re.S)
+          if n != 1: raise SystemExit('updateLeaderFreshness patch failed')
+
+          js, n = re.subn(r"function buildLeaderRows\(\) \{.*?\n\}\nfunction renderLeaders", """function buildLeaderRows() {
+            if (!leaderFresh) return [];
+            const metric = leaderMetric();
+            if (!metric) return [];
+            return Object.entries(leaderMap)
+              .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l), rank: leaderRank(l) }))
+              .filter(x => x.metricValue !== null && x.rank !== null && x.rank <= 12)
+              .sort((a, b) => a.rank - b.rank)
+              .slice(0, 12);
+          }
+          function renderLeaders""", js, count=1, flags=re.S)
+          if n != 1: raise SystemExit('buildLeaderRows patch failed')
+
+          js = js.replace('短期=RS21 / スイング=RS63 / 中期=RS189', '短期=RS63 / スイング=RS126 / 中期=RS189')
+          if 'rotation/data/rotation-theme56-stock-context.json' in js:
+              raise SystemExit('old Theme56 leadership source remains in Options JS')
+          if "short: { key: 'rs63'" not in js or "swing: { key: 'rs126'" not in js:
+              raise SystemExit('period/RS mapping missing')
+          if '.slice(0, 12);' not in js:
+              raise SystemExit('Top12 leader slice missing')
+          if 'function directionalRows(dir)' not in js or 'function renderDirectional()' not in js:
+              raise SystemExit('directional period views were lost')
+          p.write_text(js, encoding='utf-8')
+
+          p = Path('options-intelligence.html')
+          h = p.read_text(encoding='utf-8')
+          h = replace_once(h, '各期間のRS Top8を順位どおり表示。', '各期間のDashboard RS Top12を順位どおり表示。', 'Options Top12 copy')
+          h = h.replace('./options-intelligence.js?v=20260906-rsperiod3', './options-intelligence.js?v=20260906-dashboardrs12')
+          p.write_text(h, encoding='utf-8')
+          PY
+
+      - name: Install build dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt pytest
+
+      - name: Generate current Dashboard RS Top12 sidecar
+        env:
+          V38_UNIVERSE_CSV: universe.csv
+          V38_UNIVERSE_AUTO: '1'
+          V38_UNIVERSE_MIN_MCAP: '200000000'
+          V38_UNIVERSE_MIN_PRICE: '1'
+          V38_SECTOR_JSON: sector_snapshot.json
+          V38_OUT_HTML: command-center.html
+          V38_MKTCAP_JSON: mktcap.json
+          V38_TREND_JSON: trend_history.json
+          V38_LOG_CSV: daily_log.csv
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          V38_FRED_CACHE: fred_cache.json
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          V38_FMP_REFERENCE_CACHE: fmp_reference_cache.json
+          V38_FMP_REFERENCE_BUDGET: '40'
+          V38_STATE_JSON: state.json
+          V38_EQUITY_CSV: equity.csv
+          V38_ER_JSON: earnings.json
+          V38_EARNINGS_FETCH_BUDGET: '120'
+          V38_EARNINGS_FETCH_SECONDS: '180'
+          V38_EARNINGS_PRIORITY_RESERVE: '20'
+          V38_INCEPT_VWAP_JSON: inception_vwap.json
+          V38_INCEPT_VWAP_BUDGET: '1400'
+          V38_INDUSTRY_JSON: industry_map.json
+          V38_INDUSTRY_MAX_AGE_DAYS: '7'
+          V38_OPT_JSON: options_positioning.json
+          V38_OPT_SCAN_HISTORY: options_scan_history.csv
+          V38_OPT_TARGETS: options_targets.json
+          V38_OPTIONS_RS_JSON: options-rs-leaders.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile build_dashboard.py build_dashboard_with_options_rs.py
+          node --check options-intelligence.js
+          python build_dashboard_with_options_rs.py 2>&1 | tee /tmp/options-rs-build.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('options-rs-leaders.json').read_text(encoding='utf-8'))
+          assert x['source']=='command-center.rs_pool'
+          assert x['mapping']['short']['metric']=='RS63'
+          assert x['mapping']['swing']['metric']=='RS126'
+          assert x['mapping']['medium']['metric']=='RS189'
+          for mode in ('short','swing','medium'):
+              rows=x['rankings'][mode]['rows']
+              assert len(rows)==12, (mode,len(rows))
+              assert [r['rank'] for r in rows]==list(range(1,13))
+          js=Path('options-intelligence.js').read_text(encoding='utf-8')
+          assert 'function directionalRows(dir)' in js and 'function renderDirectional()' in js
+          assert "short: { key: 'rs63'" in js and "swing: { key: 'rs126'" in js and "medium: { key: 'rs189'" in js
+          assert 'rotation/data/rotation-theme56-stock-context.json' not in js
+          print('OPTIONS_DASHBOARD_RS12_VALIDATE_PASS', x['asof'])
+          for mode in ('short','swing','medium'):
+              print(mode, ' '.join(r['ticker'] for r in x['rankings'][mode]['rows']))
+          PY
+
+      - name: Commit only intended implementation files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- build_dashboard_with_options_rs.py .github/workflows/dashboard.yml options-intelligence.js options-intelligence.html options-rs-leaders.json
+          staged="$(git diff --cached --name-only)"
+          while IFS= read -r f; do
+            case "$f" in
+              build_dashboard_with_options_rs.py|.github/workflows/dashboard.yml|options-intelligence.js|options-intelligence.html|options-rs-leaders.json) ;;
+              '') ;;
+              *) echo "unexpected staged file: $f"; exit 1 ;;
+            esac
+          done <<< "$staged"
+          git commit -m 'Use Dashboard RS63/126/189 Top12 in Options intelligence'
+          git push origin HEAD:main
