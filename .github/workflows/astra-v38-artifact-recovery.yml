@@ -1,0 +1,38 @@
+name: Astra full research artifact evidence recovery
+on:
+  push:
+    branches: [research/astra-v38-full-audit-20260905]
+    paths: [.github/workflows/astra-v38-artifact-recovery.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/research/astra-v38-full-audit-20260905'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read original artifacts with repository-scoped authorization
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python leadership/research/astra_audit_20260905/recover_artifacts.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astra-recovered-research-evidence
+          path: recovered_artifacts/
+          retention-days: 90
+      - name: Preserve research evidence only
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/research/astra-v38-full-audit-20260905
+          destination=leadership/research/astra_audit_20260905/recovered_artifacts
+          mkdir -p "$destination"
+          cp -r recovered_artifacts/. "$destination/"
+          git config user.name 'V38 Research Audit'
+          git config user.email 'audit@users.noreply.github.com'
+          git add -- "$destination"
+          git diff --cached --quiet && exit 0
+          git commit -m 'research: preserve original artifact hashes and reviewed result tables'
+          git push origin HEAD:refs/heads/research/astra-v38-full-audit-20260905
