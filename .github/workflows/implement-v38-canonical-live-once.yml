@@ -43,6 +43,34 @@ jobs:
           p.write_text(s.replace(old,new),encoding='utf-8')
           PY
           python scripts/implement_v38_canonical_live_once.py
+      - name: Preserve audited compatibility labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('build_v38_companion.py')
+          s=p.read_text(encoding='utf-8')
+          needle='                "dollar_volume_gte_10m_rank_pool": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,\n'
+          repl='                "dollar_volume_gte_10m": _finite(row.get("dvol")) and float(row["dvol"]) >= 10,\n'+needle
+          if s.count(needle) != 1:
+              raise SystemExit(f'compat DDV10 alias anchor mismatch: {s.count(needle)}')
+          p.write_text(s.replace(needle,repl),encoding='utf-8')
+
+          p=Path('command-center-v38.html')
+          h=p.read_text(encoding='utf-8')
+          old='小型Clinical Biotechの一部は除外。'
+          new='構造的小型Clinical Biotechだけ除外。'
+          if old not in h:
+              raise SystemExit('clinical biotech wording anchor missing')
+          h=h.replace(old,new,1)
+          anchor='今は買いません。'
+          if anchor not in h:
+              raise SystemExit('reopen warning anchor missing')
+          h=h.replace(anchor,'今は買いません。復帰条件成立前は買いません。',1)
+          p.write_text(h,encoding='utf-8')
+          PY
       - name: Compile and test affected V38 code
         run: |
           python -m py_compile \
@@ -60,7 +88,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           h=Path('command-center-v38.html').read_text(encoding='utf-8')
-          required=['本命11＋先回り1','本命3＋先回り1','DDV20','RS21_HIGH_ACCEL','earlyPick']
+          required=['本命11＋先回り1','本命3＋先回り1','DDV20','RS21_HIGH_ACCEL','earlyPick','構造的小型Clinical Biotechだけ除外','復帰条件成立前は買いません']
           missing=[x for x in required if x not in h]
           if missing:
               raise SystemExit('V38 page canonical text missing: '+repr(missing))
