@@ -1,0 +1,184 @@
+name: Patch Options chart controls once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-options-chart-controls-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Move period controls directly above chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('options-intelligence.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = """function inlinePeriodControls(mode, snapshots) {
+  const defs = [
+    ['short', '短期', '0–6DTE'],
+    ['swing', 'スイング', '7–21DTE'],
+    ['medium', '中期', '22–45DTE'],
+    ['multi', '複数満期', '0–45DTE'],
+    ['exact', '満期指定', ''],
+  ];
+  const buttons = defs.map(([key, label, sub]) =>
+    `<button type=\"button\" class=\"inlinePeriodBtn${mode === key ? ' active' : ''}\" data-inline-period=\"${key}\"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</button>`
+  ).join('');
+  const chips = [
+    ['short', '短期'],
+    ['swing', 'スイング'],
+    ['medium', '中期'],
+  ].map(([key, label]) => {
+    const x = snapshots[key] || { text: '—', cls: 'bLow', confidence: null };
+    const conf = x.confidence === null || x.confidence === undefined ? '' : `<small>確度 ${x.confidence}</small>`;
+    return `<div class=\"inlineCompareChip\"><span>${label}</span><b class=\"${x.cls}\">${esc(x.text)}</b>${conf}</div>`;
+  }).join('');
+  return `<div class=\"inlinePeriodBar\"><div class=\"inlinePeriodTitle\"><b>このカードだけ期間切替</b><span>一覧の期間は変えません</span></div><div class=\"inlinePeriodButtons\">${buttons}</div><div class=\"inlineCompare\">${chips}</div></div>`;
+}"""
+          new = """function inlinePeriodControls(mode, t) {
+  const defs = [
+    ['short', '短期', '0–6DTE'],
+    ['swing', 'スイング', '7–21DTE'],
+    ['medium', '中期', '22–45DTE'],
+    ['multi', '複数満期', '0–45DTE'],
+    ['exact', '満期指定', ''],
+  ];
+  const buttons = defs.map(([key, label, sub]) =>
+    `<button type=\"button\" class=\"inlinePeriodBtn${mode === key ? ' active' : ''}\" data-inline-period=\"${key}\"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</button>`
+  ).join('');
+  const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(t)}`;
+  return `<div class=\"inlinePeriodBar\"><div class=\"inlinePeriodTitle\"><div><b>チャート期間</b><span>このカードだけ切替</span></div><a class=\"inlineTvBtn\" href=\"${esc(tv)}\" target=\"_blank\" rel=\"noopener\">TradingViewで開く ↗</a></div><div class=\"inlinePeriodButtons\">${buttons}</div></div>`;
+}
+function inlinePeriodCompare(snapshots) {
+  const chips = [
+    ['short', '短期'],
+    ['swing', 'スイング'],
+    ['medium', '中期'],
+  ].map(([key, label]) => {
+    const x = snapshots[key] || { text: '—', cls: 'bLow', confidence: null };
+    const conf = x.confidence === null || x.confidence === undefined ? '' : `<small>確度 ${x.confidence}</small>`;
+    return `<div class=\"inlineCompareChip\"><span>${label}</span><b class=\"${x.cls}\">${esc(x.text)}</b>${conf}</div>`;
+  }).join('');
+  return `<div class=\"inlineCompare\">${chips}</div>`;
+}"""
+          if old not in s:
+              raise SystemExit('inlinePeriodControls anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """  inline.innerHTML = `<div class=\"inlineAnalysisHead\"><span>${esc(t)} の銘柄分析</span><button type=\"button\" class=\"inlineClose\">閉じる</button></div>${inlinePeriodControls(mode, snapshots)}${html}`;"""
+          new = """  inline.innerHTML = `<div class=\"inlineAnalysisHead\"><span>${esc(t)} の銘柄分析</span><button type=\"button\" class=\"inlineClose\">閉じる</button></div>${inlinePeriodControls(mode, t)}<div class=\"inlineChartSlot\"></div>${inlinePeriodCompare(snapshots)}${html}`;"""
+          if old not in s:
+              raise SystemExit('renderInlineCard markup anchor missing')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-chart-bridge.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = """function insertPanel(card, panel) {
+  const anchor = card.querySelector('.directionHero') || card.querySelector('.selectedBadges') || card.querySelector('.selectedTop');
+  if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', panel);
+  else card.appendChild(panel);
+}"""
+          new = """function insertPanel(card, panel) {
+  const inline = card.closest('.inlineAnalysis');
+  const slot = inline?.querySelector(':scope > .inlineChartSlot');
+  if (slot) {
+    slot.replaceChildren(panel);
+    return;
+  }
+  const anchor = card.querySelector('.directionHero') || card.querySelector('.selectedBadges') || card.querySelector('.selectedTop');
+  if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', panel);
+  else card.appendChild(panel);
+}"""
+          if old not in s:
+              raise SystemExit('insertPanel anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """  card.querySelector('.v38ChartPanel')?.remove();"""
+          new = """  const inlineRoot = card.closest('.inlineAnalysis');
+  (inlineRoot?.querySelector(':scope > .inlineChartSlot .v38ChartPanel') || card.querySelector('.v38ChartPanel'))?.remove();"""
+          if old not in s:
+              raise SystemExit('chart remove anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """  const oldLoading = currentCard.querySelector('.v38ChartPanel[data-chart-loading=\"1\"]');"""
+          new = """  const currentInline = currentCard.closest('.inlineAnalysis');
+  const oldLoading = currentInline?.querySelector(':scope > .inlineChartSlot .v38ChartPanel[data-chart-loading=\"1\"]') || currentCard.querySelector('.v38ChartPanel[data-chart-loading=\"1\"]');"""
+          if old not in s:
+              raise SystemExit('oldLoading anchor missing')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-intelligence.css')
+          s = p.read_text(encoding='utf-8')
+          css = """
+.inlinePeriodTitle{display:flex;align-items:center;justify-content:space-between;gap:10px}.inlinePeriodTitle>div{display:flex;flex-direction:column;gap:2px}.inlineTvBtn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border:1px solid #3f6a94;background:#0c1723;color:#9bc9ff;border-radius:9px;padding:7px 10px;font-size:9px;font-weight:800;text-decoration:none}.inlineTvBtn:hover{border-color:#6da9ff;color:#d8ebff}.inlinePeriodBar{margin-bottom:0}.inlinePeriodButtons{margin-bottom:0}.inlineChartSlot{margin:8px 0 10px}.inlineChartSlot .v38ChartPanel{margin-top:0}.inlineCompare{margin:0 0 12px}
+@media(max-width:720px){.inlinePeriodTitle{align-items:flex-start}.inlineTvBtn{padding:7px 8px;font-size:8.5px}.inlineChartSlot{margin-top:7px}}
+"""
+          if '.inlineChartSlot{' not in s:
+              s += css
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-intelligence.html')
+          h = p.read_text(encoding='utf-8')
+          reps = {
+              'options-intelligence.css?v=20260907-inlineperiod1': 'options-intelligence.css?v=20260907-chartcontrols1',
+              'options-intelligence.js?v=20260907-inlineperiod1': 'options-intelligence.js?v=20260907-chartcontrols1',
+              'options-chart-bridge.js?v=20260906-inlinecard1': 'options-chart-bridge.js?v=20260907-chartcontrols1',
+          }
+          for old, new in reps.items():
+              if old not in h:
+                  raise SystemExit(f'cache anchor missing: {old}')
+              h = h.replace(old, new, 1)
+          p.write_text(h, encoding='utf-8')
+          PY
+
+          node --check options-intelligence.js
+          node --check options-chart-bridge.js
+          git diff --check
+          grep -q 'inlineChartSlot' options-intelligence.js
+          grep -q 'TradingViewで開く' options-intelligence.js
+          grep -q 'inlineChartSlot' options-chart-bridge.js
+          grep -q 'chartcontrols1' options-intelligence.html
+
+      - name: Commit intended files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- options-intelligence.js options-chart-bridge.js options-intelligence.css options-intelligence.html
+          staged="$(git diff --cached --name-only)"
+          printf '%s\n' "$staged"
+          for f in $staged; do
+            case "$f" in
+              options-intelligence.js|options-chart-bridge.js|options-intelligence.css|options-intelligence.html) ;;
+              *) echo "unexpected file: $f"; exit 1 ;;
+            esac
+          done
+          test "$(printf '%s\n' "$staged" | wc -l)" -eq 4
+          git commit -m 'Place Options period controls above chart'
+          git push origin HEAD:main
