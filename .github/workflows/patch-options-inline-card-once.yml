@@ -1,0 +1,242 @@
+name: Patch Options inline card once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-options-inline-card-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Expand tapped Options card inline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          # options-intelligence.js: card taps expand in place; search keeps top result panel.
+          p = Path('options-intelligence.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = "let selectedTicker = null;\nlet leaderFresh = false;"
+          new = "let selectedTicker = null;\nlet expandedTickerCard = null;\nlet leaderFresh = false;"
+          if old not in s:
+              raise SystemExit('selectedTicker state anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """function setPeriod(mode, rerender = true) {
+  if (!PERIODS[mode]) return;
+  activePeriod = mode;
+  updatePeriodUi();
+  if (rerender) rebuildAndRender(selectedTicker, false);
+}"""
+          new = """function setPeriod(mode, rerender = true) {
+  if (!PERIODS[mode]) return;
+  if (rerender && expandedTickerCard) closeInlineCard();
+  activePeriod = mode;
+  updatePeriodUi();
+  if (rerender) rebuildAndRender(selectedTicker, false);
+}"""
+          if old not in s:
+              raise SystemExit('setPeriod anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = "function bind(root) { for (const e of root.querySelectorAll('[data-ticker]')) e.addEventListener('click', () => selectTicker(e.dataset.ticker, false)); }"
+          new = r'''function closeInlineCard() {
+  const card = expandedTickerCard;
+  if (!card) return;
+  card.querySelector(':scope > .inlineAnalysis')?.remove();
+  card.classList.remove('inlineExpanded');
+  card.setAttribute('aria-expanded', 'false');
+  expandedTickerCard = null;
+  window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
+}
+function toggleInlineCard(card, t) {
+  t = String(t || '').trim().toUpperCase();
+  if (!card || !t) return;
+  if (expandedTickerCard === card && card.classList.contains('inlineExpanded')) {
+    closeInlineCard();
+    return;
+  }
+  closeInlineCard();
+  $('#selectedSection').hidden = true;
+  $('#selected').innerHTML = '';
+  const inline = document.createElement('div');
+  inline.className = 'inlineAnalysis';
+  inline.innerHTML = `<div class="inlineAnalysisHead"><span>${esc(t)} の銘柄分析</span><button type="button" class="inlineClose">閉じる</button></div>${selectedHtml(t)}`;
+  inline.querySelector('#expirySelect')?.closest('.expiryPicker')?.remove();
+  card.appendChild(inline);
+  card.classList.add('inlineExpanded');
+  card.setAttribute('aria-expanded', 'true');
+  expandedTickerCard = card;
+  inline.querySelector('.inlineClose')?.addEventListener('click', ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    closeInlineCard();
+  });
+  window.dispatchEvent(new CustomEvent('options:inline-selected-change'));
+}
+function bind(root) {
+  for (const e of root.querySelectorAll('[data-ticker]')) {
+    e.setAttribute('aria-expanded', 'false');
+    e.addEventListener('click', ev => {
+      if (ev.target.closest('.inlineAnalysis')) return;
+      toggleInlineCard(e, e.dataset.ticker);
+    });
+  }
+}'''
+          if old not in s:
+              raise SystemExit('bind anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """function selectTicker(t, scroll) {
+  t = String(t || '').trim().toUpperCase();
+  if (!t) return;
+  selectedTicker = t;"""
+          new = """function selectTicker(t, scroll) {
+  t = String(t || '').trim().toUpperCase();
+  if (!t) return;
+  closeInlineCard();
+  selectedTicker = t;"""
+          if old not in s:
+              raise SystemExit('selectTicker anchor missing')
+          s = s.replace(old, new, 1)
+
+          if "toggleInlineCard(e, e.dataset.ticker)" not in s:
+              raise SystemExit('inline toggle not installed')
+          if "selectTicker(e.dataset.ticker, false)" in s:
+              raise SystemExit('old card navigation still present')
+          p.write_text(s, encoding='utf-8')
+
+          # options-chart-bridge.js: mount chart inside inline expanded card first, top search panel second.
+          p = Path('options-chart-bridge.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = """async function mountCurrent() {
+  scheduled = false;
+  const selected = document.querySelector('#selected');
+  const card = selected?.querySelector('.selectedCard');
+  const ticker = card?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
+  if (!card || !ticker) return;
+  const token = ++mountToken;
+
+  if (activeChart) {"""
+          new = """function activeSelectedCard() {
+  return document.querySelector('.inlineAnalysis .selectedCard') || document.querySelector('#selected .selectedCard');
+}
+
+async function mountCurrent() {
+  scheduled = false;
+  const card = activeSelectedCard();
+  const ticker = card?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
+  if (!card || !ticker) {
+    if (activeChart) {
+      try { activeChart.destroy(); } catch (_) {}
+      activeChart = null;
+    }
+    return;
+  }
+  const token = ++mountToken;
+
+  if (activeChart) {"""
+          if old not in s:
+              raise SystemExit('bridge mountCurrent anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """  const currentCard = document.querySelector('#selected .selectedCard');
+  const currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();"""
+          new = """  const currentCard = activeSelectedCard();
+  const currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();"""
+          if old not in s:
+              raise SystemExit('bridge currentCard anchor missing')
+          s = s.replace(old, new, 1)
+
+          old = """  new MutationObserver(() => { restoreAnchorPosition(); schedule(); }).observe(selected, { childList: true });
+  schedule();"""
+          new = """  new MutationObserver(() => { restoreAnchorPosition(); schedule(); }).observe(selected, { childList: true });
+  window.addEventListener('options:inline-selected-change', schedule);
+  schedule();"""
+          if old not in s:
+              raise SystemExit('bridge boot observer anchor missing')
+          s = s.replace(old, new, 1)
+
+          if "activeSelectedCard()" not in s or "options:inline-selected-change" not in s:
+              raise SystemExit('bridge inline mount not installed')
+          if "document.querySelector('#selected .selectedCard')" in s:
+              raise SystemExit('bridge still hardcodes top selected card')
+          p.write_text(s, encoding='utf-8')
+
+          # CSS: expanded card spans the grid and the analysis is visually part of that card.
+          p = Path('options-intelligence.css')
+          s = p.read_text(encoding='utf-8')
+          marker = ".miniCard.leaderMuted:hover{opacity:.68;filter:saturate(.7)}"
+          add = marker + ".miniCard.inlineExpanded{grid-column:1/-1;transform:none;border-color:#405774;opacity:1;filter:none}.miniCard.inlineExpanded:hover{transform:none}.allRow.inlineExpanded{grid-column:1/-1}.inlineAnalysis{grid-column:1/-1;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.10);cursor:default}.inlineAnalysisHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#cbd7e4;font-size:10px;font-weight:800}.inlineClose{border:1px solid var(--line);background:#0a111a;color:#b8c6d5;border-radius:8px;padding:6px 9px;font:inherit;font-size:9px;cursor:pointer}.inlineAnalysis .selectedCard{background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}.inlineAnalysis .v38ChartPanel{margin-top:10px}"
+          if marker not in s:
+              raise SystemExit('CSS miniCard marker missing')
+          if '.inlineAnalysis{' in s:
+              raise SystemExit('inline CSS already exists unexpectedly')
+          s = s.replace(marker, add, 1)
+          p.write_text(s, encoding='utf-8')
+
+          # Cache bust only the files changed here.
+          p = Path('options-intelligence.html')
+          h = p.read_text(encoding='utf-8')
+          reps = {
+              './options-intelligence.css?v=20260906-rsperiod3': './options-intelligence.css?v=20260906-inlinecard1',
+              './options-intelligence.js?v=20260906-cardscroll1': './options-intelligence.js?v=20260906-inlinecard1',
+              './options-chart-bridge.js?v=20260906-anchor1': './options-chart-bridge.js?v=20260906-inlinecard1',
+          }
+          for old, new in reps.items():
+              if old not in h:
+                  raise SystemExit(f'HTML cache anchor missing: {old}')
+              h = h.replace(old, new, 1)
+          p.write_text(h, encoding='utf-8')
+          PY
+
+          node --check options-intelligence.js
+          node --check options-chart-bridge.js
+          git diff --check
+          grep -q "toggleInlineCard(e, e.dataset.ticker)" options-intelligence.js
+          grep -q "closeInlineCard();" options-intelligence.js
+          grep -q "activeSelectedCard" options-chart-bridge.js
+          grep -q "options:inline-selected-change" options-chart-bridge.js
+          grep -q "miniCard.inlineExpanded" options-intelligence.css
+          grep -q "options-intelligence.js?v=20260906-inlinecard1" options-intelligence.html
+          grep -q "options-chart-bridge.js?v=20260906-inlinecard1" options-intelligence.html
+          ! grep -q "selectTicker(e.dataset.ticker, false)" options-intelligence.js
+
+      - name: Commit intended files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- options-intelligence.js options-chart-bridge.js options-intelligence.css options-intelligence.html
+          staged="$(git diff --cached --name-only)"
+          printf '%s\n' "$staged"
+          for f in $staged; do
+            case "$f" in
+              options-intelligence.js|options-chart-bridge.js|options-intelligence.css|options-intelligence.html) ;;
+              *) echo "unexpected file: $f"; exit 1 ;;
+            esac
+          done
+          test "$(printf '%s\n' "$staged" | wc -l)" -eq 4
+          git commit -m 'Expand Options analysis inside tapped card'
+          git push origin HEAD:main
