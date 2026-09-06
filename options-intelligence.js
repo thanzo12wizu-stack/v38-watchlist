@@ -60,14 +60,15 @@ let selectedTicker = null;
 let leaderFresh = false;
 let leaderAsOf = '';
 let leaderHealthReason = '';
+let leaderRanks = { short: {}, swing: {}, medium: {} };
 const exactExpiryByTicker = {};
 
 const PERIODS = {
-  short: { label: '短期 0–6DTE', hint: '直近需給。イベント・0DTE/週次ノイズの影響を受けやすい。' },
-  swing: { label: 'スイング 7–21DTE', hint: 'デフォルト。1〜3週間の売買判断に使う主期間。' },
-  medium: { label: '中期 22–45DTE', hint: '短期ノイズを薄め、数週間先の構造を確認。' },
-  multi: { label: '複数満期統合', hint: '0〜45DTEを合算し、満期間の方向一致とWall集中を確認。' },
-  exact: { label: '満期指定', hint: '銘柄詳細の満期プルダウンで実在満期を直接指定。未指定銘柄はスイング基準満期。' }
+  short: { label: '短期 0–6DTE', hint: 'Options 0–6DTE × RS21リーダー。短期の値動きと短期相対強度を同じタブで見る。' },
+  swing: { label: 'スイング 7–21DTE', hint: 'Options 7–21DTE × RS63リーダー。1〜3週間の主期間。' },
+  medium: { label: '中期 22–45DTE', hint: 'Options 22–45DTE × RS189リーダー。数週間先の構造と中期相対強度を見る。' },
+  multi: { label: '複数満期統合', hint: 'Optionsは0〜45DTEを統合。LeadershipはRS21/63/189を勝手に混ぜず、各期間タブで確認する。' },
+  exact: { label: '満期指定', hint: '銘柄ごとの実在満期を指定。Leadershipは単一RSへ自動混合せず、RS21/63/189を個別表示する。' }
 };
 
 async function getText(k) {
@@ -177,6 +178,41 @@ function collectLeaders(root) {
   return out;
 }
 
+const LEADER_PERIOD_METRIC = {
+  short: { key: 'rs21', label: 'RS21' },
+  swing: { key: 'rs63', label: 'RS63' },
+  medium: { key: 'rs189', label: 'RS189' },
+};
+function leaderMetric(mode = activePeriod) { return LEADER_PERIOD_METRIC[mode] || null; }
+function leaderValue(l, mode = activePeriod) {
+  const m = leaderMetric(mode);
+  return m ? num(l?.[m.key]) : null;
+}
+function rebuildLeaderRanks() {
+  leaderRanks = { short: {}, swing: {}, medium: {} };
+  for (const mode of Object.keys(leaderRanks)) {
+    const rows = Object.values(leaderMap)
+      .map(l => ({ l, value: leaderValue(l, mode) }))
+      .filter(x => x.value !== null)
+      .sort((a, b) => b.value - a.value || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.l.ticker.localeCompare(b.l.ticker));
+    rows.forEach((x, i) => { leaderRanks[mode][x.l.ticker] = i + 1; });
+  }
+}
+function leaderRank(l, mode = activePeriod) {
+  if (!l?.ticker || !leaderRanks[mode]) return null;
+  return leaderRanks[mode][l.ticker] || null;
+}
+function leaderContextText(l, mode = activePeriod) {
+  const m = leaderMetric(mode), v = leaderValue(l, mode), rank = leaderRank(l, mode);
+  if (!m || v === null) return '';
+  return `${m.label} ${v.toFixed(1)}${rank ? ` #${rank}` : ''}`;
+}
+function leaderStatsHtml(l) {
+  if (!l) return '';
+  const active = leaderMetric();
+  const activeText = active ? `<span class="statPill">${active.label}<b>${leaderValue(l) === null ? '—' : leaderValue(l).toFixed(1)}${leaderRank(l) ? ` #${leaderRank(l)}` : ''}</b></span>` : '';
+  return `<div class="leaderStats">${activeText}<span class="statPill">RS21<b>${num(l.rs21) ?? '—'}</b></span><span class="statPill">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class="statPill">RS189<b>${num(l.rs189) ?? '—'}</b></span></div>`;
+}
 function updateLeaderFreshness(leaders) {
   const session = day(state.date || intelMeta?.session_date || '');
   const marketAsOf = day(leaders?.leadership_market?.asof);
@@ -477,8 +513,9 @@ function directionBias(cur, prev, m, u, l, tq) {
     if (m.positive > m.negative) { s += 6; why.push('0–45DTEでFlip上多数'); }
     else if (m.negative > m.positive) { s -= 6; why.push('0–45DTEでFlip下多数'); }
   }
-  if (leaderFresh && l?.leaderScore >= 75) { s += 6; why.push('同日Leadership上位'); }
-  else if (leaderFresh && l?.leaderScore >= 60) s += 3;
+  const lv = leaderFresh ? leaderValue(l) : null, lm = leaderMetric();
+  if (lv !== null && lv >= 95) { s += 6; why.push(`${lm.label}上位`); }
+  else if (lv !== null && lv >= 85) { s += 3; why.push(`${lm.label}上位`); }
   s = clamp(Math.round(s), 0, 100);
   const rg = cur.regime || 'UNKNOWN';
   const direction = s >= 68 ? 'UP' : s <= 32 ? 'DOWN' : (44 <= s && s <= 56 && rg === 'POSITIVE_GAMMA' ? 'RANGE' : (['NEGATIVE_GAMMA', 'NEAR_FLIP'].includes(rg) ? 'VOLATILE' : 'RANGE'));
@@ -492,7 +529,8 @@ function directionBias(cur, prev, m, u, l, tq) {
 function analysisText(cur, d, l) {
   if (!cur) return '選択した期間に取得済み満期がありません。別の期間または満期指定を選んでください。';
   if (d.direction === 'UNKNOWN') return '基準終値とOptions計算時点、またはOptions品質を確認できないため方向判定を止めています。';
-  const lead = leaderFresh && l?.leaderScore >= 70 ? ' Leadershipも同日データで上位。' : '';
+  const lv = leaderFresh ? leaderValue(l) : null, lm = leaderMetric();
+  const lead = lv !== null && lv >= 85 ? ` ${lm.label} ${lv.toFixed(1)}で同日上位。` : '';
   const p = { UP: 'オプション配置は上方向優位。', DOWN: 'オプション配置は下方向優位。', RANGE: '現状はレンジ寄り。', VOLATILE: '方向は混在、値幅拡大に注意。' }[d.direction] || '';
   const bits = [];
   if (cur.gamma_flip !== null) bits.push(`終値${money(cur.spot)}はFlip ${money(cur.gamma_flip)}の${cur.spot > cur.gamma_flip ? '上' : '下'}`);
@@ -588,7 +626,10 @@ function dirView(d) {
     : x === 'VOLATILE' ? { arrow: '↕', label: '変動拡大', cls: 'bVol', ac: 'vol' }
     : { arrow: '?', label: '判定保留', cls: 'bLow', ac: 'vol' };
 }
-function leaderBadge(l) { return leaderFresh && l ? `<span class="badge bLeader">主導株 ${l.leaderScore ?? l.leader_score ?? '—'}</span>` : ''; }
+function leaderBadge(l) {
+  const text = leaderFresh ? leaderContextText(l) : '';
+  return text ? `<span class="badge bLeader">${esc(text)}</span>` : '';
+}
 function expectedLabel(c) { const ep = num(c?.expected_move?.expected_move_pct); return ep === null ? '—' : `±${(ep * 100).toFixed(1)}%`; }
 function horizonLabel(c) {
   if (!c) return PERIODS[activePeriod].label;
@@ -600,25 +641,30 @@ function miniCard(t, o, l, combined) {
   const u = universeMap[t] || {}, d = dirView(o?.direction), c = o?.current, verified = isUsable(o), periodMissing = o?.period_unavailable;
   const levels = verified && c ? `<div class="miniLevels"><div class="miniLv"><span>終値</span><b>${money(c.spot)}</b></div><div class="miniLv"><span>支持</span><b>${money(c.put_wall)}</b></div><div class="miniLv"><span>上値壁</span><b>${money(c.call_wall)}</b></div><div class="miniLv"><span>織込み</span><b>${expectedLabel(c)}</b></div></div>` : '';
   const note = periodMissing ? 'この期間の満期データは未取得。' : o ? (verified ? o.analysis : (o.source === 'DETAIL' ? 'Options詳細はあるが時点・品質条件を満たさない。' : '履歴のみ。現在の方向判定には使用しない。')) : 'Options詳細未取得。';
-  return `<article class="miniCard" data-ticker="${esc(t)}"><div class="miniHead"><div class="ticker">${esc(t)}</div><div class="company">${esc(u.name || l?.name || '')}</div><div class="score">${verified ? (combined ?? o?.direction?.confidence ?? '—') : '—'}</div></div><div class="badges">${leaderBadge(l)}<span class="badge ${d.cls}">${verified ? `${d.arrow} ${d.label}` : '? 未判定'}</span>${periodMissing ? '<span class="badge bLow">期間データなし</span>' : o && !verified ? '<span class="badge bLow">参考外</span>' : ''}</div>${verified ? `<div class="miniDirection"><strong class="${d.cls}">${d.arrow} ${d.label}</strong><span>方向 ${o.direction.score}/100 · 確度 ${o.direction.confidence}</span></div>` : ''}<div class="miniThesis">${esc(note)}</div>${levels}<div class="miniMeta">${esc(u.sector || '')} · ${esc(u.industry || '')}${c ? ` · ${esc(horizonLabel(c))}` : ''}</div></article>`;
+  return `<article class="miniCard" data-ticker="${esc(t)}"><div class="miniHead"><div class="ticker">${esc(t)}</div><div class="company">${esc(u.name || l?.name || '')}</div><div class="score">${combined ?? (verified ? (o?.direction?.confidence ?? '—') : '—')}</div></div><div class="badges">${leaderBadge(l)}<span class="badge ${d.cls}">${verified ? `${d.arrow} ${d.label}` : '? 未判定'}</span>${periodMissing ? '<span class="badge bLow">期間データなし</span>' : o && !verified ? '<span class="badge bLow">参考外</span>' : ''}</div>${verified ? `<div class="miniDirection"><strong class="${d.cls}">${d.arrow} ${d.label}</strong><span>方向 ${o.direction.score}/100 · 確度 ${o.direction.confidence}</span></div>` : ''}<div class="miniThesis">${esc(note)}</div>${levels}<div class="miniMeta">${esc(u.sector || '')} · ${esc(u.industry || '')}${c ? ` · ${esc(horizonLabel(c))}` : ''}</div></article>`;
 }
 function buildLeaderRows() {
   if (!leaderFresh) return [];
-  const a = [];
-  for (const [t, l] of Object.entries(leaderMap)) {
-    const o = optionMap[t] || null, verified = isUsable(o), bonus = verified ? (o.direction.direction === 'UP' ? 15 : o.direction.direction === 'DOWN' ? -12 : 0) : 0;
-    const combined = Math.round(.78 * l.leaderScore + .22 * (verified ? o.direction.confidence : 50) + bonus);
-    a.push({ t, l, o, combined });
-  }
-  return a.sort((x, y) => y.combined - x.combined).slice(0, 8);
+  const metric = leaderMetric();
+  if (!metric) return [];
+  return Object.entries(leaderMap)
+    .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l) }))
+    .filter(x => x.metricValue !== null)
+    .sort((a, b) => b.metricValue - a.metricValue || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.t.localeCompare(b.t))
+    .slice(0, 8);
 }
 function renderLeaders() {
   if (!leaderFresh) {
     $('#leaders').innerHTML = `<div class="noData"><strong>Leadership更新待ち</strong>${esc(leaderHealthReason)} 古いLeadershipを今日のランキングへ流用しません。</div>`;
     return;
   }
+  const metric = leaderMetric();
+  if (!metric) {
+    $('#leaders').innerHTML = '<div class="noData"><strong>RSランキングは混合しません。</strong>複数満期・満期指定では単一のLeadership順位を作らず、短期=RS21 / スイング=RS63 / 中期=RS189 の各タブで確認してください。</div>';
+    return;
+  }
   const a = buildLeaderRows();
-  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.combined)).join('') : '<div class="empty">Leadershipデータなし。</div>';
+  $('#leaders').innerHTML = a.length ? a.map(x => miniCard(x.t, x.o, x.l, x.metricValue.toFixed(1))).join('') : `<div class="empty">${metric.label} Leadershipデータなし。</div>`;
   bind($('#leaders'));
 }
 function directionalRows(dir) {
@@ -669,7 +715,7 @@ function selectedHtml(t) {
   const u = universeMap[t], o = optionMap[t], l = leaderFresh ? leaderMap[t] : null, raw = positioning[t];
   if (!u && !o && !l) return '<div class="noData"><strong>銘柄が見つかりません</strong>Tickerまたは会社名で検索してください。</div>';
   const name = u?.name || l?.name || o?.name || '', price = u?.price ?? o?.current?.spot;
-  const leaderStats = l ? `<div class="leaderStats"><span class="statPill">Leader<b>${l.leaderScore}</b></span><span class="statPill">RS189<b>${num(l.rs189) ?? '—'}</b></span><span class="statPill">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class="statPill">RS21<b>${num(l.rs21) ?? '—'}</b></span></div>` : '';
+  const leaderStats = leaderStatsHtml(l);
   const leaderWait = !leaderFresh && leaderMap[t] ? '<span class="badge bLow">Leadership更新待ち</span>' : '';
   const availability = availabilityHtml(t);
   if (!raw) {
@@ -771,6 +817,7 @@ async function init() {
     rotationStatus = rotSt || {};
     parseUniverse(parseCsv(uniText));
     leaderMap = leaders ? collectLeaders(leaders) : {};
+    rebuildLeaderRanks();
     updateLeaderFreshness(leaders || {});
     positioning = pos.tickers || {};
     historyRows = parseCsv(dhText);
