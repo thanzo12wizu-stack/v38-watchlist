@@ -1,4 +1,4 @@
-name: Correct exported V38 live workflow once
+name: Finalize exported V38 live workflow once
 
 on:
   push:
@@ -11,14 +11,14 @@ permissions:
   contents: write
 
 jobs:
-  correct:
+  finalize:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
-      - name: Correct generated V38 live workflow text
+      - name: Keep V38 live dispatch-only
         shell: bash
         run: |
           set -euo pipefail
@@ -26,47 +26,25 @@ jobs:
           from pathlib import Path
           p=Path('generated-v38-live.yml.txt')
           s=p.read_text(encoding='utf-8')
-
-          # Restore literal GitHub Actions expressions without allowing this
-          # one-time exporter workflow to interpolate them itself.
-          expr_os = '$' + '{{ runner.os }}'
-          expr_run = '$' + '{{ github.run_id }}'
-          s=s.replace('          key: Linux-v38-early1-34036161120\n', f'          key: {expr_os}-v38-early1-{expr_run}\n')
-          s=s.replace('            Linux-v38-early1-\n', f'            {expr_os}-v38-early1-\n')
-
-          # Early1 is validated in the final V38 live-state validation block,
-          # not in the preceding CURRENT30/TQQQ validation block.
-          wrong="          early=json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))\n"
-          if s.count(wrong) != 1:
-              raise SystemExit(f'expected one misplaced Early1 loader, got {s.count(wrong)}')
-          s=s.replace(wrong,'',1)
-          anchor="          tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))\n          asof = str(state.get('date') or '')\n"
-          repl="          tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))\n          early = json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))\n          asof = str(state.get('date') or '')\n"
-          if s.count(anchor) != 1:
-              raise SystemExit(f'final validation anchor mismatch: {s.count(anchor)}')
-          s=s.replace(anchor,repl,1)
-
-          required=[
-              'v38-early1-live.json',
-              'build_v38_early1_live.py',
-              'tests/test_v38_early1_live.py',
-              'EARLY1 mismatch/not ready',
-              expr_os+'-v38-early1-'+expr_run,
-          ]
+          block='''on:\n  workflow_dispatch: {}\n  push:\n    branches: [main]\n    paths:\n      - ".github/workflows/v38-live.yml"\n'''
+          if s.count(block) != 1:
+              raise SystemExit(f'V38 live temporary push trigger mismatch: {s.count(block)}')
+          s=s.replace(block,'on:\n  workflow_dispatch: {}\n',1)
+          required=['v38-early1-live.json','build_v38_early1_live.py','tests/test_v38_early1_live.py','EARLY1 mismatch/not ready']
           missing=[x for x in required if x not in s]
           if missing:
-              raise SystemExit('corrected workflow missing '+repr(missing))
-          if 'Linux-v38-early1-34036161120' in s:
-              raise SystemExit('fixed cache key remains')
+              raise SystemExit('final V38 live missing '+repr(missing))
+          if 'push:\n    branches: [main]\n    paths:\n      - ".github/workflows/v38-live.yml"' in s:
+              raise SystemExit('temporary V38 live self trigger remains')
           p.write_text(s,encoding='utf-8')
-          print('CORRECTED_V38_LIVE_WORKFLOW_READY')
+          print('FINAL_V38_LIVE_WORKFLOW_READY')
           PY
-      - name: Commit corrected generated text
+      - name: Commit final generated text
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add generated-v38-live.yml.txt
-          git commit -m 'Correct canonical V38 live workflow text'
+          git commit -m 'Finalize canonical V38 live workflow text'
           git push origin HEAD:main
