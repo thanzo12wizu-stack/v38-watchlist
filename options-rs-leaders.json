@@ -1,0 +1,483 @@
+{
+  "schema_version": 1,
+  "asof": "2026-09-04",
+  "source": "command-center.rs_pool",
+  "mapping": {
+    "short": {
+      "dte": "0-6",
+      "metric": "RS63"
+    },
+    "swing": {
+      "dte": "7-21",
+      "metric": "RS126"
+    },
+    "medium": {
+      "dte": "22-45",
+      "metric": "RS189"
+    }
+  },
+  "leadership_market": {
+    "asof": "2026-09-04"
+  },
+  "rankings": {
+    "short": {
+      "label": "RS63",
+      "metric": "rs63",
+      "rows": [
+        {
+          "ticker": "MRNA",
+          "rank": 1,
+          "value": 100.0
+        },
+        {
+          "ticker": "LIFE",
+          "rank": 2,
+          "value": 99.957008
+        },
+        {
+          "ticker": "SLN",
+          "rank": 3,
+          "value": 99.914015
+        },
+        {
+          "ticker": "CDNA",
+          "rank": 4,
+          "value": 99.871023
+        },
+        {
+          "ticker": "XNCR",
+          "rank": 5,
+          "value": 99.828031
+        },
+        {
+          "ticker": "ELF",
+          "rank": 6,
+          "value": 99.785039
+        },
+        {
+          "ticker": "NIQ",
+          "rank": 7,
+          "value": 99.742046
+        },
+        {
+          "ticker": "ARCT",
+          "rank": 8,
+          "value": 99.699054
+        },
+        {
+          "ticker": "IOVA",
+          "rank": 9,
+          "value": 99.656062
+        },
+        {
+          "ticker": "ABCL",
+          "rank": 10,
+          "value": 99.61307
+        },
+        {
+          "ticker": "AVAH",
+          "rank": 11,
+          "value": 99.570077
+        },
+        {
+          "ticker": "UTZ",
+          "rank": 12,
+          "value": 99.527085
+        }
+      ]
+    },
+    "swing": {
+      "label": "RS126",
+      "metric": "rs126",
+      "rows": [
+        {
+          "ticker": "AGL",
+          "rank": 1,
+          "value": 100.0
+        },
+        {
+          "ticker": "QMCO",
+          "rank": 2,
+          "value": 99.956541
+        },
+        {
+          "ticker": "MXL",
+          "rank": 3,
+          "value": 99.913081
+        },
+        {
+          "ticker": "DELL",
+          "rank": 4,
+          "value": 99.869622
+        },
+        {
+          "ticker": "BLZE",
+          "rank": 5,
+          "value": 99.826163
+        },
+        {
+          "ticker": "ETON",
+          "rank": 6,
+          "value": 99.782703
+        },
+        {
+          "ticker": "ABCL",
+          "rank": 7,
+          "value": 99.739244
+        },
+        {
+          "ticker": "SNDK",
+          "rank": 8,
+          "value": 99.695784
+        },
+        {
+          "ticker": "CORT",
+          "rank": 9,
+          "value": 99.652325
+        },
+        {
+          "ticker": "ASST",
+          "rank": 10,
+          "value": 99.608866
+        },
+        {
+          "ticker": "LIFE",
+          "rank": 11,
+          "value": 99.565406
+        },
+        {
+          "ticker": "TXG",
+          "rank": 12,
+          "value": 99.521947
+        }
+      ]
+    },
+    "medium": {
+      "label": "RS189",
+      "metric": "rs189",
+      "rows": [
+        {
+          "ticker": "SNDK",
+          "rank": 1,
+          "value": 100.0
+        },
+        {
+          "ticker": "MRNA",
+          "rank": 2,
+          "value": 99.956198
+        },
+        {
+          "ticker": "AXTI",
+          "rank": 3,
+          "value": 99.912396
+        },
+        {
+          "ticker": "AGL",
+          "rank": 4,
+          "value": 99.868594
+        },
+        {
+          "ticker": "MU",
+          "rank": 5,
+          "value": 99.824792
+        },
+        {
+          "ticker": "ATEX",
+          "rank": 6,
+          "value": 99.78099
+        },
+        {
+          "ticker": "AAOI",
+          "rank": 7,
+          "value": 99.737188
+        },
+        {
+          "ticker": "TWST",
+          "rank": 8,
+          "value": 99.693386
+        },
+        {
+          "ticker": "IOVA",
+          "rank": 9,
+          "value": 99.649584
+        },
+        {
+          "ticker": "DELL",
+          "rank": 10,
+          "value": 99.605782
+        },
+        {
+          "ticker": "IBRX",
+          "rank": 11,
+          "value": 99.56198
+        },
+        {
+          "ticker": "ETON",
+          "rank": 12,
+          "value": 99.518178
+        }
+      ]
+    }
+  },
+  "leaders": [
+    {
+      "symbol": "MRNA",
+      "ticker": "MRNA",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 1,
+      "rs63": 100.0,
+      "rs126": 99.30465,
+      "rs189": 99.956198,
+      "rank_rs189": 2
+    },
+    {
+      "symbol": "LIFE",
+      "ticker": "LIFE",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 2,
+      "rs63": 99.957008,
+      "rs126": 99.565406,
+      "rank_rs126": 11
+    },
+    {
+      "symbol": "SLN",
+      "ticker": "SLN",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 3,
+      "rs63": 99.914015,
+      "rs126": 98.435463,
+      "rs189": 97.941305
+    },
+    {
+      "symbol": "CDNA",
+      "ticker": "CDNA",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 4,
+      "rs63": 99.871023,
+      "rs126": 99.435028,
+      "rs189": 98.729742
+    },
+    {
+      "symbol": "XNCR",
+      "ticker": "XNCR",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 5,
+      "rs63": 99.828031,
+      "rs126": 98.478922,
+      "rs189": 85.501533
+    },
+    {
+      "symbol": "ELF",
+      "ticker": "ELF",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 6,
+      "rs63": 99.785039,
+      "rs126": 79.226423,
+      "rs189": 76.171704
+    },
+    {
+      "symbol": "NIQ",
+      "ticker": "NIQ",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 7,
+      "rs63": 99.742046,
+      "rs126": 85.745328,
+      "rs189": 58.125274
+    },
+    {
+      "symbol": "ARCT",
+      "ticker": "ARCT",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 8,
+      "rs63": 99.699054,
+      "rs126": 98.174707,
+      "rs189": 98.247919
+    },
+    {
+      "symbol": "IOVA",
+      "ticker": "IOVA",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 9,
+      "rs63": 99.656062,
+      "rs126": 93.698392,
+      "rs189": 99.649584,
+      "rank_rs189": 9
+    },
+    {
+      "symbol": "ABCL",
+      "ticker": "ABCL",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 10,
+      "rs63": 99.61307,
+      "rs126": 99.739244,
+      "rs189": 99.299168,
+      "rank_rs126": 7
+    },
+    {
+      "symbol": "AVAH",
+      "ticker": "AVAH",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 11,
+      "rs63": 99.570077,
+      "rs126": 96.001738,
+      "rs189": 84.888305
+    },
+    {
+      "symbol": "UTZ",
+      "ticker": "UTZ",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 12,
+      "rs63": 99.527085,
+      "rs126": 92.829205,
+      "rs189": 84.056067
+    },
+    {
+      "symbol": "AGL",
+      "ticker": "AGL",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 1,
+      "rs63": 18.529665,
+      "rs126": 100.0,
+      "rs189": 99.868594,
+      "rank_rs189": 4
+    },
+    {
+      "symbol": "QMCO",
+      "ticker": "QMCO",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 2,
+      "rs63": 99.269132,
+      "rs126": 99.956541,
+      "rs189": 99.080158
+    },
+    {
+      "symbol": "MXL",
+      "ticker": "MXL",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 3,
+      "rs63": 6.706793,
+      "rs126": 99.913081,
+      "rs189": 99.430574
+    },
+    {
+      "symbol": "DELL",
+      "ticker": "DELL",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 4,
+      "rs63": 89.251935,
+      "rs126": 99.869622,
+      "rs189": 99.605782,
+      "rank_rs189": 10
+    },
+    {
+      "symbol": "BLZE",
+      "ticker": "BLZE",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 5,
+      "rs63": 98.624248,
+      "rs126": 99.826163,
+      "rs189": 98.948752
+    },
+    {
+      "symbol": "ETON",
+      "ticker": "ETON",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 6,
+      "rs63": 99.441101,
+      "rs126": 99.782703,
+      "rs189": 99.518178,
+      "rank_rs189": 12
+    },
+    {
+      "symbol": "SNDK",
+      "ticker": "SNDK",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 8,
+      "rs63": 63.198624,
+      "rs126": 99.695784,
+      "rs189": 100.0,
+      "rank_rs189": 1
+    },
+    {
+      "symbol": "CORT",
+      "ticker": "CORT",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 9,
+      "rs63": 96.087704,
+      "rs126": 99.652325,
+      "rs189": 73.806395
+    },
+    {
+      "symbol": "ASST",
+      "ticker": "ASST",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 10,
+      "rs63": 99.312124,
+      "rs126": 99.608866,
+      "rs189": 69.645204
+    },
+    {
+      "symbol": "TXG",
+      "ticker": "TXG",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 12,
+      "rs63": 99.484093,
+      "rs126": 99.521947,
+      "rs189": 99.474376
+    },
+    {
+      "symbol": "AXTI",
+      "ticker": "AXTI",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 3,
+      "rs63": 3.439381,
+      "rs126": 96.349413,
+      "rs189": 99.912396
+    },
+    {
+      "symbol": "MU",
+      "ticker": "MU",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 5,
+      "rs63": 74.72055,
+      "rs126": 99.261191,
+      "rs189": 99.824792
+    },
+    {
+      "symbol": "ATEX",
+      "ticker": "ATEX",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 6,
+      "rs63": 86.844368,
+      "rs126": 97.827032,
+      "rs189": 99.78099
+    },
+    {
+      "symbol": "AAOI",
+      "ticker": "AAOI",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 7,
+      "rs63": 1.289768,
+      "rs126": 49.804433,
+      "rs189": 99.737188
+    },
+    {
+      "symbol": "TWST",
+      "ticker": "TWST",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 8,
+      "rs63": 98.882201,
+      "rs126": 99.217731,
+      "rs189": 99.693386
+    },
+    {
+      "symbol": "IBRX",
+      "ticker": "IBRX",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 11,
+      "rs63": 73.172829,
+      "rs126": 21.94698,
+      "rs189": 99.56198
+    }
+  ]
+}

@@ -7,7 +7,7 @@ const SAME = {
   dh: './options_history.csv',
   sh: './options_scan_history.csv',
   uni: './universe.csv',
-  leaders: './rotation/data/rotation-theme56-stock-context.json',
+  leaders: './options-rs-leaders.json',
   rotStatus: './rotation/data/status.json',
   state: './state.json'
 };
@@ -17,7 +17,7 @@ const RAW = {
   dh: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_history.csv',
   sh: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_scan_history.csv',
   uni: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/universe.csv',
-  leaders: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/rotation/data/rotation-theme56-stock-context.json',
+  leaders: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options-rs-leaders.json',
   rotStatus: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/rotation/data/status.json',
   state: 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/state.json'
 };
@@ -64,11 +64,11 @@ let leaderRanks = { short: {}, swing: {}, medium: {} };
 const exactExpiryByTicker = {};
 
 const PERIODS = {
-  short: { label: '短期 0–6DTE', hint: 'Options 0–6DTE × RS21リーダー。短期の値動きと短期相対強度を同じタブで見る。' },
-  swing: { label: 'スイング 7–21DTE', hint: 'Options 7–21DTE × RS63リーダー。1〜3週間の主期間。' },
-  medium: { label: '中期 22–45DTE', hint: 'Options 22–45DTE × RS189リーダー。数週間先の構造と中期相対強度を見る。' },
-  multi: { label: '複数満期統合', hint: 'Optionsは0〜45DTEを統合。LeadershipはRS21/63/189を勝手に混ぜず、各期間タブで確認する。' },
-  exact: { label: '満期指定', hint: '銘柄ごとの実在満期を指定。Leadershipは単一RSへ自動混合せず、RS21/63/189を個別表示する。' }
+  short: { label: '短期 0–6DTE', hint: 'Options 0–6DTE × RS63リーダー。約3か月RSで短期Options配置を見る。' },
+  swing: { label: 'スイング 7–21DTE', hint: 'Options 7–21DTE × RS126リーダー。1〜3週間の主期間を半年RSと組み合わせる。' },
+  medium: { label: '中期 22–45DTE', hint: 'Options 22–45DTE × RS189リーダー。数週間先の構造を主RSで見る。' },
+  multi: { label: '複数満期統合', hint: 'Optionsは0〜45DTEを統合。LeadershipはRS63/126/189を勝手に混ぜず、各期間タブで確認する。' },
+  exact: { label: '満期指定', hint: '銘柄ごとの実在満期を指定。Leadershipは単一RSへ自動混合せず、RS63/126/189を個別表示する。' }
 };
 
 async function getText(k) {
@@ -179,9 +179,9 @@ function collectLeaders(root) {
 }
 
 const LEADER_PERIOD_METRIC = {
-  short: { key: 'rs21', label: 'RS21' },
-  swing: { key: 'rs63', label: 'RS63' },
-  medium: { key: 'rs189', label: 'RS189' },
+  short: { key: 'rs63', label: 'RS63', rankKey: 'rank_rs63' },
+  swing: { key: 'rs126', label: 'RS126', rankKey: 'rank_rs126' },
+  medium: { key: 'rs189', label: 'RS189', rankKey: 'rank_rs189' },
 };
 function leaderMetric(mode = activePeriod) { return LEADER_PERIOD_METRIC[mode] || null; }
 function leaderValue(l, mode = activePeriod) {
@@ -200,6 +200,9 @@ function rebuildLeaderRanks() {
 }
 function leaderRank(l, mode = activePeriod) {
   if (!l?.ticker || !leaderRanks[mode]) return null;
+  const m = leaderMetric(mode);
+  const explicit = m ? num(l?.[m.rankKey]) : null;
+  if (explicit !== null) return explicit;
   return leaderRanks[mode][l.ticker] || null;
 }
 function leaderContextText(l, mode = activePeriod) {
@@ -211,17 +214,16 @@ function leaderStatsHtml(l) {
   if (!l) return '';
   const active = leaderMetric();
   const activeText = active ? `<span class="statPill">${active.label}<b>${leaderValue(l) === null ? '—' : leaderValue(l).toFixed(1)}${leaderRank(l) ? ` #${leaderRank(l)}` : ''}</b></span>` : '';
-  return `<div class="leaderStats">${activeText}<span class="statPill">RS21<b>${num(l.rs21) ?? '—'}</b></span><span class="statPill">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class="statPill">RS189<b>${num(l.rs189) ?? '—'}</b></span></div>`;
+  return `<div class="leaderStats">${activeText}<span class="statPill">RS63<b>${num(l.rs63) ?? '—'}</b></span><span class="statPill">RS126<b>${num(l.rs126) ?? '—'}</b></span><span class="statPill">RS189<b>${num(l.rs189) ?? '—'}</b></span></div>`;
 }
 function updateLeaderFreshness(leaders) {
   const session = day(state.date || intelMeta?.session_date || '');
-  const marketAsOf = day(leaders?.leadership_market?.asof);
-  const statusAsOf = day(rotationStatus?.asof);
-  leaderAsOf = marketAsOf || statusAsOf || day(leaders?.leadership_generated_at);
-  leaderFresh = !!session && !!marketAsOf && !!statusAsOf && marketAsOf === session && statusAsOf === session;
+  const dashboardAsOf = day(leaders?.asof || leaders?.leadership_market?.asof);
+  leaderAsOf = dashboardAsOf;
+  leaderFresh = !!session && !!dashboardAsOf && dashboardAsOf === session;
   if (leaderFresh) leaderHealthReason = '';
-  else if (!session) leaderHealthReason = '基準セッション不明のためLeadershipをランキングへ使用しません。';
-  else leaderHealthReason = `Leadership ${leaderAsOf || '—'} / 基準 ${session}。同一セッションになるまでリーダー順位とDirectionへの加点を停止。`;
+  else if (!session) leaderHealthReason = '基準セッション不明のためDashboard RSをランキングへ使用しません。';
+  else leaderHealthReason = `Dashboard RS ${leaderAsOf || '—'} / 基準 ${session}。同一セッションになるまでリーダー順位とDirectionへの加点を停止。`;
 }
 
 function expiryEntries(r) {
@@ -650,10 +652,10 @@ function buildLeaderRows() {
   const metric = leaderMetric();
   if (!metric) return [];
   return Object.entries(leaderMap)
-    .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l) }))
-    .filter(x => x.metricValue !== null)
-    .sort((a, b) => b.metricValue - a.metricValue || (num(b.l.strength) || 0) - (num(a.l.strength) || 0) || a.t.localeCompare(b.t))
-    .slice(0, 8);
+    .map(([t, l]) => ({ t, l, o: optionMap[t] || null, metricValue: leaderValue(l), rank: leaderRank(l) }))
+    .filter(x => x.metricValue !== null && x.rank !== null && x.rank <= 12)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 12);
 }
 function renderLeaders() {
   if (!leaderFresh) {
@@ -662,7 +664,7 @@ function renderLeaders() {
   }
   const metric = leaderMetric();
   if (!metric) {
-    $('#leaders').innerHTML = '<div class="noData"><strong>RSランキングは混合しません。</strong>複数満期・満期指定では単一のLeadership順位を作らず、短期=RS21 / スイング=RS63 / 中期=RS189 の各タブで確認してください。</div>';
+    $('#leaders').innerHTML = '<div class="noData"><strong>RSランキングは混合しません。</strong>複数満期・満期指定では単一のLeadership順位を作らず、短期=RS63 / スイング=RS126 / 中期=RS189 の各タブで確認してください。</div>';
     return;
   }
   const a = buildLeaderRows();
