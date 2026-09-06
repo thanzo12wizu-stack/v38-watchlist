@@ -1,0 +1,102 @@
+name: Patch Options tech legend once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-options-tech-legend-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Apply chart technical legend patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def one(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'missing anchor: {label}')
+              return text.replace(old, new, 1)
+
+          p = Path('options-chart.js')
+          s = p.read_text(encoding='utf-8')
+          s = one(s,
+          """    const ema21 = ema(clean, 21);\n    const ema21Series = addLine(chart, ema21, '', { color: '#f4c75a', lineWidth: 1, priceScaleId: 'right', hideTitle: true });\n    axisLabel(ema21Series, ema21.at(-1)?.value, '21EMA', '#f4c75a');\n\n    const sma50 = sma(clean, 50);\n    const sma50Series = addLine(chart, sma50, '', { color: '#6fb8ff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });\n    axisLabel(sma50Series, sma50.at(-1)?.value, '50MA', '#6fb8ff');\n\n    const sma200 = sma(clean, 200);\n    const sma200Series = addLine(chart, sma200, '', { color: '#b98cff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });\n    axisLabel(sma200Series, sma200.at(-1)?.value, '200MA', '#b98cff');\n\n    const vwap63 = rollingVwap(clean, 63);\n    const vwap63Series = addLine(chart, vwap63, '', { color: '#4fc7bd', lineWidth: 1, priceScaleId: 'right', hideTitle: true });\n    axisLabel(vwap63Series, vwap63.at(-1)?.value, '63VWAP', '#4fc7bd');""",
+          """    const ema21 = ema(clean, 21);\n    addLine(chart, ema21, '', { color: '#f4c75a', lineWidth: 1, priceScaleId: 'right', hideTitle: true });\n\n    const sma150 = sma(clean, 150);\n    addLine(chart, sma150, '', { color: '#6fb8ff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });\n\n    const vwap63 = rollingVwap(clean, 63);\n    addLine(chart, vwap63, '', { color: '#4fc7bd', lineWidth: 1, priceScaleId: 'right', hideTitle: true });""",
+          'technical series block')
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-chart-bridge.js')
+          s = p.read_text(encoding='utf-8')
+          s = one(s,
+          """    ${hasCandles ? '<span><b>21EMA</b></span><span><b>50MA</b></span><span><b>200MA</b></span><span><b>63VWAP</b></span>' : '<span><b>Spot</b></span>'}""",
+          """    ${hasCandles ? '<span class=\"tech ema\"><b>21EMA</b></span><span class=\"tech sma150\"><b>150SMA</b></span><span class=\"tech vwap\"><b>63VWAP</b></span>' : '<span><b>Spot</b></span>'}""",
+          'chart legend tech block')
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-chart.css')
+          s = p.read_text(encoding='utf-8')
+          anchor = ".v38ChartLegend b{font-size:11px;color:#e4e8ed}.v38ChartLegend .call b{color:#ef8b8b}"
+          repl = ".v38ChartLegend b{font-size:11px;color:#e4e8ed}.v38ChartLegend .tech.ema b{color:#f4c75a}.v38ChartLegend .tech.sma150 b{color:#6fb8ff}.v38ChartLegend .tech.vwap b{color:#4fc7bd}.v38ChartLegend .call b{color:#ef8b8b}"
+          s = one(s, anchor, repl, 'legend colors')
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('options-intelligence.html')
+          s = p.read_text(encoding='utf-8')
+          s = one(s, 'options-chart.css?v=20260905-chart1', 'options-chart.css?v=20260907-techlegend1', 'chart css cache')
+          s = one(s, 'options-chart.js?v=20260905-chart6', 'options-chart.js?v=20260907-techlegend1', 'chart js cache')
+          s = one(s, 'options-chart-bridge.js?v=20260907-chartcontrols1', 'options-chart-bridge.js?v=20260907-techlegend1', 'bridge js cache')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check options-chart.js
+          node --check options-chart-bridge.js
+          git diff --check
+          grep -q "const sma150 = sma(clean, 150)" options-chart.js
+          ! grep -q "const sma50 = sma(clean, 50)" options-chart.js
+          ! grep -q "const sma200 = sma(clean, 200)" options-chart.js
+          ! grep -q "axisLabel(ema21Series" options-chart.js
+          grep -q "150SMA" options-chart-bridge.js
+          ! grep -q "50MA</b>" options-chart-bridge.js
+          ! grep -q "200MA</b>" options-chart-bridge.js
+          grep -q "techlegend1" options-intelligence.html
+
+      - name: Commit intended files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- options-chart.js options-chart-bridge.js options-chart.css options-intelligence.html
+          staged="$(git diff --cached --name-only)"
+          printf '%s\n' "$staged"
+          for f in $staged; do
+            case "$f" in
+              options-chart.js|options-chart-bridge.js|options-chart.css|options-intelligence.html) ;;
+              *) echo "unexpected file: $f"; exit 1 ;;
+            esac
+          done
+          test "$(printf '%s\n' "$staged" | wc -l)" -eq 4
+          git commit -m 'Simplify Options chart technical overlays'
+          git push origin HEAD:main
