@@ -1,0 +1,28 @@
+{
+  "diag": {
+    "early_slots": 1,
+    "early_score": "RS21_HIGH_ACCEL",
+    "early_gate": "NOT_RED",
+    "early_max_days": 10,
+    "core_entries": 647,
+    "early_entries": 223,
+    "promoted_core": 9,
+    "promotion_rate": 0.04035874439461883,
+    "early_expiry": 132,
+    "early_stop": 51,
+    "early_partial": 12,
+    "avg_positions": 7.302959501557632,
+    "avg_core_positions": 6.636682242990654,
+    "avg_early_positions": 0.6662772585669782,
+    "avg_gross": 0.5877839252696198,
+    "max_gross": 1.0
+  },
+  "nav_reproduction_max_error": 8.881784197001252e-16,
+  "limits": [
+    "Virtual ordinary sleeve trade cohorts, not funded Gross100 ledger PF.",
+    "Early-origin cohort retains promoted winners through Core exit; not the same as Early-residency contribution.",
+    "Open trades excluded from closed-trade statistics.",
+    "Symbol cluster is trade expectancy/PF inference, not portfolio CAGR bootstrap.",
+    "5bp is applied to each buy/sell notional; no future information changes entries."
+  ]
+}
