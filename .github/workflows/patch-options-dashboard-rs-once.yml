@@ -1,5 +1,5 @@
 name: Patch Options to Dashboard RS12 once
-# retrigger 2026-09-06: apply approved Dashboard RS63/126/189 Top12 mapping
+# retrigger 2026-09-06b: publish generated RS sidecar/UI first; dashboard workflow is updated separately
 
 on:
   push:
@@ -97,7 +97,6 @@ jobs:
                               rec[metric] = round(v, 6)
                       rows.append({"ticker": ticker, "rank": rank, "value": round(value, 6) if value is not None else None})
                   rankings[mode] = {"label": label, "metric": col, "rows": rows}
-                  # This is intentionally the same pool + sort expression used by the Dashboard RS tab.
                   dashboard_top10 = [str(t).strip().upper() for t in df.dropna(subset=[col]).sort_values(col, ascending=False).head(10).index]
                   if dashboard_top10 != [r["ticker"] for r in rows[:10]]:
                       raise RuntimeError(f"{label} Top10 parity check failed")
@@ -135,7 +134,6 @@ jobs:
               if not _exported or not OUT.is_file():
                   raise SystemExit("Options RS Top12 export did not run")
           '''
-          # Strip heredoc indentation introduced by YAML.
           import textwrap
           Path('build_dashboard_with_options_rs.py').write_text(textwrap.dedent(wrapper), encoding='utf-8')
 
@@ -280,17 +278,17 @@ jobs:
               print(mode, ' '.join(r['ticker'] for r in x['rankings'][mode]['rows']))
           PY
 
-      - name: Commit only intended implementation files
+      - name: Commit only intended non-workflow implementation files
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- build_dashboard_with_options_rs.py .github/workflows/dashboard.yml options-intelligence.js options-intelligence.html options-rs-leaders.json
+          git add -- build_dashboard_with_options_rs.py options-intelligence.js options-intelligence.html options-rs-leaders.json
           staged="$(git diff --cached --name-only)"
           while IFS= read -r f; do
             case "$f" in
-              build_dashboard_with_options_rs.py|.github/workflows/dashboard.yml|options-intelligence.js|options-intelligence.html|options-rs-leaders.json) ;;
+              build_dashboard_with_options_rs.py|options-intelligence.js|options-intelligence.html|options-rs-leaders.json) ;;
               '') ;;
               *) echo "unexpected staged file: $f"; exit 1 ;;
             esac
