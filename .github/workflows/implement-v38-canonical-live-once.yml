@@ -1,4 +1,4 @@
-name: Export V38 canonical workflows once
+name: Correct exported V38 live workflow once
 
 on:
   push:
@@ -11,61 +11,62 @@ permissions:
   contents: write
 
 jobs:
-  export:
+  correct:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
-      - name: Build canonical workflow texts
+      - name: Correct generated V38 live workflow text
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          p=Path('generated-v38-live.yml.txt')
+          s=p.read_text(encoding='utf-8')
 
-          def rep(path, old, new):
-              p=Path(path); s=p.read_text(encoding='utf-8')
-              if s.count(old)!=1:
-                  raise SystemExit(f'{path}: expected one match, got {s.count(old)}: {old[:80]!r}')
-              p.write_text(s.replace(old,new),encoding='utf-8')
+          # Restore literal GitHub Actions expressions without allowing this
+          # one-time exporter workflow to interpolate them itself.
+          expr_os = '$' + '{{ runner.os }}'
+          expr_run = '$' + '{{ github.run_id }}'
+          s=s.replace('          key: Linux-v38-early1-34036161120\n', f'          key: {expr_os}-v38-early1-{expr_run}\n')
+          s=s.replace('            Linux-v38-early1-\n', f'            {expr_os}-v38-early1-\n')
 
-          # v38-live
-          p='.github/workflows/v38-live.yml'
-          rep(p,'on:\n  workflow_dispatch: {}\n','on:\n  workflow_dispatch: {}\n  push:\n    branches: [main]\n    paths:\n      - ".github/workflows/v38-live.yml"\n')
-          rep(p,'        v38-strict-loo-live.json\n        tqqq-panic-state.json','        v38-strict-loo-live.json\n        v38-early1-live.json\n        tqqq-panic-state.json')
-          rep(p,'        build_v38_strict_loo_live.py\n        build_v38_tqqq_live.py','        build_v38_strict_loo_live.py\n        build_v38_early1_live.py\n        build_v38_tqqq_live.py')
-          rep(p,'            build_v38_strict_loo_live.py \\\n            build_v38_tqqq_live.py\n          pytest -q \\\n            tests/test_v38_rules.py \\\n            tests/test_v38_companion.py \\\n            tests/test_v38_strict_loo_live.py \\\n            tests/test_v38_tqqq_live.py','            build_v38_strict_loo_live.py \\\n            build_v38_early1_live.py \\\n            build_v38_tqqq_live.py\n          pytest -q \\\n            tests/test_v38_rules.py \\\n            tests/test_v38_companion.py \\\n            tests/test_v38_strict_loo_live.py \\\n            tests/test_v38_early1_live.py \\\n            tests/test_v38_tqqq_live.py')
-          loo='''      - name: Build strict LOO PIT live state\n        run: |\n          python build_v38_strict_loo_live.py \\\n            --state state.json \\\n            --sector-snapshot sector_snapshot.json \\\n            --history v38-strict-loo-history.json \\\n            --out v38-strict-loo-live.json\n'''
-          early=loo+'''\n      - name: Restore canonical Early1 OHLCV cache\n        uses: actions/cache@v5\n        with:\n          path: .cache/v38-early1\n          key: ${{ runner.os }}-v38-early1-${{ github.run_id }}\n          restore-keys: |\n            ${{ runner.os }}-v38-early1-\n\n      - name: Build canonical Early1 live signal\n        shell: bash\n        run: |\n          set -euo pipefail\n          python build_v38_early1_live.py \\\n            --state state.json \\\n            --universe universe.csv \\\n            --industry industry_map.json \\\n            --cache .cache/v38-early1/early1-ohlcv.pkl.gz \\\n            --out v38-early1-live.json\n'''
-          rep(p,loo,early)
-          rep(p,"          tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))\n          asof=str(state.get('date') or '')","          tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))\n          early=json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))\n          asof=str(state.get('date') or '')")
-          rep(p,"          if tqqq.get('schema') != 'v38-tqqq-panic-state-1' or tqqq.get('asof') != asof:\n              raise SystemExit(f'TQQQ mismatch: {tqqq.get(\"asof\")} != {asof}')","          if tqqq.get('schema') != 'v38-tqqq-panic-state-1' or tqqq.get('asof') != asof:\n              raise SystemExit(f'TQQQ mismatch: {tqqq.get(\"asof\")} != {asof}')\n          if early.get('schema') != 'v38-early1-live-1' or early.get('asof') != asof or early.get('status') != 'READY':\n              raise SystemExit(f'EARLY1 mismatch/not ready: {early.get(\"asof\")} {early.get(\"status\")}')")
-          Path('generated-v38-live.yml.txt').write_text(Path(p).read_text(encoding='utf-8'),encoding='utf-8')
+          # Early1 is validated in the final V38 live-state validation block,
+          # not in the preceding CURRENT30/TQQQ validation block.
+          wrong="          early=json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))\n"
+          if s.count(wrong) != 1:
+              raise SystemExit(f'expected one misplaced Early1 loader, got {s.count(wrong)}')
+          s=s.replace(wrong,'',1)
+          anchor="          tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))\n          asof = str(state.get('date') or '')\n"
+          repl="          tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))\n          early = json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))\n          asof = str(state.get('date') or '')\n"
+          if s.count(anchor) != 1:
+              raise SystemExit(f'final validation anchor mismatch: {s.count(anchor)}')
+          s=s.replace(anchor,repl,1)
 
-          # sleeve refresh
-          p='.github/workflows/v38-sleeve-refresh.yml'
-          rep(p,'        v38-strict-loo-live.json\n        tqqq-panic-state.json','        v38-strict-loo-live.json\n        v38-early1-live.json\n        tqqq-panic-state.json')
-          rep(p,'            build_v38_companion.py \\\n            build_v38_strict_loo_live.py \\\n            v38_rules.py','            build_v38_companion.py \\\n            build_v38_strict_loo_live.py \\\n            build_v38_early1_live.py \\\n            v38_rules.py')
-          rep(p,'            tests/test_v38_companion.py','            tests/test_v38_companion.py \\\n            tests/test_v38_early1_live.py')
-          Path('generated-v38-sleeve-refresh.yml.txt').write_text(Path(p).read_text(encoding='utf-8'),encoding='utf-8')
-
-          # production final promotion
-          p='.github/workflows/production-downstream-chain.yml'
-          rep(p,'        v38-strict-loo-live.json\n        tqqq-panic-state.json','        v38-strict-loo-live.json\n        v38-early1-live.json\n        tqqq-panic-state.json')
-          rep(p,"          sleeve=json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))\n          if str(state.get('date') or '') != target:","          sleeve=json.loads(Path('v38-sleeve-state.json').read_text(encoding='utf-8'))\n          early=json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))\n          if str(state.get('date') or '') != target:")
-          rep(p,"              'Sleeve': str(sleeve.get('asof') or ''),","              'Sleeve': str(sleeve.get('asof') or ''),\n              'Early1': str(early.get('asof') or ''),")
-          rep(p,"          if sleeve.get('status') != 'READY':\n              raise SystemExit(f'Sleeve not READY: {sleeve.get(\"status\")}')","          if early.get('status') != 'READY':\n              raise SystemExit(f'Early1 not READY: {early.get(\"status\")}')\n          if sleeve.get('status') != 'READY':\n              raise SystemExit(f'Sleeve not READY: {sleeve.get(\"status\")}')")
-          Path('generated-production-downstream-chain.yml.txt').write_text(Path(p).read_text(encoding='utf-8'),encoding='utf-8')
-          print('WORKFLOW_EXPORT_READY')
+          required=[
+              'v38-early1-live.json',
+              'build_v38_early1_live.py',
+              'tests/test_v38_early1_live.py',
+              'EARLY1 mismatch/not ready',
+              expr_os+'-v38-early1-'+expr_run,
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit('corrected workflow missing '+repr(missing))
+          if 'Linux-v38-early1-34036161120' in s:
+              raise SystemExit('fixed cache key remains')
+          p.write_text(s,encoding='utf-8')
+          print('CORRECTED_V38_LIVE_WORKFLOW_READY')
           PY
-      - name: Commit generated workflow texts
+      - name: Commit corrected generated text
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add generated-v38-live.yml.txt generated-v38-sleeve-refresh.yml.txt generated-production-downstream-chain.yml.txt
-          git commit -m 'Export canonical V38 workflow texts'
+          git add generated-v38-live.yml.txt
+          git commit -m 'Correct canonical V38 live workflow text'
           git push origin HEAD:main
