@@ -1,0 +1,1978 @@
+[
+  {
+    "id": 9703815077,
+    "name": "normal-stock-final-robustness-v6-audit",
+    "digest": "sha256:81add69af176744b6dd87dfce1e6590d2f03ca2831625e60b72261cfa7c6aebf",
+    "expired": false,
+    "run_id": 33216929035,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9708127211,
+    "name": "ordinary-stock-market-mode-robustness",
+    "digest": "sha256:b36cb0da8f5b920f00f8b4f09c668793bb591d13908a2f77ed7dc62325928a10",
+    "expired": true,
+    "run_id": 33229660388,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9708215997,
+    "name": "ordinary-stock-market-mode-robustness",
+    "digest": "sha256:8344ae88da0fa44c2cf279c6e915ab51e977ea41f58f0b3cfc6b5cfc01a309d3",
+    "expired": true,
+    "run_id": 33229961070,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9708309654,
+    "name": "ordinary-stock-market-mode-robustness",
+    "digest": "sha256:67f4c4408ddb0049bc25eb4ed920c05d7e683c53f70017d18b8646c6f1cc5670",
+    "expired": true,
+    "run_id": 33230203593,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9708723800,
+    "name": "ordinary-stock-theme-ranking",
+    "digest": "sha256:cc9a95242a80e67c81130fae2c25e4b9e01a2b2b7e0ca0d0554466fa3484a427",
+    "expired": true,
+    "run_id": 33231641311,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9708841479,
+    "name": "ordinary-stock-theme-attack-only",
+    "digest": "sha256:1c372d0f61034e979bee4f3b53170e5b5032883d02a918f848f1a045d053e22c",
+    "expired": true,
+    "run_id": 33232030266,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9708955177,
+    "name": "ordinary-stock-theme-group-size",
+    "digest": "sha256:5d0c09a7a986bfa27491c14b05fa49e55f2bdd2db8cd1a76a6e427c83f9d7a5d",
+    "expired": true,
+    "run_id": 33232320424,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9711172105,
+    "name": "ordinary-stock-theme-leave-one-out",
+    "digest": "sha256:3e5e07e42f50a902de35e2637ff1118d90600d70dda8b898c49b085b45082fd6",
+    "expired": true,
+    "run_id": 33240190205,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9711273297,
+    "name": "ordinary-stock-theme-loo-sensitivity",
+    "digest": "sha256:4a96d81a5157460351969379e35b1cf18226565439dcb9500c5bdabe6bd93c18",
+    "expired": true,
+    "run_id": 33240520678,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9711365135,
+    "name": "ordinary-stock-theme-loo-pair-ablation",
+    "digest": "sha256:3aa7445190c7dfad0fe9bc8a7daf0321574e6e6a6b947704b3498e0b6ab1b593",
+    "expired": true,
+    "run_id": 33240833226,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9714301604,
+    "name": "ordinary-stock-exit-trail",
+    "digest": "sha256:4897208516aa0a1557cd9bb137fa6bc5807697b61c97e034147fc232ba7be3c7",
+    "expired": true,
+    "run_id": 33250255780,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9714502988,
+    "name": "ordinary-stock-exit-sensitivity",
+    "digest": "sha256:1c3f30d8ed4b19b9e6b7e15f8013ea9f729cb8745054822b0cccbfbddf8e9ee0",
+    "expired": true,
+    "run_id": 33250880314,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9763251012,
+    "name": "gross100-final-reset-recheck",
+    "digest": "sha256:8915deb0c92cbb31382457ed0bb19731b1741fbe0bbb75805538ad2d07fb8e2d",
+    "expired": false,
+    "run_id": 33405477190,
+    "workflow": "RULEBOOK_REFERENCED_RUN"
+  },
+  {
+    "id": 9640423844,
+    "name": "rsi-divergence-strong-stocks",
+    "digest": "sha256:ed81892b60fde7e5caefe3706429865bd91c4bb159fc7cc7493fa102163c8461",
+    "expired": false,
+    "run_id": 33056967545,
+    "workflow": ".github/workflows/rsi-divergence-strong-stocks-research.yml"
+  },
+  {
+    "id": 9635269961,
+    "name": "technical-first-sec-rerank-cached-robust",
+    "digest": "sha256:1b19d2d39ba16ccef35e1967f8ff3c503467f4df9633f82b4af741eef64d0725",
+    "expired": false,
+    "run_id": 33044919006,
+    "workflow": ".github/workflows/technical-fundamental-rerank-cached-robust.yml"
+  },
+  {
+    "id": 9633843328,
+    "name": "theme-ltr-expert-gate-A",
+    "digest": "sha256:8d6b1b15fedc773ecf6f4da0a92f897b4f1944eadae66a7763a720a034f7fe98",
+    "expired": false,
+    "run_id": 33040661731,
+    "workflow": ".github/workflows/theme-ltr-expert-gate-research.yml"
+  },
+  {
+    "id": 9633837459,
+    "name": "theme-ltr-expert-gate-B",
+    "digest": "sha256:ff1aa4523f80277ffe7626b1aadcdc8acf0fa49d7a42a25369bdaa6472d3398e",
+    "expired": false,
+    "run_id": 33040661731,
+    "workflow": ".github/workflows/theme-ltr-expert-gate-research.yml"
+  },
+  {
+    "id": 9633453741,
+    "name": "theme-ltr-stability-B",
+    "digest": "sha256:dd2da73732b81638be7da8f969f6967e68d8cdca533165b7d80b32b1f14a8bc7",
+    "expired": false,
+    "run_id": 33039482117,
+    "workflow": ".github/workflows/theme-ltr-stability-research.yml"
+  },
+  {
+    "id": 9633442494,
+    "name": "theme-ltr-stability-A",
+    "digest": "sha256:fd23efdba13862c797af0d4a3aa4b61bb35d1f8b19f16ac3218dcf8fa4d9dd57",
+    "expired": false,
+    "run_id": 33039482117,
+    "workflow": ".github/workflows/theme-ltr-stability-research.yml"
+  },
+  {
+    "id": 9633088828,
+    "name": "theme-learning-to-rank-research-v2",
+    "digest": "sha256:f2a8b751165dfbb0fee463b72d7b4253477021df9bbdb847974f6926fd0f29ef",
+    "expired": false,
+    "run_id": 33038415409,
+    "workflow": ".github/workflows/theme-learning-to-rank-research-v2.yml"
+  },
+  {
+    "id": 9631138979,
+    "name": "simple-capital-flow-eventized-finite-research",
+    "digest": "sha256:cfd53c55776cd512da1f92b0f0c7b5fa7c53f31382bde4862f38e8a29f349232",
+    "expired": true,
+    "run_id": 33032615275,
+    "workflow": ".github/workflows/simple-capital-flow-eventized-finite-research.yml"
+  },
+  {
+    "id": 9630859327,
+    "name": "post-ignition-prune-grid",
+    "digest": "sha256:a7ab7090a8e847c6bacda7c1c7ba41f5cf65ebad7e57dc959d2352433e0b9650",
+    "expired": false,
+    "run_id": 33032377672,
+    "workflow": ".github/workflows/post-ignition-prune-grid.yml"
+  },
+  {
+    "id": 9629509751,
+    "name": "post-ignition-economic-fast",
+    "digest": "sha256:5bae996032b4b2c699f5f0742f84826677d36011ee03eaf8a02100dc4461a326",
+    "expired": true,
+    "run_id": 33028872448,
+    "workflow": ".github/workflows/post-ignition-economic-fast.yml"
+  },
+  {
+    "id": 9629499604,
+    "name": "post-ignition-leader-confirmation-fast",
+    "digest": "sha256:c656e7e554d6d5d75a9aee98726546c6ec58eb4872fd90f4817b16294b0dbb78",
+    "expired": true,
+    "run_id": 33027974434,
+    "workflow": ".github/workflows/post-ignition-leader-confirmation-fast.yml"
+  },
+  {
+    "id": 9629804195,
+    "name": "post-ignition-leader-research",
+    "digest": "sha256:424a74b2df0dcda79b93d9b2ceb18920224859276ba021ccce4cf4104e899d50",
+    "expired": false,
+    "run_id": 33027842326,
+    "workflow": ".github/workflows/post-ignition-leader-research.yml"
+  },
+  {
+    "id": 9626470169,
+    "name": "simple-capital-flow-eventized-research",
+    "digest": "sha256:6068a04a3aee28c65791dbf6f6b1a9c89a8dc0a8f18c33ff6bd7e140df40a8c5",
+    "expired": true,
+    "run_id": 33019908424,
+    "workflow": ".github/workflows/simple-capital-flow-eventized-research.yml"
+  },
+  {
+    "id": 9626321831,
+    "name": "rrg-tail-research",
+    "digest": "sha256:b39d0c6396b851056f534b880bc3f306451be97f8a35086360b2bf2cb63c870f",
+    "expired": false,
+    "run_id": 33019908424,
+    "workflow": ".github/workflows/simple-capital-flow-eventized-research.yml"
+  },
+  {
+    "id": 9609649421,
+    "name": "simple-capital-flow-research",
+    "digest": "sha256:31d99ebc079aa5e6f4eeefa9c75a4b1d5c440d4936563a0c92fcbefbc4761c8e",
+    "expired": true,
+    "run_id": 32975706263,
+    "workflow": ".github/workflows/simple-capital-flow-research.yml"
+  },
+  {
+    "id": 9607973318,
+    "name": "base-transition-research",
+    "digest": "sha256:83a00a59e8c38005d9ea1be1f97080cafb4e6457d3aeac8fb71e0d4cc67cbe37",
+    "expired": true,
+    "run_id": 32971303740,
+    "workflow": ".github/workflows/base-transition-research.yml"
+  },
+  {
+    "id": 9886842308,
+    "name": "base-quality-research",
+    "digest": "sha256:54d0f30b102a6cf1098285f7aa97dd16b40480a34305959f8c8bfac6ea7c22d6",
+    "expired": false,
+    "run_id": 32969687677,
+    "workflow": ".github/workflows/base-quality-research.yml"
+  },
+  {
+    "id": 9607397600,
+    "name": "base-quality-research",
+    "digest": "sha256:cc67c8732b488df877739c9e1554e36892be826fefb85d86366e06003347e3d7",
+    "expired": true,
+    "run_id": 32969687677,
+    "workflow": ".github/workflows/base-quality-research.yml"
+  },
+  {
+    "id": 9606545530,
+    "name": "upward-quality-research",
+    "digest": "sha256:cb97a7945917f28b13be9212af1ab4f13bc5d2e151ebc8161f0df580665ef973",
+    "expired": true,
+    "run_id": 32967527820,
+    "workflow": ".github/workflows/upward-quality-research.yml"
+  },
+  {
+    "id": 9606033651,
+    "name": "lifecycle-direction-research",
+    "digest": "sha256:be028d6d1685c8100699546b8b085e896ef18f9bc3bfb998d9ddcab428f58061",
+    "expired": true,
+    "run_id": 32966323910,
+    "workflow": ".github/workflows/lifecycle-direction-research.yml"
+  },
+  {
+    "id": 9605303527,
+    "name": "flat-stock-interaction-discovery",
+    "digest": "sha256:f4895ccbfd36c86858fd63ebac8a05dcc53038b645ce79550bf21745f70f8039",
+    "expired": true,
+    "run_id": 32964338327,
+    "workflow": ".github/workflows/flat-stock-interaction-discovery.yml"
+  },
+  {
+    "id": 9602383263,
+    "name": "unique-stock-edge-full-universe",
+    "digest": "sha256:14d5a4829819bbaa12cb93aeecd48a7a6a6c8fe93841ae96f53b54e169156ab7",
+    "expired": true,
+    "run_id": 32952581043,
+    "workflow": ".github/workflows/unique-stock-edge-full-universe.yml"
+  },
+  {
+    "id": 9600394826,
+    "name": "unique-stock-edge-t2",
+    "digest": "sha256:1ecf2dbc589ea49bff6001ead0d5612cf2de7295d78763186afe9414b0d5ec7f",
+    "expired": true,
+    "run_id": 32950761005,
+    "workflow": ".github/workflows/unique-stock-edge-research.yml"
+  },
+  {
+    "id": 9600372319,
+    "name": "unique-stock-edge-t3",
+    "digest": "sha256:2651c6f4a5f1bc79d0b2dafd27ef7685743c80dac09ca7fd31e6cb0a5e65dce2",
+    "expired": true,
+    "run_id": 32950761005,
+    "workflow": ".github/workflows/unique-stock-edge-research.yml"
+  },
+  {
+    "id": 9600289967,
+    "name": "unique-stock-edge-t1",
+    "digest": "sha256:971b66ead9da8671711ea296e5bc6f5c778116b5975966ac9e30be546967a883",
+    "expired": true,
+    "run_id": 32950761005,
+    "workflow": ".github/workflows/unique-stock-edge-research.yml"
+  },
+  {
+    "id": 9599394769,
+    "name": "oneil-supply-t3",
+    "digest": "sha256:b8c7af403723c0d9cdec3b9e48281148ac353629bbe02228a125eeeea637ea8b",
+    "expired": true,
+    "run_id": 32947535374,
+    "workflow": ".github/workflows/oneil-supply-dryup-research.yml"
+  },
+  {
+    "id": 9599207943,
+    "name": "oneil-supply-t2",
+    "digest": "sha256:bae19235398559d6d06af3f7dd7613d84f1ec9d9a91ac947df02da64f046303d",
+    "expired": true,
+    "run_id": 32947535374,
+    "workflow": ".github/workflows/oneil-supply-dryup-research.yml"
+  },
+  {
+    "id": 9599070281,
+    "name": "oneil-supply-t1",
+    "digest": "sha256:ec51199551e45677fc119892af9159e1892cba3b191e882f176e5dc9321099fe",
+    "expired": true,
+    "run_id": 32947535374,
+    "workflow": ".github/workflows/oneil-supply-dryup-research.yml"
+  },
+  {
+    "id": 9597218165,
+    "name": "dynamic-pioneer-t2",
+    "digest": "sha256:86ede9ac59f1fa4d07ad713d6ea0812f551d1a8e74a9933d55c0080eea4ea2bf",
+    "expired": true,
+    "run_id": 32942144928,
+    "workflow": ".github/workflows/dynamic-pioneer-followthrough-research.yml"
+  },
+  {
+    "id": 9597151496,
+    "name": "dynamic-pioneer-t1",
+    "digest": "sha256:e5caa29e1bcf081f96fedf2b217d4b311124030a455d02f0d8a684feeabf4606",
+    "expired": true,
+    "run_id": 32942144928,
+    "workflow": ".github/workflows/dynamic-pioneer-followthrough-research.yml"
+  },
+  {
+    "id": 9597133204,
+    "name": "dynamic-pioneer-t3",
+    "digest": "sha256:c01eba229763b336b791dc636440da66dcfd1c75775ba58fd8b7e874973a8df5",
+    "expired": true,
+    "run_id": 32942144928,
+    "workflow": ".github/workflows/dynamic-pioneer-followthrough-research.yml"
+  },
+  {
+    "id": 9597241077,
+    "name": "volume-sequence-t2",
+    "digest": "sha256:5b471d3a9c894ac8d62d319b114a24bf7b9c96a9cf828899159c583931c37046",
+    "expired": true,
+    "run_id": 32942130156,
+    "workflow": ".github/workflows/volume-sequence-research.yml"
+  },
+  {
+    "id": 9597217149,
+    "name": "volume-sequence-t3",
+    "digest": "sha256:b1dd8ca57b1838a1d47be418986611884181e1fd492e9cfb76ae516afd264ae4",
+    "expired": true,
+    "run_id": 32942130156,
+    "workflow": ".github/workflows/volume-sequence-research.yml"
+  },
+  {
+    "id": 9597096446,
+    "name": "volume-sequence-t1",
+    "digest": "sha256:7c9307cf1e536e64be8882bf7a34524720e433658c5af160e41d5dde096caf98",
+    "expired": true,
+    "run_id": 32942130156,
+    "workflow": ".github/workflows/volume-sequence-research.yml"
+  },
+  {
+    "id": 9596418328,
+    "name": "pioneer-rule-final-holdout",
+    "digest": "sha256:ef0378c7f14efd176104b0a771af92fa4b7468e1e901235f32be8ef05aaeabad",
+    "expired": true,
+    "run_id": 32940351497,
+    "workflow": ".github/workflows/pioneer-rule-final-holdout-research.yml"
+  },
+  {
+    "id": 9596216469,
+    "name": "pioneer-rule-replication",
+    "digest": "sha256:8ad50e169528904b93c5c1e69d32ce68bcf67a9aa728eb57d3832f8811d27cff",
+    "expired": true,
+    "run_id": 32939659171,
+    "workflow": ".github/workflows/pioneer-rule-replication-research.yml"
+  },
+  {
+    "id": 9595532145,
+    "name": "hidden-ignition-breakout-validation",
+    "digest": "sha256:7a15374984dba284831bb1b8e4cb2ffd2d64ee23ddf91f5a44fe77935f0a4d77",
+    "expired": true,
+    "run_id": 32937411133,
+    "workflow": ".github/workflows/hidden-ignition-breakout-research.yml"
+  },
+  {
+    "id": 9594939531,
+    "name": "ignition-quality-validation",
+    "digest": "sha256:0a77851ba0237089444ff72789b32e146bb03579e787d79c8f779405f0c727d2",
+    "expired": true,
+    "run_id": 32935825748,
+    "workflow": ".github/workflows/ignition-quality-research.yml"
+  },
+  {
+    "id": 9594424893,
+    "name": "ignition-entry-validation",
+    "digest": "sha256:f24c6bd1ee04d74f5dfc817c4e972ebb07784a6b4c7ffb8b30e0071e2655c63b",
+    "expired": true,
+    "run_id": 32934278206,
+    "workflow": ".github/workflows/ignition-entry-research.yml"
+  },
+  {
+    "id": 9593988039,
+    "name": "lead-lag-sequence-validation",
+    "digest": "sha256:b6d30c5cb55e715df22bea6b1ff6877aac799a2657852bc41a683cfc59867316",
+    "expired": true,
+    "run_id": 32932757708,
+    "workflow": ".github/workflows/lead-lag-sequence-research.yml"
+  },
+  {
+    "id": 9593578423,
+    "name": "sector-stock-leadership-validation",
+    "digest": "sha256:861c6de65d755dc8f4e7fab4ccda7bdaa4a8cf7277470b05f84fdea652fd01d6",
+    "expired": true,
+    "run_id": 32931701779,
+    "workflow": ".github/workflows/sector-stock-research.yml"
+  },
+  {
+    "id": 9593084846,
+    "name": "rs-period-validation",
+    "digest": "sha256:d7cc7e1600e1f74adfee55ed60db78bae460e38470dba4b6c987d498486053b5",
+    "expired": true,
+    "run_id": 32930248569,
+    "workflow": ".github/workflows/early-rotation-research.yml"
+  },
+  {
+    "id": 9593115496,
+    "name": "rs-persistence-validation",
+    "digest": "sha256:cc0339a013534855ab6870be50ef404a381e51b7c49630303d0d70f22a2800cd",
+    "expired": true,
+    "run_id": 32930248632,
+    "workflow": ".github/workflows/rs-persistence-research.yml"
+  },
+  {
+    "id": 9521431439,
+    "name": "v38-fatfire-backtest-results",
+    "digest": "sha256:78d5fa73dfe7099ed612c9e63819be6b83b3591fe600480c43403c1b77af520b",
+    "expired": false,
+    "run_id": 32731093920,
+    "workflow": ".github/workflows/fatfire-backtest.yml"
+  },
+  {
+    "id": 9914842289,
+    "name": "historical-leader-capture-2016-2020",
+    "digest": "sha256:58f1a51476256249ca1645dcd513cc0b7403e94786da08c248d219c451010217",
+    "expired": false,
+    "run_id": 33810865741,
+    "workflow": ".github/workflows/historical-leader-capture-2016-2020-research.yml"
+  },
+  {
+    "id": 9899661733,
+    "name": "leader-radar-precision",
+    "digest": "sha256:f3a218002bd8c8e9a47b5cc3938c0059682090f3cfa664b2e374734b2be437b9",
+    "expired": false,
+    "run_id": 33770624798,
+    "workflow": ".github/workflows/leader-radar-precision-research.yml"
+  },
+  {
+    "id": 9899307032,
+    "name": "leader-capture-bottlenecks",
+    "digest": "sha256:9e6bc437a03ed3b74e9b401fa898c56eb5ccae609ec37c1e47dd2509f58acecc",
+    "expired": false,
+    "run_id": 33769827712,
+    "workflow": ".github/workflows/leader-capture-bottlenecks-research.yml"
+  },
+  {
+    "id": 9898935966,
+    "name": "rs63-gate-followup",
+    "digest": "sha256:8a8bb4866b01acc83158ddcc7408c7645382778651e80d1aa7256daebfbb70f0",
+    "expired": false,
+    "run_id": 33768888951,
+    "workflow": ".github/workflows/rs63-gate-followup-research.yml"
+  },
+  {
+    "id": 9898592136,
+    "name": "rs-horizon-leader-capture",
+    "digest": "sha256:5ca099ebd5ab77a947c6f290455aa8de15a7bdeb2b7952fd12dd81252d6500ed",
+    "expired": false,
+    "run_id": 33767899831,
+    "workflow": ".github/workflows/rs-horizon-leader-capture-research.yml"
+  },
+  {
+    "id": 9898453790,
+    "name": "core-rank-horizon-portfolio",
+    "digest": "sha256:3b244ee5f21cbd6231b0ad7ce5b76d809970855b6cd7aa0773e634c0d2a58d30",
+    "expired": false,
+    "run_id": 33767159000,
+    "workflow": ".github/workflows/core-rank-horizon-portfolio-research.yml"
+  },
+  {
+    "id": 9897824852,
+    "name": "leader-factor-horizon-discovery",
+    "digest": "sha256:b2deaccd813cf2b2bb4340b73a326f4625c714117261b45569547b9381017f0f",
+    "expired": false,
+    "run_id": 33766054961,
+    "workflow": ".github/workflows/leader-factor-horizon-discovery-research.yml"
+  },
+  {
+    "id": 9896464931,
+    "name": "releadership-priority-breadth-walkforward",
+    "digest": "sha256:ab2633b3ca7b7263b43be8db289c3af99bc400422e17ce81aa16adb398768be6",
+    "expired": false,
+    "run_id": 33762990464,
+    "workflow": ".github/workflows/releadership-priority-breadth-walkforward-research.yml"
+  },
+  {
+    "id": 9896117273,
+    "name": "releadership-tiebreak-walkforward",
+    "digest": "sha256:96d9b7803912caf10e4aa746a723d8f9658df9ec1a4ab040b83b9c57bce9c88e",
+    "expired": false,
+    "run_id": 33762058276,
+    "workflow": ".github/workflows/releadership-tiebreak-walkforward-research.yml"
+  },
+  {
+    "id": 9895514175,
+    "name": "annual-leader-releadership-capture",
+    "digest": "sha256:6f5f862e06e6577c2b58c50e76d2aee5f7ae684072076ab39278c9bdc4fa4085",
+    "expired": false,
+    "run_id": 33760366883,
+    "workflow": ".github/workflows/annual-leader-releadership-capture-research.yml"
+  },
+  {
+    "id": 9894660819,
+    "name": "core-releadership-volume-decomposition",
+    "digest": "sha256:d60c2dc08eaa1e49cdb91834745545f3167afcf3ca61afd49df139c79d800a7a",
+    "expired": false,
+    "run_id": 33758264994,
+    "workflow": ".github/workflows/core-releadership-volume-decomposition-research.yml"
+  },
+  {
+    "id": 9894079005,
+    "name": "core-releadership-v2",
+    "digest": "sha256:19111260aedf7c600a0f0da110dc2c6ad2bd59882652801defcf77dd5e4ddba3",
+    "expired": false,
+    "run_id": 33756769110,
+    "workflow": ".github/workflows/core-releadership-v2-research.yml"
+  },
+  {
+    "id": 9893004701,
+    "name": "core-releadership-falsification",
+    "digest": "sha256:c603a392d9afa2a8ae4dfe360a974584a20eb9c77e41c95bde7b1f68815a2ea0",
+    "expired": false,
+    "run_id": 33754082255,
+    "workflow": ".github/workflows/core-releadership-falsification-research.yml"
+  },
+  {
+    "id": 9892055177,
+    "name": "core-releadership-priority",
+    "digest": "sha256:ab5cee9195c256686eed249628713bbf7d2e88f7789ed6392e04654f8659a328",
+    "expired": false,
+    "run_id": 33751536029,
+    "workflow": ".github/workflows/core-releadership-priority-research.yml"
+  },
+  {
+    "id": 9892251192,
+    "name": "recover-post-ignition",
+    "digest": "sha256:1f5a680a635b0d4d9c7633302e798eb8bb12c53aaf98440375be3df6705520ea",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9891339127,
+    "name": "recover-dynamic-t3",
+    "digest": "sha256:51dc124ce883e14e95c449812a53654e1ec090cb24345215518d641a556ed0b8",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9891242322,
+    "name": "recover-dynamic-t1",
+    "digest": "sha256:adc295fbfe478480a496b064555687c00ddd8e7fc56b5030c6ac00bd0bc25b26",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9891225146,
+    "name": "recover-dynamic-t2",
+    "digest": "sha256:db3570f5161a539d6c6cbfa2f4e4c697f04dc13c0859b167a632576b8b75ac05",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9891198110,
+    "name": "recover-hidden-ignition",
+    "digest": "sha256:d6f4d37b470e23b8133577d0ba9cdf14ceb8dc81a54a9dff3a47a9d7fb938030",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9891132242,
+    "name": "recover-ignition-entry",
+    "digest": "sha256:001a4eb6f92d8bc3459f46ff5d3374b742533694bc0173b8d47014fe62c1102e",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9891091791,
+    "name": "recover-pioneer-final",
+    "digest": "sha256:be12e8e35d0b0c71b317dddc1f95843a668427117ff0baece7365a3ef3f36a82",
+    "expired": false,
+    "run_id": 33749485102,
+    "workflow": ".github/workflows/recover-next-leader-prior-research.yml"
+  },
+  {
+    "id": 9890329114,
+    "name": "core-returning-leader-priority",
+    "digest": "sha256:2af3c1e76de1c905e8b805369e03d8c5fbeb69a917e71057d6b921ab20540f7a",
+    "expired": false,
+    "run_id": 33747384611,
+    "workflow": ".github/workflows/core-returning-leader-priority-research.yml"
+  },
+  {
+    "id": 9890044089,
+    "name": "leader-reentry-true-emerging",
+    "digest": "sha256:271a79a5f4329cd59f2021d31ea4d38fd871800eee8b52f8b85bfa0693daf67d",
+    "expired": false,
+    "run_id": 33746753819,
+    "workflow": ".github/workflows/leader-reentry-true-emerging-research.yml"
+  },
+  {
+    "id": 9889767926,
+    "name": "emerging-durability-refinement",
+    "digest": "sha256:279a39f65f79855f5602f5da80d2d009e3fc934b35028c622965d8db00e9e5fe",
+    "expired": false,
+    "run_id": 33745844730,
+    "workflow": ".github/workflows/emerging-durability-refinement-research.yml"
+  },
+  {
+    "id": 9888400198,
+    "name": "core-emerging-hybrid-refine",
+    "digest": "sha256:d3bd8ba01ae3c9a3c52c206aa9d3d8c9ba265e9b22fbf5ee7378ad90161a8a52",
+    "expired": false,
+    "run_id": 33742114429,
+    "workflow": ".github/workflows/core-emerging-hybrid-refine-research.yml"
+  },
+  {
+    "id": 9887990052,
+    "name": "core-emerging-leader-mix",
+    "digest": "sha256:50c78273c533dd6f39a40c9190c47d3f2f3cfa47a38fa30cb85c8a696d6ead6a",
+    "expired": false,
+    "run_id": 33741166718,
+    "workflow": ".github/workflows/core-emerging-leader-mix-research.yml"
+  },
+  {
+    "id": 9870483249,
+    "name": "inverse-clean-v13",
+    "digest": "sha256:9e617519f4c14ca67f6b4184d76464a69a6e6a997a6677c1902fe601068879d5",
+    "expired": false,
+    "run_id": 33692285327,
+    "workflow": ".github/workflows/inverse-clean-memory-v13.yml"
+  },
+  {
+    "id": 9870398735,
+    "name": "inverse-final-v12",
+    "digest": "sha256:408698150d706cb17df2cbc7061235669316feb6720c44dad2475775f4640326",
+    "expired": false,
+    "run_id": 33692051521,
+    "workflow": ".github/workflows/inverse-final-simplification-v12.yml"
+  },
+  {
+    "id": 9870217294,
+    "name": "inverse-adaptive-v11",
+    "digest": "sha256:572b3b1893d5079d16b2163a10d2421a9e8a77a1da745d6036fc9b5c09b13898",
+    "expired": false,
+    "run_id": 33691561180,
+    "workflow": ".github/workflows/inverse-adaptive-sizing-v11.yml"
+  },
+  {
+    "id": 9870159179,
+    "name": "inverse-macro-v10",
+    "digest": "sha256:6c965b4f5f1105ec1b3492d102e05a4157c3cabe51308b4190be1046b8911604",
+    "expired": false,
+    "run_id": 33691346636,
+    "workflow": ".github/workflows/inverse-macro-regime-v10.yml"
+  },
+  {
+    "id": 9870035332,
+    "name": "inverse-adaptive-v9",
+    "digest": "sha256:4666bc15235ae411a32f19fa2e5c0ef33c45f61987556486f3fb27fa68ec0b97",
+    "expired": false,
+    "run_id": 33691015279,
+    "workflow": ".github/workflows/inverse-adaptive-regime-v9.yml"
+  },
+  {
+    "id": 9869299123,
+    "name": "inverse-data-v8",
+    "digest": "sha256:f949e095e295ca28824be3e7fcfa6c0ba9549b72886bcececa2d2ae8c23fb78d",
+    "expired": false,
+    "run_id": 33689092806,
+    "workflow": ".github/workflows/inverse-data-crosscheck-v8.yml"
+  },
+  {
+    "id": 9869236321,
+    "name": "inverse-cross-era-v7",
+    "digest": "sha256:d536bcd361425c85669b22bd61a1b2f7b27e1cb2a660572808c1fdc3d0fc0029",
+    "expired": false,
+    "run_id": 33688930554,
+    "workflow": ".github/workflows/inverse-cross-era-v7.yml"
+  },
+  {
+    "id": 9868903361,
+    "name": "inverse-historical-v6",
+    "digest": "sha256:25651cdfdfb056b9ab7a4576ccac596527de06a8de3b6d332cc282e10a3976ea",
+    "expired": false,
+    "run_id": 33688012676,
+    "workflow": ".github/workflows/inverse-historical-extension-v6.yml"
+  },
+  {
+    "id": 9853549867,
+    "name": "inverse-focused-v5",
+    "digest": "sha256:ffbcfcc035fe76f64eae07c1e64f10cfc9e6cb5fcf4affb7ed0692b9909eeae0",
+    "expired": false,
+    "run_id": 33647901669,
+    "workflow": ".github/workflows/inverse-focused-v5.yml"
+  },
+  {
+    "id": 9853306859,
+    "name": "inverse-full-v38-v4",
+    "digest": "sha256:c1e281011139769cf466e690f169008a54402360b6b687c62c0e3107e096e7b3",
+    "expired": false,
+    "run_id": 33647237537,
+    "workflow": ".github/workflows/inverse-full-v38-v4.yml"
+  },
+  {
+    "id": 9852131809,
+    "name": "inverse-v38-integration",
+    "digest": "sha256:4f0b4c7b0ea469d62273131c62df9714d6c60dad486569841e18e41eabab2b30",
+    "expired": false,
+    "run_id": 33644354791,
+    "workflow": ".github/workflows/inverse-v38-integration.yml"
+  },
+  {
+    "id": 9851768614,
+    "name": "inverse-event-engine-v2-frozen",
+    "digest": "sha256:36265cab7377873927692a4017a657fd75ddff92ddeab0ac81e094b42b2245bd",
+    "expired": false,
+    "run_id": 33643394709,
+    "workflow": ".github/workflows/inverse-event-engine-v2-frozen.yml"
+  },
+  {
+    "id": 9851982671,
+    "name": "inverse-event-engine-v2",
+    "digest": "sha256:66f941d406e42b0631f11574fecbb4d6842888758f708360481aea3e3db6b5b0",
+    "expired": false,
+    "run_id": 33643299269,
+    "workflow": ".github/workflows/inverse-event-engine-v2.yml"
+  },
+  {
+    "id": 9850946925,
+    "name": "inverse-etf-structural-rules",
+    "digest": "sha256:ac0ad3dd674b25396fac3f0ee7ca24fc31ab008856e29e37ac1e536f3effde8d",
+    "expired": false,
+    "run_id": 33641360312,
+    "workflow": ".github/workflows/inverse-etf-structural-rules.yml"
+  },
+  {
+    "id": 9850822797,
+    "name": "inverse-etf-extended-audit",
+    "digest": "sha256:3ea36a9bff9d53e65355bb7c71cae5080875f422405a7069fe7b3e0aedbba670",
+    "expired": false,
+    "run_id": 33640990747,
+    "workflow": ".github/workflows/inverse-etf-extended-audit.yml"
+  },
+  {
+    "id": 9850106810,
+    "name": "inverse-etf-regime-scan",
+    "digest": "sha256:80e24e61e2d18f9f61469b167e2b9f4c1f434b3d0e135a44c2a9b3706efbe79a",
+    "expired": false,
+    "run_id": 33638677456,
+    "workflow": ".github/workflows/inverse-etf-regime-scan.yml"
+  },
+  {
+    "id": 9849341151,
+    "name": "ordinary-stock-rate-entry-gates",
+    "digest": "sha256:d6b75f3ba038dbb470e1c8fd89801ad0189cb280ca7e74bcca3ffc33218cea07",
+    "expired": false,
+    "run_id": 33636801824,
+    "workflow": ".github/workflows/ordinary-stock-rate-entry-gates.yml"
+  },
+  {
+    "id": 9849068720,
+    "name": "rate-policy-neutral-followup",
+    "digest": "sha256:2bc5949ec5069a0a03b6591c807e2e21f76128c75ec36cf8b944cf850d908408",
+    "expired": false,
+    "run_id": 33636652685,
+    "workflow": ".github/workflows/rate-policy-neutral-followup.yml"
+  },
+  {
+    "id": 9848757773,
+    "name": "rate-full-stack-audit",
+    "digest": "sha256:1ac5f15f27e5bacefb3c53e0247438ef979e63305aa96b61aeb4ebf0f15b6faf",
+    "expired": false,
+    "run_id": 33635813554,
+    "workflow": ".github/workflows/rate-full-stack-audit.yml"
+  },
+  {
+    "id": 9847599218,
+    "name": "rate-rotation-incremental-robustness",
+    "digest": "sha256:2f724993499338df60128615aa544fa656bfe195b76150017c9d042845091253",
+    "expired": false,
+    "run_id": 33633026701,
+    "workflow": ".github/workflows/rate-rotation-incremental-robustness.yml"
+  },
+  {
+    "id": 9847553564,
+    "name": "rate-rotation-incremental-audit",
+    "digest": "sha256:9765b125630796e8fb543edf1432894cda74b801bf1eb5246097bb5229bebf8a",
+    "expired": false,
+    "run_id": 33632915341,
+    "workflow": ".github/workflows/rate-rotation-incremental-audit.yml"
+  },
+  {
+    "id": 9846574574,
+    "name": "rate-rotation-robustness-audit",
+    "digest": "sha256:86515cc326d61e41cb1127e71f1f31c3393327e208df914f21fb5d5a9b1b5f67",
+    "expired": false,
+    "run_id": 33630475626,
+    "workflow": ".github/workflows/rate-rotation-robustness.yml"
+  },
+  {
+    "id": 9846418388,
+    "name": "rate-rotation-etf-audit",
+    "digest": "sha256:8e89890c6bbfaac719f810fd6601499501d54c1075430dc59984141a868460b6",
+    "expired": false,
+    "run_id": 33630050122,
+    "workflow": ".github/workflows/rate-rotation-etf-audit.yml"
+  },
+  {
+    "id": 9846477810,
+    "name": "tqqq-touch-rate-correction",
+    "digest": "sha256:0c6188f8b18eff8830aa2840294e206fc158353f5920e25f3d976be803f388a9",
+    "expired": false,
+    "run_id": 33629948994,
+    "workflow": ".github/workflows/tqqq-touch-rate-correction.yml"
+  },
+  {
+    "id": 9845484500,
+    "name": "rate-regime-audit",
+    "digest": "sha256:677b7319625faa27c1f662b181c6ed3ca11cf31c230e63893df5db33238a029e",
+    "expired": false,
+    "run_id": 33627699450,
+    "workflow": ".github/workflows/rate-regime-audit.yml"
+  },
+  {
+    "id": 9831459103,
+    "name": "leadership-cycle-repair-transitions-20260902",
+    "digest": "sha256:9ab4e5c154b941632f57be9f73e6178d4d3d8b68970fca93b0517cec21564fc0",
+    "expired": false,
+    "run_id": 33589923463,
+    "workflow": ".github/workflows/leadership-cycle-repair-transitions-20260902.yml"
+  },
+  {
+    "id": 9831351779,
+    "name": "leadership-stress-regeneration-20260902",
+    "digest": "sha256:6e5359ad0e173bed363255f05a5870625be8c996f2d1de101c26baf1d9783650",
+    "expired": false,
+    "run_id": 33589430869,
+    "workflow": ".github/workflows/leadership-stress-regeneration-20260902.yml"
+  },
+  {
+    "id": 9831256994,
+    "name": "leadership-regeneration-cutoffs-20260902",
+    "digest": "sha256:ab8adc5da4ae01caf6cabf409ade12d1fcc9e08856e9de93d7717624a18b4708",
+    "expired": false,
+    "run_id": 33589291359,
+    "workflow": ".github/workflows/leadership-regeneration-cutoffs-20260902.yml"
+  },
+  {
+    "id": 9831261219,
+    "name": "leadership-cycle-combinations-20260902",
+    "digest": "sha256:cf0c12c9071f57138d7fbe9472c5f92053e3df764ed5f2117de65dfb305b3bc0",
+    "expired": false,
+    "run_id": 33589225177,
+    "workflow": ".github/workflows/leadership-cycle-combinations-20260902.yml"
+  },
+  {
+    "id": 9831104161,
+    "name": "leadership-combination-audit-20260902",
+    "digest": "sha256:7367fa426afe3c585f7115542396eeb39b4246dbd9ac0c61c710cd36d930cae4",
+    "expired": false,
+    "run_id": 33588638996,
+    "workflow": ".github/workflows/leadership-combination-audit-20260902.yml"
+  },
+  {
+    "id": 9830182374,
+    "name": "leadership-cycle-robustness-20260902",
+    "digest": "sha256:e1f29f942139ac0492222133f2505d4f053f6a0c269a82f06e255f2db561771a",
+    "expired": false,
+    "run_id": 33586052560,
+    "workflow": ".github/workflows/leadership-cycle-robustness-20260902.yml"
+  },
+  {
+    "id": 9829885352,
+    "name": "leadership-warning-overlay-20260902",
+    "digest": "sha256:e7a49de4913b6854199d281a99526ddb0a75a48e2fd82f2c2acfe7c71f027763",
+    "expired": false,
+    "run_id": 33584888636,
+    "workflow": ".github/workflows/leadership-warning-overlay-20260902.yml"
+  },
+  {
+    "id": 9829775298,
+    "name": "leadership-cycle-diagnostics-20260902",
+    "digest": "sha256:e02f7453baf6ed0029c4b3f8b7928f59e4fb87fe8059a3d72d05235553cf6388",
+    "expired": false,
+    "run_id": 33584647352,
+    "workflow": ".github/workflows/leadership-cycle-diagnostics-20260902.yml"
+  },
+  {
+    "id": 9829539720,
+    "name": "leadership-cycle-smoke-20260902",
+    "digest": "sha256:e6a1f8bf972acd0bfa3c7bd14b93c5a8fa92898dd73d92d191211e26c057f138",
+    "expired": true,
+    "run_id": 33584348115,
+    "workflow": ".github/workflows/leadership-cycle-smoke-20260902.yml"
+  },
+  {
+    "id": 9829530088,
+    "name": "leadership-cycle-pit-audit-20260902",
+    "digest": "sha256:d23c53a472197a5fc84c2d1856c43c03d1eefd4d044ec37088c9ec18822198e1",
+    "expired": false,
+    "run_id": 33584137835,
+    "workflow": ".github/workflows/leadership-cycle-audit-20260902.yml"
+  },
+  {
+    "id": 9825024800,
+    "name": "rotation-theme56-public-brief",
+    "digest": "sha256:8a7875d6f1552ac9179cc3d7afe097f18073cf7e09d722d8c3ff57d530ad920a",
+    "expired": false,
+    "run_id": 33571197509,
+    "workflow": ".github/workflows/rotation-theme56-public-brief.yml"
+  },
+  {
+    "id": 9824975129,
+    "name": "rotation-theme56-fullstack",
+    "digest": "sha256:b4c63c7707a6be656f2622d598e3fa4178a755ae45b93ed891ec27635193fd9f",
+    "expired": false,
+    "run_id": 33570915951,
+    "workflow": ".github/workflows/rotation-theme56-fullstack.yml"
+  },
+  {
+    "id": 9824878379,
+    "name": "rotation-theme56-dram-supplement",
+    "digest": "sha256:b9c392ea3cfe5a38a8baa4e9b0953f786c87dab42d1995f5f2919491fa385783",
+    "expired": false,
+    "run_id": 33570888520,
+    "workflow": ".github/workflows/rotation-theme56-dram-supplement.yml"
+  },
+  {
+    "id": 9824519345,
+    "name": "rotation-theme56-price",
+    "digest": "sha256:7f3b77c5931bb9f8ab251517178fbb286381921b415356a16fa375a2eae94712",
+    "expired": false,
+    "run_id": 33569728071,
+    "workflow": ".github/workflows/rotation-theme56-price.yml"
+  },
+  {
+    "id": 9824468977,
+    "name": "rotation-theme56-etfcom-flow",
+    "digest": "sha256:5b02809238160bb37aa163fbe74166f914ee2481a8144cf73c25d758d95388ce",
+    "expired": false,
+    "run_id": 33569686822,
+    "workflow": ".github/workflows/rotation-theme56-etfcom-flow.yml"
+  },
+  {
+    "id": 9822923874,
+    "name": "rotation-theme-stock-context-research",
+    "digest": "sha256:4a49e48fada814db13e7d53ba64fc8ec9f8b6f32346e1559bd4786b4f9972af0",
+    "expired": false,
+    "run_id": 33564936012,
+    "workflow": ".github/workflows/rotation-theme-stock-context-research.yml"
+  },
+  {
+    "id": 9811823398,
+    "name": "rotation-theme56-quiver-holdings-rescue",
+    "digest": "sha256:b2674f7cdc588e7076bebfa79457b2656d5d6b6303545af7f979db554be42638",
+    "expired": false,
+    "run_id": 33536421167,
+    "workflow": ".github/workflows/rotation-theme56-quiver-holdings-rescue.yml"
+  },
+  {
+    "id": 9807045143,
+    "name": "rotation-theme56-etfcom-holdings",
+    "digest": "sha256:d3517625394ac8221061ae11251204341e9a04ec12edbb36b56192f965d1bbb3",
+    "expired": false,
+    "run_id": 33524329105,
+    "workflow": ".github/workflows/rotation-theme56-etfcom-holdings.yml"
+  },
+  {
+    "id": 9806699567,
+    "name": "rotation-theme56-holdings-expansion",
+    "digest": "sha256:6d729cc575d26b43e23a313df7aa7258653ee6bd565ffbf2fe9042e3ed8f2702",
+    "expired": false,
+    "run_id": 33523336351,
+    "workflow": ".github/workflows/rotation-theme56-holdings-expansion.yml"
+  },
+  {
+    "id": 9804064798,
+    "name": "rotation-theme56-firsttrust-holdings",
+    "digest": "sha256:db983b96f8b9e3a08ed04bb1bfb38c9c7f12fcf5956c4c9d503ec92ccacb786f",
+    "expired": false,
+    "run_id": 33517133975,
+    "workflow": ".github/workflows/rotation-theme56-firsttrust-holdings.yml"
+  },
+  {
+    "id": 9801660843,
+    "name": "rotation-theme56-provider-probe",
+    "digest": "sha256:594021483758b85c0d56c61550c00f033d391b251d4da88ab8e3825cc5bfee2f",
+    "expired": false,
+    "run_id": 33511108582,
+    "workflow": ".github/workflows/rotation-theme56-provider-probe.yml"
+  },
+  {
+    "id": 9799691601,
+    "name": "rotation-theme56-provider-qa",
+    "digest": "sha256:5a0afdbfc6a0e6a44f7405315f2022098437b54fe3b4364afc49d826112f4271",
+    "expired": false,
+    "run_id": 33506043737,
+    "workflow": ".github/workflows/rotation-theme56-provider-qa.yml"
+  },
+  {
+    "id": 9795768948,
+    "name": "tqqq-base30-vs40-stress-audit",
+    "digest": "sha256:06e83220a318815f28b7a3668bb4f951b43ff1c996f2effab23a40bd23b601ef",
+    "expired": false,
+    "run_id": 33495959411,
+    "workflow": ".github/workflows/tqqq-base30-vs40-stress-audit.yml"
+  },
+  {
+    "id": 9795560201,
+    "name": "rotation-theme56-shareflow-validation",
+    "digest": "sha256:d4eaf19165419463f68f72ee9e460751ba1fe6de54d11c9a9aac6ef49787bc34",
+    "expired": false,
+    "run_id": 33495440423,
+    "workflow": ".github/workflows/rotation-theme56-shareflow-validation.yml"
+  },
+  {
+    "id": 9795168213,
+    "name": "rotation-theme56-readiness",
+    "digest": "sha256:a537f1702bb13a34413e9203cbce72ad6d5c5499762d635c0681c12e6e586b14",
+    "expired": false,
+    "run_id": 33494442060,
+    "workflow": ".github/workflows/rotation-theme56-readiness.yml"
+  },
+  {
+    "id": 9794804060,
+    "name": "tqqq-normal-base-exposure-audit",
+    "digest": "sha256:6a616a1771827c6a8ed1776b6f35ad7bfb00a1a13580b36b84901fe3f2339088",
+    "expired": false,
+    "run_id": 33493671634,
+    "workflow": ".github/workflows/tqqq-normal-base-exposure-audit.yml"
+  },
+  {
+    "id": 9794499368,
+    "name": "v38-final-execution-integration",
+    "digest": "sha256:18a7913de2ebeae8f3b1a97a176e3935c37c9cb5cdfe5cf824993effc2ff95d2",
+    "expired": false,
+    "run_id": 33492913302,
+    "workflow": ".github/workflows/v38-final-execution-integration.yml"
+  },
+  {
+    "id": 9794226024,
+    "name": "v38-final-gap-audit",
+    "digest": "sha256:fee2fc72d0d48196ac7b52d39f9b9026a5b149a8298aa1bfe9745f861f147fb1",
+    "expired": false,
+    "run_id": 33491892444,
+    "workflow": ".github/workflows/v38-final-gap-audit.yml"
+  },
+  {
+    "id": 9792780188,
+    "name": "tqqq-selective-fill-robustness",
+    "digest": "sha256:b4949a6c19321650e32786480b8ff7b224ce6d5dc006dd4232f5646796afae2f",
+    "expired": false,
+    "run_id": 33488546373,
+    "workflow": ".github/workflows/tqqq-selective-fill-robustness.yml"
+  },
+  {
+    "id": 9790852808,
+    "name": "tqqq-selective-fill-lock-guard",
+    "digest": "sha256:63eff514c6933a4b7db6f7cd461b5d8ae7969021017b186becca195c5bb36753",
+    "expired": false,
+    "run_id": 33483510815,
+    "workflow": ".github/workflows/tqqq-selective-fill-lock-guard.yml"
+  },
+  {
+    "id": 9790615517,
+    "name": "tqqq-attack-cash-fill-audit",
+    "digest": "sha256:b1fa131418bdf75c9c6abd8736b879ad9efe473ada9652ae858f6a72c4921740",
+    "expired": false,
+    "run_id": 33482553048,
+    "workflow": ".github/workflows/tqqq-attack-fill-audit.yml"
+  },
+  {
+    "id": 9784302186,
+    "name": "rsi30-current-screener-backtest",
+    "digest": "sha256:4072d4d363a41cef31055c6b48a44062b494a53c0c9309f6540d352a707e4da5",
+    "expired": false,
+    "run_id": 33463717016,
+    "workflow": ".github/workflows/rsi30-current-screener-backtest.yml"
+  },
+  {
+    "id": 9760966406,
+    "name": "distribution-trap-trade-screen",
+    "digest": "sha256:3270f9ebeb14b8336426872553f9b75a486b4c5f2ccf1ec6690113e5edcfdf79",
+    "expired": false,
+    "run_id": 33400177077,
+    "workflow": ".github/workflows/distribution-trap-trade-screen.yml"
+  },
+  {
+    "id": 9752732627,
+    "name": "rotation-daily-observation-brief-research",
+    "digest": "sha256:a9df8e02fe45a1a9af12fd08f54de014884947795015877e8096c1fe64c66198",
+    "expired": false,
+    "run_id": 33378069333,
+    "workflow": ".github/workflows/rotation-daily-observation-brief-research.yml"
+  },
+  {
+    "id": 9745645274,
+    "name": "rotation-v38-readonly-crosscheck",
+    "digest": "sha256:e2b2adb5562bffebe1ee3054729a2b456f2ad621f5538c23b8f97a7a289cf78a",
+    "expired": false,
+    "run_id": 33357516795,
+    "workflow": ".github/workflows/rotation-v38-readonly-crosscheck.yml"
+  },
+  {
+    "id": 9744271599,
+    "name": "rotation-live-snapshot-research",
+    "digest": "sha256:08418e4bf0a91fd4c628b173c28f753f3debc7c37d997d90c15d514ea7c38852",
+    "expired": false,
+    "run_id": 33352998915,
+    "workflow": ".github/workflows/rotation-live-snapshot-research.yml"
+  },
+  {
+    "id": 9744178104,
+    "name": "rotation-distribution-delta-pit-research",
+    "digest": "sha256:f6ad13f204aa2f1892bee6d807a6c2d71eb0411f3427de97a3cb7b47380047e0",
+    "expired": false,
+    "run_id": 33352828281,
+    "workflow": ".github/workflows/rotation-distribution-delta-pit-research.yml"
+  },
+  {
+    "id": 9744080260,
+    "name": "rotation-macro-direct-official-qa",
+    "digest": "sha256:851b078ebcf3dce287e1bab8c7b97c6f6f05e6642e8375f0ccd37b3536366297",
+    "expired": false,
+    "run_id": 33352489727,
+    "workflow": ".github/workflows/rotation-macro-direct-official-qa.yml"
+  },
+  {
+    "id": 9744001967,
+    "name": "rotation-macro-why-qa",
+    "digest": "sha256:5a29390ffdfff8099a5fd36edd6fa046f3c61bf39e61d955431f47d434794fbb",
+    "expired": false,
+    "run_id": 33352148210,
+    "workflow": ".github/workflows/rotation-macro-why-qa.yml"
+  },
+  {
+    "id": 9743777177,
+    "name": "rotation-ishares-holdings-archive-qa",
+    "digest": "sha256:fd8d73cfdf63e7962b14deb5b9746398a56f844bfdc8675b3209a34e14615c55",
+    "expired": false,
+    "run_id": 33351526420,
+    "workflow": ".github/workflows/rotation-ishares-holdings-archive-qa.yml"
+  },
+  {
+    "id": 9743650466,
+    "name": "rotation-industry-flow-qa",
+    "digest": "sha256:8879c96fe5873a5ef7347b0d405e77b670c7e8ccba3496718ed946fcbf5835e5",
+    "expired": false,
+    "run_id": 33351143332,
+    "workflow": ".github/workflows/rotation-industry-flow-qa.yml"
+  },
+  {
+    "id": 9743607847,
+    "name": "rotation-pit-state-fast-research",
+    "digest": "sha256:1ec4f371c29b29e547d214f64615d6fda5a2494c14aca72250b8b047c0dff07a",
+    "expired": false,
+    "run_id": 33351008515,
+    "workflow": ".github/workflows/rotation-pit-state-fast-research.yml"
+  },
+  {
+    "id": 9743628050,
+    "name": "rotation-pit-all-states-from-panel",
+    "digest": "sha256:1966c5d04c1eb432dc745905e96f77193523eae00389d27a4655eb523617f734",
+    "expired": false,
+    "run_id": 33350885323,
+    "workflow": ".github/workflows/rotation-pit-all-states-from-panel.yml"
+  },
+  {
+    "id": 9743601391,
+    "name": "rotation-pit-all-states-research",
+    "digest": "sha256:9df6938cc121acad28b95dd54b0ea76967dba094edbbfe655b4ce6b1b9b698af",
+    "expired": false,
+    "run_id": 33350681036,
+    "workflow": ".github/workflows/rotation-pit-all-states-research.yml"
+  },
+  {
+    "id": 9742872318,
+    "name": "rotation-wikipedia-pit-sector-audit",
+    "digest": "sha256:d30c70889ca509a6d2340c76a1afb98080e5976794a2bd29b9468343cf39ddb0",
+    "expired": false,
+    "run_id": 33348380034,
+    "workflow": ".github/workflows/rotation-wikipedia-pit-sector-audit.yml"
+  },
+  {
+    "id": 9742726392,
+    "name": "rotation-pit-membership-audit",
+    "digest": "sha256:69cf5979a8da2f07cbcefc115169a6da81b052ad897a27aa096f61cb42cfe78d",
+    "expired": false,
+    "run_id": 33348265811,
+    "workflow": ".github/workflows/rotation-pit-membership-audit.yml"
+  },
+  {
+    "id": 9742353237,
+    "name": "rotation-divergence-proxy-research",
+    "digest": "sha256:7ffb587f991d568d4e58bb774c7d0398ff8528becd27b23bbaf31dcf2a7f8f3a",
+    "expired": false,
+    "run_id": 33346987290,
+    "workflow": ".github/workflows/rotation-divergence-proxy-research.yml"
+  },
+  {
+    "id": 9742089583,
+    "name": "rotation-exact-flow-research",
+    "digest": "sha256:546c773b9fa8c34d17a07e2217a75906977c089dbe00fc5c8ad7730eab9cf282",
+    "expired": false,
+    "run_id": 33346272218,
+    "workflow": ".github/workflows/rotation-exact-flow-research.yml"
+  },
+  {
+    "id": 9740224569,
+    "name": "gross100-allocation-audit",
+    "digest": "sha256:769c085e423d4b4b28f81807ebbe7fdceee92a341cbb373dbfe9e509a0961a1d",
+    "expired": false,
+    "run_id": 33339918881,
+    "workflow": ".github/workflows/gross100-allocation-audit.yml"
+  },
+  {
+    "id": 9739833328,
+    "name": "gross100-component-series",
+    "digest": "sha256:6aa9319681f13a81bd0258001914f6dc2d0ffb181c7065aa12f1bcd662e74ee9",
+    "expired": false,
+    "run_id": 33338433195,
+    "workflow": ".github/workflows/gross100-component-series.yml"
+  },
+  {
+    "id": 9714434710,
+    "name": "ordinary-stock-exit-overlays",
+    "digest": "sha256:845dd3c2b5d025ffc0cb5ace78eb35e0a0f97020c8e03093d30eb0b1d1ee8544",
+    "expired": true,
+    "run_id": 33250923735,
+    "workflow": ".github/workflows/ordinary-stock-market-mode-robustness.yml"
+  },
+  {
+    "id": 9703896562,
+    "name": "normal-stock-final-robustness-v6-audit",
+    "digest": "sha256:f201980d90e0d6f6a76ae3a533cdbef2ab5f98116978e081787281e31c00ec97",
+    "expired": false,
+    "run_id": 33217089004,
+    "workflow": ".github/workflows/normal-stock-final-robustness-v6-audit.yml"
+  },
+  {
+    "id": 9703982603,
+    "name": "custom-market-modes-audit",
+    "digest": "sha256:2cc3549b0dd8fbe54d73f3ad2d34842f6112c3e60d2c3bc5d0271314415eae3b",
+    "expired": false,
+    "run_id": 33217089025,
+    "workflow": ".github/workflows/custom-market-modes-audit.yml"
+  },
+  {
+    "id": 9703658391,
+    "name": "normal-stock-tiered-modes-v4-audit",
+    "digest": "sha256:25259ec327322f3b7291ec6fbc41ffab7b7e863472f4441baed01c67b4310748",
+    "expired": false,
+    "run_id": 33216449321,
+    "workflow": ".github/workflows/normal-stock-tiered-modes-v4-audit.yml"
+  },
+  {
+    "id": 9703604929,
+    "name": "normal-stock-n4-repair-v4b-audit",
+    "digest": "sha256:c146ce490adbdb04285ac5e10306848df3eb525bfc997f2faa63b37b3d8685fb",
+    "expired": false,
+    "run_id": 33216380815,
+    "workflow": ".github/workflows/normal-stock-n4-repair-v4b-audit.yml"
+  },
+  {
+    "id": 9703634435,
+    "name": "etf-breadth-normal-modes-v5-audit",
+    "digest": "sha256:bfc1cea6ca1fcde281e8a32ccd5ddde8b58666b817ee84182e3152f07830d376",
+    "expired": false,
+    "run_id": 33216332245,
+    "workflow": ".github/workflows/etf-breadth-normal-modes-v5-audit.yml"
+  },
+  {
+    "id": 9702325003,
+    "name": "custom-market-modes-v3-normal-audit",
+    "digest": "sha256:3b5b2daf3ec0675c0931949a23c90ba1eaf197777955f6b671d644a516728144",
+    "expired": false,
+    "run_id": 33212635586,
+    "workflow": ".github/workflows/custom-market-modes-v3-normal-audit.yml"
+  },
+  {
+    "id": 9702110011,
+    "name": "custom-market-modes-v2-audit",
+    "digest": "sha256:bbf4ee25d8a6cd7cbd14ab0c7df181d4396dfc68fde10b2d9a3fabe0ed8c512c",
+    "expired": false,
+    "run_id": 33212064347,
+    "workflow": ".github/workflows/custom-market-modes-v2-audit.yml"
+  },
+  {
+    "id": 9688477476,
+    "name": "market-stop-reentry-audit",
+    "digest": "sha256:03545a4121f78ff9398451fd088953605afa8bb413efeb887ac269b9c74645f1",
+    "expired": false,
+    "run_id": 33177726443,
+    "workflow": ".github/workflows/market-stop-reentry-audit.yml"
+  },
+  {
+    "id": 9687377304,
+    "name": "standard-correction-v2",
+    "digest": "sha256:32806732e88aae5ed6e61877c76eb342d55e8bebd031be8a2b10d39df8e48487",
+    "expired": false,
+    "run_id": 33174786677,
+    "workflow": ".github/workflows/standard-correction-v2.yml"
+  },
+  {
+    "id": 9686964211,
+    "name": "systematic-entry-exit-audit",
+    "digest": "sha256:e7006bce83453c618ddf6822693520b8f326dd6e8cac1f94f9feb57d97cca6ad",
+    "expired": false,
+    "run_id": 33173813605,
+    "workflow": ".github/workflows/systematic-entry-exit-audit.yml"
+  },
+  {
+    "id": 9685848082,
+    "name": "shallow-defined-risk-audit",
+    "digest": "sha256:fae4765ea376dd7b43f208c7c716ec37ccd04b5ac351a1fe96604cc66244f84a",
+    "expired": false,
+    "run_id": 33171251298,
+    "workflow": ".github/workflows/shallow-defined-risk-audit.yml"
+  },
+  {
+    "id": 9685525634,
+    "name": "true-shallow-good-market-audit",
+    "digest": "sha256:faa4bdd497eb45b6d20702f3d918f537789031ee7775a9f8a6da10ada2d84760",
+    "expired": false,
+    "run_id": 33170185950,
+    "workflow": ".github/workflows/true-shallow-good-market-audit.yml"
+  },
+  {
+    "id": 9682730356,
+    "name": "shallow-pullback-portfolio-audit",
+    "digest": "sha256:ffa922e71ea819e84dbc29af13493976eb947ff021eea115e78848d66e624e5e",
+    "expired": false,
+    "run_id": 33163391844,
+    "workflow": ".github/workflows/shallow-pullback-portfolio-audit.yml"
+  },
+  {
+    "id": 9682125356,
+    "name": "strong-stock-micro-pullback-audit",
+    "digest": "sha256:352cf66245003b753882ee8932ff29e70e24ecc676476158db1dce76c57e0225",
+    "expired": false,
+    "run_id": 33161525562,
+    "workflow": ".github/workflows/strong-stock-micro-pullback-audit.yml"
+  },
+  {
+    "id": 9681778394,
+    "name": "young-leader-shallow-pullback-audit",
+    "digest": "sha256:d9b70f20ce69beb89e74dc784baf8fa75647985946730ec0604d7455107914ea",
+    "expired": false,
+    "run_id": 33161021818,
+    "workflow": ".github/workflows/young-leader-shallow-pullback-audit.yml"
+  },
+  {
+    "id": 9680713424,
+    "name": "market-rs189-priority-audit-v3",
+    "digest": "sha256:a3825a464f9502940aebe4337e9c2ff7ea72605f6966d34892b83285651f0ee6",
+    "expired": false,
+    "run_id": 33158302697,
+    "workflow": ".github/workflows/market-rs189-priority-v3-audit.yml"
+  },
+  {
+    "id": 9680413491,
+    "name": "market-rs189-context-plateau-audit-v2",
+    "digest": "sha256:88b0525b3c682454cd227a6a576c07369bfe141498c731fbd27708b4cab98c1d",
+    "expired": false,
+    "run_id": 33157601737,
+    "workflow": ".github/workflows/market-rs189-context-v2-audit.yml"
+  },
+  {
+    "id": 9678045464,
+    "name": "market-rs189-context-qualification-audit",
+    "digest": "sha256:3ced2f06d48cebce0f0ae44be2c55a8ec3a592147d85446f333e0cd6cdb7a28f",
+    "expired": false,
+    "run_id": 33151487083,
+    "workflow": ".github/workflows/market-rs189-context-audit.yml"
+  },
+  {
+    "id": 9676613850,
+    "name": "vix-rsi-rulebook-allocation-audit-v2",
+    "digest": "sha256:750f6730872465b92c76e0e3e044d84a5c475f8c4dc01c280341d05b2c096131",
+    "expired": false,
+    "run_id": 33147888667,
+    "workflow": ".github/workflows/vix-rsi-rulebook-allocation-audit-v2.yml"
+  },
+  {
+    "id": 9671218139,
+    "name": "market-wide-rs189-rsi-reset-audit",
+    "digest": "sha256:c4e76e4b688335679037fed4fc83148e1f9ca9ca7a8b58923b8588afa51b6c9f",
+    "expired": false,
+    "run_id": 33133427031,
+    "workflow": ".github/workflows/market-rs189-rsi-reset-audit.yml"
+  },
+  {
+    "id": 9670229132,
+    "name": "rsi-strong-stock-threshold-interaction-audit",
+    "digest": "sha256:6db59e07c5eb3c248de0748b9d7f8c43183f96fc80f739faee8250246b10d59d",
+    "expired": false,
+    "run_id": 33130536827,
+    "workflow": ".github/workflows/rsi-strength-threshold-audit.yml"
+  },
+  {
+    "id": 9670178584,
+    "name": "rsi-reset-focused-robust-audit",
+    "digest": "sha256:5cabdca42d4f067a68427eef7c0c16ce77eb6a3e623ac766479d69c27c88126f",
+    "expired": false,
+    "run_id": 33130531643,
+    "workflow": ".github/workflows/rsi-reset-robust-audit.yml"
+  },
+  {
+    "id": 9650682813,
+    "name": "rsi-reset-portfolio-construction-audit",
+    "digest": "sha256:e493f32a391d29cb54ee983651ac12ea0c1f9f54cb43ccd34d6d671a76063ec3",
+    "expired": false,
+    "run_id": 33081580366,
+    "workflow": ".github/workflows/rsi-reset-portfolio-audit.yml"
+  },
+  {
+    "id": 9649902954,
+    "name": "tqqq-stage56-mandate-fx-tax",
+    "digest": "sha256:b6df441dae8be5bb6f6f5ceb7771472545e20b270c7016c1a7936915f8f7482d",
+    "expired": false,
+    "run_id": 33080590798,
+    "workflow": ".github/workflows/tqqq-stage56-mandate-audit.yml"
+  },
+  {
+    "id": 9646287735,
+    "name": "rsi30-mc-nqsar-audit",
+    "digest": "sha256:cf5f059da64b10e054f1e15aa77801f2ae96f7c85755da03740854046e4f5464",
+    "expired": false,
+    "run_id": 33072221586,
+    "workflow": ".github/workflows/rsi30-mc-nqsar-audit.yml"
+  },
+  {
+    "id": 9644832062,
+    "name": "rsi30-vix-sequence-audit",
+    "digest": "sha256:d6bdc9bd21b2289438e7cdc6b3fcf5d9686b719d030db056e008cd7c2f7ac5c0",
+    "expired": false,
+    "run_id": 33068729183,
+    "workflow": ".github/workflows/rsi30-vix-sequence-audit.yml"
+  },
+  {
+    "id": 9643042607,
+    "name": "tqqq-stage53-qqq-vs-tqqq-rsi",
+    "digest": "sha256:4cdc027eb968f26c29909722d0e2c78554d0e69a591f6b9c27269bf520850746",
+    "expired": false,
+    "run_id": 33064041177,
+    "workflow": ".github/workflows/tqqq-backtest-run-once.yml"
+  },
+  {
+    "id": 9642962413,
+    "name": "tqqq-stage55-caveat-sensitivity",
+    "digest": "sha256:1eae07c18e43de535258559f7705439db4bcd0ee3c94da4e74eabb3509aca4dd",
+    "expired": false,
+    "run_id": 33064041177,
+    "workflow": ".github/workflows/tqqq-backtest-run-once.yml"
+  },
+  {
+    "id": 9642953539,
+    "name": "tqqq-stage54-readiness-audit",
+    "digest": "sha256:1aa20e6014973755bba55a8d990d03bbbbee360527b30ab17cf9e1c573ab0319",
+    "expired": false,
+    "run_id": 33064041177,
+    "workflow": ".github/workflows/tqqq-backtest-run-once.yml"
+  },
+  {
+    "id": 9642623243,
+    "name": "rsi-reset-reacceleration-strong-stocks",
+    "digest": "sha256:dafa6c5fb71dbe9098eb451f75ae2e3a77e78dc2ac26e08d4eea5fe5f2404c71",
+    "expired": false,
+    "run_id": 33061785368,
+    "workflow": ".github/workflows/rsi-reset-reacceleration-research.yml"
+  },
+  {
+    "id": 9970922447,
+    "name": "github-pages",
+    "digest": "sha256:1084f2893b51b99409df901f17d68a7cb5ebd7d16701fc9adedeb04a3f32a955",
+    "expired": false,
+    "run_id": 33971032461,
+    "workflow": "dynamic/pages/pages-build-deployment"
+  },
+  {
+    "id": 9970755397,
+    "name": "gross100-early1-liq-aligned-audit",
+    "digest": "sha256:889786ece51098ca5ae7f804995e64b825182e957e56d19a6f2c680e99ba5ba3",
+    "expired": false,
+    "run_id": 33970208065,
+    "workflow": ".github/workflows/gross100-early1-liq-aligned-audit.yml"
+  },
+  {
+    "id": 9969973283,
+    "name": "early1-value-falsification",
+    "digest": "sha256:a78bef8879148579b0805fabb58afd7b5fefe87b5fcb6103c42f8c7898ee51bb",
+    "expired": false,
+    "run_id": 33967352413,
+    "workflow": ".github/workflows/early1-value-falsification-research.yml"
+  },
+  {
+    "id": 9969805468,
+    "name": "early1-operational-final",
+    "digest": "sha256:3a54a59cdd349f271a64ba67b2e477c346a285556c8380e4bb901af4dac195c7",
+    "expired": false,
+    "run_id": 33966847988,
+    "workflow": ".github/workflows/early1-operational-final-research.yml"
+  },
+  {
+    "id": 9969432455,
+    "name": "early-precision-signals",
+    "digest": "sha256:33d8330c0bd50a7094b9722de2ce2bb85080e8db89bdcffc4943855a175a913c",
+    "expired": false,
+    "run_id": 33965731903,
+    "workflow": ".github/workflows/early-precision-signals-research.yml"
+  },
+  {
+    "id": 9969296029,
+    "name": "early-liquidity-label-sensitivity",
+    "digest": "sha256:934bc22a3640ede7a66c90610c2c86942704ba39aa4b4d9a046e318b64d277b4",
+    "expired": false,
+    "run_id": 33965255406,
+    "workflow": ".github/workflows/early-liquidity-label-sensitivity-research.yml"
+  },
+  {
+    "id": 9968279771,
+    "name": "early-radar-reranker",
+    "digest": "sha256:fa3c22d6fd026de67e942aa97e173ed0fb86071db7bcf08ab3ab7beab769b8f1",
+    "expired": false,
+    "run_id": 33961971683,
+    "workflow": ".github/workflows/early-radar-reranker-research.yml"
+  },
+  {
+    "id": 9967998880,
+    "name": "rotation-strong-stock-context-live",
+    "digest": "sha256:5666512b0a9e3b8357267c84a627c61b4e24ba1ed2ab8336aa9e48a6c9de5702",
+    "expired": false,
+    "run_id": 33961231423,
+    "workflow": ".github/workflows/rotation-stock-context-live.yml"
+  },
+  {
+    "id": 9967989918,
+    "name": "rotation-theme56-live-diagnostics",
+    "digest": "sha256:8d0a3d5a7f0900aeb270e07ee909c0303e9642e828af88b04c187d910efc57af",
+    "expired": false,
+    "run_id": 33961003031,
+    "workflow": ".github/workflows/rotation-live.yml"
+  },
+  {
+    "id": 9967893200,
+    "name": "leadership-command-preview",
+    "digest": "sha256:86ffaaaee49ab0da345a69de7ef2801cf11385c2a545fdad57f9a18ae73cd14a",
+    "expired": false,
+    "run_id": 33960648474,
+    "workflow": ".github/workflows/leadership-command.yml"
+  },
+  {
+    "id": 9967567294,
+    "name": "rotation-sector-allocation-research",
+    "digest": "sha256:d326cb6262392f93b027dd5a105962c74da785d6a70ee1c2ca5f764ddbb48f9e",
+    "expired": false,
+    "run_id": 33959739983,
+    "workflow": ".github/workflows/rotation-sector-allocation-research.yml"
+  },
+  {
+    "id": 9967461902,
+    "name": "rotation-new-entry-block-research",
+    "digest": "sha256:68128f72d0ceb23d0b13ac19487215c8feba2415b77e64f1b08ca903b8351f5e",
+    "expired": false,
+    "run_id": 33959234645,
+    "workflow": ".github/workflows/rotation-new-entry-block-research.yml"
+  },
+  {
+    "id": 9967378464,
+    "name": "rotation-sector-etf-exit-timing-research",
+    "digest": "sha256:7e68d329fef2de8c88a83723f65a671c37dc8f4eae504956af5532af33168e6f",
+    "expired": false,
+    "run_id": 33959194682,
+    "workflow": ".github/workflows/rotation-sector-etf-exit-timing-research.yml"
+  },
+  {
+    "id": 9967227083,
+    "name": "rotation-stock-confirm-exit-research",
+    "digest": "sha256:81f1331e0db94afe6e527e40796d9758af4617ad0278bbebd682f80eec2a78bb",
+    "expired": false,
+    "run_id": 33958430511,
+    "workflow": ".github/workflows/rotation-stock-confirm-exit-research.yml"
+  },
+  {
+    "id": 9967218403,
+    "name": "rotation-exit-sensitivity-research",
+    "digest": "sha256:ff1825726dc756e6b712a7a91e130b5cdd5de32ff5b38c56e415319057f9b15a",
+    "expired": false,
+    "run_id": 33958265166,
+    "workflow": ".github/workflows/rotation-exit-sensitivity-research.yml"
+  },
+  {
+    "id": 9967148784,
+    "name": "probe-capture-bottlenecks",
+    "digest": "sha256:5f5fe56c7ed3a4b398e0b8a995ba187bd6ccf2948cfbdffec130d320a681977f",
+    "expired": false,
+    "run_id": 33958214195,
+    "workflow": ".github/workflows/probe-capture-bottlenecks.yml"
+  },
+  {
+    "id": 9967023576,
+    "name": "rotation-exit-overlay-research",
+    "digest": "sha256:7158cf9ac4a36924a03be9b39d9bd80dc989b91f61d62b00ae0e7ca8ce0d8a9d",
+    "expired": false,
+    "run_id": 33957889694,
+    "workflow": ".github/workflows/rotation-exit-overlay-research.yml"
+  },
+  {
+    "id": 9967003950,
+    "name": "probe-basket-big-leader-capture",
+    "digest": "sha256:dc0a8359edecfa26876763603408451eef48852d388b94145c232bc4108c97bd",
+    "expired": false,
+    "run_id": 33957682343,
+    "workflow": ".github/workflows/probe-basket-big-leader-capture.yml"
+  },
+  {
+    "id": 9966984223,
+    "name": "early-leader-context-walkforward",
+    "digest": "sha256:00a7d74dcbc7ac2f4ee93491a5751decb050cbc906c22b13569069570f7f4229",
+    "expired": false,
+    "run_id": 33957373728,
+    "workflow": ".github/workflows/early-leader-context-walkforward.yml"
+  },
+  {
+    "id": 9962086918,
+    "name": "radar-context-volume-ranker-audit",
+    "digest": "sha256:cf30229651ab6aead68ade10eb9ecee848354fed343edf5d76870838acf43079",
+    "expired": false,
+    "run_id": 33941304042,
+    "workflow": ".github/workflows/radar-context-volume-ranker-audit.yml"
+  },
+  {
+    "id": 9960673859,
+    "name": "rotation-theme56-retrospective-validation-v4",
+    "digest": "sha256:968b5768f4a650ed936ba413fc1425b747e5f1d2a0e343bb21dd706e37e35b54",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960633480,
+    "name": "theme56-price-shard-6",
+    "digest": "sha256:274e8a76b0224e36ef4796e86af0c60e6fe9b74fe13deda9a986a0a8c45c9ecb",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960625267,
+    "name": "theme56-price-shard-7",
+    "digest": "sha256:f9f641c89dbbee9444706aff7ff68ce18cb58340f7c51f4f8ee27f739c355047",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960620708,
+    "name": "theme56-price-shard-5",
+    "digest": "sha256:e89dc5f7e2bfdb1f2eccdbef4aa155de2199e48e7630e36056db278916b3ab3c",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960620636,
+    "name": "theme56-price-shard-4",
+    "digest": "sha256:27e04626971de98bae35a75a7deef0a56b0fa3d9f239f5cc2f2cbeaa913175e4",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960607016,
+    "name": "theme56-price-shard-3",
+    "digest": "sha256:b43f0450c006eb51591ebea8bec5fc70b481a0238045edc0f261b137df961102",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960603404,
+    "name": "theme56-price-shard-2",
+    "digest": "sha256:adf5cbb36ed5d0b23053cb10fc357b6f5a1f4ce8d93c8e65a9e8c822948d1c0e",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960601871,
+    "name": "theme56-price-shard-1",
+    "digest": "sha256:ffd9a48d635cc3a8b805cbd1b2be664af031989da1dca1776b7b8560719f41ed",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9960600922,
+    "name": "theme56-price-shard-0",
+    "digest": "sha256:16768cdf3ea69090cefa8b600557599a17e30a3f010636b5ece963726d62e17b",
+    "expired": false,
+    "run_id": 33937249160,
+    "workflow": ".github/workflows/rotation-theme56-retrospective-validation.yml"
+  },
+  {
+    "id": 9959970783,
+    "name": "rotation-weak-origin-paths",
+    "digest": "sha256:f9a82ecf9595320b9788c52b2a785d1242440c47a1d62830322fcce2441ed067",
+    "expired": false,
+    "run_id": 33935297508,
+    "workflow": ".github/workflows/rotation-weak-origin-paths.yml"
+  },
+  {
+    "id": 9959884768,
+    "name": "rotation-internal-path-quadrants",
+    "digest": "sha256:d91933fe5734d3c3829976bf5aa90ef1d99a4f2e54eaa8d65834617eee054ed5",
+    "expired": false,
+    "run_id": 33935027113,
+    "workflow": ".github/workflows/rotation-internal-path-quadrants.yml"
+  },
+  {
+    "id": 9958102677,
+    "name": "rotation-incremental-components",
+    "digest": "sha256:b5c5d40d194a541885100cc4f8dffd04c3d9aed1011c33482d1ca1dad275e973",
+    "expired": false,
+    "run_id": 33929578450,
+    "workflow": ".github/workflows/rotation-incremental-components.yml"
+  },
+  {
+    "id": 9957991218,
+    "name": "rotation-macro-regime-validation-v3",
+    "digest": "sha256:9c6b38902104588234a9cb337e103ea286f3b0f9869687bd047dc6e9bc73ebb2",
+    "expired": false,
+    "run_id": 33929399499,
+    "workflow": ".github/workflows/rotation-macro-regime-validation.yml"
+  },
+  {
+    "id": 9957936620,
+    "name": "rotation-continuous-overlap-safe",
+    "digest": "sha256:6f01cfb7c59852452131de66227ad132728cea67c056cf76bda3d9183d1607f7",
+    "expired": false,
+    "run_id": 33929111134,
+    "workflow": ".github/workflows/rotation-continuous-overlap-safe.yml"
+  },
+  {
+    "id": 9957954762,
+    "name": "rotation-analysis-gap-validation-v2",
+    "digest": "sha256:9e22cd999e14512bd6d2c656f5dd071c60f1f1f6fb6cbc140a59f918dd7b49a8",
+    "expired": false,
+    "run_id": 33928695161,
+    "workflow": ".github/workflows/rotation-analysis-gap-validation.yml"
+  },
+  {
+    "id": 9941314073,
+    "name": "early-entry-oracle-bounds",
+    "digest": "sha256:a22c53e03437116a165dba6ba7b77afa4307e07a39784ffeab044fd98a3ac7b6",
+    "expired": false,
+    "run_id": 33884169931,
+    "workflow": ".github/workflows/early-entry-oracle-bounds.yml"
+  },
+  {
+    "id": 9941309626,
+    "name": "radar-cohort-focused-confirmation",
+    "digest": "sha256:e94abbdd09fb9d48e043c27e5d09ec26eed06b6d3d3edcbee6814b165ba501b1",
+    "expired": false,
+    "run_id": 33883961696,
+    "workflow": ".github/workflows/radar-cohort-focused-confirmation.yml"
+  },
+  {
+    "id": 9941567573,
+    "name": "radar-cohort-discriminator-audit",
+    "digest": "sha256:b5b4693eac882b614ae6db3a83a8bcac3633b84b193571c293cc95597112daec",
+    "expired": false,
+    "run_id": 33883155224,
+    "workflow": ".github/workflows/radar-cohort-discriminator-audit.yml"
+  },
+  {
+    "id": 9940869858,
+    "name": "early-leader-rank-depth",
+    "digest": "sha256:1eab5deb897afea42b09ec0088a4d8eaa0d8306c310e53df184c1e9644def436",
+    "expired": false,
+    "run_id": 33882959440,
+    "workflow": ".github/workflows/early-leader-rank-depth.yml"
+  },
+  {
+    "id": 9940524146,
+    "name": "early-slot-big-leader-capture",
+    "digest": "sha256:fdfe35831a056478d0216484011e27648114879881ad6df6e430be3938a91270",
+    "expired": false,
+    "run_id": 33882303758,
+    "workflow": ".github/workflows/early-slot-big-leader-capture.yml"
+  },
+  {
+    "id": 9940423519,
+    "name": "early-slot-capacity-oracle",
+    "digest": "sha256:310d2b62b15b0edff1c5cc7765e7961a105b30dd6d908288965772818b72c75b",
+    "expired": false,
+    "run_id": 33882113500,
+    "workflow": ".github/workflows/early-slot-capacity-oracle.yml"
+  },
+  {
+    "id": 9940120307,
+    "name": "early1-big-leader-capture-audit",
+    "digest": "sha256:1f1810d8effc8c4027b51652c6d24cf6f941c482eeb1dc044df051f6f97d7e0c",
+    "expired": false,
+    "run_id": 33881097773,
+    "workflow": ".github/workflows/early1-big-leader-capture-audit.yml"
+  },
+  {
+    "id": 9939282111,
+    "name": "gross100-ddv-early1-interaction-audit",
+    "digest": "sha256:dcfb1142cd0bdb8e0888c4c18a2fd000c6df23255facd40e14494c07659be21f",
+    "expired": false,
+    "run_id": 33879058343,
+    "workflow": ".github/workflows/gross100-ddv-early1-interaction-audit.yml"
+  },
+  {
+    "id": 9938851344,
+    "name": "stage56-state-bridge-audit",
+    "digest": "sha256:aebb4bac425ef5d74ff2297f070d112c2b6beda5ae2e0646bf61bc76ebc16abf",
+    "expired": false,
+    "run_id": 33878495585,
+    "workflow": ".github/workflows/stage56-state-bridge-audit.yml"
+  },
+  {
+    "id": 9938689546,
+    "name": "stage56-hourly-bridge-audit",
+    "digest": "sha256:864768b8f2417fbeb165a6553ad91d572a230312d3bd33582c0f5ae79983b7dd",
+    "expired": false,
+    "run_id": 33878102746,
+    "workflow": ".github/workflows/stage56-hourly-bridge-audit.yml"
+  },
+  {
+    "id": 9938829101,
+    "name": "gross100-early1-promotion-audit",
+    "digest": "sha256:454cdcf22d557df465ba065553aa7c61af5304ce97ba6010f7629ac1f1718107",
+    "expired": false,
+    "run_id": 33877667359,
+    "workflow": ".github/workflows/gross100-early1-promotion-audit.yml"
+  },
+  {
+    "id": 9938783339,
+    "name": "gross100-early1-neighborhood-audit",
+    "digest": "sha256:89d07d26c692f3c9b8f75345d47a74f06edeb75e34b595a899d68c9c5c7118e9",
+    "expired": false,
+    "run_id": 33877570159,
+    "workflow": ".github/workflows/gross100-early1-neighborhood-audit.yml"
+  },
+  {
+    "id": 9937980550,
+    "name": "gross100-early-slot-overlay-audit",
+    "digest": "sha256:04a3c15add1bf9fb0e7320a79bb024402a74a619183912990c9f08efd96e650b",
+    "expired": false,
+    "run_id": 33875671047,
+    "workflow": ".github/workflows/gross100-early-slot-overlay-audit.yml"
+  },
+  {
+    "id": 9937575215,
+    "name": "gross100-ddv-refill-mode-audit",
+    "digest": "sha256:c657ff283eb4929881c9c6dd70f0f8f40c0dc48a53a70f5a76c490bb2c36ad94",
+    "expired": false,
+    "run_id": 33874724026,
+    "workflow": ".github/workflows/gross100-ddv-refill-mode-audit.yml"
+  },
+  {
+    "id": 9921401446,
+    "name": "gross100-ddv-neighborhood-audit",
+    "digest": "sha256:a987f8507b5e86337d63c616346fa2dfb53611dd3978dd5e3cb6bb7c1f97065f",
+    "expired": false,
+    "run_id": 33829902143,
+    "workflow": ".github/workflows/gross100-ddv-neighborhood.yml"
+  },
+  {
+    "id": 9921159078,
+    "name": "gross100-final-reset-liquidity-grid",
+    "digest": "sha256:ab0ecc9219727936e4e8109245bd418a237c38b3640a6ee2f85b29a03de72683",
+    "expired": false,
+    "run_id": 33829273985,
+    "workflow": ".github/workflows/gross100-final-reset-liquidity-grid.yml"
+  },
+  {
+    "id": 9920876123,
+    "name": "gross100-liquidity-integration-audit",
+    "digest": "sha256:36d93d6abf51768bd33c21373e0bf1dd4b8d9351d1e08887d0df1d0f23b80de1",
+    "expired": false,
+    "run_id": 33828425801,
+    "workflow": ".github/workflows/gross100-final-reset-recheck.yml"
+  },
+  {
+    "id": 9918197296,
+    "name": "staged-leader-liquidity-return-smoke",
+    "digest": "sha256:f2b363d5e94fb44e24dad964400bba830397d19fe4f3ffe58628493d39670c23",
+    "expired": false,
+    "run_id": 33820075194,
+    "workflow": ".github/workflows/staged-leader-liquidity-return-smoke.yml"
+  },
+  {
+    "id": 9918173636,
+    "name": "staged-leader-liquidity-return-audit",
+    "digest": "sha256:c61f5c848e00d818d47531c2fe9f9c3851948ea36bf6d9804586c0c982bd29d9",
+    "expired": false,
+    "run_id": 33819579515,
+    "workflow": ".github/workflows/staged-leader-liquidity-return-audit.yml"
+  },
+  {
+    "id": 9916618819,
+    "name": "early-leader-entry-candidate-audit",
+    "digest": "sha256:c2dbb15e721e888698ff24bec854342ee684402122f39208337ff88c78aa8adf",
+    "expired": false,
+    "run_id": 33815676423,
+    "workflow": ".github/workflows/early-leader-entry-candidate-audit.yml"
+  },
+  {
+    "id": 9916440646,
+    "name": "emerging-fresh-radar-rotation",
+    "digest": "sha256:60bb0c60de11853682e1e6e34bf8d28d8862c4b30a25bb44497fa5ca18b1574e",
+    "expired": false,
+    "run_id": 33815029069,
+    "workflow": ".github/workflows/emerging-fresh-radar-rotation.yml"
+  },
+  {
+    "id": 9916029466,
+    "name": "emerging-early-entry-grid",
+    "digest": "sha256:245915261499714467497682829d190cd18c7c20e5097d6e6a5ab7818220acf1",
+    "expired": false,
+    "run_id": 33814119803,
+    "workflow": ".github/workflows/emerging-early-entry-grid.yml"
+  },
+  {
+    "id": 9915828676,
+    "name": "major-leader-entry-delay-audit",
+    "digest": "sha256:2377aca666884296c71686a8afa690b8fcd7dc708e87cabfee55f5fff61d0dcd",
+    "expired": false,
+    "run_id": 33813442901,
+    "workflow": ".github/workflows/major-leader-entry-delay-audit.yml"
+  }
+]
