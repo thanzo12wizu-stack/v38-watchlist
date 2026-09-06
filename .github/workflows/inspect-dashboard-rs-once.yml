@@ -12,48 +12,45 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.11'
-      - name: Install dashboard deps
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
-      - name: Inspect exact Dashboard RS implementation
+      - name: Inspect Dashboard RS build anchors
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
           import re
-
-          src = Path('build_dashboard.py').read_text(encoding='utf-8')
-          print('=== SOURCE MATCHES ===')
-          pats = [r'def\s+[^\n]*rs[^\n]*', r'RS21', r'RS63', r'RS189', r'rs21', r'rs63', r'rs189', r'id=["\']t-rs', r'RSランキング', r'相対強度']
-          seen=[]
-          for pat in pats:
-              for m in re.finditer(pat, src, flags=re.I):
-                  a=max(0,m.start()-700); b=min(len(src),m.end()+1800)
-                  chunk=src[a:b]
-                  key=(a,b)
-                  if key not in seen:
-                      seen.append(key)
-                      print(f'\n--- {pat} @ {m.start()} ---\n{chunk}')
-                  if len(seen)>=24: break
-              if len(seen)>=24: break
-
-          html=Path('command-center.html').read_text(encoding='utf-8')
-          print('\n=== CHECKED-IN T-RS SECTION ===')
-          m=re.search(r'<section[^>]*id=["\']t-rs["\'][\s\S]*?</section>', html, flags=re.I)
-          if m:
-              sec=m.group(0)
-              print(sec[:30000])
-          else:
-              for needle in ['RS189','RS63','RS21','RSランキング','相対強度']:
-                  p=html.find(needle)
-                  if p>=0: print(f'--- {needle} ---\n'+html[max(0,p-3000):p+12000])
+          src=Path('build_dashboard.py').read_text(encoding='utf-8')
+          needles=[
+            'RSマルチタイムフレーム比較','RS63 Top10','RS126 Top10','RS189 Top10',
+            'df["rs126"]','df["rs21"]','def compute_metrics','compute_metrics(',
+            'render_html(', 'def render', 'build_rs', 'rsx-', 'sort_values("rs126"',
+            "sort_values('rs126'", 'sort_values("rs189"', "sort_values('rs189'",
+            'sort_values("rs"', "sort_values('rs'"
+          ]
+          emitted=[]
+          for needle in needles:
+            start=0
+            while True:
+              p=src.find(needle,start)
+              if p<0: break
+              a=max(0,p-1800); b=min(len(src),p+6500)
+              if not any(abs(a-x)<1200 for x in emitted):
+                emitted.append(a)
+                print(f'\n=== {needle} @ {p} ===\n{src[a:b]}')
+              start=p+len(needle)
+              if len(emitted)>=30: break
+            if len(emitted)>=30: break
+          print('\n=== FUNCTION NAMES NEAR RSX ===')
+          for m in re.finditer(r'^def\s+([A-Za-z0-9_]+)\([^\n]*',src,flags=re.M):
+            name=m.group(1)
+            body_end=src.find('\ndef ',m.end())
+            body=src[m.start(): body_end if body_end>0 else min(len(src),m.end()+20000)]
+            if 'RS63 Top10' in body or 'RSマルチタイムフレーム比較' in body or 'rsx-' in body:
+              print(name, m.start(), body[:18000])
           PY
