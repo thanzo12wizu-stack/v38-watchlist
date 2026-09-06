@@ -177,9 +177,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .cache/v38-early1
-          key: Linux-v38-early1-34036161120
+          key: ${{ runner.os }}-v38-early1-${{ github.run_id }}
           restore-keys: |
-            Linux-v38-early1-
+            ${{ runner.os }}-v38-early1-
 
       - name: Build canonical Early1 live signal
         shell: bash
@@ -209,7 +209,6 @@ jobs:
           from pathlib import Path
           state=json.loads(Path('state.json').read_text(encoding='utf-8'))
           tqqq=json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
-          early=json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))
           asof=str(state.get('date') or '')
           ok=(
               bool(asof)
@@ -289,6 +288,7 @@ jobs:
           live = json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
           loo = json.loads(Path('v38-strict-loo-live.json').read_text(encoding='utf-8'))
           tqqq = json.loads(Path('tqqq-panic-state.json').read_text(encoding='utf-8'))
+          early = json.loads(Path('v38-early1-live.json').read_text(encoding='utf-8'))
           asof = str(state.get('date') or '')
           if not asof:
               raise SystemExit('state date missing')
