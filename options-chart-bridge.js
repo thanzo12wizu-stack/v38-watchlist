@@ -114,7 +114,7 @@ function chartPanel(ticker, rec, levels, payload) {
   const wallStatus = wallDays > 0 ? `<span>Wall履歴 ${wallDays}日</span>` : '<span class="warn">Wall履歴なし</span>';
   const broadStatus = !hasCandles && obsDays ? '<span>Broad 7–21DTE</span>' : '';
   const legend = available ? `<div class="v38ChartLegend">
-    ${hasCandles ? '<span><b>21EMA</b></span><span><b>50MA</b></span><span><b>200MA</b></span><span><b>63VWAP</b></span>' : '<span><b>Spot</b></span>'}
+    ${hasCandles ? '<span class="tech ema"><b>21EMA</b></span><span class="tech sma150"><b>150SMA</b></span><span class="tech vwap"><b>63VWAP</b></span>' : '<span><b>Spot</b></span>'}
     ${levels.callWall !== null ? `<span class="call">Call <b>${money(levels.callWall)}</b></span>` : ''}
     ${levels.gammaFlip !== null ? `<span class="flip">Flip <b>${money(levels.gammaFlip)}</b></span>` : ''}
     ${levels.putWall !== null ? `<span class="put">Put <b>${money(levels.putWall)}</b></span>` : ''}

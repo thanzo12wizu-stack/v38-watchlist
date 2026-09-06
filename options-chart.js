@@ -176,20 +176,13 @@ function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wall
     timeline = clean;
 
     const ema21 = ema(clean, 21);
-    const ema21Series = addLine(chart, ema21, '', { color: '#f4c75a', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
-    axisLabel(ema21Series, ema21.at(-1)?.value, '21EMA', '#f4c75a');
+    addLine(chart, ema21, '', { color: '#f4c75a', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
 
-    const sma50 = sma(clean, 50);
-    const sma50Series = addLine(chart, sma50, '', { color: '#6fb8ff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
-    axisLabel(sma50Series, sma50.at(-1)?.value, '50MA', '#6fb8ff');
-
-    const sma200 = sma(clean, 200);
-    const sma200Series = addLine(chart, sma200, '', { color: '#b98cff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
-    axisLabel(sma200Series, sma200.at(-1)?.value, '200MA', '#b98cff');
+    const sma150 = sma(clean, 150);
+    addLine(chart, sma150, '', { color: '#6fb8ff', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
 
     const vwap63 = rollingVwap(clean, 63);
-    const vwap63Series = addLine(chart, vwap63, '', { color: '#4fc7bd', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
-    axisLabel(vwap63Series, vwap63.at(-1)?.value, '63VWAP', '#4fc7bd');
+    addLine(chart, vwap63, '', { color: '#4fc7bd', lineWidth: 1, priceScaleId: 'right', hideTitle: true });
   } else {
     baseSeries = addLine(chart, spots, 'Spot', {
       color: '#d7dde5',
