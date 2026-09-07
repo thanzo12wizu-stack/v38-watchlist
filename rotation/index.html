@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0a0e13">
 <title>V38 資金循環インテリジェンス</title>
 <link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="stock-chart.css?v=20260907-stockchart1">
 </head>
 <body>
 <div class="wrap">
@@ -248,8 +249,11 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="stock-chart.js?v=20260907-stockchart1"></script>
 <script src="app-live.js?v=20260904-stock-detail"></script>
 <script src="app-divergence.js?v=20260904-backtest-evidence"></script>
+<script src="stock-chart-auto.js?v=20260907-stockchart1"></script>
 <script>
 document.addEventListener('click', function (event) {
   const button = event.target.closest('#themeToggle');
