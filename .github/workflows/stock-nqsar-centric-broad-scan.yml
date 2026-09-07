@@ -1,0 +1,30 @@
+name: Stock NQSAR Centric Broad Scan
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-centric-20260907]
+    paths:
+      - 'research/nqsar_centric_broad_scan.py'
+      - 'research/nqsar_centric_broad_scan_runner.py'
+      - '.github/workflows/stock-nqsar-centric-broad-scan.yml'
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile research scan
+        run: python -m py_compile research/nqsar_centric_broad_scan.py research/nqsar_centric_broad_scan_runner.py
+      - name: Run NQSAR-centric broad scan
+        run: python -m research.nqsar_centric_broad_scan_runner --output research/output/nqsar-centric-broad --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-nqsar-centric-broad-20260907
+          path: research/output/nqsar-centric-broad/
