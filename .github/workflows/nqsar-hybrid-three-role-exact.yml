@@ -1,0 +1,30 @@
+name: NQSAR Hybrid Three Role Exact
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/stock-nqsar-transition-early-20260907
+    paths:
+      - 'research/nqsar_hybrid_three_role_exact.py'
+      - '.github/workflows/nqsar-hybrid-three-role-exact.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile research
+        run: python -m py_compile research/nqsar_hybrid_three_role_exact.py
+      - name: Run exact three-role sensitivity
+        run: python -u research/nqsar_hybrid_three_role_exact.py --root . --output research_outputs/nqsar_hybrid_three_role_exact --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nqsar-hybrid-three-role-exact-20260908
+          path: research_outputs/nqsar_hybrid_three_role_exact
+          retention-days: 90
