@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""Build presentation-only OHLCV shards for the V38 inline chart.
+"""Build presentation-only daily OHLCV shards for V38 inline charts.
 
-Downstream-only by design:
-- reads v38-live-state.json only to discover currently visible symbols,
-- fetches daily OHLCV for rendering,
-- never modifies V38 ranking, Market Mode, sleeves, or trading rules,
-- preserves last-known chart rows per ticker when a refresh fails.
+This is downstream display data only. It reads v38-live-state.json to discover
+visible symbols and never changes V38 ranking, Market Mode, sleeves, or rules.
 """
 from __future__ import annotations
 
@@ -21,11 +18,14 @@ from pathlib import Path
 
 import yfinance as yf
 
-
 SYMBOL_KEYS = {"ticker", "symbol"}
+NON_TICKERS = {
+    "READY", "LIVE", "STOP", "ATTACK", "SELECTIVE", "DEFENSE",
+    "YELLOW", "GREEN", "BLUE", "RED", "NONE", "HOLD", "PASS", "FAIL",
+}
 
 
-def _finite(value):
+def finite(value):
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -33,34 +33,33 @@ def _finite(value):
     return number if math.isfinite(number) else None
 
 
-def _bucket(ticker: str) -> str:
-    first = (ticker or "").strip().upper()[:1]
-    return first if first and "A" <= first <= "Z" else "OTHER"
-
-
-def _looks_like_ticker(value: object) -> bool:
+def looks_like_ticker(value) -> bool:
     text = str(value or "").strip().upper()
-    if not text or len(text) > 10:
+    if not text or len(text) > 10 or text in NON_TICKERS:
         return False
     allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-")
     return all(ch in allowed for ch in text) and any(ch.isalpha() for ch in text)
 
 
-def _collect_symbols(node: object, out: set[str]) -> None:
+def bucket(ticker: str) -> str:
+    first = str(ticker or "").strip().upper()[:1]
+    return first if "A" <= first <= "Z" else "OTHER"
+
+
+def collect_symbol_fields(node, out: set[str]) -> None:
     if isinstance(node, dict):
         for key, value in node.items():
-            if str(key).lower() in SYMBOL_KEYS and _looks_like_ticker(value):
+            if str(key).lower() in SYMBOL_KEYS and looks_like_ticker(value):
                 out.add(str(value).strip().upper())
-            _collect_symbols(value, out)
+            collect_symbol_fields(value, out)
     elif isinstance(node, list):
         for value in node:
-            _collect_symbols(value, out)
+            collect_symbol_fields(value, out)
 
 
-def _symbols(state: dict) -> list[str]:
-    out: set[str] = {"QQQ", "TQQQ"}
-    _collect_symbols(state, out)
-
+def visible_symbols(state: dict) -> list[str]:
+    out = {"QQQ", "TQQQ"}
+    collect_symbol_fields(state, out)
     ranking = state.get("ranking") if isinstance(state, dict) else {}
     if isinstance(ranking, dict):
         for key, value in ranking.items():
@@ -69,18 +68,12 @@ def _symbols(state: dict) -> list[str]:
             if not any(token in str(key).lower() for token in ("top", "core", "reopen")):
                 continue
             for item in value:
-                if _looks_like_ticker(item):
+                if looks_like_ticker(item):
                     out.add(str(item).strip().upper())
-
-    early = state.get("early1") if isinstance(state, dict) else {}
-    if isinstance(early, dict):
-        for value in early.values():
-            if isinstance(value, str) and _looks_like_ticker(value):
-                out.add(value.strip().upper())
     return sorted(out)
 
 
-def _bar_date(index) -> str:
+def bar_date(index) -> str:
     try:
         ts = index
         if getattr(ts, "tzinfo", None) is not None:
@@ -90,45 +83,35 @@ def _bar_date(index) -> str:
         return str(index)[:10]
 
 
-def _yf_symbol(ticker: str) -> str:
+def yahoo_symbol(ticker: str) -> str:
     return ticker.replace(".", "-")
 
 
-def _fetch_once(ticker: str, period: str, max_bars: int) -> dict:
-    prices = yf.Ticker(_yf_symbol(ticker)).history(
-        period=period,
-        interval="1d",
-        auto_adjust=False,
-        actions=False,
+def fetch_once(ticker: str, period: str, max_bars: int) -> dict:
+    prices = yf.Ticker(yahoo_symbol(ticker)).history(
+        period=period, interval="1d", auto_adjust=False, actions=False
     )
     if prices is None or prices.empty:
         raise RuntimeError("no price history")
 
     rows = []
     for index, row in prices.tail(max_bars).iterrows():
-        o = _finite(row.get("Open"))
-        h = _finite(row.get("High"))
-        l = _finite(row.get("Low"))
-        c = _finite(row.get("Close"))
-        v = _finite(row.get("Volume"))
+        o, h, l, c = (finite(row.get(k)) for k in ("Open", "High", "Low", "Close"))
+        v = finite(row.get("Volume"))
         if None in (o, h, l, c):
             continue
         if h < max(o, l, c) or l > min(o, h, c):
             continue
-        rows.append(
-            {
-                "time": _bar_date(index),
-                "open": round(o, 6),
-                "high": round(h, 6),
-                "low": round(l, 6),
-                "close": round(c, 6),
-                "volume": round(v or 0.0, 2),
-            }
-        )
-
+        rows.append({
+            "time": bar_date(index),
+            "open": round(o, 6),
+            "high": round(h, 6),
+            "low": round(l, 6),
+            "close": round(c, 6),
+            "volume": round(v or 0.0, 2),
+        })
     if len(rows) < 30:
         raise RuntimeError(f"insufficient bars: {len(rows)}")
-
     return {
         "ticker": ticker,
         "bars": rows,
@@ -141,22 +124,22 @@ def _fetch_once(ticker: str, period: str, max_bars: int) -> dict:
     }
 
 
-def _fetch(ticker: str, period: str, max_bars: int, attempts: int) -> dict:
+def fetch(ticker: str, period: str, max_bars: int, attempts: int) -> dict:
     last = None
     for attempt in range(attempts):
         try:
-            return _fetch_once(ticker, period, max_bars)
-        except Exception as exc:  # pragma: no cover - network failures vary
+            return fetch_once(ticker, period, max_bars)
+        except Exception as exc:  # pragma: no cover
             last = exc
             if attempt + 1 < attempts:
                 time.sleep((attempt + 1) * 1.4 + random.uniform(0.0, 0.35))
     raise last or RuntimeError("chart fetch failed")
 
 
-def _load_previous(directory: Path | None) -> dict[str, dict]:
+def previous_records(directory: Path | None) -> dict[str, dict]:
     if directory is None or not directory.is_dir():
         return {}
-    out: dict[str, dict] = {}
+    out = {}
     for path in directory.glob("*.json"):
         if path.name == "index.json":
             continue
@@ -164,42 +147,26 @@ def _load_previous(directory: Path | None) -> dict[str, dict]:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             continue
-        tickers = payload.get("tickers") if isinstance(payload, dict) else None
-        if not isinstance(tickers, dict):
-            continue
-        for ticker, record in tickers.items():
+        for ticker, record in (payload.get("tickers") or {}).items():
             if isinstance(record, dict) and record.get("bars"):
                 out[str(ticker).upper()] = record
     return out
 
 
-def build(
-    state_path: Path,
-    output_dir: Path,
-    previous_dir: Path | None,
-    period: str,
-    max_bars: int,
-    workers: int,
-    attempts: int,
-) -> dict:
+def build(state_path: Path, output_dir: Path, previous_dir: Path | None,
+          period: str, max_bars: int, workers: int, attempts: int) -> dict:
     state = json.loads(state_path.read_text(encoding="utf-8"))
     asof = str(state.get("asof") or "")[:10]
     if len(asof) != 10:
         raise RuntimeError("V38 live state as-of is missing")
-
-    symbols = _symbols(state)
+    symbols = visible_symbols(state)
     if not symbols:
         raise RuntimeError("V38 live state contains no visible symbols")
 
-    previous = _load_previous(previous_dir)
-    records: dict[str, dict] = {}
-    errors: dict[str, str] = {}
-
+    old = previous_records(previous_dir)
+    records, errors = {}, {}
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        futures = {
-            pool.submit(_fetch, ticker, period, max_bars, max(1, attempts)): ticker
-            for ticker in symbols
-        }
+        futures = {pool.submit(fetch, t, period, max_bars, max(1, attempts)): t for t in symbols}
         for future in as_completed(futures):
             ticker = futures[future]
             try:
@@ -207,12 +174,9 @@ def build(
             except Exception as exc:
                 message = f"{type(exc).__name__}: {str(exc)[:180]}"
                 errors[ticker] = message
-                old = previous.get(ticker)
-                if old and old.get("bars"):
-                    keep = dict(old)
-                    keep["ticker"] = ticker
-                    keep["stale"] = True
-                    keep["refresh_error"] = message
+                if ticker in old:
+                    keep = dict(old[ticker])
+                    keep.update({"ticker": ticker, "stale": True, "refresh_error": message})
                     records[ticker] = keep
 
     if output_dir.exists():
@@ -220,28 +184,26 @@ def build(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     generated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    by_bucket: dict[str, dict[str, dict]] = {}
+    grouped: dict[str, dict[str, dict]] = {}
     for ticker in symbols:
-        record = records.get(ticker)
-        if not record:
-            continue
-        by_bucket.setdefault(_bucket(ticker), {})[ticker] = record
+        if ticker in records:
+            grouped.setdefault(bucket(ticker), {})[ticker] = records[ticker]
 
-    for bucket, tickers in sorted(by_bucket.items()):
-        shard = {
+    for key, tickers in sorted(grouped.items()):
+        payload = {
             "schema_version": "1.0",
             "generated_at": generated_at,
             "session_date": asof,
             "source": "v38_visible_symbols_presentation_only",
-            "tickers": {ticker: tickers[ticker] for ticker in sorted(tickers)},
+            "tickers": {t: tickers[t] for t in sorted(tickers)},
         }
-        (output_dir / f"{bucket}.json").write_text(
-            json.dumps(shard, ensure_ascii=False, separators=(",", ":")) + "\n",
+        (output_dir / f"{key}.json").write_text(
+            json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n",
             encoding="utf-8",
         )
 
-    fresh = sum(1 for record in records.values() if not record.get("stale"))
-    stale = sum(1 for record in records.values() if record.get("stale"))
+    fresh = sum(not bool(r.get("stale")) for r in records.values())
+    stale = sum(bool(r.get("stale")) for r in records.values())
     index = {
         "schema_version": "1.0",
         "generated_at": generated_at,
@@ -253,7 +215,7 @@ def build(
         "stale": stale,
         "failed_without_cache": max(0, len(symbols) - len(records)),
         "errors": errors,
-        "shards": {bucket: len(tickers) for bucket, tickers in sorted(by_bucket.items())},
+        "shards": {k: len(v) for k, v in sorted(grouped.items())},
         "upstream_read_only": [str(state_path)],
     }
     (output_dir / "index.json").write_text(
@@ -265,27 +227,21 @@ def build(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--state", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--previous", type=Path)
-    parser.add_argument("--period", default="1y")
-    parser.add_argument("--max-bars", type=int, default=260)
-    parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--attempts", type=int, default=2)
-    args = parser.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument("--state", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--previous", type=Path)
+    p.add_argument("--period", default="1y")
+    p.add_argument("--max-bars", type=int, default=260)
+    p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--attempts", type=int, default=2)
+    args = p.parse_args()
 
     index = build(
-        state_path=args.state,
-        output_dir=args.output,
-        previous_dir=args.previous,
-        period=args.period,
-        max_bars=max(180, args.max_bars),
-        workers=max(1, args.workers),
-        attempts=max(1, args.attempts),
+        args.state, args.output, args.previous, args.period,
+        max(180, args.max_bars), max(1, args.workers), max(1, args.attempts),
     )
-    requested = int(index.get("requested") or 0)
-    available = int(index.get("available") or 0)
+    requested, available = int(index["requested"]), int(index["available"])
     if requested and available / requested < 0.80:
         raise SystemExit(f"V38 chart coverage too low: {available}/{requested}")
 
