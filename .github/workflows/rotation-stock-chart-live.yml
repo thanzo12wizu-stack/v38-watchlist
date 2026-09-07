@@ -32,6 +32,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Syntax check chart code
+        run: |
+          python -m py_compile tools/build_rotation_stock_chart_data.py
+          node --check rotation/stock-chart.js
+          node --check rotation/stock-chart-auto.js
+
       - name: Validate current Rotation context
         shell: bash
         run: |
