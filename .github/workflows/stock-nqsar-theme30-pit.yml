@@ -1,0 +1,45 @@
+name: Stock NQSAR Theme30 PIT Audit
+
+on:
+  push:
+    branches:
+      - research/stock-nqsar-theme30-pit-20260907
+    paths:
+      - research/audit_stock_nqsar_theme30_pit.py
+      - .github/workflows/stock-nqsar-theme30-pit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Compile
+        run: python -m py_compile research/audit_stock_nqsar_theme30_pit.py
+      - name: Run PIT A/B
+        env:
+          PYTHONPATH: .
+        run: |
+          python research/audit_stock_nqsar_theme30_pit.py \
+            --root . \
+            --output research_output/stock_nqsar_theme30_pit_20260907 \
+            --batch-size 100
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-nqsar-theme30-pit-20260907
+          path: research_output/stock_nqsar_theme30_pit_20260907
+          if-no-files-found: warn
