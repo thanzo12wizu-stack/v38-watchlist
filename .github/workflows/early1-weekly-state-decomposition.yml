@@ -1,0 +1,29 @@
+name: Early1 Weekly NQSAR State Decomposition
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/early1_weekly_state_decomposition.py'
+      - '.github/workflows/early1-weekly-state-decomposition.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile Early1 weekly-state research
+        run: python -m py_compile research/early1_weekly_state_decomposition.py
+      - name: Run Early1 weekly-state decomposition
+        run: python -m research.early1_weekly_state_decomposition --output research/output/early1-weekly-state --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: early1-weekly-state-20260907
+          path: research/output/early1-weekly-state/
