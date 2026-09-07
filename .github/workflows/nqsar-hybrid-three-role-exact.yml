@@ -22,7 +22,7 @@ jobs:
       - name: Compile research
         run: python -m py_compile research/nqsar_hybrid_three_role_exact.py
       - name: Run exact three-role sensitivity
-        run: python -u research/nqsar_hybrid_three_role_exact.py --root . --output research_outputs/nqsar_hybrid_three_role_exact --batch-size 100
+        run: python -u -m research.nqsar_hybrid_three_role_exact --root . --output research_outputs/nqsar_hybrid_three_role_exact --batch-size 100
       - uses: actions/upload-artifact@v4
         with:
           name: nqsar-hybrid-three-role-exact-20260908
