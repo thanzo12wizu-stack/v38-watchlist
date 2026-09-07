@@ -1,0 +1,28 @@
+name: Stock NQSAR Centric Market Gate
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-centric-20260907]
+    paths:
+      - 'research/nqsar_centric_market_gate_scan.py'
+      - '.github/workflows/stock-nqsar-centric-market-gate.yml'
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m py_compile research/nqsar_centric_market_gate_scan.py
+      - name: Run market-gate interaction scan
+        run: python -m research.nqsar_centric_market_gate_scan --output research/output/nqsar-centric-market-gate --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-nqsar-centric-market-gate-20260907
+          path: research/output/nqsar-centric-market-gate/
