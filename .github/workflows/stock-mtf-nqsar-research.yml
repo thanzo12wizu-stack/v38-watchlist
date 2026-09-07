@@ -31,6 +31,8 @@ jobs:
       - name: Compile research script
         run: python -m py_compile research/stock_mtf_nqsar_backtest.py
       - name: Run MTF audit
+        env:
+          PYTHONPATH: .
         run: |
           python research/stock_mtf_nqsar_backtest.py \
             --root . \
