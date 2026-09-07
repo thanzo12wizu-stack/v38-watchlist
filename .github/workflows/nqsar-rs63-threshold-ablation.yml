@@ -1,0 +1,29 @@
+name: NQSAR Weekly Bull RS Threshold Ablation
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/nqsar_rs63_threshold_ablation.py'
+      - '.github/workflows/nqsar-rs63-threshold-ablation.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile RS threshold ablation
+        run: python -m py_compile research/nqsar_rs63_threshold_ablation.py
+      - name: Run RS threshold ablation
+        run: python -m research.nqsar_rs63_threshold_ablation --output research/output/nqsar-rs63-threshold-ablation --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nqsar-rs63-threshold-ablation-20260907
+          path: research/output/nqsar-rs63-threshold-ablation/
