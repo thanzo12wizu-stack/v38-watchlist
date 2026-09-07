@@ -3,6 +3,85 @@
 
 const L = () => window.LightweightCharts;
 const finite = v => Number.isFinite(Number(v)) ? Number(v) : null;
+let regimePromise = null;
+
+function normalizeRegime(value) {
+  const key = String(value || '').trim().toLowerCase();
+  return ['blue', 'green', 'yellow', 'red'].includes(key) ? key : null;
+}
+
+function loadRegimes() {
+  if (!regimePromise) {
+    regimePromise = fetch(`./trend_history.json?v=${Date.now()}`, { cache: 'no-store' })
+      .then(r => { if (!r.ok) throw new Error(`trend_history:${r.status}`); return r.json(); })
+      .then(rows => Array.isArray(rows) ? rows : [])
+      .catch(() => { regimePromise = null; return []; });
+  }
+  return regimePromise;
+}
+
+function createNqsarLayer(element, chart, timeline, regimes) {
+  const bandLayer = document.createElement('div');
+  bandLayer.className = 'v38NqsarLayer';
+  bandLayer.setAttribute('aria-hidden', 'true');
+  const tagLayer = document.createElement('div');
+  tagLayer.className = 'v38NqsarTagLayer';
+  tagLayer.setAttribute('aria-hidden', 'true');
+  element.appendChild(bandLayer);
+  element.appendChild(tagLayer);
+
+  const dates = new Set((timeline || []).map(x => String(x.time || '').slice(0, 10)));
+  const rows = (regimes || []).map(row => ({
+    time: String(Array.isArray(row) ? row[0] : row?.date || '').slice(0, 10),
+    regime: normalizeRegime(Array.isArray(row) ? row[1] : row?.state),
+  })).filter(row => row.time && row.regime && dates.has(row.time));
+
+  function render() {
+    if (!bandLayer.isConnected || !tagLayer.isConnected) return;
+    const points = rows.map(row => ({ ...row, x: chart.timeScale().timeToCoordinate(row.time) }))
+      .filter(row => Number.isFinite(row.x));
+    bandLayer.innerHTML = '';
+    tagLayer.innerHTML = '';
+    if (!points.length) return;
+
+    let previousVisibleRegime = null;
+    points.forEach((point, index) => {
+      const previous = points[index - 1];
+      const next = points[index + 1];
+      const leftGap = previous ? point.x - previous.x : (next ? next.x - point.x : 6);
+      const rightGap = next ? next.x - point.x : (previous ? point.x - previous.x : 6);
+      const left = point.x - Math.max(2, leftGap / 2);
+      const right = point.x + Math.max(2, rightGap / 2);
+      if (right < 0 || left > element.clientWidth) return;
+      const band = document.createElement('div');
+      band.className = `v38NqsarBand ${point.regime}`;
+      band.style.left = `${left}px`;
+      band.style.width = `${Math.max(1, right - left)}px`;
+      bandLayer.appendChild(band);
+
+      if (point.regime !== previousVisibleRegime) {
+        const tag = document.createElement('div');
+        tag.className = `v38NqsarTag ${point.regime}`;
+        tag.textContent = `NQSAR ${point.regime.toUpperCase()}`;
+        tag.style.left = `${Math.max(3, left + 3)}px`;
+        tagLayer.appendChild(tag);
+        previousVisibleRegime = point.regime;
+      }
+    });
+  }
+
+  const schedule = () => requestAnimationFrame(render);
+  chart.timeScale().subscribeVisibleLogicalRangeChange(schedule);
+  requestAnimationFrame(render);
+  return {
+    schedule,
+    destroy() {
+      try { chart.timeScale().unsubscribeVisibleLogicalRangeChange(schedule); } catch (_) {}
+      bandLayer.remove();
+      tagLayer.remove();
+    },
+  };
+}
 
 function sma(bars, n) {
   const out = [], q = [];
@@ -219,6 +298,13 @@ function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wall
     band.style.height = `${Math.abs(y2 - y1)}px`;
   }
 
+  let nqsarLayer = null;
+  loadRegimes().then(regimes => {
+    if (!element.isConnected) return;
+    nqsarLayer = createNqsarLayer(element, chart, timeline, regimes);
+    nqsarLayer.schedule();
+  });
+
   chart.timeScale().fitContent();
   requestAnimationFrame(updateBand);
   const scheduleBand = () => requestAnimationFrame(updateBand);
@@ -229,13 +315,14 @@ function mount({ element, bars = [], spotHistory = [], ticker, levels = {}, wall
   const ro = new ResizeObserver(() => {
     chart.applyOptions({ width: Math.max(280, element.clientWidth || 640), height: Math.max(330, element.clientHeight || 410) });
     scheduleBand();
+    nqsarLayer?.schedule();
   });
   ro.observe(element);
 
   if (stale) element.classList.add('isStale');
   else element.classList.remove('isStale');
 
-  return { ticker, chart, mode: hasCandles ? 'candles' : 'options_spot', destroy() { ro.disconnect(); try { chart.remove(); } catch (_) {} } };
+  return { ticker, chart, mode: hasCandles ? 'candles' : 'options_spot', destroy() { ro.disconnect(); nqsarLayer?.destroy(); try { chart.remove(); } catch (_) {} } };
 }
 
 window.V38Chart = { mount };
