@@ -1,0 +1,25 @@
+name: Stock NQSAR Centric PIT Finalists
+on:
+  push:
+    branches: [research/stock-nqsar-centric-20260907]
+    paths:
+      - 'research/nqsar_centric_pit_finalists.py'
+      - '.github/workflows/stock-nqsar-centric-pit-finalists.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m py_compile research/nqsar_centric_pit_finalists.py
+      - name: Run true PIT finalists
+        run: python -m research.nqsar_centric_pit_finalists --output research_output/nqsar_pit_finalists --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-nqsar-centric-pit-finalists-20260907
+          path: research_output/nqsar_pit_finalists
