@@ -11,9 +11,9 @@ from research import nqsar_centric_broad_scan_runner as _runner  # patches Top12
 GATES = ('CURRENT','MARKET_NQSAR_ONLY','MARKET_RED_ONLY','BREADTH_WITH_RED')
 
 
-def gate_fn(name):
+def gate_fn(name, base_mode):
     def current(color, breadth):
-        return scan.audit.mode(color, breadth)
+        return base_mode(color, breadth)
     def nqsar_only(color, breadth):
         c=str(color or '').title()
         if c=='Red': return 'DEFENSE'
@@ -43,7 +43,7 @@ def main():
     orig=scan.audit.mode; rows=[]
     try:
         for gate in GATES:
-            print('GATE',gate,flush=True); scan.audit.mode=gate_fn(gate)
+            print('GATE',gate,flush=True); scan.audit.mode=gate_fn(gate, orig)
             for i,v in enumerate(scan.VARIANTS,1):
                 print(f'{gate} {i}/{len(scan.VARIANTS)} {v}',flush=True)
                 r=scan.simulate(idx,m,nq,v); sl=scan.slices(r['equity'],r['exposure']); rec={'gate':gate,'variant':v}
