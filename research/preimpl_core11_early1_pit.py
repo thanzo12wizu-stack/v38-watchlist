@@ -6,6 +6,7 @@ import numpy as np, pandas as pd
 from research import audit_stock_nqsar_theme30_pit as audit
 from research import run_stock_nqsar_theme30_pit_fast as fast  # patches vectorized PIT LOO
 import build_v38_sleeve_live as sleeve
+import build_v38_early1_live as earlylive
 
 END=audit.ANALYSIS_END; DDV20=audit.DDV_ENTRY
 
@@ -100,18 +101,20 @@ def main():
     hist=json.loads((root/'v38-strict-loo-history.json').read_text()); snaps=hist.get('taxonomy_snapshots',[])
     if len(snaps)!=1 or str(snaps[0].get('effective_asof'))!=str(audit.PIT_EFFECTIVE.date()): raise RuntimeError('verified PIT taxonomy required')
     s2t=snaps[0]['s2t']; symbols,bio=audit.load_universe(root/'universe.csv'); end='2026-09-05'
+    allowed=earlylive._industry_symbols(root/'industry_map.json'); early_excluded=set(bio)
+    if allowed: early_excluded.update(set(symbols)-set(allowed))
     print('DOWNLOAD STOCK',flush=True); ohlcv,sd=audit.download_ohlcv(symbols,'2024-01-01',end,a.batch_size)
     if sd['coverage']<.85: raise RuntimeError(sd)
     print('DOWNLOAD THEME',flush=True); tc,td=audit.loo.download_adjusted_close(sorted(s2t),'2026-01-01',end,a.batch_size)
     if float(td.get('coverage') or 0)<.85: raise RuntimeError(td)
-    print('BUILD INPUTS',flush=True); mx=audit.build_stock_inputs(ohlcv,bio,END); e=early_inputs(ohlcv['close'],ohlcv['volume'],bio)
+    print('BUILD INPUTS',flush=True); mx=audit.build_stock_inputs(ohlcv,bio,END); e=early_inputs(ohlcv['close'],ohlcv['volume'],early_excluded)
     theme,pdgn=audit.theme_scores_by_date(tc,s2t,END,list(ohlcv['close'].columns)); nq=audit.market_nqsar('2026-03-01',end).reindex(mx['close'].index).ffill(limit=2)
     first=max(min(theme),audit.PIT_EFFECTIVE); idx=mx['close'].index[(mx['close'].index>=first)&(mx['close'].index<=END)]
     cur=simulate(idx,mx,theme,nq,e,False); wk=simulate(idx,mx,theme,nq,e,True)
     for name,res in [('CURRENT',cur),('WEEK_PRIORITY',wk)]: res['equity'].rename('equity').to_csv(out/f'equity_{name}.csv')
     metrics=[{'variant':'CURRENT',**cur['metrics']},{'variant':'WEEK_PRIORITY',**wk['metrics']}]; pd.DataFrame(metrics).to_csv(out/'metrics.csv',index=False)
     boot={f'block{b}':blockprob(wk['equity'],cur['equity'],b) for b in (1,3,5)}; ready=readiness(ohlcv,mx,idx)
-    summary={'method':'production advance_normal; exact Core11+Early1/Selective3+Early1; Weekly Priority touches Core ranking only','stock':sd,'theme':td,'pit':pdgn,'metrics':metrics,'bootstrap_prob_weekly_outperform':boot,'readiness':ready,
-             'production_invariants':['Early1 formula/rank untouched','Early D10 expiry/direct promotion untouched','Top12 then DDV20 no refill','existing exits untouched','no weekly exit']}
+    summary={'method':'production advance_normal; exact Core11+Early1/Selective3+Early1; Weekly Priority touches Core ranking only','stock':sd,'theme':td,'pit':pdgn,'early1_allowed_universe_count':len(allowed) if allowed else None,'metrics':metrics,'bootstrap_prob_weekly_outperform':boot,'readiness':ready,
+             'production_invariants':['Early1 formula/rank/universe filter untouched','Early D10 expiry/direct promotion untouched','Top12 then DDV20 no refill','existing exits untouched','no weekly exit']}
     (out/'summary.json').write_text(json.dumps(safe(summary),ensure_ascii=False,indent=2)); print('DONE',json.dumps(safe(summary),ensure_ascii=False),flush=True)
 if __name__=='__main__': main()
