@@ -37,28 +37,25 @@ def select_top12(d,m,v):
 
 def build_events(m,idx):
     c=m['close']; prior_low=c.shift(1).rolling(126,min_periods=60).min()
+    # Evaluation-only label: max close over the next 126 sessions, excluding today.
+    future_max=c.shift(-1).iloc[::-1].rolling(126,min_periods=100).max().iloc[::-1]
+    future_ret=future_max/c-1.0
+    valid_window=pd.Series(np.arange(len(c)) <= len(c)-127,index=c.index)
+    big=(future_ret>=1.0)&m['pool']
+    big=big & valid_window.to_numpy()[:,None]
+    # One event per contiguous future-2x label episode.
+    starts=big & ~big.shift(1).fillna(False)
+    starts=starts.loc[idx]
+    coords=np.argwhere(starts.to_numpy(bool))
     events=[]
-    for s in c.columns:
-        z=c[s]
-        # Require a full 126-session forward window; labels are evaluation-only.
-        for i,d in enumerate(idx):
-            gi=c.index.get_loc(d)
-            if not isinstance(gi,(int,np.integer)) or gi+126>=len(c): continue
-            if not bool(m['pool'].at[d,s]): continue
-            fut=z.iloc[gi+1:gi+127].dropna()
-            p0=z.iloc[gi]
-            if pd.isna(p0) or p0<=0 or len(fut)<100: continue
-            peak=float(fut.max()/p0-1)
-            if peak<1.0: continue
-            # Event start = first day of a contiguous future-2x label run. Avoid daily duplication.
-            if i>0:
-                pd0=idx[i-1]; gprev=c.index.get_loc(pd0)
-                if isinstance(gprev,(int,np.integer)) and gprev+126<len(c) and bool(m['pool'].at[pd0,s]):
-                    pf=z.iloc[gprev+1:gprev+127].dropna(); pp=z.iloc[gprev]
-                    if pd.notna(pp) and pp>0 and len(pf)>=100 and float(pf.max()/pp-1)>=1.0: continue
-            peak_date=pd.Timestamp(fut.idxmax())
-            pl=prior_low.at[d,s]
-            events.append({'symbol':s,'start_date':pd.Timestamp(d),'peak_date':peak_date,'future_peak_return':peak,'start_vs_prior126_low':float(p0/pl-1) if pd.notna(pl) and pl>0 else None})
+    for n,(i,j) in enumerate(coords):
+        d=pd.Timestamp(starts.index[i]); s=str(starts.columns[j]); gi=c.index.get_loc(d)
+        if not isinstance(gi,(int,np.integer)) or gi+126>=len(c): continue
+        fut=c[s].iloc[gi+1:gi+127].dropna(); p0=c.at[d,s]
+        if pd.isna(p0) or p0<=0 or len(fut)<100: continue
+        peak=float(fut.max()/p0-1); peak_date=pd.Timestamp(fut.idxmax()); pl=prior_low.at[d,s]
+        events.append({'symbol':s,'start_date':d,'peak_date':peak_date,'future_peak_return':peak,'start_vs_prior126_low':float(p0/pl-1) if pd.notna(pl) and pl>0 else None})
+        if n and n%1000==0: print('EVENT_BUILD',n,len(coords),flush=True)
     return pd.DataFrame(events)
 
 
