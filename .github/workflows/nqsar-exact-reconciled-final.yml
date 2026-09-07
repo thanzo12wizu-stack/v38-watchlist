@@ -1,0 +1,29 @@
+name: NQSAR Exact Reconciled Final
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/nqsar_exact_reconciled_final.py'
+      - '.github/workflows/nqsar-exact-reconciled-final.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile reconciled research
+        run: python -m py_compile research/nqsar_exact_reconciled_final.py
+      - name: Run reconciled exact head-to-head
+        run: python -m research.nqsar_exact_reconciled_final --output research/output/nqsar-exact-reconciled-final --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nqsar-exact-reconciled-final-20260908
+          path: research/output/nqsar-exact-reconciled-final/
