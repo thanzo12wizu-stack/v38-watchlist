@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np,pandas as pd
 from research import audit_stock_nqsar_theme30_pit as audit
 from research import preimpl_core11_early1_pit as pit
+import build_v38_early1_live as earlylive
 
 START=pd.Timestamp('2016-01-04'); END=pd.Timestamp('2026-09-04'); CONF=pd.Timestamp('2022-01-03')
 
@@ -33,10 +34,12 @@ def pending_counts(res):
     return out
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--root',default='.'); ap.add_argument('--output',required=True); ap.add_argument('--batch-size',type=int,default=100); a=ap.parse_args(); root=Path(a.root); out=root/a.output; out.mkdir(parents=True,exist_ok=True)
-    symbols,bio=audit.load_universe(root/'universe.csv'); warm=str((START-pd.Timedelta(days=1600)).date()); end='2026-09-05'
+    symbols,bio=audit.load_universe(root/'universe.csv'); allowed=earlylive._industry_symbols(root/'industry_map.json'); early_excluded=set(bio)
+    if allowed: early_excluded.update(set(symbols)-set(allowed))
+    warm=str((START-pd.Timedelta(days=1600)).date()); end='2026-09-05'
     print('LONG DOWNLOAD',flush=True); ohlcv,diag=audit.download_ohlcv(symbols,warm,end,a.batch_size)
     if diag['coverage']<.85: raise RuntimeError(diag)
-    print('LONG INPUTS',flush=True); mx=audit.build_stock_inputs(ohlcv,bio,END); early=pit.early_inputs(ohlcv['close'],ohlcv['volume'],bio)
+    print('LONG INPUTS',flush=True); mx=audit.build_stock_inputs(ohlcv,bio,END); early=pit.early_inputs(ohlcv['close'],ohlcv['volume'],early_excluded)
     nq=audit.market_nqsar(str((START-pd.Timedelta(days=90)).date()),end).reindex(mx['close'].index).ffill(limit=2)
     idx=mx['close'].index[(mx['close'].index>=START)&(mx['close'].index<=END)]; cov=float(nq.loc[idx,'nq_color'].notna().mean())
     if cov<.95: raise RuntimeError(f'NQ coverage {cov}')
@@ -45,9 +48,9 @@ def main():
     cur=pit.simulate(idx,mx,theme,nq,early,False); wk=pit.simulate(idx,mx,theme,nq,early,True)
     cur['equity'].rename('equity').to_csv(out/'equity_CURRENT.csv'); wk['equity'].rename('equity').to_csv(out/'equity_WEEK_PRIORITY.csv')
     summary={'method':'long-history controlled interaction test: production Core11+Early1 slots/exits via advance_normal; Core ranking RS189-only; Weekly Priority touches Core only; current-universe survivorship applies',
-             'universe':diag,'market_nqsar_coverage':cov,'CURRENT':slices(cur['equity']),'WEEK_PRIORITY':slices(wk['equity']),
+             'universe':diag,'early1_allowed_universe_count':len(allowed) if allowed else None,'market_nqsar_coverage':cov,'CURRENT':slices(cur['equity']),'WEEK_PRIORITY':slices(wk['equity']),
              'bootstrap_prob_weekly_outperform':{'full_block20':blockprob(wk['equity'],cur['equity']),'confirmation_2022_plus_block20':blockprob(wk['equity'],cur['equity'],CONF)},
              'pending_event_counts':{'CURRENT':pending_counts(cur),'WEEK_PRIORITY':pending_counts(wk)},
-             'invariants':['Early1 unchanged','Core11/3 plus Early1 one slot','direct promotion and D10 expiry use production code','Top12 then DDV20 no refill','no weekly exit']}
+             'invariants':['Early1 formula/rank/universe filter unchanged','Core11/3 plus Early1 one slot','direct promotion and D10 expiry use production code','Top12 then DDV20 no refill','no weekly exit']}
     (out/'summary.json').write_text(json.dumps(pit.safe(summary),ensure_ascii=False,indent=2)); print('DONE_LONG',json.dumps(pit.safe(summary),ensure_ascii=False),flush=True)
 if __name__=='__main__':main()
