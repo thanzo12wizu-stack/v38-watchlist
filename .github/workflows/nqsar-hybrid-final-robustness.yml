@@ -1,0 +1,30 @@
+name: NQSAR Hybrid Final Robustness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/stock-nqsar-transition-early-20260907
+    paths:
+      - 'research/nqsar_hybrid_final_robustness.py'
+      - '.github/workflows/nqsar-hybrid-final-robustness.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile research
+        run: python -m py_compile research/nqsar_hybrid_final_robustness.py
+      - name: Run final robustness audit
+        run: python -u -m research.nqsar_hybrid_final_robustness --root . --output research_outputs/nqsar_hybrid_final_robustness --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nqsar-hybrid-final-robustness-20260908
+          path: research_outputs/nqsar_hybrid_final_robustness
+          retention-days: 90
