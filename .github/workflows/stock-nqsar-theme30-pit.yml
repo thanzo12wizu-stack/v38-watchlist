@@ -6,6 +6,7 @@ on:
       - research/stock-nqsar-theme30-pit-20260907
     paths:
       - research/audit_stock_nqsar_theme30_pit.py
+      - research/run_stock_nqsar_theme30_pit.py
       - .github/workflows/stock-nqsar-theme30-pit.yml
   workflow_dispatch:
 
@@ -27,12 +28,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Compile
-        run: python -m py_compile research/audit_stock_nqsar_theme30_pit.py
+        run: |
+          python -m py_compile research/audit_stock_nqsar_theme30_pit.py
+          python -m py_compile research/run_stock_nqsar_theme30_pit.py
       - name: Run PIT A/B
         env:
           PYTHONPATH: .
         run: |
-          python research/audit_stock_nqsar_theme30_pit.py \
+          python research/run_stock_nqsar_theme30_pit.py \
             --root . \
             --output research_output/stock_nqsar_theme30_pit_20260907 \
             --batch-size 100
