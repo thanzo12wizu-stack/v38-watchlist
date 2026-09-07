@@ -1,0 +1,152 @@
+name: Rotation stock chart live build
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'rotation/data/rotation-theme56-stock-context.json'
+      - 'tools/build_rotation_stock_chart_data.py'
+      - '.github/workflows/rotation-stock-chart-live.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rotation-stock-chart-live
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Validate current Rotation context
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          context=json.loads(Path('rotation/data/rotation-theme56-stock-context.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          asof=str(context.get('asof') or '')
+          if context.get('status') != 'READY':
+              raise SystemExit(f'Rotation strong-stock context not READY: {context.get("status")}')
+          if not target or asof != target:
+              raise SystemExit(f'Rotation chart prerequisite stale: state={target!r} context={asof!r}')
+          print(f'TARGET_ASOF={target}')
+          PY
+
+      - name: Install chart data dependency
+        run: python -m pip install --disable-pip-version-check yfinance
+
+      - name: Build visible-leader OHLCV shards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/build_rotation_stock_chart_data.py \
+            --context rotation/data/rotation-theme56-stock-context.json \
+            --output /tmp/rotation-stock-chart \
+            --previous rotation/data/stock-chart \
+            --period 1y \
+            --max-bars 260 \
+            --workers 4 \
+            --attempts 2
+
+      - name: Validate chart output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          index=json.loads(Path('/tmp/rotation-stock-chart/index.json').read_text(encoding='utf-8'))
+          if str(index.get('session_date') or '') != target:
+              raise SystemExit(f'chart session mismatch: {index.get("session_date")} != {target}')
+          requested=int(index.get('requested') or 0)
+          available=int(index.get('available') or 0)
+          if requested <= 0 or available <= 0:
+              raise SystemExit(f'empty Rotation chart build: {index}')
+          if available / requested < 0.80:
+              raise SystemExit(f'Rotation chart coverage low: {available}/{requested}')
+          print(json.dumps({
+              'asof': target,
+              'requested': requested,
+              'available': available,
+              'fresh': index.get('fresh'),
+              'stale': index.get('stale'),
+              'failed_without_cache': index.get('failed_without_cache'),
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Persist only Rotation chart artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          published=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+
+            python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          context=json.loads(Path('rotation/data/rotation-theme56-stock-context.json').read_text(encoding='utf-8'))
+          if str(state.get('date') or '') != target or str(context.get('asof') or '') != target:
+              raise SystemExit('Production as-of advanced while Rotation chart data was building')
+          if context.get('status') != 'READY':
+              raise SystemExit('Rotation strong-stock context is no longer READY')
+          PY
+
+            rm -rf rotation/data/stock-chart
+            mkdir -p rotation/data/stock-chart
+            cp /tmp/rotation-stock-chart/*.json rotation/data/stock-chart/
+            git add -- rotation/data/stock-chart
+
+            unexpected="$(git diff --cached --name-only | grep -v '^rotation/data/stock-chart/' || true)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::Rotation chart workflow attempted to stage files outside its ownership: $unexpected"
+              exit 1
+            fi
+            if git diff --staged --quiet; then
+              echo 'Rotation chart artifacts already current'
+              published=true
+              break
+            fi
+            git commit -m "Publish Rotation stock charts $TARGET_ASOF"
+            if git push origin HEAD:main; then
+              published=true
+              break
+            fi
+            echo "::warning::Main changed concurrently; retry Rotation chart publish $attempt/3"
+            sleep $((attempt * 2))
+          done
+          [[ "$published" == true ]] || exit 1
+
+      - name: Upload chart diagnostics
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: rotation-stock-chart-live
+          path: /tmp/rotation-stock-chart/
+          if-no-files-found: warn
+          retention-days: 7
