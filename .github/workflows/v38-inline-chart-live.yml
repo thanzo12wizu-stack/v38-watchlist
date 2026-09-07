@@ -11,6 +11,7 @@ on:
       - 'options-chart.css'
       - 'trend_history.json'
       - 'tools/build_v38_chart_data.py'
+      - 'tests/test_v38_chart_data.py'
       - '.github/workflows/v38-inline-chart-live.yml'
 
 permissions:
@@ -59,7 +60,10 @@ jobs:
           PY
 
       - name: Install chart data dependency
-        run: python -m pip install --disable-pip-version-check yfinance
+        run: python -m pip install --disable-pip-version-check yfinance pytest
+
+      - name: Test V38 chart symbol discovery
+        run: python -m pytest -q tests/test_v38_chart_data.py
 
       - name: Build V38 OHLCV shards
         shell: bash
