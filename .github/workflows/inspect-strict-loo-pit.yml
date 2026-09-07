@@ -1,0 +1,27 @@
+name: Inspect Strict LOO PIT
+
+on:
+  push:
+    branches:
+      - research/stock-nqsar-theme30-pit-20260907
+    paths:
+      - research/inspect_strict_loo_history.py
+      - .github/workflows/inspect-strict-loo-pit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect
+        run: python research/inspect_strict_loo_history.py
