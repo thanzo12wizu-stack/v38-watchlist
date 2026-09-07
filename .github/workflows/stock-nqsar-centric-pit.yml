@@ -1,0 +1,27 @@
+name: Stock NQSAR Centric PIT
+
+on:
+  push:
+    branches: [research/stock-nqsar-centric-work-20260907]
+    paths:
+      - 'research/stock_nqsar_centric_pit.py'
+      - '.github/workflows/stock-nqsar-centric-pit.yml'
+  workflow_dispatch: {}
+
+jobs:
+  pit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m py_compile research/stock_nqsar_centric_pit.py
+      - name: Run PIT NQSAR centric scan
+        run: python -m research.stock_nqsar_centric_pit --output research/output/nqsar-centric-pit --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-nqsar-centric-pit-20260907
+          path: research/output/nqsar-centric-pit/
