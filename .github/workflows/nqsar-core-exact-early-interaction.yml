@@ -1,0 +1,29 @@
+name: NQSAR Core Exact Early Interaction
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/nqsar_core_exact_early_interaction.py'
+      - '.github/workflows/nqsar-core-exact-early-interaction.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile exact Core interaction research
+        run: python -m py_compile research/nqsar_core_exact_early_interaction.py
+      - name: Run exact Core x Early1 interaction
+        run: python -m research.nqsar_core_exact_early_interaction --output research/output/nqsar-core-exact-early --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nqsar-core-exact-early-20260907
+          path: research/output/nqsar-core-exact-early/
