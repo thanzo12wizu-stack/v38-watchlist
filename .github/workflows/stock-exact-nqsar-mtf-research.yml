@@ -1,0 +1,50 @@
+name: Exact Stock NQSAR MTF Research
+
+on:
+  push:
+    branches:
+      - research/stock-mtf-nqsar-20260907
+    paths:
+      - research/stock_exact_nqsar_mtf_backtest.py
+      - .github/workflows/stock-exact-nqsar-mtf-research.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Compile scripts
+        run: |
+          python -m py_compile research/stock_mtf_nqsar_backtest.py
+          python -m py_compile research/stock_exact_nqsar_mtf_backtest.py
+      - name: Run exact Stock NQSAR MTF audit
+        env:
+          PYTHONPATH: .
+        run: |
+          python research/stock_exact_nqsar_mtf_backtest.py \
+            --root . \
+            --output research_output/stock_exact_nqsar_mtf_20260907 \
+            --analysis-start 2016-01-04 \
+            --analysis-end 2026-09-04 \
+            --max-tickers 6000 \
+            --batch-size 100
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-exact-nqsar-mtf-20260907
+          path: research_output/stock_exact_nqsar_mtf_20260907
+          if-no-files-found: warn
