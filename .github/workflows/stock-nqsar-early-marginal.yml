@@ -1,0 +1,27 @@
+name: Stock NQSAR Early1 Marginal
+
+on:
+  push:
+    branches: [research/stock-nqsar-preimpl-20260907]
+    paths:
+      - 'research/preimpl_early1_marginal.py'
+      - '.github/workflows/stock-nqsar-early-marginal.yml'
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m py_compile research/preimpl_early1_marginal.py
+      - name: Run Early1 marginal audit
+        run: python research/preimpl_early1_marginal.py --output research/output/early1-marginal --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-nqsar-early1-marginal-20260907
+          path: research/output/early1-marginal/
