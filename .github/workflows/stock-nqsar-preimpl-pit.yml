@@ -1,0 +1,40 @@
+name: Stock NQSAR Preimplementation PIT
+
+on:
+  push:
+    branches: [research/stock-nqsar-preimpl-20260907]
+    paths:
+      - 'research/preimpl_core11_early1_pit.py'
+      - '.github/workflows/stock-nqsar-preimpl-pit.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile
+        run: python -m py_compile research/preimpl_core11_early1_pit.py
+      - name: Run exact production-slot PIT audit
+        env:
+          PYTHONPATH: .
+        run: |
+          python research/preimpl_core11_early1_pit.py \
+            --root . \
+            --output research_output/stock_nqsar_preimpl_pit_20260907 \
+            --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-nqsar-preimpl-pit-20260907
+          path: research_output/stock_nqsar_preimpl_pit_20260907
