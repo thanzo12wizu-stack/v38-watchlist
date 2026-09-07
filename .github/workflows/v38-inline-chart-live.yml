@@ -1,0 +1,162 @@
+name: V38 inline chart live build
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'v38-live-state.json'
+      - 'v38-inline-chart.js'
+      - 'options-chart.js'
+      - 'options-chart.css'
+      - 'trend_history.json'
+      - 'tools/build_v38_chart_data.py'
+      - 'tests/test_v38_chart_data.py'
+      - '.github/workflows/v38-inline-chart-live.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v38-inline-chart-live
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Syntax check chart code
+        run: |
+          python -m py_compile tools/build_v38_chart_data.py
+          node --check v38-inline-chart.js
+          node --check options-chart.js
+
+      - name: Validate current V38 state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          v38=json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          asof=str(v38.get('asof') or '')
+          if not target or asof != target:
+              raise SystemExit(f'V38 chart prerequisite stale: state={target!r} v38={asof!r}')
+          print(f'TARGET_ASOF={target}')
+          PY
+
+      - name: Install chart data dependency
+        run: python -m pip install --disable-pip-version-check yfinance pytest
+
+      - name: Test V38 chart symbol discovery
+        run: python -m pytest -q tests/test_v38_chart_data.py
+
+      - name: Build V38 OHLCV shards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/build_v38_chart_data.py \
+            --state v38-live-state.json \
+            --output /tmp/v38-chart-data \
+            --previous v38_chart_data \
+            --period 1y \
+            --max-bars 260 \
+            --workers 4 \
+            --attempts 2
+
+      - name: Validate chart output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          index=json.loads(Path('/tmp/v38-chart-data/index.json').read_text(encoding='utf-8'))
+          if str(index.get('session_date') or '') != target:
+              raise SystemExit(f'chart session mismatch: {index.get("session_date")} != {target}')
+          requested=int(index.get('requested') or 0)
+          available=int(index.get('available') or 0)
+          if requested <= 0 or available <= 0:
+              raise SystemExit(f'empty V38 chart build: {index}')
+          if available / requested < 0.80:
+              raise SystemExit(f'V38 chart coverage low: {available}/{requested}')
+          print(json.dumps({
+              'asof': target,
+              'requested': requested,
+              'available': available,
+              'fresh': index.get('fresh'),
+              'stale': index.get('stale'),
+              'failed_without_cache': index.get('failed_without_cache'),
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Persist only V38 chart artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          published=false
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+
+            python - <<'PY'
+          import json, os
+          from pathlib import Path
+          target=os.environ['TARGET_ASOF']
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          v38=json.loads(Path('v38-live-state.json').read_text(encoding='utf-8'))
+          if str(state.get('date') or '') != target or str(v38.get('asof') or '') != target:
+              raise SystemExit('Production as-of advanced while V38 chart data was building')
+          PY
+
+            rm -rf v38_chart_data
+            mkdir -p v38_chart_data
+            cp /tmp/v38-chart-data/*.json v38_chart_data/
+            git add -- v38_chart_data
+
+            unexpected="$(git diff --cached --name-only | grep -v '^v38_chart_data/' || true)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::V38 chart workflow attempted to stage files outside its ownership: $unexpected"
+              exit 1
+            fi
+            if git diff --staged --quiet; then
+              echo 'V38 chart artifacts already current'
+              published=true
+              break
+            fi
+            git commit -m "Publish V38 inline charts $TARGET_ASOF"
+            if git push origin HEAD:main; then
+              published=true
+              break
+            fi
+            echo "::warning::Main changed concurrently; retry V38 chart publish $attempt/3"
+            sleep $((attempt * 2))
+          done
+          [[ "$published" == true ]] || exit 1
+
+      - name: Upload chart diagnostics
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: v38-inline-chart-live
+          path: /tmp/v38-chart-data/
+          if-no-files-found: warn
+          retention-days: 7
