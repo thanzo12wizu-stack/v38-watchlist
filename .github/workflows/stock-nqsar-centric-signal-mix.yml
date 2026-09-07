@@ -1,0 +1,25 @@
+name: Stock NQSAR Centric Signal Mix
+on:
+  push:
+    branches: [research/stock-nqsar-centric-20260907]
+    paths:
+      - 'research/nqsar_centric_signal_mix.py'
+      - '.github/workflows/stock-nqsar-centric-signal-mix.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m py_compile research/nqsar_centric_signal_mix.py
+      - name: Run signal mix audit
+        run: python -m research.nqsar_centric_signal_mix --output research_output/nqsar_signal_mix --batch-size 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-nqsar-centric-signal-mix-20260907
+          path: research_output/nqsar_signal_mix
