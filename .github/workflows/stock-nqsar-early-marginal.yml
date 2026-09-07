@@ -20,7 +20,7 @@ jobs:
       - run: pip install --disable-pip-version-check -r requirements.txt
       - run: python -m py_compile research/preimpl_early1_marginal.py
       - name: Run Early1 marginal audit
-        run: python research/preimpl_early1_marginal.py --output research/output/early1-marginal --batch-size 100
+        run: python -m research.preimpl_early1_marginal --output research/output/early1-marginal --batch-size 100
       - uses: actions/upload-artifact@v4
         with:
           name: stock-nqsar-early1-marginal-20260907
