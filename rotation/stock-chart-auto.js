@@ -1,6 +1,23 @@
 (() => {
 'use strict';
 
+function ensureEnhancementAssets() {
+  if (!document.querySelector('link[data-rotation-stock-chart-enhancement]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'stock-chart.css?v=20260907-nqsartags2';
+    link.dataset.rotationStockChartEnhancement = '1';
+    document.head.appendChild(link);
+  }
+  if (!document.querySelector('script[data-rotation-nqsar-tags]')) {
+    const script = document.createElement('script');
+    script.src = 'stock-chart-nqsar-tags.js?v=20260907-nqsartags2';
+    script.defer = true;
+    script.dataset.rotationNqsarTags = '1';
+    document.head.appendChild(script);
+  }
+}
+
 function symbolOf(panel) {
   const node = panel.querySelector('.rotation-stock-detail-symbol');
   if (!node) return '';
@@ -27,7 +44,7 @@ function addChart(panel, symbol) {
   title.appendChild(document.createTextNode(symbol + ' 日足チャート'));
   const sub = document.createElement('span');
   sub.className = 'rotation-stock-chart-sub';
-  sub.textContent = 'NQSAR背景 × テクニカル';
+  sub.textContent = 'NQSAR背景 × テクニカル / 色切替はタグ表示';
   title.appendChild(sub);
 
   const legend = document.createElement('div');
@@ -47,7 +64,7 @@ function addChart(panel, symbol) {
 
   const foot = document.createElement('div');
   foot.className = 'rotation-stock-chart-foot';
-  foot.textContent = '背景色は既存NQSAR履歴。履歴が存在しない日付は無着色。';
+  foot.textContent = '背景色は既存NQSAR履歴。色が切り替わる地点はNQSARタグ表示。履歴が存在しない日付は無着色。';
   shell.append(head, host, foot);
 
   const link = panel.querySelector('.rotation-stock-tv');
@@ -67,6 +84,7 @@ function scan() {
   });
 }
 
+ensureEnhancementAssets();
 setInterval(scan, 250);
 scan();
 })();
