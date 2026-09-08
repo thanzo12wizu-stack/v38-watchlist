@@ -1,0 +1,52 @@
+name: Audit 8T3I1E STOP Attribution
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/audit_8t3i1e_stop_attribution.py'
+      - '.github/workflows/audit-8t3i1e-stop-attribution.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt scipy
+
+      - name: Compile
+        run: python -m py_compile research/audit_8t3i1e_stop_attribution.py
+
+      - name: Run frozen STOP attribution
+        run: |
+          python -u -m research.audit_8t3i1e_stop_attribution \
+            --root . \
+            --output research_outputs/audit_8t3i1e_stop_attribution \
+            --batch-size 100
+
+      - name: Upload STOP attribution
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-8t3i1e-stop-attribution-20260909
+          path: research_outputs/audit_8t3i1e_stop_attribution
+          if-no-files-found: warn
+          retention-days: 90
