@@ -1,0 +1,65 @@
+{
+  "strategy_id": "8T3I1E",
+  "status": "FROZEN_RESEARCH_CANDIDATE",
+  "freeze_date": "2026-09-09",
+  "branch": "research/stock-nqsar-transition-early-20260907",
+  "normal_stock": {
+    "kind": "HYBRID8T3I_E1",
+    "core_first_11_pattern": [
+      "T",
+      "T",
+      "T",
+      "I",
+      "T",
+      "T",
+      "T",
+      "I",
+      "T",
+      "T",
+      "I"
+    ],
+    "slot12_spare": "T",
+    "early_slots": 1,
+    "trend_definition": "q63 descending among pool & struct & weekly_bull",
+    "ignition_definition": "early_score descending among pool & weekly_bull & radar_active",
+    "dedupe": "first occurrence wins across T/I streams",
+    "capacity": "Top12 then canonical DDV20 no-refill",
+    "market_and_exit_logic": "unchanged canonical current Market NQSAR + Breadth and current exits",
+    "eligibility": "delegated exactly to frozen source implementations listed under source_pins; no parameter retuning permitted",
+    "hold_rebalance": "delegated exactly to frozen source implementations listed under source_pins; no parameter retuning permitted"
+  },
+  "integration": {
+    "period": [
+      "2016-01-04",
+      "2026-03-20"
+    ],
+    "tqqq": "frozen Stage56 M30_TOUCH30_F80_D10 / CURRENT30 comparison source",
+    "normal_tqqq_target": 0.3,
+    "panic_tqqq_target": 0.8,
+    "gross_cap": 1.0,
+    "normal_stock_cap": 0.7,
+    "selective_fill": true,
+    "native_tqqq_zero_not_overridden": true,
+    "timing": [
+      "SAME_DAY_GROSS",
+      "LAG1_GROSS"
+    ],
+    "cost_bps": [
+      0,
+      25
+    ],
+    "quality_threshold": 0.85
+  },
+  "source_pins": {
+    "research/nqsar_hybrid_three_role_exact.py": "5e65aa58bea455740156b1819d561a4a280acf84",
+    "research/nqsar_hybrid_final_robustness.py": "4459d0710ba4d15ad34ad1b28f9ff004aa8477d6",
+    "research/nqsar_centric_broad_scan.py": "2ca950288c7f69150937f8a5692e25b7fd393c34",
+    "research/nqsar_exact_reconciled_final.py": "0fbc731899a73b45bb6af3d8b0f9a75ff1d98b8f",
+    "research/backtest_8t3i1e_vs_current_with_tqqq.py": "51e1b61da3bb812c01d58877b8def485e40f65a0",
+    "research/run_backtest_8t3i1e_tqqq_resilient.py": "eb5dcadd06a23667f0dad365a3a519f15b6e6512",
+    "build_v38_tqqq_live.py": "0a3b808606ce94b5cf28034c9e8b3c03d5826a4b"
+  },
+  "freeze_rule": "No strategy/search parameter may be changed after this manifest for validation. Execution-only fixes must be separately identified and may not change signals, ranks, allocation, timing, costs, dates, or exits.",
+  "production_changed": false,
+  "freeze_sha256": "86827acd60f4941a6a980ba9dc9ea3d5fbe9e7205717d6dd975aa9ff7954698a"
+}
