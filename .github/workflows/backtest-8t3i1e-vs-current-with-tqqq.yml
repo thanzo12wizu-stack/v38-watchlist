@@ -6,6 +6,7 @@ on:
     branches: [research/stock-nqsar-transition-early-20260907]
     paths:
       - 'research/backtest_8t3i1e_vs_current_with_tqqq.py'
+      - 'research/run_backtest_8t3i1e_tqqq_resilient.py'
       - '.github/workflows/backtest-8t3i1e-vs-current-with-tqqq.yml'
 
 permissions:
@@ -47,11 +48,13 @@ jobs:
           run-id: 33405477190
 
       - name: Compile
-        run: python -m py_compile research/backtest_8t3i1e_vs_current_with_tqqq.py
+        run: |
+          python -m py_compile research/backtest_8t3i1e_vs_current_with_tqqq.py
+          python -m py_compile research/run_backtest_8t3i1e_tqqq_resilient.py
 
       - name: Run integrated backtest
         run: |
-          python -u -m research.backtest_8t3i1e_vs_current_with_tqqq \
+          python -u -m research.run_backtest_8t3i1e_tqqq_resilient \
             --root . \
             --tqqq-daily research_inputs/tqqq/tqqq_stage56_daily.csv.gz \
             --reset-daily research_inputs/gross100/gross100_final_reset_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
