@@ -1,0 +1,40 @@
+name: Audit Yahoo Chart Forced Fallback
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/test_yahoo_chart_fallback_forced.py'
+      - '.github/workflows/audit-yahoo-chart-fallback-forced.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fallback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m py_compile research/test_yahoo_chart_fallback_forced.py
+      - name: Force primary failure and test Chart recovery
+        run: |
+          python -u -m research.test_yahoo_chart_fallback_forced \
+            --output research_outputs/yahoo_chart_fallback_forced \
+            --start 2024-01-01
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yahoo-chart-forced-fallback-20260909
+          path: research_outputs/yahoo_chart_fallback_forced
+          if-no-files-found: error
+          retention-days: 90
