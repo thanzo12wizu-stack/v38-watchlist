@@ -1,0 +1,39 @@
+{
+  "strategy_family": "ATTACK_ROLE_SPLIT",
+  "status": "PRE_REGISTERED_HOLDOUT_CANDIDATES",
+  "freeze_date": "2026-09-09",
+  "branch": "research/stock-nqsar-transition-early-20260907",
+  "discovery_period": ["2016-01-04", "2021-12-31"],
+  "holdout_period": ["2022-01-03", "2026-03-20"],
+  "variants": {
+    "CURRENT_RULE": "frozen current candidates every eligible entry day",
+    "NEW_8T3I1E": "frozen HYBRID8T3I_E1 every eligible entry day",
+    "MIX6C5N_E1": "alternate Current/New candidate streams; first 11 Core slots 6 Current + 5 New, slot12 New spare; original Early1 unchanged",
+    "SWITCH_BLUE_B70_RISING5": "use Current only when mode ATTACK and NQSAR Blue and Breadth>=70 and Breadth[t]-Breadth[t-5]>=0; otherwise use 8T3I1E",
+    "SWITCH_BLUE_B80": "use Current only when mode ATTACK and NQSAR Blue and Breadth>=80; otherwise use 8T3I1E"
+  },
+  "invariants": [
+    "existing holdings are never force-swapped when engine choice changes",
+    "canonical advance_normal exits unchanged",
+    "original Early1 unchanged",
+    "Top12 then DDV20 no refill unchanged",
+    "market mode unchanged",
+    "same frozen TQQQ and reset sources",
+    "gross100 allocation unchanged",
+    "no thresholds may be retuned after holdout is opened"
+  ],
+  "primary_test": "STOCK_PLUS_TQQQ | SAME_DAY_GROSS | 25bp | HOLDOUT_2022_2026M3",
+  "secondary_tests": ["STOCK_ONLY", "FULL_GROSS100_WITH_RESET", "LAG1_GROSS", "0bp", "2022_2023", "2024_2026M3"],
+  "source_pins": {
+    "research/validate_attack_schemes_holdout.py": "0088b1c3ee52625bbc9fde1650790b040c7f0d80",
+    "research/nqsar_hybrid_three_role_exact.py": "5e65aa58bea455740156b1819d561a4a280acf84",
+    "research/nqsar_centric_broad_scan.py": "2ca950288c7f69150937f8a5692e25b7fd393c34",
+    "research/backtest_8t3i1e_vs_current_with_tqqq.py": "51e1b61da3bb812c01d58877b8def485e40f65a0",
+    "research/run_backtest_8t3i1e_tqqq_resilient.py": "eb5dcadd06a23667f0dad365a3a519f15b6e6512",
+    "research/preimpl_core11_early1_pit.py": "2482175ceb42073c599964bb9c9f258fd6375b2b",
+    "research/audit_stock_nqsar_theme30_pit.py": "07a3f27d43a36a5d67b12bdfcad6948242ecb8f1",
+    "build_v38_sleeve_live.py": "b8da7fec2b01707f699d979b721e19910e423e09"
+  },
+  "production_changed": false,
+  "freeze_sha256": "e3da697eff91bd2f6bdc96fd229bbd734abe1c755e21964c98aa646a24e5fcd3"
+}
