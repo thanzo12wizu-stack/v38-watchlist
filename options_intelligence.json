@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0",
-  "generated_at": "2026-09-08T01:40:54Z",
+  "generated_at": "2026-09-08T09:22:09Z",
   "session_date": "2026-09-04",
   "positioning_asof": "2026-09-08T01:24:01+00:00",
   "quality": {
@@ -20,7 +20,7 @@
     "source": "state.json"
   },
   "leadership": {
-    "generated_at": "2026-09-08T09:41:00+09:00",
+    "generated_at": "2026-09-08T18:09:03+09:00",
     "market": {
       "status": "SELECTIVE",
       "label": "上位グループだけ選別",
@@ -35030,7 +35030,7 @@
         "name": "Bristol-Myers Squibb Company",
         "leader_score": 79,
         "strength": 76.9,
-        "rs189": 74.9,
+        "rs189": 74.8,
         "rs63": 74.7,
         "rs21": 69.8,
         "role": "LEADER",
@@ -61683,106 +61683,6 @@
       ]
     },
     {
-      "ticker": "WDC",
-      "name": "Western Digital Corporation",
-      "sector": "Electronic Technology",
-      "industry": "Computer Peripherals",
-      "source": "SCAN",
-      "age_days": 4,
-      "time_quality": "VERIFIED",
-      "session_date": "2026-09-04",
-      "signal": "HEADWIND",
-      "score": 40,
-      "reasons": [
-        "Gamma Flip下の増幅側",
-        "Put支持候補が近い",
-        "Call Wall接近"
-      ],
-      "current": {
-        "date": "2026-09-04",
-        "price_session_date": "2026-09-04",
-        "expected_session_date": "2026-09-04",
-        "history_session_date": "2026-09-04",
-        "price_source": "upstream_universe_close",
-        "options_observed_at": "2026-09-08T01:25:25+00:00",
-        "expiry": "2026-09-18",
-        "spot": 467.46,
-        "atr14": 27.285,
-        "call_wall": 500.0,
-        "put_wall": 450.0,
-        "gamma_flip": 523.1115050146093,
-        "net_gex": -2962230.23,
-        "regime": "NEGATIVE_GAMMA",
-        "confidence": "HIGH",
-        "total_oi": 37340.0,
-        "n_strikes": 48.0,
-        "call_oi": 15632.0,
-        "put_oi": 21708.0,
-        "detail": false,
-        "stale": false,
-        "session_consistent": true,
-        "time_quality": "SCAN_PENDING_VERIFY",
-        "expected_move": {
-          "expected_move": 48.55,
-          "expected_move_pct": 0.103859,
-          "expected_move_method": "atm_straddle_mid",
-          "expected_low": 418.91,
-          "expected_high": 516.01
-        }
-      },
-      "previous": {
-        "date": "2026-08-24",
-        "price_session_date": "2026-08-24",
-        "expected_session_date": "2026-08-24",
-        "history_session_date": "",
-        "price_source": "",
-        "options_observed_at": "",
-        "expiry": "2026-09-04",
-        "spot": 435.38,
-        "atr14": 40.165,
-        "call_wall": 500.0,
-        "put_wall": 410.0,
-        "gamma_flip": null,
-        "net_gex": -4797630.36,
-        "regime": "UNKNOWN",
-        "confidence": "HIGH",
-        "total_oi": 12916.0,
-        "n_strikes": 87.0,
-        "call_oi": null,
-        "put_oi": null,
-        "detail": false,
-        "stale": false,
-        "session_consistent": false,
-        "time_quality": "SCAN_PENDING_VERIFY",
-        "expected_move": null
-      },
-      "multi_expiry": null,
-      "direction": {
-        "direction": "VOLATILE",
-        "score": 55,
-        "confidence": 60,
-        "reasons": [
-          "終値がGamma Flip下",
-          "当日モメンタム上",
-          "上側余地が下側リスクより広い"
-        ],
-        "volatility": "HIGH"
-      },
-      "analysis": "方向は混在、値幅拡大に注意。基準終値467.46はFlip 523.11の下 下はPut Wall 450.00 上はCall Wall 500.00 2026-09-18までの織込み値幅は約±48.55（10.4%、atm_straddle_mid）。",
-      "plan": {
-        "entry": "Gamma Flip 523.11 の奪回待ち。",
-        "invalid": "Gamma Flip 523.11 を奪回できない間は上方向シナリオ保留",
-        "target": "次のCall Wall 500.00"
-      },
-      "leader": null,
-      "tape": null,
-      "trade_direction_available": false,
-      "limitations": [
-        "OI/IVは観測するがproviderのOI更新時刻は非開示",
-        "約定方向が無いためPut売り/Call買いは断定しない"
-      ]
-    },
-    {
       "ticker": "AVT",
       "name": "Avnet, Inc.",
       "sector": "Distribution Services",
@@ -84587,6 +84487,105 @@
         "entry": "Gamma Flip 507.48 の奪回待ち。",
         "invalid": "Gamma Flip 507.48 を奪回できない間は上方向シナリオ保留",
         "target": "次のCall Wall 570.00"
+      },
+      "leader": null,
+      "tape": null,
+      "trade_direction_available": false,
+      "limitations": [
+        "OI/IVは観測するがproviderのOI更新時刻は非開示",
+        "約定方向が無いためPut売り/Call買いは断定しない"
+      ]
+    },
+    {
+      "ticker": "WDC",
+      "name": "Western Digital Corporation",
+      "sector": "Electronic Technology",
+      "industry": "Computer Peripherals",
+      "source": "SCAN",
+      "age_days": 4,
+      "time_quality": "VERIFIED",
+      "session_date": "2026-09-04",
+      "signal": "HEADWIND",
+      "score": 40,
+      "reasons": [
+        "Gamma Flip下の増幅側",
+        "Put支持候補が近い",
+        "Call Wall接近"
+      ],
+      "current": {
+        "date": "2026-09-04",
+        "price_session_date": "2026-09-04",
+        "expected_session_date": "2026-09-04",
+        "history_session_date": "2026-09-04",
+        "price_source": "upstream_universe_close",
+        "options_observed_at": "2026-09-08T01:25:25+00:00",
+        "expiry": "2026-09-18",
+        "spot": 467.46,
+        "atr14": 27.285,
+        "call_wall": 500.0,
+        "put_wall": 450.0,
+        "gamma_flip": 523.1115050146093,
+        "net_gex": -2962230.23,
+        "regime": "NEGATIVE_GAMMA",
+        "confidence": "HIGH",
+        "total_oi": 37340.0,
+        "n_strikes": 48.0,
+        "call_oi": 15632.0,
+        "put_oi": 21708.0,
+        "detail": false,
+        "stale": false,
+        "session_consistent": true,
+        "time_quality": "SCAN_PENDING_VERIFY",
+        "expected_move": {
+          "expected_move": 48.55,
+          "expected_move_pct": 0.103859,
+          "expected_move_method": "atm_straddle_mid",
+          "expected_low": 418.91,
+          "expected_high": 516.01
+        }
+      },
+      "previous": {
+        "date": "2026-08-24",
+        "price_session_date": "2026-08-24",
+        "expected_session_date": "2026-08-24",
+        "history_session_date": "",
+        "price_source": "",
+        "options_observed_at": "",
+        "expiry": "2026-09-04",
+        "spot": 435.38,
+        "atr14": 40.165,
+        "call_wall": 500.0,
+        "put_wall": 410.0,
+        "gamma_flip": null,
+        "net_gex": -4797630.36,
+        "regime": "UNKNOWN",
+        "confidence": "HIGH",
+        "total_oi": 12916.0,
+        "n_strikes": 87.0,
+        "call_oi": null,
+        "put_oi": null,
+        "detail": false,
+        "stale": false,
+        "session_consistent": false,
+        "time_quality": "SCAN_PENDING_VERIFY",
+        "expected_move": null
+      },
+      "multi_expiry": null,
+      "direction": {
+        "direction": "VOLATILE",
+        "score": 50,
+        "confidence": 53,
+        "reasons": [
+          "終値がGamma Flip下",
+          "上側余地が下側リスクより広い"
+        ],
+        "volatility": "HIGH"
+      },
+      "analysis": "方向は混在、値幅拡大に注意。基準終値467.46はFlip 523.11の下 下はPut Wall 450.00 上はCall Wall 500.00 2026-09-18までの織込み値幅は約±48.55（10.4%、atm_straddle_mid）。",
+      "plan": {
+        "entry": "Gamma Flip 523.11 の奪回待ち。",
+        "invalid": "Gamma Flip 523.11 を奪回できない間は上方向シナリオ保留",
+        "target": "次のCall Wall 500.00"
       },
       "leader": null,
       "tape": null,
