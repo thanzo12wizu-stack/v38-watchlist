@@ -1,0 +1,68 @@
+name: Backtest 8T3I1E vs Current with TQQQ
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/backtest_8t3i1e_vs_current_with_tqqq.py'
+      - '.github/workflows/backtest-8t3i1e-vs-current-with-tqqq.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt scipy
+
+      - name: Download frozen Stage56 TQQQ series
+        uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: research_inputs/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+
+      - name: Download frozen final Gross100 Reset component
+        uses: actions/download-artifact@v4
+        with:
+          name: gross100-final-reset-recheck
+          path: research_inputs/gross100
+          github-token: ${{ github.token }}
+          run-id: 33405477190
+
+      - name: Compile
+        run: python -m py_compile research/backtest_8t3i1e_vs_current_with_tqqq.py
+
+      - name: Run integrated backtest
+        run: |
+          python -u -m research.backtest_8t3i1e_vs_current_with_tqqq \
+            --root . \
+            --tqqq-daily research_inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --reset-daily research_inputs/gross100/gross100_final_reset_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
+            --output research_outputs/backtest_8t3i1e_vs_current_with_tqqq \
+            --batch-size 100
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-8t3i1e-vs-current-with-tqqq-20260908
+          path: research_outputs/backtest_8t3i1e_vs_current_with_tqqq
+          if-no-files-found: warn
+          retention-days: 90
