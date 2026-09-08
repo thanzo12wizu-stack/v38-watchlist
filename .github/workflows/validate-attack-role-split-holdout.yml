@@ -1,0 +1,78 @@
+name: Validate ATTACK Role Split Holdout
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/validate_attack_schemes_holdout.py'
+      - 'research/attack_scheme_holdout_freeze.json'
+      - '.github/workflows/validate-attack-role-split-holdout.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt scipy
+      - name: Download frozen Stage56 TQQQ series
+        uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: research_inputs/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+      - name: Download frozen final Gross100 Reset component
+        uses: actions/download-artifact@v4
+        with:
+          name: gross100-final-reset-recheck
+          path: research_inputs/gross100
+          github-token: ${{ github.token }}
+          run-id: 33405477190
+      - name: Verify frozen source pins
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          m=json.load(open('research/attack_scheme_holdout_freeze.json'))
+          bad=[]
+          for p,exp in m['source_pins'].items():
+              got=subprocess.check_output(['git','hash-object',p],text=True).strip()
+              print(p, got, 'OK' if got==exp else 'MISMATCH')
+              if got!=exp: bad.append((p,exp,got))
+          if bad: raise SystemExit(f'FREEZE_PIN_MISMATCH {bad}')
+          print('FREEZE_SHA256',m['freeze_sha256'])
+          PY
+      - name: Compile
+        run: python -m py_compile research/validate_attack_schemes_holdout.py
+      - name: Run pre-registered holdout validation
+        run: |
+          python -u -m research.validate_attack_schemes_holdout \
+            --root . \
+            --tqqq-daily research_inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --reset-daily research_inputs/gross100/gross100_final_reset_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
+            --output research_outputs/attack_role_split_holdout \
+            --batch-size 100
+      - name: Upload holdout validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validate-attack-role-split-holdout-20260909
+          path: research_outputs/attack_role_split_holdout
+          if-no-files-found: warn
+          retention-days: 90
