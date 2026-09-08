@@ -271,7 +271,6 @@ DAL,"Delta Air Lines, Inc.",80.17,1.8031746031746054,5133960,52721633571,Transpo
 EW,Edwards Lifesciences Corporation,89.9,0.1336600579193635,2635295,51818363074,Health Technology,Medical Specialties,NYSE,stock,common,6067600000
 FNV,Franco-Nevada Corporation,266.18,-1.527875402315858,462533,51339150866.8205,Non-Energy Minerals,Precious Metals,NYSE,stock,common,1853284579.0507016
 HONA,Honeywell Aerospace Inc,161.01,3.9042333505420643,3168654,51032557038,Electronic Technology,Aerospace & Defense,NASDAQ,stock,common,17716000000
-COIN,"Coinbase Global, Inc. Class A",184.64,-4.182667358588481,8177636,50841389899.99999,Finance,Investment Banks/Brokers,NASDAQ,stock,common,7181325000
 VMRK,Vivmark Residential,65.35,0.6003694581280797,6495768,50566463903.99999,Finance,Real Estate Investment Trusts,NYSE,stock,common,3063693000
 BDX,"Becton, Dickinson and Company",184.74,-1.5350175887432018,1439133,50320740832.00001,Health Technology,Medical Specialties,NYSE,stock,common,21840000000
 VST,Vistra Corp.,149.3,3.5223963389266486,4616500,50110335320,Utilities,Electric Utilities,NYSE,stock,common,16972000000
@@ -281,6 +280,7 @@ XYZ,"Block, Inc. Class A",82.76,-0.731678061652872,2457318,49721959266,Commercia
 AMP,"Ameriprise Financial, Inc.",560.56,-0.799886741700307,372794,49516070392,Finance,Investment Managers,NYSE,stock,common,18922000000
 CRWV,"CoreWeave, Inc. Class A",89.36,5.676442762535474,20796741,49285309624.00001,Technology Services,Packaged Software,NASDAQ,stock,common,5131000000
 CARR,Carrier Global Corp.,59.71,1.0663507109004784,4350271,49220449369,Producer Manufacturing,Industrial Machinery,NYSE,stock,common,21747000000
+COIN,"Coinbase Global, Inc. Class A",184.64,-4.182667358588481,8177636,48714863680.00001,Finance,Investment Banks/Brokers,NASDAQ,stock,common,7181325000
 AZO,"AutoZone, Inc.",2983.29,0.5138070915486315,402014,48703270536,Retail Trade,Specialty Stores,NYSE,stock,common,18938717000
 HUM,Humana Inc.,401.54,-1.2250319787464237,783104,48217047502,Health Services,Managed Health Care,NYSE,stock,common,129711000000
 ROK,"Rockwell Automation, Inc.",433.81,1.2912113570561385,532290,48174028972.99999,Producer Manufacturing,Electrical Products,NYSE,stock,common,8343000000
@@ -334,8 +334,8 @@ ODFL,"Old Dominion Freight Line, Inc.",185.87,0.06460296096904686,2389882,385413
 RKLB,Rocket Lab Corporation,64.26,0.7052186177715136,14951974,38457026602,Electronic Technology,Aerospace & Defense,NASDAQ,stock,common,601799000
 SYY,Sysco Corporation,80.05,-1.2703502713369526,2161905,38351639369,Distribution Services,Food Distributors,NYSE,stock,common,84553000000
 VIK,Viking Holdings Ltd,85.81,0.26875438186492634,2133868,38284740548,Consumer Services,Hotels/Resorts/Cruise lines,NYSE,stock,common,6501419000
-HEI.A,HEICO Corporation Class A,240.18,0.3845189333779219,281255,38279046072,Electronic Technology,Aerospace & Defense,NYSE,stock,common,4485044000
 HEI,HEICO Corporation,325.48,-0.06754682222903606,477489,38279046072,Electronic Technology,Aerospace & Defense,NYSE,stock,common,4485044000
+HEI.A,HEICO Corporation Class A,240.18,0.3845189333779219,281255,38279046072,Electronic Technology,Aerospace & Defense,NYSE,stock,common,4485044000
 NTR,Nutrien Ltd.,79.47,-1.5607580824972191,2774708,37923882134.86117,Process Industries,Chemicals: Agricultural,NYSE,stock,common,27355636273.074684
 EL,Estee Lauder Companies Inc. Class A,103.86,2.97441998810232,4713143,37576398454,Consumer Non-Durables,Household/Personal Care,NYSE,stock,common,15078000000
 HIG,"Hartford Insurance Group, Inc.",138.37,-1.164285714285711,1607128,37480558601,Finance,Property/Casualty Insurance,NYSE,stock,common,28368000000
@@ -665,7 +665,7 @@ MKC,"McCormick & Company, Incorporated",52.08,-0.9509319132750096,2804370,140034
 CHKP,Check Point Software Technologies Ltd.,137.05,-0.26198966596316514,768719,13992891887.999998,Technology Services,Internet Software/Services,NASDAQ,stock,common,2725400000.00603
 CSL,Carlisle Companies Incorporated,352.14,2.0577324368189096,401365,13984935804.999998,Producer Manufacturing,Building Products,NYSE,stock,common,5019900000
 JBS,JBS N.V. Class A,13.03,-0.8371385083713943,4615683,13954205862.000002,Consumer Non-Durables,Food: Meat/Fish/Dairy,NYSE,stock,common,86022066589.9663
-GRAB,Grab Holdings Limited Class A,3.42,0,25875105,13949284578,Transportation,Air Freight/Couriers,NASDAQ,stock,common,3370000000
+GRAB,Grab Holdings Limited Class A,3.42,0,25875105,13948528758,Transportation,Air Freight/Couriers,NASDAQ,stock,common,3370000000
 HL,Hecla Mining Company,20.68,-2.498821310702504,17936684,13892171392,Non-Energy Minerals,Precious Metals,NYSE,stock,common,1423019000
 FIVE,"Five Below, Inc.",252.2,5.100850141690273,1907674,13884627506.000002,Retail Trade,Discount Stores,NASDAQ,stock,common,4764147000
 TRMB,Trimble Inc.,59.47,-1.0482529118136483,2731711,13867205375,Technology Services,Packaged Software,NASDAQ,stock,common,3587300000
@@ -818,7 +818,6 @@ DAR,Darling Ingredients Inc,65.19,-0.8517110266159731,1906675,10287172576,Consum
 XP,XP Inc. Class A,19.86,-0.7000000000000028,5019985,10267928752,Finance,Investment Banks/Brokers,NASDAQ,stock,common,3328973443.70074
 FRO,Frontline Plc,46.12,1.5411712901805277,3088344,10267367647,Transportation,Marine Shipping,NYSE,stock,common,1954948000
 PAYC,"Paycom Software, Inc.",231.67,-3.6795276900049987,662018,10259571231,Technology Services,Packaged Software,NYSE,stock,common,2051699999.9999998
-DDS,"Dillard's, Inc. Class A",656.69,0.7085128897204294,93106,10257150343,Retail Trade,Department Stores,NYSE,stock,common,6563336000
 WMS,"Advanced Drainage Systems, Inc.",135.76,0.6897574723726013,504019,10237028829.999998,Producer Manufacturing,Miscellaneous Manufacturing,NYSE,stock,common,3050376000
 FRT,Federal Realty Investment Trust,117.09,-0.05974735404574358,455252,10235484982,Finance,Real Estate Investment Trusts,NYSE,stock,common,1278804000
 PODD,Insulet Corporation,147.48,-2.058706335502738,1058435,10228356329,Health Technology,Medical Specialties,NASDAQ,stock,common,2708100000
@@ -827,6 +826,7 @@ SOLS,"Solstice Advanced Materials, Inc.",63.73,3.845527130519797,2715171,1012602
 AVTR,"Avantor, Inc.",14.97,-1.4483212639894594,7654022,10125091801.000002,Health Technology,Medical Specialties,NYSE,stock,common,6552200000
 ZION,Zions Bancorporation NA,69.37,0.08656759486365932,820618,10124784560,Finance,Major Banks,NASDAQ,stock,common,4944000000
 CYTK,"Cytokinetics, Incorporated",72.72,-1.6632860040568003,1140923,10109783435,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,88039000
+DDS,"Dillard's, Inc. Class A",656.69,0.7085128897204294,93106,10108534829,Retail Trade,Department Stores,NYSE,stock,common,6563336000
 CFR,"Cullen/Frost Bankers, Inc.",162.62,-0.0675966324586648,543693,10106635054,Finance,Regional Banks,NYSE,stock,common,2911937000
 HSIC,"Henry Schein, Inc.",89.81,-1.155624036979966,887873,10009013560,Distribution Services,Medical Distributors,NASDAQ,stock,common,13184000000
 ORI,Old Republic International Corporation,41.43,-2.6779422128259354,1388676,10002566047,Finance,Specialty Insurance,NYSE,stock,common,9136300000
@@ -883,8 +883,8 @@ PCVX,"Vaxcyte, Inc.",61.16,-0.016347882949166448,986706,9100931060.999998,Health
 PRI,"Primerica, Inc.",295.62,-0.7420340462679984,180722,9098399901,Finance,Life/Health Insurance,NYSE,stock,common,3349756000
 QRVO,"Qorvo, Inc.",102.84,2.4506873879258895,718294,9072712508,Electronic Technology,Semiconductors,NASDAQ,stock,common,3678517000
 DY,"Dycom Industries, Inc.",300.23,1.5800514277980835,520787,9055224552,Industrial Services,Engineering & Construction,NYSE,stock,common,5545912000
-LLYVK,"Liberty Live Holdings, Inc. Series -C-",98.995,-2.2754195459032505,206761,9040326781,Consumer Services,Movies/Entertainment,NASDAQ,stock,common,381951000
 LLYVA,"Liberty Live Holdings, Inc. Registered Series -A-",95.625,-2.133865520417556,43455,9040326781,Consumer Services,Movies/Entertainment,NASDAQ,stock,common,381951000
+LLYVK,"Liberty Live Holdings, Inc. Series -C-",98.995,-2.2754195459032505,206761,9040326781,Consumer Services,Movies/Entertainment,NASDAQ,stock,common,381951000
 ADC,Agree Realty Corporation,72.62,-0.15124432833768653,1497710,9032425878,Finance,Real Estate Investment Trusts,NYSE,stock,common,718398000
 KMX,"CarMax, Inc.",63.29,1.0376756066411217,1158183,8981552828,Retail Trade,Specialty Stores,NYSE,stock,common,27745352000
 KTOS,"Kratos Defense & Security Solutions, Inc.",47.82,-0.5821205821205845,2827495,8976833882.999998,Electronic Technology,Aerospace & Defense,NASDAQ,stock,common,1346800000
@@ -1053,6 +1053,7 @@ ANF,Abercrombie & Fitch Co. Class A,149.67,4.270586596070778,1457239,6650093848.
 LEA,Lear Corporation,134.68,2.769935139259821,507908,6643058887.999999,Producer Manufacturing,Auto Parts: OEM,NYSE,stock,common,23258300000
 CGON,"CG Oncology, Inc.",74.67,0.4574196152293871,282523,6618776507,Health Technology,Biotechnology,NASDAQ,stock,common,4040000
 WEX,WEX Inc.,193.91,-0.5589743589743608,369085,6608764697,Commercial Services,Miscellaneous Commercial Services,NYSE,stock,common,2660700000
+USAR,"USA Rare Earth, Inc. Class A",17.61,-0.45223289994348126,22190549,6605098602,Producer Manufacturing,Metal Fabrication,NASDAQ,stock,common,1643000
 JMKE,"Jersey Mike's Subs, Inc. Class A",20.78,3.537618335824618,1906079,6600536361.999999,Consumer Services,Restaurants,NYSE,stock,common,724000000
 POWL,"Powell Industries, Inc.",181.17,3.4311486640785516,475485,6600487514,Producer Manufacturing,Electrical Products,NASDAQ,stock,common,1104318000
 PL,Planet Labs PBC Class A,18.12,-1.253405994550411,32194744,6592925758,Technology Services,Packaged Software,NYSE,stock,common,307727000
@@ -1350,7 +1351,6 @@ LAZ,Lazard Inc,45,1.511391833972483,817242,4385275612.000001,Finance,Investment 
 KFY,Korn Ferry,85.35,-0.28040658955486514,621684,4383245831,Commercial Services,Personnel Services,NYSE,stock,common,2938641000
 NVST,Envista Holdings Corp.,27.28,-1.1235955056179727,1682157,4381651138,Health Technology,Medical Specialties,NYSE,stock,common,2719500000
 DLO,DLocal Limited Class A,15.52,-1.647655259822559,1445896,4378364988.000001,Technology Services,Packaged Software,NASDAQ,stock,common,1093587000.00001
-USAR,"USA Rare Earth, Inc. Class A",17.61,-0.45223289994348126,22190549,4376849893,Producer Manufacturing,Metal Fabrication,NASDAQ,stock,common,1643000
 MARA,"MARA Holdings, Inc.",11.31,-2.499999999999993,37594508,4369045431,Technology Services,Data Processing Services,NASDAQ,stock,common,907093000
 AQN,Algonquin Power & Utilities Corp.,5.67,1.250000000000005,3156362,4365343467.470064,Utilities,Electric Utilities,NYSE,stock,common,2449237570.128993
 KRC,Kilroy Realty Corporation,37.14,0.48701298701298623,1216271,4361816044,Finance,Real Estate Investment Trusts,NYSE,stock,common,1112667000
@@ -1788,7 +1788,7 @@ NUVB,"Nuvation Bio, Inc. Class A",6.81,0.5908419497784348,3755288,2397959176,Hea
 FIGS,"FIGS, Inc. Class A",14.42,-5.131578947368417,3485436,2395742258,Consumer Non-Durables,Apparel/Footwear,NYSE,stock,common,631098000
 MPT,"Medical Properties Trust, Inc.",4.01,-0.7425742574257487,7246913,2394772186.0000005,Finance,Real Estate Investment Trusts,NYSE,stock,common,972022000
 BXMT,"Blackstone Mortgage Trust, Inc. Class A",14.2,0.28248587570620864,1145351,2393319008,Finance,Real Estate Investment Trusts,NYSE,stock,common,1520950000
-LIME,"Neutron Holdings, Inc.",36.75,-5.34449452672248,224529,2388168982.4999995,Consumer Durables,Motor Vehicles,NASDAQ,stock,common,886719000
+LIME,"Neutron Holdings, Inc.",36.75,-5.34449452672248,224529,2388168982.5,Consumer Durables,Motor Vehicles,NASDAQ,stock,common,886719000
 PBI,Pitney Bowes Inc.,17.4,-1.0238907849829335,1388792,2385369867,Technology Services,Packaged Software,NYSE,stock,common,1892629000
 SRPT,"Sarepta Therapeutics, Inc.",22.5,-2.131361461504995,2955533,2376607990,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,2198237000
 PTON,"Peloton Interactive, Inc. Class A",5.4,0.3717472118959194,5776769,2369907701,Consumer Services,Other Consumer Services,NASDAQ,stock,common,2446000000
@@ -1806,15 +1806,14 @@ HCI,"HCI Group, Inc.",187.64,-1.2005054759898912,143879,2334029103,Finance,Prope
 TRLV,Trulieve Cannabis Corp.,12.11,1.0008340283569577,1371939,2331965793,Process Industries,Agricultural Commodities/Milling,NYSE,stock,common,1181180000.00126
 DBD,Diebold Nixdorf Inc,68.67,0.7039155301363895,240310,2331112302,Electronic Technology,Electronic Equipment/Instruments,NYSE,stock,common,3805700000
 VVX,V2X Inc,74.18,-2.497371188222912,514614,2325198657.9999995,Commercial Services,Miscellaneous Commercial Services,NYSE,stock,common,4480038000
-CENTA,Central Garden & Pet Company Class A,36.07,0.027731558513582943,208693,2321179649.0000005,Consumer Non-Durables,Consumer Sundries,NASDAQ,stock,common,3129064000
 CENT,Central Garden & Pet Company,41.71,0.02398081534771705,136525,2321179649.0000005,Consumer Non-Durables,Consumer Sundries,NASDAQ,stock,common,3129064000
+CENTA,Central Garden & Pet Company Class A,36.07,0.027731558513582943,208693,2321179649.0000005,Consumer Non-Durables,Consumer Sundries,NASDAQ,stock,common,3129064000
 GSHD,"Goosehead Insurance, Inc. Class A",65.21,-2.78771615980919,486091,2315985608,Finance,Insurance Brokers/Services,NASDAQ,stock,common,365304000
 ARR,"ARMOUR Residential REIT, Inc.",16.35,1.3639181649101206,2949141,2314392251.0000005,Finance,Real Estate Investment Trusts,NYSE,stock,common,1305270000
 IOSP,Innospec Inc.,93.95,0.8913230240549809,103852,2314086723.9999995,Process Industries,Chemicals: Major Diversified,NASDAQ,stock,common,1778000000
 LASR,"nLIGHT, Inc.",40.06,-3.4000482276344264,1657229,2311069371,Electronic Technology,Semiconductors,NASDAQ,stock,common,261329999.99999997
 BOBS,"Bob's Discount Furniture, Inc.",17.64,7.364576993304936,410883,2305319884,Retail Trade,Specialty Stores,NYSE,stock,common,2368039000
 CC,Chemours Co.,15.3,-1.1627906976744167,1191682,2302634619.9999995,Process Industries,Chemicals: Specialty,NYSE,stock,common,5808000000
-STDN,"Standard Nuclear, Inc. Class A",14.7,0,381327,2301295995.6,Process Industries,Chemicals: Specialty,NYSE,stock,common,3140065
 RAMP,"LiveRamp Holdings, Inc.",37.75,-0.02648305084745236,618612,2295010460.9999995,Technology Services,Packaged Software,NYSE,stock,common,812940000
 VIA,"Via Transportation, Inc. Class A",28.13,1.9941986947063117,442913,2292752866,Technology Services,Packaged Software,NYSE,stock,common,434337000
 PENN,"PENN Entertainment, Inc.",17.07,-0.7558139534883663,2210878,2288516639,Consumer Services,Casinos/Gaming,NASDAQ,stock,common,6961000000
@@ -1861,6 +1860,7 @@ AUPH,Aurinia Pharmaceuticals Inc.,16.08,-0.24813895781639392,526594,2139462931.9
 BLKB,"Blackbaud, Inc.",47.1,-2.8064382996285584,276918,2137873572.9999998,Technology Services,Packaged Software,NASDAQ,stock,common,1127665000
 ALMR,"Alamar Biosciences, Inc.",30.8,0.7523716061498215,142949,2137297227.9999998,Health Technology,Biotechnology,NASDAQ,stock,common,74211000
 ALGT,Allegiant Travel Company,78.16,3.031900870023724,367649,2136719047,Transportation,Airlines,NASDAQ,stock,common,2606579000
+STDN,"Standard Nuclear, Inc. Class A",14.7,0,381327,2131094868,Process Industries,Chemicals: Specialty,NYSE,stock,common,3140065
 CMPR,Cimpress Plc,87.45,-1.074660633484166,364480,2129361589.9999998,Commercial Services,Commercial Printing/Forms,NASDAQ,stock,common,3736643000.03479
 CNXN,"PC Connection, Inc.",84.35,0.9816832275828962,90321,2128833701,Technology Services,Information Technology Services,NASDAQ,stock,common,2872746000
 HYMC,Hycroft Mining Holding Corporation Class A,22.69,-2.6180257510729588,1703122,2114292340.9999998,Non-Energy Minerals,Precious Metals,NASDAQ,stock,common,0
@@ -1961,6 +1961,7 @@ DXC,DXC Technology Co.,11.66,-0.08568980291345148,1796896,1863019460,Technology 
 SFL,SFL Corporation Limited,12.86,1.901743264659273,1950993,1861586793,Transportation,Marine Shipping,NYSE,stock,common,733041000
 DMRA,"Damora Therapeutics, Inc.",30.06,7.357142857142852,295832,1855769680.0000002,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
 TOP,TOP Financial Group Limited Class A,14.99,-1.3166556945358743,97116,1854345612,Finance,Investment Banks/Brokers,NASDAQ,stock,common,4723765.00000201
+HOS,"Hornbeck Offshore Services, Inc.",9.2,-2.023429179978714,3374301,1854021623.0000002,Transportation,Marine Shipping,NYSE,stock,common,1291474000
 GCT,"GigaCloud Technology, Inc. Class A",51.75,1.729899744446634,520945,1848004784,Distribution Services,Wholesale Distributors,NASDAQ,stock,common,1289897000.00091
 LMAT,"LeMaitre Vascular, Inc.",80.67,0.22363026462915497,167362,1844862918,Health Technology,Medical Specialties,NASDAQ,stock,common,249602000
 LCID,"Lucid Group, Inc.",4.68,1.7391304347826104,10297144,1844248424.0000002,Consumer Durables,Motor Vehicles,NASDAQ,stock,common,1353790000
@@ -2003,7 +2004,6 @@ JBLU,JetBlue Airways Corporation,4.63,0.43383947939261547,14462718,1746955505,Tr
 TCBK,TriCo Bancshares,54.4,0.1657153378751543,219346,1738984771.9999998,Finance,Regional Banks,NASDAQ,stock,common,538656000
 SAM,"Boston Beer Company, Inc. Class A",168.78,-1.7521392397694808,133609,1737029822,Consumer Non-Durables,Beverages: Alcoholic,NYSE,stock,common,1964994000
 EFC,Ellington Financial Inc.,13.47,0.8988764044943895,919067,1736113180,Finance,Real Estate Investment Trusts,NYSE,stock,common,543905000
-HOS,"Hornbeck Offshore Services, Inc.",9.2,-2.023429179978714,3374301,1736039935.9999998,Transportation,Marine Shipping,NYSE,stock,common,1291474000
 BFC,Bank First Corp,156.23,0.9042175289026526,60673,1731904417,Finance,Regional Banks,NASDAQ,stock,common,240179000
 MBC,MasterBrand Inc,8.51,4.1615667074663385,1564125,1731704019,Consumer Durables,Home Furnishings,NYSE,stock,common,2734700000
 CDNL,"Cardinal Infrastructure Group, Inc.",36.43,3.05516265912305,320394,1729443548,Industrial Services,Engineering & Construction,NASDAQ,stock,common,456045369
@@ -2202,7 +2202,7 @@ NUTX,Nutex Health Inc,193.24,-2.2460542290570604,142279,1323302406.9999998,Healt
 LQDT,"Liquidity Services, Inc.",42.105,3.962962962962955,182827,1319217734,Retail Trade,Internet Retail,NASDAQ,stock,common,476669000
 ASIC,Ategrity Specialty Insurance Company Holdings,27.4,0.1461988304093536,70087,1313197848.9999998,Finance,Property/Casualty Insurance,NYSE,stock,common,424339000
 LZB,La-Z-Boy Incorporated,32.76,2.5673137132122625,773816,1312128635.9999998,Consumer Durables,Home Furnishings,NYSE,stock,common,2126635000.0000002
-OPI,Office Properties Income Trust,17.73,0.112930547713154,24843,1310975702.9999998,Finance,Real Estate Investment Trusts,NASDAQ,stock,common,445574000
+OPI,Office Properties Income Trust,17.73,0.112930547713154,24843,1310975703,Finance,Real Estate Investment Trusts,NASDAQ,stock,common,445574000
 AMN,"AMN Healthcare Services, Inc.",33.8,1.1673151750972781,581262,1309073697,Commercial Services,Personnel Services,NYSE,stock,common,2730429000
 OSBC,"Old Second Bancorp, Inc.",25.72,0.1557632398753861,429637,1308523312.0000002,Finance,Major Banks,NASDAQ,stock,common,401744000
 PRSU,"Pursuit Attractions and Hospitality, Inc.",47.99,-0.020833333333329186,137929,1308406817,Consumer Services,Movies/Entertainment,NYSE,stock,common,452417000
@@ -2409,7 +2409,6 @@ CBLL,"Ceribell, Inc.",24.72,0.6105006105006047,223607,948706638.9999999,Health T
 MPB,"Mid Penn Bancorp, Inc.",37.4,0.7543103448275894,91438,947537065,Finance,Regional Banks,NASDAQ,stock,common,349954000
 DSGN,"Design Therapeutics, Inc.",15.14,0.7318695941450513,256617,947486257,Health Technology,Biotechnology,NASDAQ,stock,common,0
 NBBK,"NB Bancorp, Inc.",23.16,0.8271658685241675,250580,945585465,Finance,Regional Banks,NASDAQ,stock,common,351948000
-FRBT,"Forbright, Inc. Class A",19.14,0.2619172341540111,51961,944528242.02,Finance,Regional Banks,NASDAQ,stock,common,580842000
 BBDC,"Barings BDC, Inc.",9.02,0.3337041156840863,445268,944456162,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,248837000
 ARDX,"Ardelyx, Inc.",3.78,1.8867924528301845,2982312,941929031,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,407320000
 NNNN,Anbio Biotechnology Class A,6.54,-0.9090909090909032,231146,941048449,Health Technology,Medical Specialties,NASDAQ,stock,common,9758637.480599321
@@ -2523,7 +2522,7 @@ SG,"Sweetgreen, Inc. Class A",6.84,2.3952095808383254,3106513,814242623,Consumer
 LXU,"LSB Industries, Inc.",11.3,0.623330365093502,642375,813571822,Process Industries,Chemicals: Agricultural,NYSE,stock,common,615208000
 LINC,Lincoln Educational Services Corporation,25.64,0.6279434850863428,473129,813338713,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,518241000
 RXT,"Rackspace Technology, Inc.",3.19,-3.0395136778115526,4871452,813044400.9999999,Technology Services,Data Processing Services,NASDAQ,stock,common,2685700000
-REF,"Reformation, Inc.",13.69,0.3665689149560039,190657,808753260.1399999,Retail Trade,Apparel/Footwear Retail,NYSE,stock,common,507104000
+REF,"Reformation, Inc.",13.69,0.3665689149560039,190657,808753260.14,Retail Trade,Apparel/Footwear Retail,NYSE,stock,common,507104000
 CTMX,"CytomX Therapeutics, Inc.",3.71,0.8152173913043425,2297761,808406325.0000001,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,76201000
 CTO,CTO Realty Growth Inc,21.49,0.3267973856208997,199019,805562410,Finance,Real Estate Investment Trusts,NYSE,stock,common,149545000
 CGBD,"Carlyle Secured Lending, Inc",11.69,1.0371650821088956,350666,804325519,Miscellaneous,Investment Trusts/Mutual Funds,NASDAQ,stock,common,197790000
@@ -2554,7 +2553,7 @@ EVEX,"Eve Holding, Inc.",2.22,-1.7699115044247606,868770,773639726,Electronic Te
 NGNE,Neurogene Inc.,38.6,2.6322786492954053,205633,772439354.9999999,Health Technology,Biotechnology,NASDAQ,stock,common,0
 MTW,"Manitowoc Company, Inc.",21.41,4.694376528117364,328819,772086767.0000001,Producer Manufacturing,Trucks/Construction/Farm Machinery,NYSE,stock,common,2240900000
 WLKP,Westlake Chemical Partners LP,21.88,-0.22799817601459513,12318,771179827.9999999,Process Industries,Chemicals: Specialty,NYSE,stock,common,1166695000
-WOOF,"Petco Health & Wellness Company, Inc. Class A",2.7,7.1428571428571495,6321132,771051096,Retail Trade,Internet Retail,NASDAQ,stock,common,5961467000
+WOOF,"Petco Health & Wellness Company, Inc. Class A",2.7,7.1428571428571495,6321132,771026796,Retail Trade,Internet Retail,NASDAQ,stock,common,5961467000
 CCB,Coastal Financial Corporation,50.33,2.317544216304128,198487,769360884,Finance,Regional Banks,NASDAQ,stock,common,661639000
 PHAT,"Phathom Pharmaceuticals, Inc.",9.5,4.972375690607726,1236691,768558929.0000001,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,175110000
 TROX,Tronox Holdings Plc,4.81,-1.4344262295082026,1622085,768157123,Process Industries,Chemicals: Specialty,NYSE,stock,common,2887000000
@@ -2562,7 +2561,6 @@ WASH,"Washington Trust Bancorp, Inc.",40.26,1.2830188679245231,154939,767932085,
 GRPN,"Groupon, Inc.",18.87,0.0530222693531366,577675,767354215.9999999,Retail Trade,Internet Retail,NASDAQ,stock,common,498422000
 TCBX,Third Coast Bancshares Inc,46.05,2.652697280427993,228679,766961364.0000001,Finance,Savings Banks,NYSE,stock,common,367683000
 NABL,"N-able, Inc.",4.06,1.7543859649122653,1573551,766958559,Technology Services,Packaged Software,NYSE,stock,common,508840000
-WHK,WhiteHawk Minerals Corp Class A,27.84,-1.0660980810234568,126544,766865328,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,50947000
 BCSF,"Bain Capital Specialty Finance, Inc.",11.82,-0.4212299915753912,246708,766745736.9999999,Finance,Financial Conglomerates,NYSE,stock,common,239195000
 KDK,"Kodiak AI, Inc.",3.82,3.8043478260869477,918070,766361432,Producer Manufacturing,Auto Parts: OEM,NASDAQ,stock,common,3797000
 COLL,"Collegium Pharmaceutical, Inc.",23.53,-0.717299578059064,901142,766033631,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,780567000
@@ -2664,6 +2662,7 @@ AQST,"Aquestive Therapeutics, Inc.",5.34,-0.1869158878504633,2117771,670232230.9
 GRNT,"Granite Ridge Resources, Inc.",5.08,0,1196247,670053198.9999999,Energy Minerals,Oil & Gas Production,NYSE,stock,common,450306000
 MDXG,"MiMedx Group, Inc.",4.57,3.160270880361187,624972,666125362,Health Technology,Medical Specialties,NASDAQ,stock,common,418630000
 ALT,"Altimmune, Inc.",3.42,5.882352941176469,4871948,665250550,Health Technology,Biotechnology,NASDAQ,stock,common,41000
+WHK,WhiteHawk Minerals Corp Class A,27.84,-1.0660980810234568,126544,662465328,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,50947000
 HELE,Helen of Troy Limited,28.4,0.7806955287437859,240431,661494519,Consumer Durables,Home Furnishings,NASDAQ,stock,common,1793127000
 CTGO,Contango Silver & Gold Inc.,19.77,-1.8371400198609782,257372,661122513.9999999,Non-Energy Minerals,Precious Metals,AMEX,stock,common,0
 MATW,Matthews International Corporation Class A,21.13,0.1421800947867184,460019,659534317,Producer Manufacturing,Miscellaneous Manufacturing,NASDAQ,stock,common,1497689000
@@ -2740,7 +2739,6 @@ KE,"Kimball Electronics, Inc.",25.03,2.414075286415711,190597,599893860,Electron
 NPB,"Northpointe Bancshares, Inc.",17.28,0.40674026728646295,169430,597574294,Finance,Regional Banks,NYSE,stock,common,470433000
 SLI,Standard Lithium Ltd.,2.42,-0.4115226337448655,814410,597217629.1506025,Non-Energy Minerals,Other Metals/Minerals,AMEX,stock,common,0
 ZURA,Zura Bio Limited Class A,6.23,5.952380952380961,1389478,597015542,Health Technology,Biotechnology,NASDAQ,stock,common,0
-CXII,Churchill Capital Corp XII Class A,10.71,-0.6954102920723161,1486,594940500.0000001,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 LMB,"Limbach Holdings, Inc.",49.86,0.6256306760847675,290684,594580184,Industrial Services,Engineering & Construction,NASDAQ,stock,common,646804000
 CEPF,"Cantor Equity Partners IV, Inc. Class A",10.4,0.09624639076034443,54530,594359994,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 GAU,"Galiano Gold, Inc.",2.27,-3.813559322033892,1890344,593813329.611465,Non-Energy Minerals,Precious Metals,AMEX,stock,common,455605400.30075586
@@ -2800,6 +2798,7 @@ QUAD,"Quad/Graphics, Inc. Class A",10.7,3.281853281853281,611560,551042733,Comme
 ILPT,Industrial Logistics Properties Trust,8.23,-0.12135922330096828,251451,549318563,Finance,Real Estate Investment Trusts,NASDAQ,stock,common,448848000
 MBUU,"Malibu Boats, Inc. Class A",27.88,4.497751124437778,245521,548602417.9999999,Consumer Durables,Recreational Products,NASDAQ,stock,common,914590000
 ARKO,ARKO Corp,4.89,1.2422360248447124,750613,548588167,Retail Trade,Food Retail,NASDAQ,stock,common,7643471000
+FRBT,"Forbright, Inc. Class A",19.14,0.2619172341540111,51961,547408134.24,Finance,Regional Banks,NASDAQ,stock,common,580842000
 ARTV,"Artiva Biotherapeutics, Inc.",11.19,0.5842696629213439,168592,547080439,Health Technology,Pharmaceuticals: Other,NASDAQ,stock,common,0
 BSVN,Bank7 Corp.,57.43,9.494756911344131,117038,547069914,Finance,Regional Banks,NASDAQ,stock,common,137261000
 OVID,Ovid Therapeutics Inc.,2.8,0.7194244604316554,1066037,546834018,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,7252000
@@ -2857,7 +2856,6 @@ GFUZ,General Fusion Group Ltd.,8.24,2.48756218905474,161742,499797891,Producer M
 WTBA,"West Bancorporation, Inc.",29.29,0.9651844191657966,33354,499211252,Finance,Regional Banks,NASDAQ,stock,common,198489000
 IDR,Idaho Strategic Resources Inc,31.45,0.12734797835084097,192123,497733058.00000006,Non-Energy Minerals,Precious Metals,AMEX,stock,common,42406253
 ASTL,Algoma Steel Group Inc.,4.71,5.842696629213478,1340388,497665534.046083,Producer Manufacturing,Metal Fabrication,NASDAQ,stock,common,1518806740.018569
-AAC,Ares Acquisition Corp. III Class A,10.06,0,2171,496712499.99999994,Finance,Financial Conglomerates,NYSE,stock,common,
 EDIT,"Editas Medicine, Inc.",3.23,4.870129870129867,1390713,496063506.99999994,Health Technology,Biotechnology,NASDAQ,stock,common,40520000
 TCMD,"Tactile Systems Technology, Inc.",21.87,-0.6360745115856454,197931,495405484,Health Technology,Medical Specialties,NASDAQ,stock,common,329522000
 PBYI,"Puma Biotechnology, Inc.",9.55,1.4877789585547352,185911,492971655,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,228371000
@@ -2885,7 +2883,6 @@ RLMD,Relmada Therapeutics Inc,4.43,1.3729977116704717,675555,472547398,Health Te
 VOGX,"Vogenx, Inc.",31.73,-1.3063763608087036,89617,471351913,Health Technology,Biotechnology,NASDAQ,stock,common,0
 ASIX,"Advansix, Inc.",17.45,1.4534883720930232,202336,471170723,Process Industries,Chemicals: Specialty,NYSE,stock,common,1522233000
 SRTA,"Strata Critical Medical, Inc. Class A",5.32,-0.9310986964618215,650325,470643415.00000006,Health Services,Medical/Nursing Services,NASDAQ,stock,common,197141000
-GCGR,General Catalyst Global Resilience Merger Corp. Class A,10.17,0,6249,469714162.5,Finance,Financial Conglomerates,NASDAQ,stock,common,
 CWCO,Consolidated Water Co. Ltd.,29.28,1.0351966873706029,70536,468856699.99999994,Utilities,Water Utilities,NASDAQ,stock,common,132073368.00156401
 NGS,"Natural Gas Services Group, Inc.",36.33,1.8502943650126062,122702,468594714,Producer Manufacturing,Industrial Machinery,NYSE,stock,common,172315000
 CZNC,Citizens & Northern Corporation,26.11,1.0840108401084056,34122,468279410.99999994,Finance,Regional Banks,NASDAQ,stock,common,170042000
@@ -2911,7 +2908,6 @@ NMG,Nouveau Monde Graphite Inc,1.4,1.449275362318842,599797,460760100.4102563,No
 PBFS,"Pioneer Bancorp, Inc.",18.54,2.828618968386012,13145,460564426,Finance,Regional Banks,NASDAQ,stock,common,126670000
 STRZ,Starz Entertainment Corp,26.89,-0.11144130757801314,135772,460468979.99999994,Consumer Services,Movies/Entertainment,NASDAQ,stock,common,1284530122.00137
 SGHT,"Sight Sciences, Inc.",8.35,-0.3579952267303238,102466,459984736,Health Technology,Medical Specialties,NASDAQ,stock,common,77363000
-BCCQ,Bleichroeder Acquisition Corp. III Class A,9.99,-0.19980019980019556,50860,459540000,Finance,Financial Conglomerates,NASDAQ,stock,common,
 IHRT,"iHeartMedia, Inc. Class A",2.805,-1.2323943661971726,329364,459386840,Consumer Services,Broadcasting,NASDAQ,stock,common,3864991000
 CINT,"CI&T, Inc. Class A",3.58,1.9943019943020026,37524,458199475,Technology Services,Information Technology Services,NYSE,stock,common,489650000.000724
 RBB,RBB Bancorp,27.07,1.4998125234345654,45109,457915143.99999994,Finance,Regional Banks,NASDAQ,stock,common,237999000
@@ -2924,6 +2920,7 @@ ARCT,"Arcturus Therapeutics Holdings, Inc.",15.82,1.6709511568123379,534617,4496
 BMRC,Bank of Marin Bancorp,27.73,1.4264813460131696,94301,449066495,Finance,Regional Banks,NASDAQ,stock,common,75778000
 MAGN,Magnera Corporation,12.54,1.1290322580645062,343463,448931989,Process Industries,Textiles,NYSE,stock,common,3204000000
 CD,Chaince Digital Holdings Inc.,4.07,11.813186813186817,353918,447715483,Technology Services,Information Technology Services,NASDAQ,stock,common,1867068.00000132
+CXII,Churchill Capital Corp XII Class A,10.71,-0.6954102920723161,1486,447142500.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 KBON,Karbon Capital Partners Corp. Class A,10.14,0.3960396039604052,4255,446312109,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 HVT,"Haverty Furniture Companies, Inc.",28.56,3.4033309196234525,106845,445934762,Retail Trade,Specialty Stores,NYSE,stock,common,758995000
 HVT.A,"Haverty Furniture Companies, Inc. Class A",29.04,8.035714285714286,289,445934761.99999994,Retail Trade,Specialty Stores,NYSE,stock,common,758995000
@@ -2931,7 +2928,6 @@ EVMN,"Evommune, Inc.",12.27,2.2499999999999964,249091,445304259,Health Technolog
 IEAG,Infinite Eagle Acquisition Corp. Class A,10.23,-0.0009775075512435552,50118,445209616.0156556,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 GBLI,Global Indemnity Group LLC Class A,30.36,1.1999999999999982,9674,444489051,Finance,Property/Casualty Insurance,NASDAQ,stock,common,450098000.00492203
 TRC,Tejon Ranch Co.,16.43,1.6079158936301667,116463,443962307,Finance,Real Estate Development,NYSE,stock,common,49591000
-NINE,"Nine Energy Service, Inc.",10.25,-0.388726919339156,30622,443935700.00000006,Industrial Services,Oilfield Services/Equipment,AMEX,stock,common,561911000
 ACTG,Acacia Research Corporation,4.54,0.6651884700665244,132843,443044101.00000006,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,285232000
 PWRL,Powerlaw Corp.,10.22,-0.4868549172346537,163902,441942744.6,Miscellaneous,Investment Trusts/Mutual Funds,NASDAQ,stock,common,1615635
 MBVI,M3-Brigade Acquisition VI Corp. Class A,10.23,0.09784735812132864,624,441168730.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -2949,7 +2945,7 @@ PRLD,"Prelude Therapeutics, Inc.",5.46,3.9999999999999996,400285,435727020,Healt
 BNTC,Benitec Biopharma Inc,12.68,1.9292604501607735,44994,435612987.99999994,Health Technology,Biotechnology,NASDAQ,stock,common,0
 MESH,Meshflow Acquisition Corp. Class A,10.0797,-0.00297619047618354,200,434687082.99999994,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 FENC,Fennec Pharmaceuticals Inc.,12.39,-1.2749003984063756,212438,434482144,Health Technology,Biotechnology,NASDAQ,stock,common,44642000.0000476
-MTC,"MMTec, Inc.",4.36,9.273182957393486,34063,434202884,Technology Services,Information Technology Services,NASDAQ,stock,common,-20484930.000014402
+MTC,"MMTec, Inc.",4.36,9.273182957393486,34063,434202884,Technology Services,Information Technology Services,NASDAQ,stock,common,-20484930
 DBCA,D. Boral Acquisition I Corp. Class A,10.03,0.0009970189134464646,2609,434012429,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 NPWR,NET Power Inc. Class A,1.93,6.043956043956037,746392,433977245,Producer Manufacturing,Electrical Products,NYSE,stock,common,0
 USCB,"USCB Financial Holdings, Inc. Class A",23.48,1.381692573402419,42655,433780550,Finance,Regional Banks,NASDAQ,stock,common,152079000
@@ -2971,6 +2967,7 @@ SBC,SBC Medical Group Holdings Incorporated,4.12,-3.738317757009349,140977,42372
 SI,"Shoulder Innovations, Inc.",20.32,-0.34330554193232116,79020,423041187,Health Technology,Medical Specialties,NYSE,stock,common,47317000
 FISN,"Deep Fission, Inc.",7.15,0.14005602240897305,159451,421177457,Producer Manufacturing,Industrial Machinery,NASDAQ,stock,common,0
 PACB,"Pacific Biosciences of California, Inc.",1.35,3.8461538461538494,2764523,419621519,Health Technology,Medical Specialties,NASDAQ,stock,common,160005000
+GCGR,General Catalyst Global Resilience Merger Corp. Class A,10.17,0,6249,418546350,Finance,Financial Conglomerates,NASDAQ,stock,common,
 KFII,K&F Growth Acquisition Corp. II Class A,10.65,0,2006,418077014.7114032,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 SGU,Star Group LP,12.74,-0.8560311284046649,12464,418014865,Energy Minerals,Oil Refining/Marketing,NYSE,stock,common,1784418000
 CAL,"Caleres, Inc.",12.43,2.642444260941373,405649,417520488,Retail Trade,Apparel/Footwear Retail,NYSE,stock,common,2757853000
@@ -2997,7 +2994,6 @@ GEVO,"Gevo, Inc.",1.64,0,1385543,405468851,Process Industries,Chemicals: Special
 AIOT,"PowerFleet, Inc.",3.02,-0.6578947368421059,604538,405362280.99999994,Technology Services,Packaged Software,NASDAQ,stock,common,443777000
 MVBF,MVB Financial Corp.,31.23,1.035263668715627,62052,404975219,Finance,Regional Banks,NASDAQ,stock,common,189793000
 NATH,"Nathan's Famous, Inc.",98.67,0.5298013245033072,10753,404316205.00000006,Consumer Services,Restaurants,NASDAQ,stock,common,162063000
-OSPR,Osprey Acquisition Corp. III Class A,9.84,0,21204,403597440,Finance,Financial Conglomerates,NASDAQ,stock,common,
 ADV,Advantage Solutions Inc Class A,31.45,-1.472431077694243,59993,403259154,Commercial Services,Advertising/Marketing Services,NASDAQ,stock,common,3542642000
 FIP,FTAI Infrastructure Incorporation,3.41,1.1869436201780426,1008003,402999716.99999994,Consumer Services,Other Consumer Services,NASDAQ,stock,common,502520000
 NPAC,New Providence Acquisition Corp. III Class A,10.49,0,3855,402719730,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3014,7 +3010,8 @@ MRAM,"Everspin Technologies, Inc.",16.37,3.2807570977918066,729438,398609683,Ele
 TREE,"LendingTree, Inc.",28.35,1.2138521956444122,495401,398021540,Finance,Finance/Rental/Leasing,NASDAQ,stock,common,1117324000
 LRMR,"Larimar Therapeutics, Inc.",3.83,0,391990,397871631,Health Technology,Biotechnology,NASDAQ,stock,common,0
 GCO,Genesco Inc.,35.81,3.9779326364692356,332371,397740706.99999994,Retail Trade,Apparel/Footwear Retail,NYSE,stock,common,2436096000
-FCBM,"First Carolina Financial Services, Inc.",12.78,0.3139717425431644,102949,397059915.78000003,Finance,Regional Banks,NYSE,stock,common,232675000
+AAC,Ares Acquisition Corp. III Class A,10.06,0,2171,397370000,Finance,Financial Conglomerates,NYSE,stock,common,
+FCBM,"First Carolina Financial Services, Inc.",12.78,0.3139717425431644,102949,397059915.78,Finance,Regional Banks,NYSE,stock,common,232675000
 PESI,"Perma-Fix Environmental Services, Inc.",18.7,1.7410228509249202,206376,396783187,Industrial Services,Environmental Services,NASDAQ,stock,common,61674000
 FNLC,"First Bancorp, Inc.",35.14,0.31401655723665267,14724,396461422.00000006,Finance,Major Banks,NASDAQ,stock,common,177611000
 RLGT,"Radiant Logistics, Inc.",8.44,0.3567181926278164,137603,395259233,Transportation,Air Freight/Couriers,AMEX,stock,common,902696000
@@ -3026,7 +3023,7 @@ KNOP,KNOT Offshore Partners LP,11.39,1.4247551202137145,72349,393558980,Transpor
 RNGR,"Ranger Energy Services, Inc. Class A",16.78,-0.8274231678487031,101529,392685967,Industrial Services,Oilfield Services/Equipment,NYSE,stock,common,546900000
 ZKP,Lafayette Digital Acquisition Corp. I Class A,10.03,0.09980039920159467,3706,392106122.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 RDAG,Republic Digital Acquisition Company Class A,10.43,0.28846153846153233,102125,391125010.99999994,Finance,Financial Conglomerates,NASDAQ,stock,common,0
-GUAC,Berto Acquisition Corp. II,9.93,-0.2511300853842326,289028,391117874.99999994,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+GUAC,Berto Acquisition Corp. II,9.93,-0.2511300853842326,289028,391117875,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 REI,"Ring Energy, Inc.",1.5,0,2341354,390809417.99999994,Energy Minerals,Integrated Oil,AMEX,stock,common,307178072
 AUNA,Auna S.A. Class A,5.28,-2.0408163265306016,85337,390788473.00000006,Health Services,Medical/Nursing Services,NYSE,stock,common,1229423135.22508
 WENN,Wen Acquisition Corp Class A,10.3858,0.05587668593447897,283517,389662244.4904858,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3045,7 +3042,6 @@ CCAP,"Crescent Capital BDC, Inc.",10.37,-0.7655502392344504,131491,382092548,Fin
 IPSC,"Century Therapeutics, Inc.",2.11,0.956937799043063,300380,382068933,Health Technology,Biotechnology,NASDAQ,stock,common,109164000
 SHOE,"Shoe Station Group, Inc.",14.07,3.076923076923076,1020314,382018896,Retail Trade,Apparel/Footwear Retail,NASDAQ,stock,common,1135324000
 YICC,Yorkville International Capital Corp. Class A,9.95,0,35661,381416656.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,
-KEYY,Keystone Acquisition Corp. Class A,9.92,0.25265285497726486,291159,380266663.3599999,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 GRRR,"Gorilla Technology Group, Inc.",13.79,0.5102040816326422,579620,379356405,Technology Services,Packaged Software,NASDAQ,stock,common,101360657.000019
 ABAT,American Battery Technology Co.,2.78,2.205882352941162,2777119,379232064.99999994,Non-Energy Minerals,Other Metals/Minerals,NASDAQ,stock,common,4290224.00000061
 NWFL,Norwood Financial Corp.,34.71,0.1442585112521762,14769,378410974,Finance,Regional Banks,NASDAQ,stock,common,136003000
@@ -3075,7 +3071,6 @@ ARTNA,Artesian Resources Corporation Class A,36.19,-0.3030303030303015,19133,371
 AGEN,Agenus Inc.,8.24,0,986848,370968125,Health Technology,Biotechnology,NASDAQ,stock,common,114196000
 GIW,GigCapital8 Corp. Class A,10.17,0.0984251968503916,16161,370920824,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CURR,Currenc Group Inc.,3.29,9.666666666666668,469853,369407392,Finance,Regional Banks,NASDAQ,stock,common,37813323
-FDMM,Freedom Metals Acquisition Corp. Class A,9.85,0,233204,369292919.95,Finance,Financial Conglomerates,NASDAQ,stock,common,
 BBW,"Build-A-Bear Workshop, Inc.",29.43,1.238390092879255,556989,368976955.99999994,Retail Trade,Specialty Stores,NYSE,stock,common,529832000
 FCRS,FutureCrest Acquisition Corp Class A,10.225,0.048923679060655624,29433,367460950.99999994,Finance,Financial Conglomerates,NYSE,stock,common,0
 GHXI,"Gores Holdings XI, Inc. Class A",10.1,1.1011011011010954,8699,367187850,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3120,7 +3115,6 @@ LYEL,"Lyell Immunopharma, Inc.",14.37,0.3491620111731769,54065,352138863.0000000
 BLZR,Trailblazer Acquisition Corp. Class A,10.22,0.19607843137256228,7293,351312508.99999994,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 OPAL,OPAL Fuels Inc. Class A,2.01,1.5151515151515054,213689,351260730,Process Industries,Industrial Specialties,NASDAQ,stock,common,349074000
 MGPI,"MGP Ingredients, Inc.",16.4,0.36719706242349276,305851,351190836,Process Industries,Agricultural Commodities/Milling,NASDAQ,stock,common,536375000
-SBXE,SilverBox Corp V Class A,10.1,0,22443,350419500.00000006,Finance,Financial Conglomerates,NYSE,stock,common,0
 PSFE,Paysafe Ltd,6.71,-1.178203240058911,347845,350365827.00000006,Commercial Services,Miscellaneous Commercial Services,NYSE,stock,common,1701388000
 AVBH,"Avidbank Holdings, Inc.",31.92,0.6940063091482727,81304,350333855.00000006,Finance,Regional Banks,NASDAQ,stock,common,89374000
 BRBS,"Blue Ridge Bankshares, Inc.",3.96,0.2531645569620199,1634095,349958175,Finance,Major Banks,AMEX,stock,common,150721000
@@ -3137,6 +3131,7 @@ GASS,StealthGas Inc.,9.29,-0.4287245444801814,142420,345455040,Transportation,Ma
 DSAC,Daedalus Special Acquisition Corp. Class A,10.15,-0.04923682914819306,26932,345286060.75564283,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ELVA,Electrovaya Inc.,6.9,2.297998517420315,252274,344992391.91823906,Producer Manufacturing,Electrical Products,NASDAQ,stock,common,64072442.75820117
 FSBW,"FS Bancorp, Inc.",43.88,1.0826998387468465,14454,344991054.00000006,Finance,Savings Banks,NASDAQ,stock,common,219265000
+BCCQ,Bleichroeder Acquisition Corp. III Class A,9.99,-0.19980019980019556,50860,344655000,Finance,Financial Conglomerates,NASDAQ,stock,common,
 OEC,Orion S.A.,6.09,2.010050251256283,299274,344223236,Process Industries,Chemicals: Specialty,NYSE,stock,common,1806700000.01976
 TWIN,"Twin Disc, incorporated",23.85,4.559403770276207,105986,343984424,Producer Manufacturing,Trucks/Construction/Farm Machinery,NASDAQ,stock,common,381270000
 PNRG,PrimeEnergy Resources Corporation,217.35,0.9287206872533087,74803,343978119,Energy Minerals,Oil & Gas Production,NASDAQ,stock,common,185909000
@@ -3144,7 +3139,6 @@ ABEO,"Abeona Therapeutics, Inc.",6,1.1804384485666153,866504,343104103,Health Te
 RPAY,Repay Holdings Corp. Class A,3.88,0,171465,342155828,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,309261000
 AACI,Armada Acquisition Corp. III Class A,10.04,-0.09850844287007851,170,341659529.831757,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 TCPC,BlackRock TCP Capital Corp.,4.07,0.24630541871922848,397547,341484291.99999994,Finance,Financial Conglomerates,NASDAQ,stock,common,-76346573
-CGCF,Cartesian Growth Corporation IV Class A,9.84,0,132209,341325000,Finance,Financial Conglomerates,NASDAQ,stock,common,
 CAII,Collective Acquisition Corp. II Class A,10,0.10010010010009797,509,339230829.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,
 IPFX,Inflection Point Acquisition Corp. VI Class A,10.05,-0.1986097318768577,574080,339019995.00000006,Finance,Finance/Rental/Leasing,NASDAQ,stock,common,0
 PTOR,Praetorian Acquisition Corp. Class A,9.99,0.10020040080160107,2911,338891590.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3197,7 +3191,6 @@ MPTI,M-tron Industries Inc,74.57,2.840987450006879,69713,324116720,Electronic Te
 LE,"Lands' End, Inc.",10.94,1.109057301293893,207838,323213045.00000006,Retail Trade,Apparel/Footwear Retail,NASDAQ,stock,common,1335146000
 KOYN,"CSLM Digital Asset Acquisition Corp III, Ltd Class A",10.24,0.09775171065493438,1406,323153069,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ALDF,"Aldel Financial II, Inc. Class A",10.805,0.04629629629628708,376072,322726045.400928,Finance,Financial Conglomerates,NASDAQ,stock,common,0
-IACQ,Irenic Acquisition Corp. Class A,9.99,0.4020100502512656,114,322392774.51,Finance,Financial Conglomerates,NASDAQ,stock,common,
 PPHC,"Public Policy Holding Co., Inc.",10.65,-5.249110320284696,129716,321806071.99999994,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,186541000
 PMTR,Perimeter Acquisition Corp. I Class A,10.43,0.0479616306954341,68652,321509976,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CAES,"Cantor Equity Partners VII, Inc. Class A",10.09,0.09920634920634709,1576,321366509,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3213,8 +3206,6 @@ MLP,"Maui Land & Pineapple Company, Inc.",16.03,-2.4939172749391734,9321,3183422
 GPRO,"GoPro, Inc. Class A",1.7,22.302158273381302,285136073,318142651,Consumer Durables,Electronics/Appliances,NASDAQ,stock,common,651542000
 MNTK,"Montauk Renewables, Inc.",2.23,-0.8888888888888897,305927,317420747.00000006,Process Industries,Industrial Specialties,NASDAQ,stock,common,176382000
 PSBD,Palmer Square Capital BDC Inc.,10.35,-0.09652509652509447,60592,317240142,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,111196035
-JACS,Jackson Acquisition Co. II Class A,10.72,-0.18621973929236102,8130,317204800,Finance,Financial Conglomerates,NYSE,stock,common,0
-SAC,Safeguard Acquisition Corp. Class A,10.1,0,129209,316803336.7,Finance,Financial Conglomerates,NYSE,stock,common,0
 KLC,KinderCare Learning Companies Inc,2.67,-0.7434944237918222,541277,316440476,Consumer Services,Other Consumer Services,NYSE,stock,common,2733323000
 NC,"NACCO Industries, Inc. Class A",41.93,2.6438188494492,24813,316432932,Energy Minerals,Coal,NYSE,stock,common,277198000
 AEAQ,Activate Energy Acquisition Corp. Class A,10.1,0,20156,316247835.67245656,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3242,10 +3233,8 @@ FXHO,UTime Limited Class A,11.78,-3.836734693877556,127503,309535172,Electronic 
 VHCP,Vine Hill Capital Investment Corp. II Class A,10.07,0,4911,308813337.99305904,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CFFI,C&F Financial Corporation,94.89,0.27475430624538216,35996,308552944,Finance,Regional Banks,NASDAQ,stock,common,186130000
 TMTS,Spartacus Acquisition Corp. II Class A,10.06,-0.09930486593842885,12343,308506683,Finance,Financial Conglomerates,NASDAQ,stock,common,0
-CCCT,Columbus Circle Capital Corp. III Class A,9.84,0.10172939979653903,51082,308303603.28,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ITHA,ITHAX Acquisition Corp. III Class A,10.05,-0.1986097318768577,240,308199997.3399504,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 TLSI,"TriSalus Life Sciences, Inc.",5,0.40160642570280264,86871,307873001,Health Technology,Medical Specialties,NASDAQ,stock,common,45151000
-VII,Viking Acquisition Corp. II Class A,9.84,0.10172939979653903,54345,307762403.28000003,Finance,Financial Conglomerates,NYSE,stock,common,
 MYFW,"First Western Financial, Inc.",31.36,-0.22271714922049088,47676,306234454,Finance,Investment Managers,NASDAQ,stock,common,186344000
 SSP,E. W. Scripps Company Class A,3.3,-0.9009009009009084,471959,305807660,Consumer Services,Broadcasting,NASDAQ,stock,common,2150585000
 ISBA,Isabella Bank Corporation,40.04,0.9072580645161276,45105,305460077,Finance,Regional Banks,NASDAQ,stock,common,112001000
@@ -3256,13 +3245,13 @@ FOSL,"Fossil Group, Inc.",5.15,0.38986354775829357,387672,304560964,Consumer Dur
 ZUMZ,Zumiez Inc.,18.03,1.8644067796610275,167513,304206053,Retail Trade,Apparel/Footwear Retail,NASDAQ,stock,common,929057000
 BIXI,Bitcoin Infrastructure Acquisition Corp Ltd. Class A,10.1,0.1487357461576479,250130,304043665.6646825,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 PLAY,"Dave & Buster's Entertainment, Inc.",8.72,0.5767012687427994,2032436,303357441,Consumer Services,Movies/Entertainment,NASDAQ,stock,common,2102800000.0000002
+OSPR,Osprey Acquisition Corp. III Class A,9.84,0,21204,302698080,Finance,Financial Conglomerates,NASDAQ,stock,common,
 OTGA,OTG Acquisition Corp. I Class A,10.24,0.19569471624265727,100009,302335988.99999994,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 NNBR,"NN, Inc.",3.66,5.780346820809254,1215387,302244433,Producer Manufacturing,Metal Fabrication,NASDAQ,stock,common,422207000
 STRT,Strattec Security Corporation,75.84,1.9080892233270648,82608,302223372,Producer Manufacturing,Auto Parts: OEM,NASDAQ,stock,common,579392000
 CNDT,"Conduent, Inc.",1.94,2.6455026455026482,680752,301710356,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,3042000000
 HVMC,Highview Merger Corp. Class A,10.25,-0.09746588693956908,8206,301452498,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 JENA,Jena Acquisition Corporation II Class A,10.4,-0.8579599618684448,9304,301339993,Finance,Financial Conglomerates,NYSE,stock,common,0
-GSRV,GSR V Acquisition Corp. Class A,9.9,0.10111223458038206,2694,301167900,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 GSRF,GSR IV Acquisition Corp. Class A,10.23,0,24115,300818256,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 MTRX,Matrix Service Company,10.62,0.6635071090047251,419502,300460204,Industrial Services,Engineering & Construction,NASDAQ,stock,common,873632000
 ALCO,"Alico, Inc.",40.43,1.100275068767186,12497,299932422.99999994,Process Industries,Agricultural Commodities/Milling,NASDAQ,stock,common,44066000
@@ -3288,10 +3277,8 @@ OVLY,Oak Valley Bancorp,34.88,1.0721529991307,30709,293435274,Finance,Regional B
 NHIC,NewHold Investment Corporation III Class A,10.62,0.0942507068802996,64826,293247539,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 BACC,Blue Acquisition Corp. Class A,10.48,-0.09532888465204754,691,293043456,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 TTGT,"TechTarget, Inc.",4.05,6.86015831134564,466760,292947274,Technology Services,Data Processing Services,NASDAQ,stock,common,486791000
-MTNE,CH4 Natural Solutions Corporation Class A,9.91,0.10101010101009886,74905,292675339.94,Finance,Financial Conglomerates,NYSE,stock,common,0
 FHTX,"Foghorn Therapeutics, Inc.",4.92,1.0266940451745343,266014,292175754,Health Technology,Biotechnology,NASDAQ,stock,common,30909000
 TTRX,Turn Therapeutics Inc.,9.8,-2.681231380337632,70574,291922781,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
-ACGC,ACP Holdings Acquisition Corp. Class A,10.02,0.1539291925714135,50006,291586679.34,Finance,Financial Conglomerates,NASDAQ,stock,common,
 RCMT,"RCM Technologies, Inc.",40.98,1.1602073562083408,78176,291398892,Commercial Services,Personnel Services,NASDAQ,stock,common,319404000
 ACIU,AC Immune SA,2.86,-2.3890784982935247,155628,291072392,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,4302298.85406297
 NXDT,NexPoint Diversified Real Estate Trust,5.47,0.3669724770642124,104604,290489949,Finance,Real Estate Investment Trusts,NYSE,stock,common,91959000
@@ -3307,35 +3294,34 @@ FUNC,First United Corporation,44.355,0.944469731451978,12104,286259891,Finance,R
 SHOT,RMG ML Sports Holdings Class A,9.8401,0.0010162601625992576,1258,286117307.33400613,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 PRQR,ProQR Therapeutics N.V.,2.07,-0.956937799043063,368464,285841418.99999994,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,17951160.882099
 FXNC,First National Corporation,31.6,2.0012911555842514,38595,285747087,Finance,Regional Banks,NASDAQ,stock,common,116522000
+KEYY,Keystone Acquisition Corp. Class A,9.92,0.25265285497726486,291159,285200000,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CUB,Lionheart Holdings Class A,10.88,-0.09182736455463532,1295,284651608,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 FNRN,First Northern Community Bancorp,17.35,0.05767012687428814,86424,284458492.99999994,Finance,Regional Banks,NASDAQ,stock,common,88404000
-FTRA,FutureCorp Space Acquisition 1 Class A,9.89,-0.10101010101009886,9313,284337500,Finance,Financial Conglomerates,NYSE,stock,common,
 ATLQ,JAB Acquisition Corp. I Class A,9.98,0.20080321285140132,25551,284052170,Finance,Financial Conglomerates,NASDAQ,stock,common,
 LTBR,Lightbridge Corporation,7.58,1.3368983957219203,355449,283932331.99999994,Process Industries,Chemicals: Specialty,NASDAQ,stock,common,0
 SAR,Saratoga Investment Corp.,17.64,-0.7315700619020765,297166,283667339,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,131459404
 RILY,"BRC Group Holdings, Inc.",7.03,-0.9859154929577381,347158,282604270.99999994,Finance,Investment Banks/Brokers,NASDAQ,stock,common,1030765000.0000001
 TVAI,Thayer Ventures Acquisition Corporation II Class A,10.385,0.04816955684006748,5067,282428724,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 XPER,Xperi Inc,5.79,-0.6861063464837056,312126,282388836,Technology Services,Packaged Software,NYSE,stock,common,448105000
-SAMO,Samos Energy Acquisition Corporation Class A,9.81,-0.1018329938900182,11374,282037500,Finance,Financial Conglomerates,NYSE,stock,common,
-WLCO,Wilco 63 Corp Class A,9.81,-0.7085020242915008,1908,282037500,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 JONE,Jones Ventures INTL Acquisition1 Corp Class A,9.82,-0.2032520325203209,154400,281904377,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 PDYN,Palladyne AI Corp.,5.71,0.5281690140845114,347853,281722908.00000006,Producer Manufacturing,Industrial Machinery,NASDAQ,stock,common,5246000
 AXIN,Axiom Intelligence Acquisition Corporation 1 Class A,10.33,0,13219,281664672,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 QNBC,QNB Corp.,45.3,0.1104972375690545,15457,281390544,Finance,Regional Banks,NASDAQ,stock,common,99595000
 JAKK,"JAKKS Pacific, Inc.",24.58,2.203742203742194,35260,281318396,Consumer Durables,Recreational Products,NASDAQ,stock,common,570671000
 XCBE,X3 Acquisition Corp. Ltd. Class A,10,0,208,281250000,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+SBXE,SilverBox Corp V Class A,10.1,0,22443,280729500,Finance,Financial Conglomerates,NYSE,stock,common,0
 PAII,Pyrophyte Acquisition Corp. II Class A,10.29,0,75507,280576112,Finance,Financial Conglomerates,NYSE,stock,common,0
 MFIN,Medallion Financial Corp.,12.22,1.7485428809325636,35155,280574248.00000006,Finance,Finance/Rental/Leasing,NASDAQ,stock,common,353313000
 REFI,"Chicago Atlantic Real Estate Finance, Inc.",10.95,0.8287292817679546,120431,280551556,Finance,Real Estate Investment Trusts,NASDAQ,stock,common,62936040
 RNAC,"Cartesian Therapeutics, Inc.",9.27,1.6447368421052673,68372,280467127,Health Technology,Biotechnology,NASDAQ,stock,common,2797000
 MGNX,"MacroGenics, Inc.",4.4,3.5294117647058907,442785,280280831.99999994,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,149500000
+FDMM,Freedom Metals Acquisition Corp. Class A,9.85,0,233204,279001250,Finance,Financial Conglomerates,NASDAQ,stock,common,
 HCKT,"Hackett Group, Inc.",11.21,1.1732851985559638,217522,278880950.99999994,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,305626000
 RWAY,Runway Growth Finance Corp.,6.65,0.7575757575757683,243486,278700843,Finance,Finance/Rental/Leasing,NASDAQ,stock,common,140164000
 ANIK,"Anika Therapeutics, Inc.",20.81,-0.9047619047619108,96357,278499516,Health Technology,Medical Specialties,NASDAQ,stock,common,112819000
 WNEB,"Western New England Bancorp, Inc.",13.89,1.312910284463893,77516,278437165,Finance,Savings Banks,NASDAQ,stock,common,131100000
 LCNB,LCNB Corp.,19.53,2.2513089005235587,20928,278399939.00000006,Finance,Major Banks,NASDAQ,stock,common,124522000
 ALXO,"ALX Oncology Holdings, Inc.",2.01,-0.9852216748768483,301115,277936754,Health Technology,Biotechnology,NASDAQ,stock,common,0
-ISNR,Snow Rothschild Acquisition Corp. Class A,9.83,0.3061224489795853,2275,277697500.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,
 TRDA,Entrada Therapeutics Inc,7.13,-0.557880055788006,341729,277618450,Health Technology,Biotechnology,NASDAQ,stock,common,25421000
 NHIV,NewHold Investment Corp IV Class A,10.1,-0.19762845849801955,153977,277493294.4098765,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ASLE,AerSale Corporation,5.8,2.8368794326241162,496475,276815222,Distribution Services,Wholesale Distributors,NASDAQ,stock,common,335286000
@@ -3361,6 +3347,7 @@ LMNR,Limoneira Company,14.99,-0.06666666666666525,49663,271798790,Process Indust
 OFLX,"Omega Flex, Inc.",26.91,2.7099236641221407,17469,271638209.00000006,Producer Manufacturing,Miscellaneous Manufacturing,NASDAQ,stock,common,98296000
 TG,Tredegar Corporation,7.76,1.305483028720622,71622,271166723,Non-Energy Minerals,Aluminum,NYSE,stock,common,722864000
 AZ,A2Z Cust2Mate Solutions Corp.,6.15,2.67111853088481,268833,270762796,Finance,Financial Conglomerates,NASDAQ,stock,common,7901000.00000842
+CGCF,Cartesian Growth Corporation IV Class A,9.84,0,132209,270600000,Finance,Financial Conglomerates,NASDAQ,stock,common,
 DNMX,Dynamix Corporation III Class A,10.065,-0.14880952380952944,180386,270077485.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 GENC,"Gencor Industries, Inc.",18.42,1.5995587424159001,112432,269994859.00000006,Producer Manufacturing,Trucks/Construction/Farm Machinery,AMEX,stock,common,115437000
 BRT,BRT Apartments Corp,14.35,-2.1813224267212017,20996,269683543,Finance,Real Estate Investment Trusts,NYSE,stock,common,97028000
@@ -3390,6 +3377,7 @@ HCMA,HCM III Acquisition Corp. Class A,10.28,-0.097181729834789,20080,260083984.
 VRXA,Veraxa Biotech AG,1.76,15.032679738562091,3582282,260009738.00000006,Health Technology,Biotechnology,NASDAQ,stock,common,0
 AREC,American Resources Corporation,2.43,-0.40983606557376173,2004732,259940206,Energy Minerals,Coal,NASDAQ,stock,common,0
 INBK,First Internet Bancorp,29.75,3.9846207619713407,65938,259823824.00000003,Finance,Regional Banks,NASDAQ,stock,common,322869000
+IACQ,Irenic Acquisition Corp. Class A,9.99,0.4020100502512656,114,259322937.48000002,Finance,Financial Conglomerates,NASDAQ,stock,common,
 TRGS,TRG Latin America Acquisitions Corp. Class A,9.96,0,50369,259109399.01141444,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CRDL,Cardiol Therapeutics Inc. Class A,2.2,1.8518518518518534,1098926,257009870.03278694,Health Technology,Biotechnology,NASDAQ,stock,common,0
 VNME,Vendome Acquisition Corporation I Class A,10.28,0.09737098344693075,444530,256999996.00194457,Finance,Financial Conglomerates,NASDAQ,stock,common,0
@@ -3398,12 +3386,12 @@ CHPT,"ChargePoint Holdings, Inc.",9.89,8.920704845814983,13428064,256127575.9999
 ACB,Aurora Cannabis Inc.,3.95,1.5424164524421609,691969,256123943.84403673,Process Industries,Agricultural Commodities/Milling,NASDAQ,stock,common,230480719.56
 RAC,Rithm Acquisition Corp. Class A,10.56,0.18975332068312478,43180,256001199.99999997,Finance,Financial Conglomerates,NYSE,stock,common,0
 IMMR,Immersion Corporation,7.71,1.9841269841269888,213738,255909566.99999997,Electronic Technology,Computer Peripherals,NASDAQ,stock,common,1730694000
+JACS,Jackson Acquisition Co. II Class A,10.72,-0.18621973929236102,8130,255564800.00000003,Finance,Financial Conglomerates,NYSE,stock,common,0
 FBLA,"FB Bancorp, Inc.",15.99,1.0745891276864725,97539,255011351.99999997,Finance,Regional Banks,NASDAQ,stock,common,69654000
 SMRT,SmartRent Inc Class A,1.33,0,425464,254843704,Electronic Technology,Computer Communications,NYSE,stock,common,152326000
 VABK,Virginia National Bankshares Corporation,46.94,-0.06387055567383677,7062,254662730.00000003,Finance,Regional Banks,NASDAQ,stock,common,83340000
 ACRE,Ares Commercial Real Estate Corporation,4.57,0.4395604395604497,154199,253548698,Finance,Real Estate Investment Trusts,NYSE,stock,common,85349000
 AVNW,"Aviat Networks, Inc.",19.78,2.3809523809523854,134811,253214459.00000003,Electronic Technology,Telecommunications Equipment,NASDAQ,stock,common,439682000
-IPVV,"InterPrivate Investment Partners V, Inc. Class A",9.84,-0.10152284263959174,1018,252851100,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 SCII,SC II Acquisition Corp. Class A,10.14,0.09871668311944508,106,252464255.38902622,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ARL,"American Realty Investors, Inc.",15.6,-6.921241050119342,4090,251971867,Finance,Real Estate Development,NYSE,stock,common,50014000
 SBMT,Silver Bow Mining Corp.,8.53,0,28870,251878094,Non-Energy Minerals,Precious Metals,AMEX,stock,common,0
@@ -3417,7 +3405,6 @@ YDES,YD Bio Limited,3.54,-3.542234332425066,687085,250783657.99999997,Health Tec
 NGEN,NervGen Pharma Corp.,2.33,0.43103448275863065,920546,250527735.00000003,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
 SCM,Stellus Capital Investment Corp.,8.78,0.9195402298850583,423868,250053836,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,103669534
 MKLY,Mckinley Acquisition Corporation Class A,10.255,0.14648437500000555,81314,249651347,Finance,Financial Conglomerates,NASDAQ,stock,common,0
-OHAC,Oceanhawk Acquisition Corp. Class A,9.96,0,250720,249630796.67999998,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 QADR,QDRO Acquisition Corp. Class A,9.98,-0.10010010010009797,53450,249499988.99999997,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ALMU,"Aeluma, Inc.",12.94,0.8573655494933705,286084,249297795.99999997,Commercial Services,Miscellaneous Commercial Services,NASDAQ,stock,common,4665000
 OSS,"One Stop Systems, Inc.",9.97,2.151639344262304,648591,248703517.00000003,Electronic Technology,Computer Processing Hardware,NASDAQ,stock,common,32215500
@@ -3448,13 +3435,13 @@ DYNC,Dynamix Corporation Class A,10.87,-0.04597701149426006,30900,240589331,Fina
 OSUR,"OraSure Technologies, Inc.",3.48,-2.793296089385477,304665,240010827,Health Technology,Medical Specialties,NASDAQ,stock,common,115021000
 SSAC,SPACSphere Acquisition Corp. Class A,10.095,0.049554013875131635,12391,239943316,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 DAAQ,Digital Asset Acquisition Corp. Class A,10.43,-0.09578544061302478,385,239890007,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+SAC,Safeguard Acquisition Corp. Class A,10.1,0,129209,239370000,Finance,Financial Conglomerates,NYSE,stock,common,0
 FLWS,"1-800-FLOWERS.COM, Inc. Class A",3.73,4.1899441340782095,142298,239087343,Retail Trade,Internet Retail,NASDAQ,stock,common,1685658000
 TDWD,Tailwind 2.0 Acquisition Corp. Class A,10.1,0,2808,237804500.99753088,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 TSSI,"TSS, Inc.",8.42,3.9506172839506206,893348,237604575,Technology Services,Information Technology Services,NASDAQ,stock,common,245719000
 SIGA,SIGA Technologies Inc,3.29,1.8575851393188871,899427,236385564,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,94574902
 LODE,Comstock Inc.,3.11,-3.416149068322991,910327,236338376,Process Industries,Chemicals: Specialty,AMEX,stock,common,1553796
 MRBK,Meridian Corporation,19.81,1.6940451745379788,62854,236314425.99999997,Finance,Regional Banks,NASDAQ,stock,common,204303000
-AACP,Apogee Acquisition Corp Class A,10.06,-0.09930486593842885,188,236108200.00000006,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 HLXC,Helix Acquisition Corp. III Class A,10.699,-0.47441860465116426,736,236019942,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 TWLV,Twelve Seas Investment Co. III Class A,10.07,-0.592300098716688,641,236015622.50865906,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 NUS,"Nu Skin Enterprises, Inc. Class A",4.84,2.9787234042553123,390447,235594906,Consumer Non-Durables,Household/Personal Care,NYSE,stock,common,1485159000
@@ -3463,16 +3450,19 @@ PDEX,"Pro-Dex, Inc.",73.41,18.882591093117405,150235,235156768,Health Technology
 BRR,"ProCap Financial, Inc.",2.66,1.1406844106463974,1213616,235063078,Technology Services,Internet Software/Services,NASDAQ,stock,common,85000
 SILC,Silicom Ltd.,40.87,2.009234993136153,81144,234904856.99999997,Electronic Technology,Computer Communications,NASDAQ,stock,common,61926000.000137
 LATA,Galata Acquisition Corp. II Class A,10.208,0.17664376840039925,19149,234784004,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+GSRV,GSR V Acquisition Corp. Class A,9.9,0.10111223458038206,2694,234342900,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ELMD,"Electromed, Inc.",28,1.4125316914161556,118108,234252571,Health Technology,Medical Specialties,AMEX,stock,common,73776000
 GLSI,"Greenwich LifeSciences, Inc.",15.95,2.047344849648103,65124,234117420.00000003,Health Technology,Biotechnology,NASDAQ,stock,common,0
 REA,"Rare Earths Americas, Inc.",11.73,-3.456790123456789,86711,234059141,Non-Energy Minerals,Other Metals/Minerals,AMEX,stock,common,0
 NVA,Nova Minerals Corp,6.13,4.965753424657534,398543,234049837.00000003,Non-Energy Minerals,Precious Metals,AMEX,stock,common,0
 AIRO,"Airo Group Holdings, Inc.",7.4,4.51977401129944,391060,233513794,Electronic Technology,Aerospace & Defense,NASDAQ,stock,common,90907000
 NCMI,"National CineMedia, Inc.",2.48,-0.4016064257028205,335976,233294698.00000003,Commercial Services,Advertising/Marketing Services,NASDAQ,stock,common,243200000
+CCCT,Columbus Circle Capital Corp. III Class A,9.84,0.10172939979653903,51082,232863600,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 TARA,"Protara Therapeutics, Inc.",3.94,-0.7556675062972354,203006,232836232,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
 SUMA,SUMA Acquisition Corporation Class A,9.93,0.30303030303029654,809,232821266.99095476,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 RAIL,"FreightCar America, Inc.",7.1,1.2838801711840209,80652,232818104.00000003,Producer Manufacturing,Trucks/Construction/Farm Machinery,NASDAQ,stock,common,500991000
 DYOR,Insight Digital Partners II Class A,10.1201,0.0009881422925053687,2028,232762300.00000003,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+VII,Viking Acquisition Corp. II Class A,9.84,0.10172939979653903,54345,232322400,Finance,Financial Conglomerates,NYSE,stock,common,
 GLDG,GoldMining Inc.,1.08,-1.8181818181818195,481288,231983111.68211922,Non-Energy Minerals,Precious Metals,AMEX,stock,common,0
 CFBK,CF Bankshares Inc,35.7,1.506966164344615,47525,231771976,Finance,Savings Banks,NASDAQ,stock,common,125904000
 BIII,Black Spade Acquisition III Co Class A,10.06,-0.09930486593842885,213572,231380010,Finance,Financial Conglomerates,NYSE,stock,common,0
@@ -3483,19 +3473,20 @@ KLTR,"Kaltura, Inc.",1.51,-1.3071895424836613,211389,230352346,Technology Servic
 ABOS,"Acumen Pharmaceuticals, Inc.",3.18,2.912621359223311,315433,229968967,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
 IRAB,Iris Acquisition Corp. II Class A,10.01,-0.09980039920159467,3014,229275723,Finance,Financial Conglomerates,NYSE,stock,common,0
 MPAA,"Motorcar Parts of America, Inc.",12.08,2.4597116200169715,40765,228713133.99999997,Producer Manufacturing,Auto Parts: OEM,NASDAQ,stock,common,789806000
-LTGR,Long Table Growth Corp. Class A,9.9401,0.0010060362173014783,916,228622299.99999997,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CMTG,"Claros Mortgage Trust, Inc.",1.62,1.250000000000001,338834,228556401.00000003,Finance,Real Estate Investment Trusts,NYSE,stock,common,201650000
 RGCO,"RGC Resources, Inc.",21.93,0.9203865623561864,9795,228500859,Utilities,Gas Distributors,NASDAQ,stock,common,95334212
 CRAC,Crown Reserve Acquisition Corp. I Class A,10.2,0.1964636542239644,225,228161242,Finance,Financial Conglomerates,NASDAQ,stock,common,0
-TVIV,Texas Ventures Acquisition IV Corp. Class A,9.92,0,800,228160000,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 BGIN,Bgin Blockchain Ltd. Class A,2.015,3.8659793814433083,5207,227968932.99999997,Electronic Technology,Computer Processing Hardware,NASDAQ,stock,common,67395903
 RDNW,"RideNow Group, Inc. Class B",5.84,-0.1709401709401673,35721,227824772.00000003,Retail Trade,Specialty Stores,NASDAQ,stock,common,1082500000
 SLGL,Sol-Gel Technologies Ltd.,69.52,-0.8273894436519235,29627,227608398,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,19388000.0000429
+FTRA,FutureCorp Space Acquisition 1 Class A,9.89,-0.10101010101009886,9313,227470000,Finance,Financial Conglomerates,NYSE,stock,common,
 DPRO,Draganfly Inc,6.12,-4.8211508553654685,2493908,227348974.29818177,Consumer Durables,Motor Vehicles,NASDAQ,stock,common,5629832.8966
 MRCO,Mercator Acquisition Corp Class A,9.88,-0.10111223458038206,2320,227240003,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 NEOV,NeoVolta Inc,3.86,1.0471204188481684,976840,227212127.00000003,Producer Manufacturing,Electrical Products,NASDAQ,stock,common,8426835
 EFSI,"Eagle Financial Services, Inc.",41.9,0.9273756473563723,44088,226746692,Finance,Regional Banks,NASDAQ,stock,common,105554000
 UTMD,"Utah Medical Products, Inc.",71.1,0.5515485787017403,46030,226369462,Health Technology,Medical Specialties,NASDAQ,stock,common,38520000
+WLCO,Wilco 63 Corp Class A,9.81,-0.7085020242915008,1908,225630000,Finance,Financial Conglomerates,NASDAQ,stock,common,0
+SAMO,Samos Energy Acquisition Corporation Class A,9.81,-0.1018329938900182,11374,225630000,Finance,Financial Conglomerates,NYSE,stock,common,
 SND,"Smart Sand, Inc.",5.32,-0.5607476635513899,244813,225563023,Non-Energy Minerals,Construction Materials,NASDAQ,stock,common,330153000
 HITI,"High Tide, Inc.",2.565,1.785714285714283,405487,225387004.47464785,Retail Trade,Specialty Stores,NASDAQ,stock,common,423749612.40000004
 TNXP,Tonix Pharmaceuticals Holding Corp.,13.14,-1.7202692595362654,252492,225364458.99999997,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,13107000.000155
@@ -3510,16 +3501,18 @@ EXOD,"Exodus Movement, Inc. Class A",7.41,1.5068493150684976,30225,223806132.999
 TBCH,Turtle Beach Corporation,12.48,-0.319488817891367,427302,223513196.00000003,Consumer Durables,Electronics/Appliances,NASDAQ,stock,common,319914000
 ONCH,1RT Acquisition Corp. Class A,10.33,0,550,222740620.49782082,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 ANTX,"AN2 Therapeutics, Inc.",5.89,-1.0084033613445462,77182,222266427.99999997,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
+ISNR,Snow Rothschild Acquisition Corp. Class A,9.83,0.3061224489795853,2275,222158000,Finance,Financial Conglomerates,NASDAQ,stock,common,
 DERM,Journey Medical Corp.,7.86,-0.5063291139240511,51231,221843739,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,61858000
 FUFU,"BitFuFu, Inc. Class A",1.33,0,89656,221649291.00000003,Technology Services,Data Processing Services,NASDAQ,stock,common,477532000
 SVCO,"Silvaco Group, Inc.",6.54,2.5078369905956137,180896,221612852,Technology Services,Packaged Software,NASDAQ,stock,common,63064000
 VACI,Viking Acquisition Corp. I Class A,7.06,-18.00232288037166,95652,221166266,Finance,Financial Conglomerates,NYSE,stock,common,0
 AMWL,American Well Corporation Class A,12.99,-1.9622641509433947,121890,220943757.00000003,Technology Services,Packaged Software,NYSE,stock,common,249325000
 OVBC,Ohio Valley Banc Corp.,46.86,0.8609556607834665,11990,220757506,Finance,Regional Banks,NASDAQ,stock,common,94207000
-DGAC,Disciplined Growth Acquisition Corporation Class A,10,0.20040080160320214,151152,220635000,Finance,Finance/Rental/Leasing,NYSE,stock,common,
 KGEI,Kolibri Global Energy Inc,6.15,-2.070063694267514,87014,220598643,Energy Minerals,Oil & Gas Production,NASDAQ,stock,common,56856000.000060596
 ORGO,"Organogenesis Holdings, Inc. Class A",1.71,4.268292682926833,665542,220033477,Health Technology,Medical Specialties,NASDAQ,stock,common,564169000
+MTNE,CH4 Natural Solutions Corporation Class A,9.91,0.10101010101009886,74905,220002000,Finance,Financial Conglomerates,NYSE,stock,common,0
 ESOA,Energy Services of America Corporation,11.79,4.428697962798937,100077,219991750.00000003,Industrial Services,Engineering & Construction,NASDAQ,stock,common,411001373
+ACGC,ACP Holdings Acquisition Corp. Class A,10.02,0.1539291925714135,50006,219904932,Finance,Financial Conglomerates,NASDAQ,stock,common,
 TORO,Toro Corp.,6.355,1.5987210231814635,12650,219624542.99999997,Transportation,Marine Shipping,NASDAQ,stock,common,23792499.7818855
 STIM,"Neuronetics, Inc.",2.88,5.8823529411764595,996614,219448002,Health Technology,Medical Specialties,NASDAQ,stock,common,149157000
 CHRS,"Coherus Oncology, Inc.",1.42,3.649635036496337,306060,219391357.99999997,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,42172000
@@ -3539,12 +3532,10 @@ GSHR,Gesher Acquisition Corp. II Class A,10.52,-0.18975332068310793,107,21517722
 PLX,"Protalix Biotherapeutics, Inc.",2.67,1.9083969465648787,863718,215126285,Health Technology,Pharmaceuticals: Major,AMEX,stock,common,52744000
 FC,Franklin Covey Co.,19.02,3.36956521739131,64339,214809466.00000003,Commercial Services,Miscellaneous Commercial Services,NYSE,stock,common,267067000
 CRBP,Corbus Pharmaceuticals Holdings Inc,11.08,-3.315881326352537,222614,214301529,Health Technology,Pharmaceuticals: Major,NASDAQ,stock,common,0
-AESP,Aeon Acquisition I Corp Class A,9.98,-0.09810006206330708,1281,213460623.20000002,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CMT,"Core Molding Technologies, Inc.",24.12,0.33277870216306926,23194,213438715,Producer Manufacturing,Industrial Machinery,AMEX,stock,common,273798000
 CCAQ,Collective Acquisition Corp. Class A,10.545,-0.04739336492891736,5424,213355021.0687856,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 SRI,"Stoneridge, Inc.",7.48,4.615384615384617,168668,213351090,Producer Manufacturing,Auto Parts: OEM,NYSE,stock,common,861263000
 EGHA,EGH Acquisition Corp. Class A,10.4,0.19267822736030416,998,213200001.99616128,Finance,Financial Conglomerates,NASDAQ,stock,common,0
-IDAC,Iron Dome Acquisition I Corp. Class A,10.05,0.5000000000000071,508,213060000.00000003,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CZWI,"Citizens Community Bancorp, Inc.",22.07,1.0994044892350068,50639,212980603,Finance,Regional Banks,NASDAQ,stock,common,98119000
 CMRC,"Commerce.com, Inc.",2.57,2.3904382470119545,1993649,212947608.00000003,Technology Services,Packaged Software,NASDAQ,stock,common,342349000
 TPVG,TriplePoint Venture Growth BDC Corp.,5.23,-2.425373134328356,222835,212911860,Miscellaneous,Investment Trusts/Mutual Funds,NYSE,stock,common,97209000
@@ -3567,230 +3558,230 @@ GSIT,"GSI Technology, Inc.",5.35,0.375234521575977,657371,205614355,Electronic T
 XTER,Karman Line Acquisition Corp. Class A,9.81,-0.1018329938900182,10760,205261000,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 THEO,BOA Acquisition Corp. II Class A,9.87,0,11169,204873704,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 LCUT,Lifetime Brands Incorporated,8.87,0.6810442678773975,170206,203910975,Consumer Durables,Home Furnishings,NASDAQ,stock,common,647933000
+IPVV,"InterPrivate Investment Partners V, Inc. Class A",9.84,-0.10152284263959174,1018,203343600,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 AMPY,Amplify Energy Corp.,4.9,0,457530,203136597,Energy Minerals,Integrated Oil,NYSE,stock,common,263361000
 OMSE,OMS Energy Technologies Inc.,4.785,-1.3402061855670002,14888,203117041,Industrial Services,Oilfield Services/Equipment,NASDAQ,stock,common,155910000.000994
 SGC,"Superior Group of Companies, Inc.",12.73,1.7585931254996054,37804,202982400.00000003,Consumer Non-Durables,Apparel/Footwear,NASDAQ,stock,common,566184000
 BYND,"Beyond Meat, Inc.",11.79,4.614019520851816,1157179,202716857,Consumer Non-Durables,Food: Major Diversified,NASDAQ,stock,common,275496000
 CPSS,"Consumer Portfolio Services, Inc.",9.4,6.69693530079455,26210,202614305,Finance,Finance/Rental/Leasing,NASDAQ,stock,common,427970000
-KTWO,K2 Capital Acquisition Corp. Class A,10.09,0.14888337468983195,2169,202215314.49,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 AIRS,"Airsculpt Technologies, Inc.",2.795,10.039370078740154,1593191,201506110.00000003,Health Technology,Medical Specialties,NASDAQ,stock,common,151818000
 ANNA,"AleAnna, Inc. Class A",3,-3.5369774919614105,190539,200803196,Energy Minerals,Oil & Gas Production,NASDAQ,stock,common,25035737.0000267
 TAYD,"Taylor Devices, Inc.",62.18,2.7089527585067734,25957,200531429,Producer Manufacturing,Industrial Machinery,NASDAQ,stock,common,41649673
 RBKB,Rhinebeck Bancorp Inc,12.82,0.23455824863175245,69249,200453070.99999997,Finance,Regional Banks,NASDAQ,stock,common,75835000
 FIGX,FIGX Capital Acquisition Corp. Class A,10.32,0,438,200059258,Finance,Financial Conglomerates,NASDAQ,stock,common,0
 CIA,"Citizens, Inc. Class A",3.95,-0.5037783375314866,101225,200040280,Finance,Life/Health Insurance,NYSE,stock,common,255616000
-TSM,"Taiwan Semiconductor Manufacturing Co., Ltd. Sponsored ADR",428.91,2.853648593558916,12283840,1967343366108.3318,Electronic Technology,Semiconductors,NYSE,dr,,122236494158.397
-SKHY,SK hynix Inc. Sponsored ADR,177,8.137829912023456,20803130,879923577803.4664,Electronic Technology,Semiconductors,NASDAQ,dr,,68354441275.82481
-ASML,ASML Holding NV Sponsored ADR,1714.88,4.17266536669522,1289622,651604135469.9935,Electronic Technology,Semiconductors,NASDAQ,dr,,36867594485.3385
-HSBC,HSBC Holdings PLC Sponsored ADR,107.11,0.6105579560398325,1209246,366876649598.085,Finance,Major Banks,NYSE,dr,,138713399534.005
-NVS,Novartis AG Sponsored ADR,159.99,-1.9007909743086602,1294324,293775400001.622,Health Technology,Pharmaceuticals: Major,NYSE,dr,,54811252205.6397
-BABA,Alibaba Group Holding Limited Sponsored ADR,113.24,1.278955370718176,7181354,279162383748.35425,Retail Trade,Internet Retail,NYSE,dr,,144118781295.58002
-MUFG,"Mitsubishi UFJ Financial Group, Inc. Sponsored ADR",24.09,-0.16576875259013324,3705215,271422978310.00003,Finance,Major Banks,NYSE,dr,,87975237751.1738
+TSM,"Taiwan Semiconductor Manufacturing Co., Ltd. Sponsored ADR",428.91,2.853648593558916,12283840,1976592923533.4102,Electronic Technology,Semiconductors,NYSE,dr,,122236494158.397
+SKHY,SK hynix Inc. Sponsored ADR,177,8.137829912023456,20803130,887126226462.1578,Electronic Technology,Semiconductors,NASDAQ,dr,,68354441275.82481
+HSBC,HSBC Holdings PLC Sponsored ADR,107.11,0.6105579560398325,1209246,733280235906.3534,Finance,Major Banks,NYSE,dr,,138713399534.005
+ASML,ASML Holding NV Sponsored ADR,1714.88,4.17266536669522,1289622,650948321795.4673,Electronic Technology,Semiconductors,NASDAQ,dr,,36867594485.3385
+NVS,Novartis AG Sponsored ADR,159.99,-1.9007909743086602,1294324,292826589666.534,Health Technology,Pharmaceuticals: Major,NYSE,dr,,54811252205.6397
+BABA,Alibaba Group Holding Limited Sponsored ADR,113.24,1.278955370718176,7181354,279140490376.56,Retail Trade,Internet Retail,NYSE,dr,,144118781295.58002
+MUFG,"Mitsubishi UFJ Financial Group, Inc. Sponsored ADR",24.09,-0.16576875259013324,3705215,270788120260,Finance,Major Banks,NYSE,dr,,87975237751.1738
 ARM,ARM Holdings PLC Sponsored ADR,252.09,3.9160723855064097,4132162,269232116089.00003,Electronic Technology,Semiconductors,NASDAQ,dr,,4920000000
-SHEL,Shell Plc Sponsored ADR,92.95,0.6715043864399486,6849003,266467362958.81,Energy Minerals,Integrated Oil,NYSE,dr,,257932349270.07098
-SAP,SAP SE Sponsored ADR,215.11,-0.8846703220752834,2298678,252018926319.88367,Technology Services,Packaged Software,NYSE,dr,,41531668581.7455
-TM,Toyota Motor Corp. Sponsored ADR,197.11,-1.3808975834292243,341245,233976320214.0738,Consumer Durables,Motor Vehicles,NYSE,dr,,336347804992.41003
-BHP,BHP Group Ltd Sponsored American Depositary Receipt Repr 2 Shs,90.42,-2.4700679538345294,1782497,227787820556.77225,Non-Energy Minerals,Steel,NYSE,dr,,59022491180.90469
-SAN,Banco Santander S.A. Sponsored ADR,14.93,-0.7973421926910365,8277861,224438207113.19812,Finance,Major Banks,NYSE,dr,,140421054346.37302
-NVO,Novo Nordisk A/S Sponsored ADR Class B,46.6,-1.915386234476945,6219233,205636762219.4624,Health Technology,Pharmaceuticals: Major,NYSE,dr,,46735785028.7259
-RIO,Rio Tinto plc Sponsored ADR,103.27,0.41812524309606436,1261046,176797882338.21753,Non-Energy Minerals,Other Metals/Minerals,NYSE,dr,,57772692552.5037
-SMFG,Sumitomo Mitsui Financial Group Inc Sponsored ADR,27.3,-0.9433962264150872,1257243,172174000287.5557,Finance,Major Banks,NYSE,dr,,70074264378.6391
-BBVA,"Banco Bilbao Vizcaya Argentaria, S.A. Sponsored ADR",29.51,-0.43859649122806676,743147,164309077488.69727,Finance,Major Banks,NYSE,dr,,89702761246.8174
-BUD,Anheuser-Busch InBev SA/NV Sponsored ADR,80.35,0.16205435053602027,3387662,159219331221.26248,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,59503548128.7214
-SONY,Sony Group Corporation Sponsored ADR,24.56,-1.602564102564111,3004639,147631738782.20767,Electronic Technology,Computer Processing Hardware,NYSE,dr,,82815364886.5914
-UL,Unilever PLC Sponsored ADR,64.2,-0.062266500622652626,3128263,138780858153.52502,Consumer Non-Durables,Household/Personal Care,NYSE,dr,,56996572238.6928
-MFG,Mizuho Financial Group Inc Sponsored ADR,11.23,-0.7950530035335677,3750951,137208254195.89062,Finance,Major Banks,NYSE,dr,,59059266473.222
-PBR,Petroleo Brasileiro SA Sponsored ADR,20.12,-1.9015114578254537,18780992,124589084670.45749,Energy Minerals,Integrated Oil,NYSE,dr,,89058891021.9531
-PBR.A,Petroleo Brasileiro SA Sponsored ADR Pfd,18.25,-1.776103336921412,5312322,124589084670.45749,Energy Minerals,Integrated Oil,NYSE,dr,,89058891021.9531
-BTI,British American Tobacco PLC Sponsored ADR,55.35,-1.1077362872967615,4109681,120164792932.71751,Consumer Non-Durables,Tobacco,NYSE,dr,,33789388398.8092
+SHEL,Shell Plc Sponsored ADR,92.95,0.6715043864399486,6849003,266388555605.6244,Energy Minerals,Integrated Oil,NYSE,dr,,257932349270.07098
+SAP,SAP SE Sponsored ADR,215.11,-0.8846703220752834,2298678,251765279283.09686,Technology Services,Packaged Software,NYSE,dr,,41531668581.7455
+TM,Toyota Motor Corp. Sponsored ADR,197.11,-1.3808975834292243,341245,233429049856.4859,Consumer Durables,Motor Vehicles,NYSE,dr,,336347804992.41003
+BHP,BHP Group Ltd Sponsored American Depositary Receipt Repr 2 Shs,90.42,-2.4700679538345294,1782497,227904905831.915,Non-Energy Minerals,Steel,NYSE,dr,,59022491180.90469
+SAN,Banco Santander S.A. Sponsored ADR,14.93,-0.7973421926910365,8277861,224212318974.52814,Finance,Major Banks,NYSE,dr,,140421054346.37302
+NVO,Novo Nordisk A/S Sponsored ADR Class B,46.6,-1.915386234476945,6219233,205371766391.86,Health Technology,Pharmaceuticals: Major,NYSE,dr,,46735785028.7259
+RIO,Rio Tinto plc Sponsored ADR,103.27,0.41812524309606436,1261046,176745594609.61472,Non-Energy Minerals,Other Metals/Minerals,NYSE,dr,,57772692552.5037
+SMFG,Sumitomo Mitsui Financial Group Inc Sponsored ADR,27.3,-0.9433962264150872,1257243,171771285488.81665,Finance,Major Banks,NYSE,dr,,70074264378.6391
+BBVA,"Banco Bilbao Vizcaya Argentaria, S.A. Sponsored ADR",29.51,-0.43859649122806676,743147,164143706930.10168,Finance,Major Banks,NYSE,dr,,89702761246.8174
+BUD,Anheuser-Busch InBev SA/NV Sponsored ADR,80.35,0.16205435053602027,3387662,159059083290.07263,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,59503548128.7214
+SONY,Sony Group Corporation Sponsored ADR,24.56,-1.602564102564111,3004639,147286428306.341,Electronic Technology,Computer Processing Hardware,NYSE,dr,,82815364886.5914
+UL,Unilever PLC Sponsored ADR,64.2,-0.062266500622652626,3128263,138739813907.121,Consumer Non-Durables,Household/Personal Care,NYSE,dr,,56996572238.6928
+MFG,Mizuho Financial Group Inc Sponsored ADR,11.23,-0.7950530035335677,3750951,136887324239.09375,Finance,Major Banks,NYSE,dr,,59059266473.222
+PBR,Petroleo Brasileiro SA Sponsored ADR,20.12,-1.9015114578254537,18780992,124079257214.0055,Energy Minerals,Integrated Oil,NYSE,dr,,89058891021.9531
+PBR.A,Petroleo Brasileiro SA Sponsored ADR Pfd,18.25,-1.776103336921412,5312322,124079257214.0055,Energy Minerals,Integrated Oil,NYSE,dr,,89058891021.9531
+BTI,British American Tobacco PLC Sponsored ADR,55.35,-1.1077362872967615,4109681,120129254361.79471,Consumer Non-Durables,Tobacco,NYSE,dr,,33789388398.8092
 PDD,PDD Holdings Inc. Sponsored ADR Class A,82.21,0.7105230920004879,4657979,117017421838,Retail Trade,Department Stores,NASDAQ,dr,,60074957664.6374
-HDB,HDFC Bank Limited Sponsored ADR,23.18,-0.42955326460481713,8545261,116147785700.4412,Finance,Major Banks,NYSE,dr,,56908611386.3974
-BP,BP PLC Sponsored ADR,43.81,0.5277650298302065,7058978,112793826298.295,Energy Minerals,Integrated Oil,NYSE,dr,,189777451411.01898
-IBN,ICICI Bank Limited Sponsored ADR,30.3,-0.7208387942332859,3310266,107912572081.84381,Finance,Regional Banks,NYSE,dr,,35434316851.2179
-SNY,Sanofi SA Sponsored ADR,44.24,-0.20302278366793663,1695047,106339529062.50655,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,49235341672.4791
-ING,ING Groep N.V. Sponsored ADR,37.18,0.2426530062011224,1375320,103718089032.94728,Finance,Major Banks,NYSE,dr,,69686302715.13701
-EQNR,Equinor ASA Sponsored ADR,42.09,-1.3361462728551177,2830971,101204424189.83835,Energy Minerals,Integrated Oil,NYSE,dr,,106156082391.17
-GSK,GSK plc Sponsored ADR,49.89,-1.9264792608610124,2287091,100070998665.73,Health Technology,Pharmaceuticals: Major,NYSE,dr,,43051521152.3031
-ITUB,Itau Unibanco Holding S.A. Sponsored ADR Pfd,8.15,-0.8515815085158186,15713093,94343861616.4805,Finance,Major Banks,NYSE,dr,,77275635913.46089
-BCS,Barclays PLC Sponsored ADR,27,0.3717472118959161,5756153,90151918775.84,Finance,Investment Banks/Brokers,NYSE,dr,,71972622927.4062
-LYG,Lloyds Banking Group plc Sponsored ADR,6.08,-0.32786885245900943,15625913,88130850802.72,Finance,Major Banks,NYSE,dr,,86389024491.2181
-ASX,"ASE Technology Holding Co., Ltd. Sponsored ADR",37.51,0.21373230029387738,6864666,81398625869.41214,Electronic Technology,Semiconductors,NYSE,dr,,20711159623.854298
-E,Eni S.p.A. Sponsored ADR,53.58,-2.811536368583356,378309,78456109517.16727,Energy Minerals,Oil Refining/Marketing,NYSE,dr,,92713807218.994
-NGG,National Grid plc Sponsored ADR,78.12,-0.0639631572214368,845396,78254108570.6275,Utilities,Electric Utilities,NYSE,dr,,23701987490.3628
-NTES,Netease Inc Sponsored ADR,119.29,1.9137120888509263,734335,76787582042.52658,Technology Services,Packaged Software,NASDAQ,dr,,15667610870.7154
-NWG,NatWest Group Plc Sponsored ADR,18.94,-0.05277044854880217,1916109,75151125485.81749,Finance,Major Banks,NYSE,dr,,39899127648.2682
-AMX,America Movil SAB de CV Sponsored ADR Class B,23,-0.7765314926660902,2425204,70279550558.76004,Communications,Wireless Telecommunications,NYSE,dr,,49146873745.9557
+HDB,HDFC Bank Limited Sponsored ADR,23.18,-0.42955326460481713,8545261,116356645053.86807,Finance,Major Banks,NYSE,dr,,56908611386.3974
+BP,BP PLC Sponsored ADR,43.81,0.5277650298302065,7058978,112760467680.5358,Energy Minerals,Integrated Oil,NYSE,dr,,189777451411.01898
+IBN,ICICI Bank Limited Sponsored ADR,30.3,-0.7208387942332859,3310266,108106622703.60748,Finance,Regional Banks,NYSE,dr,,35434316851.2179
+SNY,Sanofi SA Sponsored ADR,44.24,-0.20302278366793663,1695047,106232502551.30803,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,49235341672.4791
+ING,ING Groep N.V. Sponsored ADR,37.18,0.2426530062011224,1375320,103613700896.99036,Finance,Major Banks,NYSE,dr,,69686302715.13701
+EQNR,Equinor ASA Sponsored ADR,42.09,-1.3361462728551177,2830971,101035044400.39928,Energy Minerals,Integrated Oil,NYSE,dr,,106156082391.17
+GSK,GSK plc Sponsored ADR,49.89,-1.9264792608610124,2287091,100041402806.6052,Health Technology,Pharmaceuticals: Major,NYSE,dr,,43051521152.3031
+ITUB,Itau Unibanco Holding S.A. Sponsored ADR Pfd,8.15,-0.8515815085158186,15713093,93957799778.6637,Finance,Major Banks,NYSE,dr,,77275635913.46089
+BCS,Barclays PLC Sponsored ADR,27,0.3717472118959161,5756153,90125256470.8416,Finance,Investment Banks/Brokers,NYSE,dr,,71972622927.4062
+LYG,Lloyds Banking Group plc Sponsored ADR,6.08,-0.32786885245900943,15625913,88104786225.77281,Finance,Major Banks,NYSE,dr,,86389024491.2181
+ASX,"ASE Technology Holding Co., Ltd. Sponsored ADR",37.51,0.21373230029387738,6864666,81781325339.8106,Electronic Technology,Semiconductors,NYSE,dr,,20711159623.854298
+E,Eni S.p.A. Sponsored ADR,53.58,-2.811536368583356,378309,78377146559.95035,Energy Minerals,Oil Refining/Marketing,NYSE,dr,,92713807218.994
+NGG,National Grid plc Sponsored ADR,78.12,-0.0639631572214368,845396,78230965026.5031,Utilities,Electric Utilities,NYSE,dr,,23701987490.3628
+NTES,Netease Inc Sponsored ADR,119.29,1.9137120888509263,734335,76781559959.3925,Technology Services,Packaged Software,NASDAQ,dr,,15667610870.7154
+NWG,NatWest Group Plc Sponsored ADR,18.94,-0.05277044854880217,1916109,75121396576.7271,Finance,Major Banks,NYSE,dr,,39899127648.2682
+AMX,America Movil SAB de CV Sponsored ADR Class B,23,-0.7765314926660902,2425204,70374796434.49611,Communications,Wireless Telecommunications,NYSE,dr,,49146873745.9557
 SE,Sea Limited Sponsored ADR Class A,112.09,-0.8930150309460575,3575484,68653387828.00001,Retail Trade,Internet Retail,NYSE,dr,,22938469000
-ARGX,argenx SE Sponsored ADR,1033.15,-1.9279327169517537,125058,64988424519.51759,Health Technology,Biotechnology,NASDAQ,dr,,4166333716.93827
-VALE,Vale S.A. Sponsored ADR,15.27,-0.2612671456564397,25763087,64077349710.0405,Non-Energy Minerals,Steel,NYSE,dr,,38232483288.7496
-RELX,RELX PLC Sponsored ADR,35.51,-3.1105047748976826,2650562,61715168482.41,Commercial Services,Miscellaneous Commercial Services,NYSE,dr,,12638567601.8792
-TAK,Takeda Pharmaceutical Co. Ltd. Sponsored ADR,18.45,-1.389631213254952,1499547,58886422883.597046,Health Technology,Pharmaceuticals: Major,NYSE,dr,,29900176918.5931
-MT,ArcelorMittal SA ADR,78.74,3.5099250690153827,1611386,58140732107.10527,Non-Energy Minerals,Steel,NYSE,dr,,61541835549.449005
-NOK,Nokia Oyj Sponsored ADR,10.03,2.661207778915044,46052793,56164062143.38913,Electronic Technology,Telecommunications Equipment,NYSE,dr,,22446286859.3026
-UMC,United Microelectronics Corp. Sponsored ADR,20.77,4.582074521651562,10014225,51440217550.3125,Electronic Technology,Semiconductors,NYSE,dr,,7623328035.8658
-DEO,Diageo plc Sponsored ADR,89.19,-1.6431407146008037,1068504,49856625336.6625,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,19603627422.4119
-INFY,Infosys Limited Sponsored ADR,11.7,-3.225806451612908,19837897,48453590659.57295,Technology Services,Information Technology Services,NYSE,dr,,20218895482.8679
-ABEV,Ambev SA Sponsored ADR,3.02,-0.6578947368421059,21410394,47635714795.592995,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,15794979493.6002
-STM,STMicroelectronics NV Sponsored ADR RegS,52.24,1.8720748829953213,7359245,46487616939.15598,Electronic Technology,Semiconductors,NYSE,dr,,11836511596.745
-WDS,Woodside Energy Group Ltd Sponsored ADR,22.77,-4.005059021922426,396450,43511370969.58975,Energy Minerals,Oil & Gas Production,NYSE,dr,,12972588623.2579
-GFI,Gold Fields Limited Sponsored ADR,47.4,-1.5780730897009927,4361971,42548109403.33199,Non-Energy Minerals,Precious Metals,NYSE,dr,,8778495137.659552
-KB,KB Financial Group Inc. Sponsored ADR,128.68,-2.780296161982477,189218,42535217540.405136,Finance,Regional Banks,NYSE,dr,,36166653800.5374
-TEVA,Teva Pharmaceutical Industries Limited Sponsored ADR,36.36,-0.7099945385035447,7402523,42400586044.18152,Health Technology,Pharmaceuticals: Generic,NYSE,dr,,17460423056.787697
-HMC,"Honda Motor Co., Ltd. Sponsored ADR",32.67,-1.119854721549629,712759,42349615592.199875,Consumer Durables,Motor Vehicles,NYSE,dr,,144643363374.905
-HLN,Haleon PLC Sponsored ADR,9.6,-2.636916835699795,18166343,41967584693.0525,Health Technology,Pharmaceuticals: Major,NYSE,dr,,14536329577.5524
-IX,ORIX Corporation Sponsored ADR,39.94,-3.034717164360282,296000,41727793290.92178,Finance,Finance/Rental/Leasing,NYSE,dr,,21095361453.269
-ONC,BeOne Medicines Ltd. Sponsored ADR,358.26,-1.2187051946619654,202358,41652839172.09282,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,5357163910.06721
-VOD,Vodafone Group Public Limited Company Sponsored ADR,16.9,1.9300361881785304,5070231,39313878094.605,Communications,Wireless Telecommunications,NASDAQ,dr,,46883102226.0645
-SHG,"Shinhan Financial Group Co., Ltd. Sponsored ADR",82.28,-2.5926364389724137,191349,37021672054.53177,Finance,Major Banks,NYSE,dr,,27330425696.2474
-BBD,Banco Bradesco SA Sponsored ADR Pfd,3.47,0.2890173410404691,27208086,36799763730.6945,Finance,Major Banks,NYSE,dr,,64426112385.5458
-BBDO,Banco Bradesco SA Sponsored ADR,3.17,0.6349206349206356,60695,36799763730.6945,Finance,Major Banks,NYSE,dr,,64426112385.5458
-EC,Ecopetrol SA Sponsored ADR,17.25,0.29069767441860883,1710415,35191779517.96875,Energy Minerals,Integrated Oil,NYSE,dr,,28921336410.676598
-PUK,Prudential plc Sponsored ADR,27.75,-2.116402116402121,1178522,34191534753.2175,Finance,Multi-Line Insurance,NYSE,dr,,27819859845.8437
-JD,"JD.com, Inc. Sponsored ADR Class A",28.26,1.874549387166558,4891618,33924068344.408333,Retail Trade,Internet Retail,NASDAQ,dr,,182109544189.019
-ERIC,Telefonaktiebolaget LM Ericsson Sponsored ADR Class B,10.1,-0.29615004935835276,4325824,33810293081.6352,Electronic Technology,Telecommunications Equipment,NASDAQ,dr,,24132631645.5904
-CHT,"Chunghwa Telecom Co., Ltd Sponsored ADR",43.82,0.13711151736746408,130876,33577039613.33933,Communications,Major Telecommunications,NYSE,dr,,7577155775.543071
-BIDU,"Baidu, Inc. Sponsored ADR Class A",99.47,4.069889098137686,2578681,32264918794.987335,Technology Services,Internet Software/Services,NASDAQ,dr,,17956448858.8398
-NMR,"Nomura Holdings, Inc. Sponsored ADR",10.65,0.2824858757062254,636105,30798713599.515533,Finance,Investment Managers,NYSE,dr,,31577544380.176403
-TS,Tenaris S.A. Sponsored ADR,56.45,0.24862369028591824,708643,30107788820.00281,Non-Energy Minerals,Steel,NYSE,dr,,12018229133.2985
-RYAAY,Ryanair Holdings PLC Sponsored ADR,55.36,1.2065813528336318,1455823,28081056888.218464,Transportation,Airlines,NASDAQ,dr,,18011536616.2515
-TCOM,Trip.com Group Ltd. Sponsored ADR,41.03,-0.8937198067632789,3176847,26968927340.266663,Consumer Services,Other Consumer Services,NASDAQ,dr,,8681846131.68165
+ARGX,argenx SE Sponsored ADR,1033.15,-1.9279327169517537,125058,64923016252.18811,Health Technology,Biotechnology,NASDAQ,dr,,4166333716.93827
+VALE,Vale S.A. Sponsored ADR,15.27,-0.2612671456564397,25763087,63815140606.3677,Non-Energy Minerals,Steel,NYSE,dr,,38232483288.7496
+RELX,RELX PLC Sponsored ADR,35.51,-3.1105047748976826,2650562,61696916306.8884,Commercial Services,Miscellaneous Commercial Services,NYSE,dr,,12638567601.8792
+TAK,Takeda Pharmaceutical Co. Ltd. Sponsored ADR,18.45,-1.389631213254952,1499547,58748687604.748764,Health Technology,Pharmaceuticals: Major,NYSE,dr,,29900176918.5931
+MT,ArcelorMittal SA ADR,78.74,3.5099250690153827,1611386,58082215770.13435,Non-Energy Minerals,Steel,NYSE,dr,,61541835549.449005
+NOK,Nokia Oyj Sponsored ADR,10.03,2.661207778915044,46052793,56107535246.204834,Electronic Technology,Telecommunications Equipment,NYSE,dr,,22446286859.3026
+UMC,United Microelectronics Corp. Sponsored ADR,20.77,4.582074521651562,10014225,51682066154.0625,Electronic Technology,Semiconductors,NYSE,dr,,7623328035.8658
+DEO,Diageo plc Sponsored ADR,89.19,-1.6431407146008037,1068504,49841880308.8365,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,19603627422.4119
+INFY,Infosys Limited Sponsored ADR,11.7,-3.225806451612908,19837897,48540720909.670616,Technology Services,Information Technology Services,NYSE,dr,,20218895482.8679
+ABEV,Ambev SA Sponsored ADR,3.02,-0.6578947368421059,21410394,47440786039.3962,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,15794979493.6002
+STM,STMicroelectronics NV Sponsored ADR RegS,52.24,1.8720748829953213,7359245,46440828999.63063,Electronic Technology,Semiconductors,NYSE,dr,,11836511596.745
+WDS,Woodside Energy Group Ltd Sponsored ADR,22.77,-4.005059021922426,396450,43533736260.365,Energy Minerals,Oil & Gas Production,NYSE,dr,,12972588623.2579
+KB,KB Financial Group Inc. Sponsored ADR,128.68,-2.780296161982477,189218,42883391217.40709,Finance,Regional Banks,NYSE,dr,,36166653800.5374
+GFI,Gold Fields Limited Sponsored ADR,47.4,-1.5780730897009927,4361971,42685361369.1492,Non-Energy Minerals,Precious Metals,NYSE,dr,,8778495137.659552
+TEVA,Teva Pharmaceutical Industries Limited Sponsored ADR,36.36,-0.7099945385035447,7402523,42335450651.90304,Health Technology,Pharmaceuticals: Generic,NYSE,dr,,17460423056.787697
+HMC,"Honda Motor Co., Ltd. Sponsored ADR",32.67,-1.119854721549629,712759,42250559887.55571,Consumer Durables,Motor Vehicles,NYSE,dr,,144643363374.905
+HLN,Haleon PLC Sponsored ADR,9.6,-2.636916835699795,18166343,41955172838.060104,Health Technology,Pharmaceuticals: Major,NYSE,dr,,14536329577.5524
+ONC,BeOne Medicines Ltd. Sponsored ADR,358.26,-1.2187051946619654,202358,41649572538.95251,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,5357163910.06721
+IX,ORIX Corporation Sponsored ADR,39.94,-3.034717164360282,296000,41630192027.96157,Finance,Finance/Rental/Leasing,NYSE,dr,,21095361453.269
+VOD,Vodafone Group Public Limited Company Sponsored ADR,16.9,1.9300361881785304,5070231,39302251069.6602,Communications,Wireless Telecommunications,NASDAQ,dr,,46883102226.0645
+SHG,"Shinhan Financial Group Co., Ltd. Sponsored ADR",82.28,-2.5926364389724137,191349,37324714390.58523,Finance,Major Banks,NYSE,dr,,27330425696.2474
+BBD,Banco Bradesco SA Sponsored ADR Pfd,3.47,0.2890173410404691,27208086,36649176462.23131,Finance,Major Banks,NYSE,dr,,64426112385.5458
+BBDO,Banco Bradesco SA Sponsored ADR,3.17,0.6349206349206356,60695,36649176462.23131,Finance,Major Banks,NYSE,dr,,64426112385.5458
+EC,Ecopetrol SA Sponsored ADR,17.25,0.29069767441860883,1710415,35413809672.65625,Energy Minerals,Integrated Oil,NYSE,dr,,28921336410.676598
+PUK,Prudential plc Sponsored ADR,27.75,-2.116402116402121,1178522,34181422654.214703,Finance,Multi-Line Insurance,NYSE,dr,,27819859845.8437
+JD,"JD.com, Inc. Sponsored ADR Class A",28.26,1.874549387166558,4891618,33921407841.8325,Retail Trade,Internet Retail,NASDAQ,dr,,182109544189.019
+CHT,"Chunghwa Telecom Co., Ltd Sponsored ADR",43.82,0.13711151736746408,130876,33734903645.321743,Communications,Major Telecommunications,NYSE,dr,,7577155775.543071
+ERIC,Telefonaktiebolaget LM Ericsson Sponsored ADR Class B,10.1,-0.29615004935835276,4325824,33713137067.032795,Electronic Technology,Telecommunications Equipment,NASDAQ,dr,,24132631645.5904
+BIDU,"Baidu, Inc. Sponsored ADR Class A",99.47,4.069889098137686,2578681,32262388411.5825,Technology Services,Internet Software/Services,NASDAQ,dr,,17956448858.8398
+NMR,"Nomura Holdings, Inc. Sponsored ADR",10.65,0.2824858757062254,636105,30726675442.024067,Finance,Investment Managers,NYSE,dr,,31577544380.176403
+TS,Tenaris S.A. Sponsored ADR,56.45,0.24862369028591824,708643,30077486526.719078,Non-Energy Minerals,Steel,NYSE,dr,,12018229133.2985
+RYAAY,Ryanair Holdings PLC Sponsored ADR,55.36,1.2065813528336318,1455823,28052794420.10328,Transportation,Airlines,NASDAQ,dr,,18011536616.2515
+TCOM,Trip.com Group Ltd. Sponsored ADR,41.03,-0.8937198067632789,3176847,26966812296.165,Consumer Services,Other Consumer Services,NASDAQ,dr,,8681846131.68165
 BNTX,BioNTech SE Sponsored ADR,103.76,0.8553654743390452,626059,26064965553,Health Technology,Biotechnology,NASDAQ,dr,,3238905860.4008603
-CIB,Grupo Cibest S.A. Unsponsored ADR Pfd,100.58,-1.2663198193776444,675783,25550857417.44619,Finance,Regional Banks,NYSE,dr,,10214257451.2884
-PHG,Koninklijke Philips N.V. Sponsored ADR,25.89,-0.6142034548944343,455476,25253713737.58408,Health Services,Medical/Nursing Services,NYSE,dr,,20127059170.8383
-FMX,Fomento Economico Mexicano SAB de CV Sponsored ADR Class B,120.41,-0.5533531549388848,179478,24205242279.513996,Consumer Non-Durables,Beverages: Non-Alcoholic,NYSE,dr,,43798832054.0617
+CIB,Grupo Cibest S.A. Unsponsored ADR Pfd,100.58,-1.2663198193776444,675783,25712061565.19033,Finance,Regional Banks,NYSE,dr,,10214257451.2884
+PHG,Koninklijke Philips N.V. Sponsored ADR,25.89,-0.6142034548944343,455476,25228296878.021435,Health Services,Medical/Nursing Services,NYSE,dr,,20127059170.8383
+FMX,Fomento Economico Mexicano SAB de CV Sponsored ADR Class B,120.41,-0.5533531549388848,179478,24238046267.017998,Consumer Non-Durables,Beverages: Non-Alcoholic,NYSE,dr,,43798832054.0617
 IHG,InterContinental Hotels Group PLC Sponsored ADR,159.95,-0.510045406481322,156308,23490246887,Consumer Services,Hotels/Resorts/Cruise lines,NYSE,dr,,5201126021.98102
-BSBR,Banco Santander (Brasil) S.A. Sponsored ADR,5.96,-0.9966777408637809,7140403,22304624756.664,Finance,Major Banks,NYSE,dr,,33849219785.5205
-YPF,YPF SA Sponsored ADR Class D,52.62,0.40068689181454087,714671,21784448429.815693,Energy Minerals,Integrated Oil,NYSE,dr,,18487261923.8564
+BSBR,Banco Santander (Brasil) S.A. Sponsored ADR,5.96,-0.9966777408637809,7140403,22213352634.897602,Finance,Major Banks,NYSE,dr,,33849219785.5205
+YPF,YPF SA Sponsored ADR Class D,52.62,0.40068689181454087,714671,21751591041.53543,Energy Minerals,Integrated Oil,NYSE,dr,,18487261923.8564
 BCH,Banco de Chile Sponsored ADR,42.35,-1.3280521901211562,199286,21450117564.82089,Finance,Major Banks,NYSE,dr,,4738988482.8546505
 SQM,Sociedad Quimica y Minera de Chile S.A. Sponsored ADR Pfd Series B,76.43,-4.199047380295806,1090528,21285925813.27245,Process Industries,Chemicals: Specialty,NYSE,dr,,4568984120.96658
-BEKE,"KE Holdings, Inc. Sponsored ADR Class A",17.92,0.0558347292015721,6515119,20849450029.94282,Finance,Real Estate Development,NYSE,dr,,13157249545.9454
-KSPI,Kaspi.kz Joint Stock Company Sponsored ADR RegS,107.53,-0.2597161673314174,396790,20349390869.879852,Finance,Finance/Rental/Leasing,NASDAQ,dr,,7763365358.97243
-GMAB,Genmab A/S Sponsored ADR,33.6,-2.3539668700958885,1002605,20064433218.5344,Health Technology,Biotechnology,NASDAQ,dr,,3731385666.61954
-VIV,Telefonica Brasil SA Sponsored ADR,11.66,-1.9343986543313745,1194832,18892966370.626003,Communications,Wireless Telecommunications,NYSE,dr,,10667219933.0182
-WIT,Wipro Limited Sponsored ADR,1.81,0.555555555555556,7807014,18483871582.109234,Technology Services,Information Technology Services,NYSE,dr,,10482815422.363
-SBS,Companhia de Saneamento Basico do Estado de Sao Paulo SABESP Sponsored ADR,5.15,0.38986354775829357,6055698,18280401051.215,Utilities,Water Utilities,NYSE,dr,,6818294740.322639
-PKX,POSCO Holdings Inc. Sponsored ADR,62.74,-0.6177728496752741,195104,18262102412.628254,Non-Energy Minerals,Steel,NYSE,dr,,48616613391.2937
-WF,"Woori Financial Group, Inc. Sponsored ADR",74.86,-3.2316442605997935,92490,17928829981.763016,Finance,Major Banks,NYSE,dr,,19751327692.817596
+BEKE,"KE Holdings, Inc. Sponsored ADR Class A",17.92,0.0558347292015721,6515119,20847814907.205,Finance,Real Estate Development,NYSE,dr,,13157249545.9454
+KSPI,Kaspi.kz Joint Stock Company Sponsored ADR RegS,107.53,-0.2597161673314174,396790,20358682829.181164,Finance,Finance/Rental/Leasing,NASDAQ,dr,,7763365358.97243
+GMAB,Genmab A/S Sponsored ADR,33.6,-2.3539668700958885,1002605,20038576990.16,Health Technology,Biotechnology,NASDAQ,dr,,3731385666.61954
+VIV,Telefonica Brasil SA Sponsored ADR,11.66,-1.9343986543313745,1194832,18815654999.288403,Communications,Wireless Telecommunications,NYSE,dr,,10667219933.0182
+WIT,Wipro Limited Sponsored ADR,1.81,0.555555555555556,7807014,18517109662.750923,Technology Services,Information Technology Services,NYSE,dr,,10482815422.363
+PKX,POSCO Holdings Inc. Sponsored ADR,62.74,-0.6177728496752741,195104,18411587561.98128,Non-Energy Minerals,Steel,NYSE,dr,,48616613391.2937
+SBS,Companhia de Saneamento Basico do Estado de Sao Paulo SABESP Sponsored ADR,5.15,0.38986354775829357,6055698,18205596341.031002,Utilities,Water Utilities,NYSE,dr,,6818294740.322639
+WF,"Woori Financial Group, Inc. Sponsored ADR",74.86,-3.2316442605997935,92490,18075587116.67513,Finance,Major Banks,NYSE,dr,,19751327692.817596
 FUTU,Futu Holdings Ltd. Sponsored ADR Class A,121.75,-0.2130972871076183,723838,17068678868,Finance,Investment Banks/Brokers,NASDAQ,dr,,2930588563.76407
 BSAC,Banco Santander-Chile Sponsored ADR,35.67,-0.5298382598996032,155128,16875030627.616682,Finance,Regional Banks,NYSE,dr,,5806257921.36196
-CX,Cemex SAB de CV Sponsored ADR,11.03,1.471941122355107,3835071,16673909162.508,Non-Energy Minerals,Construction Materials,NYSE,dr,,16183938486.3749
-ZTO,"ZTO Express (Cayman), Inc. Sponsored ADR Class A",20.95,0.1912960306073608,1750990,15690332895.213522,Transportation,Air Freight/Couriers,NYSE,dr,,6830217951.972879
-KEP,Korea Electric Power Corporation Sponsored ADR,11.94,-0.5000000000000042,1119521,15128492711.001629,Utilities,Electric Utilities,NYSE,dr,,68553334529.4527
+CX,Cemex SAB de CV Sponsored ADR,11.03,1.471941122355107,3835071,16696506362.796001,Non-Energy Minerals,Construction Materials,NYSE,dr,,16183938486.3749
+ZTO,"ZTO Express (Cayman), Inc. Sponsored ADR Class A",20.95,0.1912960306073608,1750990,15689102377.380001,Transportation,Air Freight/Couriers,NYSE,dr,,6830217951.972879
+KEP,Korea Electric Power Corporation Sponsored ADR,11.94,-0.5000000000000042,1119521,15252327576.30314,Utilities,Electric Utilities,NYSE,dr,,68553334529.4527
 LTM,LATAM Airlines Group SA Sponsored ADR,52.47,1.4305045428184846,306497,15053072440,Transportation,Airlines,NYSE,dr,,14242487769.1081
 TLK,PT Telkom Indonesia (Persero) Tbk Sponsored ADR Class B,14.85,0.27008777852801585,824235,14737486283.586271,Communications,Wireless Telecommunications,NYSE,dr,,8855459434.86674
-SKM,"SK Telecom Co., Ltd. Sponsored ADR",38.7,3.8090128755364856,2701692,14311654573.250065,Communications,Wireless Telecommunications,NYSE,dr,,12031365467.436901
-AEG,Aegon Ltd. Sponsored ADR,9.14,-0.6521739130434644,6596509,13856293150.84259,Finance,Multi-Line Insurance,NYSE,dr,,37691117815.884705
-HTHT,H World Group Limited Sponsored ADR,45.77,-1.2300388433318952,1373303,13791693957.7042,Consumer Services,Hotels/Resorts/Cruise lines,NASDAQ,dr,,3520509542.7657504
-EMBJ,Embraer S.A. Sponsored ADR,73.81,0.27170221437305103,831687,13420748097.803001,Electronic Technology,Aerospace & Defense,NYSE,dr,,7496898541.55663
-HMY,Harmony Gold Mining Co. Ltd. Sponsored ADR,20.27,-2.3603082851637858,3223984,12672665116.706,Non-Energy Minerals,Precious Metals,NYSE,dr,,6440928286.73763
-TME,Tencent Music Entertainment Group Sponsored ADR Class A,8.26,0.7317073170731768,4690494,12550296756.08613,Technology Services,Internet Software/Services,NYSE,dr,,4577065830.642851
-LI,"Li Auto, Inc. Sponsored ADR Class A",12.37,2.5704809286898733,2734273,12511468729.08451,Consumer Durables,Motor Vehicles,NASDAQ,dr,,15624027610.8382
-PAC,Grupo Aeroportuario del Pacifico SAB de CV Sponsored ADR Class B,208.17,-0.057611983292527036,70440,12336926481.467329,Transportation,Other Transportation,NYSE,dr,,2156652669.54423
-FMS,Fresenius Medical Care AG Sponsored ADR,22.66,0.8455718736092626,480312,12114789903.794552,Health Services,Medical/Nursing Services,NYSE,dr,,22161735114.886303
-SNN,Smith & Nephew plc Sponsored ADR,28.87,0.6273963053328676,851037,12045179400.4825,Health Technology,Medical Specialties,NYSE,dr,,6178404470.89824
-RTO,Rentokil Initial plc Sponsored ADR,23.83,-0.7910074937552093,2374035,11845019234.509998,Commercial Services,Miscellaneous Commercial Services,NYSE,dr,,6924143102.687389
-SUZ,Suzano S.A. Sponsored ADR,9.17,0.2185792349726729,2111217,11477771381.820002,Process Industries,Pulp & Paper,NYSE,dr,,8970466817.44347
+SKM,"SK Telecom Co., Ltd. Sponsored ADR",38.7,3.8090128755364856,2701692,14428803178.215277,Communications,Wireless Telecommunications,NYSE,dr,,12031365467.436901
+AEG,Aegon Ltd. Sponsored ADR,9.14,-0.6521739130434644,6596509,13842347342.288118,Finance,Multi-Line Insurance,NYSE,dr,,37691117815.884705
+HTHT,H World Group Limited Sponsored ADR,45.77,-1.2300388433318952,1373303,13790612341.050001,Consumer Services,Hotels/Resorts/Cruise lines,NASDAQ,dr,,3520509542.7657504
+EMBJ,Embraer S.A. Sponsored ADR,73.81,0.27170221437305103,831687,13365829435.510202,Electronic Technology,Aerospace & Defense,NYSE,dr,,7496898541.55663
+HMY,Harmony Gold Mining Co. Ltd. Sponsored ADR,20.27,-2.3603082851637858,3223984,12713544681.5986,Non-Energy Minerals,Precious Metals,NYSE,dr,,6440928286.73763
+TME,Tencent Music Entertainment Group Sponsored ADR Class A,8.26,0.7317073170731768,4690494,12549312496.282501,Technology Services,Internet Software/Services,NYSE,dr,,4577065830.642851
+LI,"Li Auto, Inc. Sponsored ADR Class A",12.37,2.5704809286898733,2734273,12510487514.3775,Consumer Durables,Motor Vehicles,NASDAQ,dr,,15624027610.8382
+PAC,Grupo Aeroportuario del Pacifico SAB de CV Sponsored ADR Class B,208.17,-0.057611983292527036,70440,12353646015.91621,Transportation,Other Transportation,NYSE,dr,,2156652669.54423
+FMS,Fresenius Medical Care AG Sponsored ADR,22.66,0.8455718736092626,480312,12102596849.069399,Health Services,Medical/Nursing Services,NYSE,dr,,22161735114.886303
+SNN,Smith & Nephew plc Sponsored ADR,28.87,0.6273963053328676,851037,12041617055.3733,Health Technology,Medical Specialties,NYSE,dr,,6178404470.89824
+RTO,Rentokil Initial plc Sponsored ADR,23.83,-0.7910074937552093,2374035,11841516086.4924,Commercial Services,Miscellaneous Commercial Services,NYSE,dr,,6924143102.687389
+SUZ,Suzano S.A. Sponsored ADR,9.17,0.2185792349726729,2111217,11430803519.388,Process Industries,Pulp & Paper,NYSE,dr,,8970466817.44347
 PAYP,PayPay Corporation Sponsored ADR,17.04,0.6497341996455962,1500729,11393377428,Commercial Services,Miscellaneous Commercial Services,NASDAQ,dr,,2526091533.91367
 TX,Ternium S.A. Sponsored ADR,58,0.03449465332873944,496206,11385845301,Non-Energy Minerals,Steel,NYSE,dr,,15649321376.8725
-XPEV,"XPeng, Inc. ADR Sponsored Class A",10.95,-1.7055655296229915,5068664,10583153336.680141,Consumer Durables,Motor Vehicles,NYSE,dr,,10672643293.5364
-RDY,Dr. Reddy's Laboratories Ltd. Sponsored ADR,11.97,-0.49875311720697196,2343590,10172337585.1875,Health Technology,Pharmaceuticals: Major,NYSE,dr,,3801955900.50168
-ABVX,Abivax SA Sponsored ADR,114.79,0.6620774323672642,489816,9899730769.74308,Health Technology,Pharmaceuticals: Other,NASDAQ,dr,,0
-KT,KT Corporation Sponsored ADR,19.79,-0.2017145738779584,800054,9596041558.40137,Communications,Major Telecommunications,NYSE,dr,,19873185000.5102
-PSO,Pearson PLC Sponsored ADR,15.98,-0.9299442033477904,1028815,9548790609.957499,Consumer Services,Publishing: Books/Magazines,NYSE,dr,,4714093463.182671
-EDU,"New Oriental Education & Technology Group, Inc. Sponsored ADR",59.51,2.2157334249398817,376850,9375215927.05367,Consumer Services,Other Consumer Services,NYSE,dr,,5681500817.04514
-ELPC,Companhia Paranaense de Energia Sponsored ADR,12.26,-1.0492332526230894,332018,9203285119.7505,Utilities,Electric Utilities,NYSE,dr,,4674792296.517611
-GGB,Gerdau S.A. Pfd Sponsored ADR Repr 1 Pfd Sh,4.97,0.40404040404039543,7659680,9124943750.963501,Non-Energy Minerals,Steel,NYSE,dr,,12504343066.394701
-SBSW,Sibanye Stillwater Limited Sponsored ADR,12.79,-2.515243902439025,3575085,9097669255.862,Non-Energy Minerals,Precious Metals,NYSE,dr,,7254928158.69939
+XPEV,"XPeng, Inc. ADR Sponsored Class A",10.95,-1.7055655296229915,5068664,10582323350.535,Consumer Durables,Motor Vehicles,NYSE,dr,,10672643293.5364
+RDY,Dr. Reddy's Laboratories Ltd. Sponsored ADR,11.97,-0.49875311720697196,2343590,10190629693.281252,Health Technology,Pharmaceuticals: Major,NYSE,dr,,3801955900.50168
+ABVX,Abivax SA Sponsored ADR,114.79,0.6620774323672642,489816,9889767084.03344,Health Technology,Pharmaceuticals: Other,NASDAQ,dr,,0
+KT,KT Corporation Sponsored ADR,19.79,-0.2017145738779584,800054,9674590329.684326,Communications,Major Telecommunications,NYSE,dr,,19873185000.5102
+PSO,Pearson PLC Sponsored ADR,15.98,-0.9299442033477904,1028815,9545966568.3723,Consumer Services,Publishing: Books/Magazines,NYSE,dr,,4714093463.182671
+EDU,"New Oriental Education & Technology Group, Inc. Sponsored ADR",59.51,2.2157334249398817,376850,9374480673.6675,Consumer Services,Other Consumer Services,NYSE,dr,,5681500817.04514
+ELPC,Companhia Paranaense de Energia Sponsored ADR,12.26,-1.0492332526230894,332018,9165624617.9817,Utilities,Electric Utilities,NYSE,dr,,4674792296.517611
+SBSW,Sibanye Stillwater Limited Sponsored ADR,12.79,-2.515243902439025,3575085,9127016576.0422,Non-Energy Minerals,Precious Metals,NYSE,dr,,7254928158.69939
+GGB,Gerdau S.A. Pfd Sponsored ADR Repr 1 Pfd Sh,4.97,0.40404040404039543,7659680,9087603827.6859,Non-Energy Minerals,Steel,NYSE,dr,,12504343066.394701
 YMM,Full Truck Alliance Co. Ltd. Sponsored ADR,8.65,0.8158508158508191,2992577,8974758052,Technology Services,Packaged Software,NYSE,dr,,1737490330.63179
-BVN,Compania de Minas Buenaventura SAA Sponsored ADR,33.9,-2.502157031924085,397876,8940582115.95433,Non-Energy Minerals,Precious Metals,NYSE,dr,,1742503138.0165
-TIMB,TIM S.A. Sponsored ADR,18.43,-1.443850267379677,303719,8880829907.487999,Communications,Wireless Telecommunications,NYSE,dr,,4765697702.19397
-NIO,NIO Inc. Sponsored ADR Class A,3.8,-1.5544041450777215,52355060,8871302664.98945,Consumer Durables,Motor Vehicles,NYSE,dr,,12170569954.0765
+BVN,Compania de Minas Buenaventura SAA Sponsored ADR,33.9,-2.502157031924085,397876,8968860817.084911,Non-Energy Minerals,Precious Metals,NYSE,dr,,1742503138.0165
+NIO,NIO Inc. Sponsored ADR Class A,3.8,-1.5544041450777215,52355060,8870606931.1125,Consumer Durables,Motor Vehicles,NYSE,dr,,12170569954.0765
+TIMB,TIM S.A. Sponsored ADR,18.43,-1.443850267379677,303719,8844488915.5392,Communications,Wireless Telecommunications,NYSE,dr,,4765697702.19397
 SIMO,Silicon Motion Technology Corporation Sponsored ADR,256.21,8.701739499363596,744032,8687504338,Electronic Technology,Semiconductors,NASDAQ,dr,,886150381.991833
-VIST,Vista Energy SAB de CV Sponsored ADR Class A,73.73,-1.1794665594424278,713144,8158929250.844969,Energy Minerals,Oil & Gas Production,NYSE,dr,,2482162909.19746
-BZ,Kanzhun Ltd. Sponsored ADR,16.92,0.4750593824228138,4552838,8080835408.489731,Commercial Services,Commercial Printing/Forms,NASDAQ,dr,,1150111669.2609801
-UGP,Ultrapar Participacoes S.A. Sponsored ADR,7.28,1.6759776536312863,3624372,7982136515.445001,Retail Trade,Specialty Stores,NYSE,dr,,25483466648.924202
-SSL,Sasol Limited Sponsored ADR,12.27,-0.6477732793522273,1953986,7814908796.03,Process Industries,Chemicals: Major Diversified,NYSE,dr,,16096435052.2144
+VIST,Vista Energy SAB de CV Sponsored ADR Class A,73.73,-1.1794665594424278,713144,8169986583.38889,Energy Minerals,Oil & Gas Production,NYSE,dr,,2482162909.19746
+BZ,Kanzhun Ltd. Sponsored ADR,16.92,0.4750593824228138,4552838,8080201667.182501,Commercial Services,Commercial Printing/Forms,NASDAQ,dr,,1150111669.2609801
+UGP,Ultrapar Participacoes S.A. Sponsored ADR,7.28,1.6759776536312863,3624372,7949473041.213001,Retail Trade,Specialty Stores,NYSE,dr,,25483466648.924202
+SSL,Sasol Limited Sponsored ADR,12.27,-0.6477732793522273,1953986,7840118179.243,Process Industries,Chemicals: Major Diversified,NYSE,dr,,16096435052.2144
 BLTE,"Belite Bio, Inc. ADR",193.61,13.162662925945416,738953,7797089824,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,0
-ASR,Grupo Aeroportuario del Sureste SAB de CV Sponsored ADR Class B,257.33,0.1167178928529788,19593,7697038923.24975,Transportation,Other Transportation,NYSE,dr,,1939411652.11618
-GGAL,Grupo Financiero Galicia SA Sponsored ADR Class B,44.36,-0.6049742325789897,481940,7459948405.794533,Finance,Regional Banks,NASDAQ,dr,,10528706289.2148
-CIG.C,Companhia Energetica de Minas Gerais SA Sponsored ADR,3.28,1.2345679012345552,1238,7379244195.277501,Utilities,Electric Utilities,NYSE,dr,,7652275160.32728
-CIG,Companhia Energetica de Minas Gerais SA Sponsored ADR Pfd,2.14,-0.46511627906975755,3816296,7379244195.277501,Utilities,Electric Utilities,NYSE,dr,,7652275160.32728
-GRFS,"Grifols, S.A. Sponsored ADR Class B",7.8,-1.0152284263959401,157911,6861444200.62885,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,8491420500.24602
-BILI,Bilibili Inc. Sponsored ADR Class Z,15.23,-1.7419354838709649,10683818,6478349640.465841,Technology Services,Packaged Software,NASDAQ,dr,,4221741012.5507503
-NICE,NICE Ltd. Sponsored ADR,105.5,-2.594404948758196,282726,6296107367.10756,Technology Services,Information Technology Services,NASDAQ,dr,,2968764798.88237
+ASR,Grupo Aeroportuario del Sureste SAB de CV Sponsored ADR Class B,257.33,0.1167178928529788,19593,7707470282.115749,Transportation,Other Transportation,NYSE,dr,,1939411652.11618
+GGAL,Grupo Financiero Galicia SA Sponsored ADR Class B,44.36,-0.6049742325789897,481940,7448696598.244316,Finance,Regional Banks,NASDAQ,dr,,10528706289.2148
+CIG.C,Companhia Energetica de Minas Gerais SA Sponsored ADR,3.28,1.2345679012345552,1238,7349047799.593501,Utilities,Electric Utilities,NYSE,dr,,7652275160.32728
+CIG,Companhia Energetica de Minas Gerais SA Sponsored ADR Pfd,2.14,-0.46511627906975755,3816296,7349047799.593501,Utilities,Electric Utilities,NYSE,dr,,7652275160.32728
+GRFS,"Grifols, S.A. Sponsored ADR Class B",7.8,-1.0152284263959401,157911,6854538429.6418,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,8491420500.24602
+BILI,Bilibili Inc. Sponsored ADR Class Z,15.23,-1.7419354838709649,10683818,6477841574.46,Technology Services,Packaged Software,NASDAQ,dr,,4221741012.5507503
+NICE,NICE Ltd. Sponsored ADR,105.5,-2.594404948758196,282726,6286435344.58512,Technology Services,Information Technology Services,NASDAQ,dr,,2968764798.88237
 VIPS,Vipshop Holdings Ltd Sponsored ADR,13.2,0.9174311926605444,3522905,6276599816,Retail Trade,Internet Retail,NYSE,dr,,14734688918.4184
-AVAL,Grupo Aval Acciones y Valores SA Sponsored ADR Pfd,5.34,0.1876172607879885,82764,6198261205.664941,Finance,Major Banks,NYSE,dr,,10721777702.2234
-GDS,GDS Holdings Ltd. Sponsored ADR Class A,31.365,0.7872750642673441,728269,6124364370.66513,Technology Services,Data Processing Services,NASDAQ,dr,,1590367475.8965
+AVAL,Grupo Aval Acciones y Valores SA Sponsored ADR Pfd,5.34,0.1876172607879885,82764,6237366954.59658,Finance,Major Banks,NYSE,dr,,10721777702.2234
+GDS,GDS Holdings Ltd. Sponsored ADR Class A,31.365,0.7872750642673441,728269,6123884066.032499,Technology Services,Data Processing Services,NASDAQ,dr,,1590367475.8965
 ENIC,Enel Chile SA Sponsored ADR,4.45,1.5981735159817416,409210,6105678304.6875,Utilities,Electric Utilities,NYSE,dr,,4502412608.244801
 TAL,TAL Education Group Sponsored ADR Class A,12.4,3.4195162635529615,6888659,5971228741,Commercial Services,Miscellaneous Commercial Services,NYSE,dr,,3020133876.47974
-TEO,Telecom Argentina SA Sponsored ADR,13.03,0.4626060138781705,800162,5871927693.031412,Communications,Major Telecommunications,NYSE,dr,,6385874918.69765
-KOF,Coca-Cola FEMSA SAB de CV Sponsored ADR Class L,112,-0.4532930406186162,102536,5856157990.2136,Consumer Non-Durables,Beverages: Non-Alcoholic,NYSE,dr,,15194807393.0848
-WPP,WPP Plc Sponsored ADR,25.32,-2.239382239382233,220928,5469890005.162499,Commercial Services,Advertising/Marketing Services,NYSE,dr,,17857413034.9805
-BMA,Banco Macro SA Sponsored ADR Class B,78.57,-0.7703965647891053,289393,5264736580.30004,Finance,Major Banks,NYSE,dr,,4905052521.09797
-SIM,Grupo Simec SAB de CV Sponsored ADR Class B,26.6,-7.635681794506747,1591,5168490097.76807,Non-Energy Minerals,Steel,AMEX,dr,,1577646478.2589002
-OMAB,Grupo Aeroportuario del Centro Norte SAB de CV Sponsored ADR Class B,99.72,0.5140610825521673,60247,4789807617.172441,Transportation,Other Transportation,NASDAQ,dr,,831463656.3088
-PAM,Pampa Energia SA Sponsored ADR,84.8,0.07080481472740414,94084,4766708505.095278,Utilities,Electric Utilities,NYSE,dr,,2040647587.7400901
+KOF,Coca-Cola FEMSA SAB de CV Sponsored ADR Class L,112,-0.4532930406186162,102536,5864094507.903201,Consumer Non-Durables,Beverages: Non-Alcoholic,NYSE,dr,,15194807393.0848
+TEO,Telecom Argentina SA Sponsored ADR,13.03,0.4626060138781705,800162,5863071090.176162,Communications,Major Telecommunications,NYSE,dr,,6385874918.69765
+WPP,WPP Plc Sponsored ADR,25.32,-2.239382239382233,220928,5468272292.7765,Commercial Services,Advertising/Marketing Services,NYSE,dr,,17857413034.9805
+BMA,Banco Macro SA Sponsored ADR Class B,78.57,-0.7703965647891053,289393,5256795801.144235,Finance,Major Banks,NYSE,dr,,4905052521.09797
+SIM,Grupo Simec SAB de CV Sponsored ADR Class B,26.6,-7.635681794506747,1591,5175494658.293591,Non-Energy Minerals,Steel,AMEX,dr,,1577646478.2589002
+OMAB,Grupo Aeroportuario del Centro Norte SAB de CV Sponsored ADR Class B,99.72,0.5140610825521673,60247,4796298970.8802805,Transportation,Other Transportation,NASDAQ,dr,,831463656.3088
+PAM,Pampa Energia SA Sponsored ADR,84.8,0.07080481472740414,94084,4759518899.506898,Utilities,Electric Utilities,NYSE,dr,,2040647587.7400901
 ATAT,Atour Lifestyle Holdings Ltd. Sponsored ADR,34.36,-0.7510109763142635,292606,4723135832,Consumer Services,Hotels/Resorts/Cruise lines,NASDAQ,dr,,1361929433.93899
-TGS,Transportadora de Gas del Sur SA Sponsored ADR Class B RegS,29.05,0.6583506583506628,130323,4571578232.065376,Utilities,Gas Distributors,NYSE,dr,,1370033199.7220101
-TKC,Turkcell Iletisim Hizmetleri A.S. Sponsored ADR,5.1,0.7905138339920956,2468275,4339005508.764,Communications,Wireless Telecommunications,NYSE,dr,,6102208581.67332
+TGS,Transportadora de Gas del Sur SA Sponsored ADR Class B RegS,29.05,0.6583506583506628,130323,4564682940.614298,Utilities,Gas Distributors,NYSE,dr,,1370033199.7220101
+TKC,Turkcell Iletisim Hizmetleri A.S. Sponsored ADR,5.1,0.7905138339920956,2468275,4336862789.994241,Communications,Wireless Telecommunications,NYSE,dr,,6102208581.67332
 AKO.A,Embotelladora Andina S.A. Sponsored ADR Pfd Class A,23.4,-4.489795918367353,443,4206281495.2540393,Consumer Non-Durables,Beverages: Non-Alcoholic,NYSE,dr,,3517642779.39248
 AKO.B,Embotelladora Andina S.A. Sponsored ADR Pfd Class B,29.28,-1.745296156724304,17693,4206281495.2540393,Consumer Non-Durables,Beverages: Non-Alcoholic,NYSE,dr,,3517642779.39248
 LEGN,Legend Biotech Corp. Sponsored ADR,21.52,-1.057471264367818,812413,4169918899.9999995,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,1031621168.5512999
 VEON,VEON Ltd. Sponsored ADR,64.205,-3.0867924528301915,172966,4093374742,Communications,Wireless Telecommunications,NASDAQ,dr,,4474522961.54449
-TLX,Telix Pharmaceuticals Limited Sponsored ADR,11.94,1.7035775127768253,142006,4028346272.13862,Health Technology,Biotechnology,NASDAQ,dr,,804636846.966812
-PHI,"PLDT, Inc. Sponsored ADR",18.2,-1.0869565217391266,85138,3949218897.9826,Communications,Specialty Telecommunications,NYSE,dr,,3797499507.8236003
+TLX,Telix Pharmaceuticals Limited Sponsored ADR,11.94,1.7035775127768253,142006,4030416883.4228,Health Technology,Biotechnology,NASDAQ,dr,,804636846.966812
+PHI,"PLDT, Inc. Sponsored ADR",18.2,-1.0869565217391266,85138,3941790900.05536,Communications,Specialty Telecommunications,NYSE,dr,,3797499507.8236003
 JOYY,"JOYY, Inc. Sponsored ADR Class A",75,0.5496715377396387,175398,3673012729,Technology Services,Data Processing Services,NASDAQ,dr,,2129866074.49972
 GPCR,"Structure Therapeutics, Inc. Sponsored ADR",47.34,0,281709,3375808657,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,0
-LPL,"LG Display Co., Ltd Sponsored ADR",3.3,1.538461538461533,1341659,3346145000,Electronic Technology,Electronic Production Equipment,NYSE,dr,,18160515883.7729
-KC,Kingsoft Cloud Holdings Ltd. Sponsored ADR,10.94,4.389312977099228,782601,3296622369.6422105,Technology Services,Data Processing Services,NASDAQ,dr,,1329719421.70791
-PONY,Pony AI Inc. Sponsored ADR,7.35,1.9417475728155296,2319377,3198892505.72348,Technology Services,Packaged Software,NASDAQ,dr,,90239028.856823
-BBAR,Banco BBVA Argentina SA Sponsored ADR,14.82,-1.7892644135188838,674535,3182786860.742658,Finance,Major Banks,NYSE,dr,,5100762822.00231
-VTMX,Corporacion Inmobiliaria Vesta S.A.B. de C.V. Sponsored ADR,34.7,-0.23001725129384215,87013,3062560568.63386,Finance,Real Estate Development,NYSE,dr,,290976812.604273
-ZLAB,Zai Lab Ltd. Sponsored ADR,26.23,-2.8518518518518503,812771,3006033709.1421304,Health Technology,Biotechnology,NASDAQ,dr,,461372990.996104
+LPL,"LG Display Co., Ltd Sponsored ADR",3.3,1.538461538461533,1341659,3373535000,Electronic Technology,Electronic Production Equipment,NYSE,dr,,18160515883.7729
+KC,Kingsoft Cloud Holdings Ltd. Sponsored ADR,10.94,4.389312977099228,782601,3296363831.3025,Technology Services,Data Processing Services,NASDAQ,dr,,1329719421.70791
+PONY,Pony AI Inc. Sponsored ADR,7.35,1.9417475728155296,2319377,3198641631.87,Technology Services,Packaged Software,NASDAQ,dr,,90239028.856823
+BBAR,Banco BBVA Argentina SA Sponsored ADR,14.82,-1.7892644135188838,674535,3177986277.2422924,Finance,Major Banks,NYSE,dr,,5100762822.00231
+VTMX,Corporacion Inmobiliaria Vesta S.A.B. de C.V. Sponsored ADR,34.7,-0.23001725129384215,87013,3066711082.70282,Finance,Real Estate Development,NYSE,dr,,290976812.604273
+ZLAB,Zai Lab Ltd. Sponsored ADR,26.23,-2.8518518518518503,812771,3005797960.2825003,Health Technology,Biotechnology,NASDAQ,dr,,461372990.996104
 TRVG,trivago N.V. Sponsored ADR Class A,5.99,-6.406250000000002,111287,2985517303,Technology Services,Internet Software/Services,NASDAQ,dr,,619489980.014758
-CSAN,Cosan S.A. Sponsored ADR,2.9,-1.360544217687076,1381819,2940900563.6425,Utilities,Gas Distributors,NYSE,dr,,7234735345.512401
-MNSO,MINISO Group Holding Ltd. Sponsored ADR,9.56,-1.1375387797311212,868342,2918025905.3581204,Retail Trade,Specialty Stores,NYSE,dr,,2983095490.84908
-HSAI,Hesai Group Sponsored ADR,18.89,2.3293607800650036,1531379,2915814030.7013607,Producer Manufacturing,Auto Parts: OEM,NASDAQ,dr,,421171993.437386
-ATHM,Autohome Inc. Sponsored ADR Class A,22.03,2.2273781902552225,440899,2629576004.3882303,Technology Services,Internet Software/Services,NYSE,dr,,897555347.73821
-HCM,HUTCHMED (China) Limited Sponsored ADR,14.09,-0.14174344436569508,150499,2507157079.8369503,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,549962669.262718
-DRD,DRDGOLD Ltd. Sponsored ADR,28.58,-3.478554542384334,216149,2462391835.7,Non-Energy Minerals,Precious Metals,NYSE,dr,,660081724.647619
-CDLR,Cadeler A/S Sponsored ADR,24.93,-1.4234875444839836,39447,2408162159.0547004,Producer Manufacturing,Trucks/Construction/Farm Machinery,NYSE,dr,,700117937.1502789
+CSAN,Cosan S.A. Sponsored ADR,2.9,-1.360544217687076,1381819,2928866187.9344997,Utilities,Gas Distributors,NYSE,dr,,7234735345.512401
+MNSO,MINISO Group Holding Ltd. Sponsored ADR,9.56,-1.1375387797311212,868342,2917797058.5299997,Retail Trade,Specialty Stores,NYSE,dr,,2983095490.84908
+HSAI,Hesai Group Sponsored ADR,18.89,2.3293607800650036,1531379,2915585357.3400006,Producer Manufacturing,Auto Parts: OEM,NASDAQ,dr,,421171993.437386
+ATHM,Autohome Inc. Sponsored ADR Class A,22.03,2.2273781902552225,440899,2629369779.3075004,Technology Services,Internet Software/Services,NYSE,dr,,897555347.73821
+HCM,HUTCHMED (China) Limited Sponsored ADR,14.09,-0.14174344436569508,150499,2506960455.4875,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,549962669.262718
+DRD,DRDGOLD Ltd. Sponsored ADR,28.58,-3.478554542384334,216149,2470335035.1699996,Non-Energy Minerals,Precious Metals,NYSE,dr,,660081724.647619
+CDLR,Cadeler A/S Sponsored ADR,24.93,-1.4234875444839836,39447,2404131762.13578,Producer Manufacturing,Trucks/Construction/Farm Machinery,NYSE,dr,,700117937.1502789
 HIMX,"Himax Technologies, Inc. Sponsored ADR",13.68,0.8849557522123837,711262,2332118572,Electronic Technology,Semiconductors,NASDAQ,dr,,832664792.100161
-LU,Lufax Holding Ltd Sponsored ADR Class A,1.25,1.6260162601626031,562303,2329667254.94811,Finance,Finance/Rental/Leasing,NYSE,dr,,4022809756.78271
+LU,Lufax Holding Ltd Sponsored ADR Class A,1.25,1.6260162601626031,562303,2329484550.2775,Finance,Finance/Rental/Leasing,NYSE,dr,,4022809756.78271
 AERO,"Grupo Aeromexico, S.A.B. de C.V. Unsponsored ADR",15.79,2.3331173039533337,444607,2303814868,Transportation,Airlines,NYSE,dr,,5377828857.66841
-CEPU,Central Puerto SA Sponsored ADR,14.04,0.07127583749108901,75765,2228428740.014607,Utilities,Electric Utilities,NYSE,dr,,881336784.849442
+CEPU,Central Puerto SA Sponsored ADR,14.04,0.07127583749108901,75765,2225067610.6933184,Utilities,Electric Utilities,NYSE,dr,,881336784.849442
+MESO,Mesoblast Limited Sponsored ADR,17.32,1.0501750291715268,93499,2224989811.5717998,Health Technology,Biotechnology,NASDAQ,dr,,120787177.748533
 CHA,Chagee Holdings Limited Unsponsored ADR,11.66,2.6408450704225417,1750548,2224300352,Consumer Non-Durables,Food: Major Diversified,NASDAQ,dr,,1795609031.55788
-MESO,Mesoblast Limited Sponsored ADR,17.32,1.0501750291715268,93499,2223846731.55197,Health Technology,Biotechnology,NASDAQ,dr,,120787177.748533
 RLX,"RLX Technology, Inc. Sponsored ADR Class A",1.8,1.1235955056179785,4415943,2200058157,Producer Manufacturing,Industrial Conglomerates,NYSE,dr,,503205416.356031
 CCU,Compania Cervecerias Unidas S.A. Sponsored ADR,11.88,-0.3355704697986506,158815,2197455730.0479,Consumer Non-Durables,Beverages: Alcoholic,NYSE,dr,,3059947753.44023
 IQMX,IQM Quantum Computers Oyj Sponsored ADR,10.8,0,121239,2046559167,Electronic Technology,Computer Processing Hardware,NASDAQ,dr,,0
-WRD,WeRide Inc. Sponsored ADR Class A,5.98,1.5280135823429668,1068844,2010852620.8873003,Technology Services,Packaged Software,NASDAQ,dr,,95234325.1413986
-IMOS,"ChipMOS Technologies, Inc. Sponsored ADR",57.61,2.1816246896062377,76200,1998209265.934413,Electronic Technology,Semiconductors,NASDAQ,dr,,768031532.800249
+WRD,WeRide Inc. Sponsored ADR Class A,5.98,1.5280135823429668,1068844,2010694919.325,Technology Services,Packaged Software,NASDAQ,dr,,95234325.1413986
+IMOS,"ChipMOS Technologies, Inc. Sponsored ADR",57.61,2.1816246896062377,76200,2007603940.8401692,Electronic Technology,Semiconductors,NASDAQ,dr,,768031532.800249
 MLCO,Melco Resorts & Entertainment Ltd. Sponsored ADR,5.21,0.579150579150584,1170136,1981071584,Consumer Services,Hotels/Resorts/Cruise lines,NASDAQ,dr,,5176954561.14273
-NBTX,Nanobiotix SA Sponsored ADR,38.8,-3.000000000000007,119297,1970713225.45734,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,33454436.189366397
-FORTY,Formula Systems (1985) Ltd. Sponsored ADR,129,2.6089723194400265,521,1943727001.9064798,Technology Services,Information Technology Services,NASDAQ,dr,,2647964928.85991
-LKFT,Lakefront Biotherapeutics Sponsored ADR,28.49,-1.8263266712612032,208178,1884475330.02008,Health Technology,Biotechnology,NASDAQ,dr,,1255258568.3888402
+NBTX,Nanobiotix SA Sponsored ADR,38.8,-3.000000000000007,119297,1968729780.89112,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,33454436.189366397
+FORTY,Formula Systems (1985) Ltd. Sponsored ADR,129,2.6089723194400265,521,1940741066.27296,Technology Services,Information Technology Services,NASDAQ,dr,,2647964928.85991
+LKFT,Lakefront Biotherapeutics Sponsored ADR,28.49,-1.8263266712612032,208178,1882578680.4694397,Health Technology,Biotechnology,NASDAQ,dr,,1255258568.3888402
 IMCR,Immunocore Holdings Plc Shs Sponsored American Depositary Shares Repr 1 Sh,36.13,-3.832845355336699,231712,1860645087,Health Technology,Biotechnology,NASDAQ,dr,,400950785.663665
 CMPS,COMPASS Pathways Plc Sponsored ADR,13.27,-0.1504890895410051,794904,1837587491,Health Technology,Biotechnology,NASDAQ,dr,,0
 VNET,"VNET Group, Inc. Sponsored ADR",6.37,3.5772357723577195,3071810,1813485733,Technology Services,Data Processing Services,NASDAQ,dr,,1384062444.93488
 DAO,"Youdao, Inc. Sponsored ADR Class A",14.79,-5.192307692307695,35146,1784186188,Technology Services,Internet Software/Services,NYSE,dr,,822015955.185684
 FOIL,"Londian Wason New Energy Tech, Inc. Unsponsored ADR",22.59,1.391382405745057,29549,1765599104,Non-Energy Minerals,Other Metals/Minerals,NYSE,dr,,1522178626.81931
-WB,Weibo Corp. Sponsored ADR Class A,6.72,-0.5917159763313614,827070,1672792890.0305104,Technology Services,Internet Software/Services,NASDAQ,dr,,1761863371.8700001
+WB,Weibo Corp. Sponsored ADR Class A,6.72,-0.5917159763313614,827070,1672661700.8775,Technology Services,Internet Software/Services,NASDAQ,dr,,1761863371.8700001
 OPRA,Opera Limited Sponsored ADR,18.78,1.8438177874186543,326855,1669868533,Technology Services,Packaged Software,NASDAQ,dr,,616731048.079443
-AAPG,Ascentage Pharma Group International Unsponsored ADR,17.615,1.468894009216584,5099,1654159683.5046604,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,79867030.4142202
-SID,Companhia Siderurgica Nacional Sponsored ADR,1.22,-3.174603174603177,4136784,1639625903.6985,Non-Energy Minerals,Steel,NYSE,dr,,8018618047.31059
+AAPG,Ascentage Pharma Group International Unsponsored ADR,17.615,1.468894009216584,5099,1654029955.6650002,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,79867030.4142202
+SID,Companhia Siderurgica Nacional Sponsored ADR,1.22,-3.174603174603177,4136784,1632916437.0849001,Non-Energy Minerals,Steel,NYSE,dr,,8018618047.31059
 PSNY,Polestar Automotive Holding UK PLC Sponsored ADR Class A,9.21,5.983889528193342,567526,1520694985,Consumer Durables,Motor Vehicles,NASDAQ,dr,,3058109000
 PSNYW,Polestar Automotive Holding UK PLC Sponsored ADR Class C,5,-6.015037593984967,26723,1520694985,Consumer Durables,Motor Vehicles,NASDAQ,dr,,3058109000
-TV,"Grupo Televisa, S.A.B. Sponsored ADR",2.63,-1.1278195488721898,455110,1385655462.5,Communications,Major Telecommunications,NYSE,dr,,3066510419.71838
-AZUL,Azul S.A. Sponsored ADR,7.49,3.168044077134992,11383,1369008402.6375,Transportation,Airlines,NYSE,dr,,3873526832.25016
-IRS,IRSA Inversiones y Representaciones SA Sponsored ADR,15.16,0.5305039787798413,164635,1351949475.22674,Finance,Real Estate Development,NYSE,dr,,456370520.446477
-LOMA,Loma Negra Compania Industrial Argentina SA Sponsored ADR,10.27,1.2820512820512722,184704,1259194573.377468,Non-Energy Minerals,Construction Materials,NYSE,dr,,680954790.609376
-TUYA,"Tuya, Inc. Sponsored ADR Class A",1.89,-0.5263157894736847,279106,1175508744.7187402,Technology Services,Packaged Software,NYSE,dr,,322642052.14237595
-EDN,Empresa Distribuidora Y Comercializadora Norte S.A. Sponsored ADR Class B,24.6,0.5723630417007383,59988,1165156090.4034479,Utilities,Electric Utilities,NYSE,dr,,2406023614.54312
-CPAC,Cementos Pacasmayo SAA Sponsored ADR,12.62,0,14494,1135701002.36129,Non-Energy Minerals,Construction Materials,NYSE,dr,,593470485.874544
-IVA,Inventiva SA ADR,4.78,-1.2396694214875952,1350616,1114959745.66592,Health Technology,Biotechnology,NASDAQ,dr,,5059414.95249906
-ELVR,Elevra Lithium Limited Unsponsored ADR,56.84,0.10567101091934179,34789,1092440257.3207798,Non-Energy Minerals,Other Metals/Minerals,NASDAQ,dr,,143567488.80183
-QFIN,"Qfin Holdings, Inc. Sponsored ADR Class A",9.06,3.8990825688073376,1873583,1089393180.66405,Finance,Finance/Rental/Leasing,NASDAQ,dr,,2671655805.85922
+TV,"Grupo Televisa, S.A.B. Sponsored ADR",2.63,-1.1278195488721898,455110,1387533362.5,Communications,Major Telecommunications,NYSE,dr,,3066510419.71838
+AZUL,Azul S.A. Sponsored ADR,7.49,3.168044077134992,11383,1363406322.2175,Transportation,Airlines,NYSE,dr,,3873526832.25016
+IRS,IRSA Inversiones y Representaciones SA Sponsored ADR,15.16,0.5305039787798413,164635,1349910335.7467601,Finance,Real Estate Development,NYSE,dr,,470536381.69819
+LOMA,Loma Negra Compania Industrial Argentina SA Sponsored ADR,10.27,1.2820512820512722,184704,1257295335.7102323,Non-Energy Minerals,Construction Materials,NYSE,dr,,680954790.609376
+TUYA,"Tuya, Inc. Sponsored ADR Class A",1.89,-0.5263157894736847,279106,1175416555.1850002,Technology Services,Packaged Software,NYSE,dr,,322642052.14237595
+EDN,Empresa Distribuidora Y Comercializadora Norte S.A. Sponsored ADR Class B,24.6,0.5723630417007383,59988,1163398690.568752,Utilities,Electric Utilities,NYSE,dr,,2406023614.54312
+CPAC,Cementos Pacasmayo SAA Sponsored ADR,12.62,0,14494,1139293178.88883,Non-Energy Minerals,Construction Materials,NYSE,dr,,593470485.874544
+IVA,Inventiva SA ADR,4.78,-1.2396694214875952,1350616,1113837582.97856,Health Technology,Biotechnology,NASDAQ,dr,,5059414.95249906
+ELVR,Elevra Lithium Limited Unsponsored ADR,56.84,0.10567101091934179,34789,1093001782.8132,Non-Energy Minerals,Other Metals/Minerals,NASDAQ,dr,,143567488.80183
+QFIN,"Qfin Holdings, Inc. Sponsored ADR Class A",9.06,3.8990825688073376,1873583,1089307744.7625,Finance,Finance/Rental/Leasing,NASDAQ,dr,,2671655805.85922
 LUXE,LuxExperience B.V. Sponsored ADR,7.72,1.578947368421054,83076,1059659585.0000001,Retail Trade,Internet Retail,NYSE,dr,,1372408895.92779
 SIFY,Sify Technologies Limited Sponsored ADR,14.35,-0.5544005544005549,32105,1039436750.0000001,Technology Services,Internet Software/Services,NASDAQ,dr,,507900012.64184797
 ANL,Adlai Nortye Group Ltd. Sponsored ADR Class A,15.01,1.7627118644067783,308574,966613059,Commercial Services,Miscellaneous Commercial Services,NASDAQ,dr,,5013223.678449
@@ -3798,31 +3789,31 @@ HEPS,D-MARKET Elektronik Hizmetler ve Ticaret AS Sponsored ADR,2.675,-0.18656716
 RERE,ATRenew Inc. Sponsored ADR,4.18,0,926043,917544671,Retail Trade,Electronics/Appliance Stores,NYSE,dr,,2928066784.1536503
 TIGR,UP Fintech Holding Ltd. Sponsored ADR Class A,5.08,0.1972386587771161,1952830,913614394,Finance,Investment Banks/Brokers,NASDAQ,dr,,613683666.930502
 JMIA,Jumia Technologies AG Sponsored ADR,7.29,2.531645569620249,812687,908099789,Technology Services,Internet Software/Services,NYSE,dr,,189514587.794324
-CRESY,Cresud SA Sponsored ADR,12.07,1.9425675675675713,200472,893385766.4062499,Process Industries,Agricultural Commodities/Milling,NASDAQ,dr,,882840673.566243
+CRESY,Cresud SA Sponsored ADR,12.07,1.9425675675675713,200472,892038276.5625001,Process Industries,Agricultural Commodities/Milling,NASDAQ,dr,,882840673.566243
 SLN,Silence Therapeutics PLC Sponsored ADR,14.59,-1.3522650439486092,611151,878458664,Commercial Services,Miscellaneous Commercial Services,NASDAQ,dr,,560306.310713
-DBVT,DBV Technologies SA Sponsored ADR,13.47,-1.6788321167883116,43078,842622303.13625,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,0
+DBVT,DBV Technologies SA Sponsored ADR,13.47,-1.6788321167883116,43078,841774237.2649999,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,0
 YALA,Yalla Group Ltd. Sponsored ADR Class A,5.48,0,222145,838228086,Technology Services,Internet Software/Services,NYSE,dr,,341936325.625153
 DQ,Daqo New Energy Corp Sponsored ADR,12.31,-1.9904458598726114,611922,832970172,Process Industries,Chemicals: Specialty,NYSE,dr,,667174846.79907
 FINV,FinVolution Group Sponsored ADR Class A,3.39,2.7272727272727364,1245557,824748267,Finance,Finance/Rental/Leasing,NYSE,dr,,1905987896.3859801
-BRBI,BRBI BR Partners S.A. Sponsored ADR,10.91,-1.6674177557458358,873,812139902.8454999,Finance,Investment Banks/Brokers,NASDAQ,dr,,58085347.50000001
-SUPV,Grupo Supervielle SA Sponsored ADR Class B,8.79,0.11389521640090874,292014,810769735.926072,Finance,Major Banks,NYSE,dr,,1643864722.40635
-PHAR,Pharming Group NV Sponsored ADR,11.23,-2.006980802792325,5544,797282162.52482,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,377297834.994074
-VLRS,Controladora Vuela Compania de Aviacion SAB de CV Sponsored ADR Class A,6.85,3.1626506024096384,348402,787685868.03014,Transportation,Airlines,NYSE,dr,,3047295567.52911
+SUPV,Grupo Supervielle SA Sponsored ADR Class B,8.79,0.11389521640090874,292014,809546855.479728,Finance,Major Banks,NYSE,dr,,1643864722.40635
+BRBI,BRBI BR Partners S.A. Sponsored ADR,10.91,-1.6674177557458358,873,808816568.2047,Finance,Investment Banks/Brokers,NASDAQ,dr,,58085347.50000001
+PHAR,Pharming Group NV Sponsored ADR,11.23,-2.006980802792325,5544,796479729.70376,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,377297834.994074
+VLRS,Controladora Vuela Compania de Aviacion SAB de CV Sponsored ADR Class A,6.85,3.1626506024096384,348402,788753373.86518,Transportation,Airlines,NYSE,dr,,3047295567.52911
 AGMB,AgomAb Therapeutics NV ADR,15.78,6.405933917734317,245268,777133111,Health Technology,Biotechnology,NASDAQ,dr,,0
-IPX,Iperionx Ltd. Sponsored ADR,21.75,0.13812154696133122,130676,771823923.39771,Non-Energy Minerals,Precious Metals,NASDAQ,dr,,0
+IPX,Iperionx Ltd. Sponsored ADR,21.75,0.13812154696133122,130676,772220648.8074,Non-Energy Minerals,Precious Metals,NASDAQ,dr,,0
 MOMO,Hello Group Inc. Sponsored ADR,5.37,5.294117647058833,1487826,771323607,Technology Services,Packaged Software,NASDAQ,dr,,1442188343.0975099
-HDL,SUPER HI INTERNATIONAL HOLDING LTD. Sponsored ADR,12.5001,-1.8059701492537366,725,742723238.2370101,Consumer Services,Restaurants,NASDAQ,dr,,841624399.268674
+HDL,SUPER HI INTERNATIONAL HOLDING LTD. Sponsored ADR,12.5001,-1.8059701492537366,725,742664990.0025,Consumer Services,Restaurants,NASDAQ,dr,,841624399.268674
 LOT,Lotus Technology Inc. Sponsored American Depository Receipt Repr Shs,1.15,-0.8620689655172422,148745,736773165,Consumer Durables,Motor Vehicles,NASDAQ,dr,,519634783.511926
-BAK,Braskem S.A. Sponsored ADR Pfd Class A,1.89,-2.5773195876288684,889847,700881670.0355,Process Industries,Chemicals: Specialty,NYSE,dr,,12658004731.9952
-EVO,Evotec SE Sponsored ADR,1.86,-2.105263157894727,121907,663366475.3351301,Commercial Services,Miscellaneous Commercial Services,NASDAQ,dr,,889740384.641208
-VALN,Valneva SE Sponsored ADR,6.89,-2.407932011331444,22865,651467131.2084601,Health Technology,Biotechnology,NASDAQ,dr,,197116296.272258
+BAK,Braskem S.A. Sponsored ADR Pfd Class A,1.89,-2.5773195876288684,889847,698013612.0507001,Process Industries,Chemicals: Specialty,NYSE,dr,,12658004731.9952
+EVO,Evotec SE Sponsored ADR,1.86,-2.105263157894727,121907,662698823.33284,Commercial Services,Miscellaneous Commercial Services,NASDAQ,dr,,889740384.641208
+VALN,Valneva SE Sponsored ADR,6.89,-2.407932011331444,22865,650811455.42328,Health Technology,Biotechnology,NASDAQ,dr,,197116296.272258
 DDI,"DoubleDown Interactive Co., Ltd. Sponsored ADR",12.82,-1.1565150346954538,25994,635275076,Technology Services,Packaged Software,NASDAQ,dr,,360191385.809662
 YB,"Yuanbao, Inc. Unsponsored ADR",13.72,0.7342143906020663,16240,632220370,Technology Services,Information Technology Services,NASDAQ,dr,,608358433.179542
 ENRD,Einride AB Sponsored ADR,4.4,0.9174311926605512,33555,625675081,Technology Services,Packaged Software,NASDAQ,dr,,0
-NOAH,Noah Holdings Ltd. Sponsored ADR Class A,8.43,1.3221153846153777,60674,608887669.1128501,Finance,Investment Managers,NYSE,dr,,365835153.47300404
+NOAH,Noah Holdings Ltd. Sponsored ADR Class A,8.43,1.3221153846153777,60674,608839916.9625001,Finance,Investment Managers,NYSE,dr,,365835153.47300404
 JKS,"JinkoSolar Holding Co., Ltd. Sponsored ADR",11.98,-1.7227235438884256,890469,602101467,Electronic Technology,Semiconductors,NYSE,dr,,9111514117.50475
 AUTL,Autolus Therapeutics Plc Sponsored ADR,2.24,-2.18340611353711,1836156,596188963,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,75564172.00715101
-BWAY,Brainsway Ltd Sponsored ADR,14.15,-2.4810475534114365,49630,565181743.37274,Health Technology,Medical Specialties,NASDAQ,dr,,52639300.013897
+BWAY,Brainsway Ltd Sponsored ADR,14.15,-2.4810475534114365,49630,564313516.35048,Health Technology,Medical Specialties,NASDAQ,dr,,52639300.013897
 HKD,"AMTD Digital, Inc. Sponsored ADR",1.7,0.5917159763313614,66467,534274902,Technology Services,Packaged Software,NYSE,dr,,50075742.995293
 GOTU,"Gaotu Techedu, Inc. Sponsored ADR Class A",2.2,0,464336,517120207.00000006,Commercial Services,Miscellaneous Commercial Services,NYSE,dr,,855090270.802754
 GRVY,"Gravity Co., Ltd. Sponsored ADR",72.99,0.21280977552001257,166381,507200196,Technology Services,Packaged Software,NASDAQ,dr,,394412957.639221
@@ -3831,29 +3822,29 @@ HUYA,"HUYA, Inc. Sponsored ADR Class A",2.12,1.4354066985646052,1776283,48413609
 ZKH,ZKH Group Limited Sponsored ADR,2.95,-1.6666666666666607,159112,465421909,Retail Trade,Home Improvement Chains,NYSE,dr,,1250302975.3379798
 OTLY,Oatly Group AB Sponsored ADR,14.08,-1.7445917655268668,31372,449324591,Consumer Non-Durables,Food: Major Diversified,NASDAQ,dr,,867088454.6798589
 MTLS,Materialise NV Sponsored ADR,7.46,6.116642958748217,258209,440641227,Technology Services,Packaged Software,NASDAQ,dr,,302044702.650497
-GMTL,Guardian Metal Resources PLC Sponsored ADR,10.82,-2.2583559168925023,131983,439607285.33250004,Non-Energy Minerals,Other Metals/Minerals,AMEX,dr,,0
+GMTL,Guardian Metal Resources PLC Sponsored ADR,10.82,-2.2583559168925023,131983,439477272.08730006,Non-Energy Minerals,Other Metals/Minerals,AMEX,dr,,0
 HTT,High Templar Tech Limited Sponsored ADR Class A,2.61,0.3846153846153764,19205,408925536,Technology Services,Internet Software/Services,NYSE,dr,,5751046.62972431
 DSC,DSC Holdings Ltd. Sponsored ADR,8,1.265822784810122,63352,400579939,Distribution Services,Wholesale Distributors,NASDAQ,dr,,94187089.3632368
 API,"Agora, Inc. Sponsored ADR Class A",4.24,1.6786570743405345,69832,396485519,Technology Services,Packaged Software,NASDAQ,dr,,141430058.482205
-LND,BrasilAgro Cia Brasileira de Propriedades Agricolas Sponsored ADR,3.79,-2.0671834625323013,66299,373384164.00100005,Finance,Real Estate Development,NYSE,dr,,151905764.42569098
+LND,BrasilAgro Cia Brasileira de Propriedades Agricolas Sponsored ADR,3.79,-2.0671834625323013,66299,371856249.2634001,Finance,Real Estate Development,NYSE,dr,,168371609.893732
 WDH,"Waterdrop, Inc. Sponsored ADR Class A",1.02,2.0102010201020106,1679278,368101155,Finance,Insurance Brokers/Services,NYSE,dr,,553354627.547375
 MSC,Studio City International Holdings Ltd. Sponsored ADR Class A,1.7144,-0.32558139534884006,1472,361251719,Consumer Services,Casinos/Gaming,NYSE,dr,,694566000
 SOHU,Sohu.com Limited Sponsored ADR,13.75,-0.7220216606498169,73042,358449025,Technology Services,Internet Software/Services,NASDAQ,dr,,585878406.339864
 EH,EHang Holdings Ltd. Sponsored ADR Class A,4.69,2.8508771929824737,664476,355480337,Technology Services,Packaged Software,NASDAQ,dr,,58146208.5270783
 NNDM,Nano Dimension Ltd Sponsored ADR,1.62,1.250000000000001,2892409,341154839,Producer Manufacturing,Industrial Machinery,NASDAQ,dr,,103249630.93391201
-SVRE,SaverOne 2014 Ltd. ADR,2.61,-8.421052631578954,126177,331989992.69622004,Technology Services,Packaged Software,NASDAQ,dr,,294558.790255694
-VCRE,Vicore Pharma Holding AB Sponsored ADR,11.59,0.3463203463203389,14661,320364865.4076,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,412999.4
+SVRE,SaverOne 2014 Ltd. ADR,2.61,-8.421052631578954,126177,331479992.70744,Technology Services,Packaged Software,NASDAQ,dr,,294558.790255694
+VCRE,Vicore Pharma Holding AB Sponsored ADR,11.59,0.3463203463203389,14661,319444276.7139,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,412999.4
 XNET,Xunlei Ltd. ADR,4.88,-0.40816326530613184,240572,311053404,Technology Services,Information Technology Services,NASDAQ,dr,,461645710.364212
-PHOS,First Phosphate Corp. Sponsored ADR,16.04,1.3265950726468672,19231,301394251.46540004,Non-Energy Minerals,Other Metals/Minerals,NASDAQ,dr,,0
+PHOS,First Phosphate Corp. Sponsored ADR,16.04,1.3265950726468672,19231,300520403.71159995,Non-Energy Minerals,Other Metals/Minerals,NASDAQ,dr,,0
 BCYC,Bicycle Therapeutics Plc Sponsored ADR,4.3,1.415094339622632,157468,300200837,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,72755624.095493
-CUVL,Clinuvel Pharmaceuticals Limited Sponsored ADR,6.52,3.8216560509554034,79283,295841026.3099899,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,63713089.004285105
+CUVL,Clinuvel Pharmaceuticals Limited Sponsored ADR,6.52,3.8216560509554034,79283,295993091.6306,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,63713089.004285105
 AMRN,Amarin Corporation Plc Sponsored ADR,13.63,-0.5835156819839538,80559,286260003,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,214145263.074226
 SY,"So-Young International, Inc. Sponsored ADR Class A",2.76,-2.1276595744680873,343335,277695679,Technology Services,Internet Software/Services,NASDAQ,dr,,211924741.871607
 UXIN,Uxin Ltd Sponsored ADR,1.16,3.5714285714285547,25539,255177096,Technology Services,Internet Software/Services,NASDAQ,dr,,450680448.971881
 YSG,Yatsen Holding Ltd. Sponsored ADR Class A,2.66,12.236286919831224,136836,249509469,Consumer Non-Durables,Household/Personal Care,NYSE,dr,,597920992.531335
-IONR,ioneer Limited Sponsored ADR,3.14,6.081081081081086,91565,244483687.45209998,Process Industries,Chemicals: Agricultural,NASDAQ,dr,,0
+IONR,ioneer Limited Sponsored ADR,3.14,6.081081081081086,91565,244609354.57399997,Process Industries,Chemicals: Agricultural,NASDAQ,dr,,0
 ADAG,"Adagene, Inc. Sponsored ADR",3.58,-2.9810298102980997,28194,240373166,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,7691189.508293
-CLLS,Cellectis S.A. Sponsored ADR,3.24,-2.4096385542168566,4834,235753632.29432,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,73174719.02296199
-IPHA,Innate Pharma SA Sponsored ADR,2.08,-1.4218009478672893,8980,227498122.37257,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,3145346.7482968704
+CLLS,Cellectis S.A. Sponsored ADR,3.24,-2.4096385542168566,4834,235516355.62975997,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,73174719.02296199
+IPHA,Innate Pharma SA Sponsored ADR,2.08,-1.4218009478672893,8980,227269154.55076,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,3145346.7482968704
 XYF,X Financial Sponsored ADR Class A,5.53,-0.7181328545780976,88447,216147340,Finance,Finance/Rental/Leasing,NYSE,dr,,1062736263.1119199
 NBP,NovaBridge Biosciences Sponsored ADR,1.8,0,71520,208798589,Health Technology,Pharmaceuticals: Major,NASDAQ,dr,,0
