@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+import textwrap
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -114,9 +116,28 @@ def resilient_download_ohlcv(symbols: list[str], start: str, end: str, batch_siz
     return out, diag
 
 
+def patch_numpy_string_concat() -> None:
+    """Execution compatibility patch only for NumPy 2.5 np.r_ string parsing.
+
+    The research function used np.r_["STOP", modes[:-1]], which older NumPy
+    accepted as concatenation but NumPy 2.5 interprets as an r_ directive.
+    Replace only that expression; strategy logic and numeric np.r_ calls stay unchanged.
+    """
+    source = textwrap.dedent(inspect.getsource(backtest.integrate))
+    old = 'modes = np.r_["STOP", modes[:-1]]'
+    new = 'modes = np.concatenate((np.array(["STOP"], dtype=object), modes[:-1]))'
+    if old not in source:
+        raise RuntimeError("NUMPY_STRING_CONCAT_PATCH_TARGET_NOT_FOUND")
+    namespace = dict(backtest.__dict__)
+    exec(source.replace(old, new), namespace)
+    backtest.integrate = namespace["integrate"]
+    print("PATCHED_NUMPY_STRING_CONCAT_ONLY", flush=True)
+
+
 def main():
-    # Execution/data-acquisition patch only. Strategy, signals, costs, dates and TQQQ/Gross100 logic remain untouched.
+    # Execution/data-acquisition patches only. Strategy, signals, costs, dates and TQQQ/Gross100 logic remain untouched.
     audit.download_ohlcv = resilient_download_ohlcv
+    patch_numpy_string_concat()
     backtest.main()
 
 
