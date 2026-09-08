@@ -1,0 +1,33 @@
+name: Audit 8T3I1E Live Builder Replay Subset
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/stock-nqsar-transition-early-20260907
+    paths:
+      - 'build_v38_8t3i1e_live.py'
+      - 'research/audit_8t3i1e_live_builder_replay_subset.py'
+      - '.github/workflows/audit-8t3i1e-live-builder-replay-subset.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install --disable-pip-version-check -r requirements.txt
+      - name: Compile builder and exact subset replay
+        run: python -m py_compile build_v38_8t3i1e_live.py research/audit_8t3i1e_live_builder_replay_subset.py
+      - name: Run exact subset daily replay
+        run: python -u -m research.audit_8t3i1e_live_builder_replay_subset --root . --output research_outputs/audit_8t3i1e_live_builder_replay_subset --batch-size 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-8t3i1e-live-builder-replay-subset-20260908
+          path: research_outputs/audit_8t3i1e_live_builder_replay_subset
+          if-no-files-found: warn
