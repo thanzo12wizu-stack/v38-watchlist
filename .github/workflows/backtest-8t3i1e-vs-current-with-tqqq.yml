@@ -7,6 +7,9 @@ on:
     paths:
       - 'research/backtest_8t3i1e_vs_current_with_tqqq.py'
       - 'research/run_backtest_8t3i1e_tqqq_resilient.py'
+      - 'research/8t3i1e_freeze_manifest.json'
+      - 'research/audit_8t3i1e_postselection.py'
+      - 'research/test_yahoo_chart_fallback_forced.py'
       - '.github/workflows/backtest-8t3i1e-vs-current-with-tqqq.yml'
 
 permissions:
@@ -51,6 +54,14 @@ jobs:
         run: |
           python -m py_compile research/backtest_8t3i1e_vs_current_with_tqqq.py
           python -m py_compile research/run_backtest_8t3i1e_tqqq_resilient.py
+          python -m py_compile research/audit_8t3i1e_postselection.py
+          python -m py_compile research/test_yahoo_chart_fallback_forced.py
+
+      - name: Forced Yahoo Chart fallback test
+        run: |
+          python -u -m research.test_yahoo_chart_fallback_forced \
+            --output research_outputs/yahoo_chart_fallback_forced \
+            --start 2024-01-01
 
       - name: Run integrated backtest
         run: |
@@ -61,11 +72,30 @@ jobs:
             --output research_outputs/backtest_8t3i1e_vs_current_with_tqqq \
             --batch-size 100
 
-      - name: Upload results
+      - name: Frozen post-selection audit
+        run: |
+          python -u -m research.audit_8t3i1e_postselection \
+            --root . \
+            --input research_outputs/backtest_8t3i1e_vs_current_with_tqqq \
+            --output research_outputs/8t3i1e_postselection_audit \
+            --manifest research/8t3i1e_freeze_manifest.json
+
+      - name: Upload backtest results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backtest-8t3i1e-vs-current-with-tqqq-20260908
           path: research_outputs/backtest_8t3i1e_vs_current_with_tqqq
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload frozen validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-8t3i1e-postselection-20260909
+          path: |
+            research_outputs/8t3i1e_postselection_audit
+            research_outputs/yahoo_chart_fallback_forced
           if-no-files-found: warn
           retention-days: 90
