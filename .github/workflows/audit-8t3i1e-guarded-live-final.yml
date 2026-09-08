@@ -1,0 +1,141 @@
+name: Audit 8T3I1E Guarded Live Final
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/build_v38_8t3i1e_live_guarded.py'
+      - '.github/workflows/audit-8t3i1e-guarded-live-final.yml'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - run: pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Compile guarded builder
+        run: |
+          python -m py_compile build_v38_8t3i1e_live.py research/build_v38_8t3i1e_live_guarded.py
+
+      - name: Verify retry recovery and fail-closed behavior synthetically
+        run: |
+          python - <<'PY'
+          import tempfile
+          from pathlib import Path
+          import pandas as pd
+          import research.build_v38_8t3i1e_live_guarded as guard
+          import build_v38_8t3i1e_live as core
+
+          idx=pd.DatetimeIndex([pd.Timestamp('2026-09-04')])
+          def pack(symbols):
+              return {k:pd.DataFrame({s:[1.0] for s in symbols},index=idx) for k in ('open','high','low','close','volume')}
+
+          original_download=core.download_adjusted_ohlcv
+          calls=[]
+          def recover_fake(symbols,start,end,batch_size=100):
+              calls.append(tuple(symbols))
+              if len(calls)==1:
+                  return pack(['A']), {'requested':2,'downloaded_common':1,'coverage':.5,'failed_batches':0}
+              if list(symbols)==['B']:
+                  return pack(['B']), {'requested':1,'downloaded_common':1,'coverage':1.0,'failed_batches':0}
+              raise AssertionError(symbols)
+          core.download_adjusted_ohlcv=recover_fake
+          out,q=guard.download_guarded(['A','B'],'2026-01-01','2026-09-05',100,max_individual_retries=3,sleep_seconds=0)
+          assert q['complete_universe'] is True, q
+          assert q['recovered_individually']==['B'], q
+          assert q['unresolved_count']==0, q
+          assert list(out['close'].columns)==['A','B'], out['close'].columns
+
+          def unresolved_fake(symbols,start,end,batch_size=100):
+              if list(symbols)==['A','B']:
+                  return pack(['A']), {'requested':2,'downloaded_common':1,'coverage':.5,'failed_batches':0}
+              return {k:pd.DataFrame(index=idx) for k in ('open','high','low','close','volume')}, {'requested':1,'downloaded_common':0,'coverage':0.0,'failed_batches':1}
+          core.download_adjusted_ohlcv=unresolved_fake
+          _,q2=guard.download_guarded(['A','B'],'2026-01-01','2026-09-05',100,max_individual_retries=3,sleep_seconds=0)
+          assert q2['complete_universe'] is False, q2
+          assert q2['unresolved']==['B'], q2
+
+          original_read=core._read_universe
+          original_guard_download=guard.download_guarded
+          core._read_universe=lambda path: (['A','B'],set())
+          guard.download_guarded=lambda *args,**kwargs: (pack(['A']),q2)
+          try:
+              guard.build_guarded_live_state(Path(tempfile.mkdtemp()),'2026-09-04',sleep_seconds=0)
+          except RuntimeError as exc:
+              assert '8T3I_FAIL_CLOSED_UNRESOLVED_SYMBOLS' in str(exc), exc
+          else:
+              raise AssertionError('fail-closed guard did not raise')
+          finally:
+              core.download_adjusted_ohlcv=original_download
+              core._read_universe=original_read
+              guard.download_guarded=original_guard_download
+          print('GUARD_SYNTHETIC_PASS')
+          PY
+
+      - name: Run guarded live CLI with 2200-day lookback
+        run: |
+          mkdir -p research_outputs/audit_8t3i1e_guarded_live_final
+          python -u -m research.build_v38_8t3i1e_live_guarded \
+            --root . \
+            --asof 2026-09-04 \
+            --output research_outputs/audit_8t3i1e_guarded_live_final/live.json \
+            --batch-size 100 \
+            --lookback-days 2200 \
+            --individual-retries 3 \
+            --retry-sleep 1
+
+      - name: Compare guarded CLI output to full-history Exact reference
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('research_outputs/audit_8t3i1e_guarded_live_final/live.json').read_text(encoding='utf-8'))
+          expected_tickers=['MRNA','AMLX','SLN','AGCO','CDNA','XNCR','ELF','ASST','NIQ','ARCT','ARX','PLSE']
+          expected_sources=['TREND','TREND','TREND','IGNITION','TREND','TREND','TREND','IGNITION','TREND','TREND','IGNITION','TREND']
+          got_tickers=[str(x.get('ticker')) for x in p.get('candidates',[])]
+          got_sources=[str(x.get('source')) for x in p.get('candidates',[])]
+          q=p.get('quality') or {}
+          g=p.get('acquisition_guard') or {}
+          summary={
+              'asof':p.get('asof'),
+              'status':p.get('status'),
+              'schema':p.get('schema'),
+              'expected_tickers':expected_tickers,
+              'got_tickers':got_tickers,
+              'expected_sources':expected_sources,
+              'got_sources':got_sources,
+              'tickers_exact':got_tickers==expected_tickers,
+              'sources_exact':got_sources==expected_sources,
+              'quality':q,
+              'guard':g,
+              'complete_universe':q.get('complete_universe') is True,
+              'unresolved_zero':int(q.get('unresolved_count',-1))==0,
+              'guard_pass':g.get('status')=='PASS' and g.get('complete_universe_required') is True,
+          }
+          summary['audit_verdict']='PASS' if all([
+              summary['tickers_exact'],summary['sources_exact'],p.get('status')=='READY',
+              summary['complete_universe'],summary['unresolved_zero'],summary['guard_pass']
+          ]) else 'FAIL'
+          Path('research_outputs/audit_8t3i1e_guarded_live_final/summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          if summary['audit_verdict']!='PASS':
+              raise SystemExit('GUARDED_LIVE_FINAL_MISMATCH')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-8t3i1e-guarded-live-final-20260908
+          path: research_outputs/audit_8t3i1e_guarded_live_final
