@@ -1,0 +1,47 @@
+name: Audit 8T3I1E ATTACK Discovery
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/audit_attack_regime_discovery.py'
+      - '.github/workflows/audit-8t3i1e-attack-discovery.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt scipy
+      - name: Compile
+        run: python -m py_compile research/audit_attack_regime_discovery.py
+      - name: Run discovery-only ATTACK decomposition
+        run: |
+          python -u -m research.audit_attack_regime_discovery \
+            --root . \
+            --output research_outputs/audit_attack_regime_discovery \
+            --batch-size 100
+      - name: Upload ATTACK discovery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-8t3i1e-attack-discovery-20260909
+          path: research_outputs/audit_attack_regime_discovery
+          if-no-files-found: warn
+          retention-days: 90
