@@ -118,6 +118,77 @@ jobs:
             echo "- Main SHA before Options: $sha"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Complete Rotation diagnostics and stock charts
+        id: rotation_completion
+        shell: bash
+        env:
+          TARGET_SESSION: ${{ steps.target.outputs.target_session }}
+        run: |
+          set -euo pipefail
+
+          run_stage() {
+            workflow="$1"
+            label="$2"
+            before="$(gh run list --repo "$REPO" \
+              --workflow "$workflow" --event workflow_dispatch --limit 1 \
+              --json databaseId --jq '.[0].databaseId // 0')"
+
+            gh workflow run "$workflow" --repo "$REPO" --ref main
+
+            run_id=""
+            for attempt in $(seq 1 40); do
+              candidate="$(gh run list --repo "$REPO" \
+                --workflow "$workflow" --event workflow_dispatch --limit 1 \
+                --json databaseId --jq '.[0].databaseId // 0')"
+              if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+                run_id="$candidate"
+                break
+              fi
+              sleep 3
+            done
+            [[ -n "$run_id" ]] || { echo "::error::Could not resolve $label run"; exit 1; }
+
+            echo "$label run_id=$run_id"
+            gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          }
+
+          run_stage rotation-divergence-live.yml "Rotation divergence"
+          run_stage rotation-stock-chart-live.yml "Rotation stock chart"
+
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          target = os.environ["TARGET_SESSION"]
+          state = json.loads(Path("state.json").read_text(encoding="utf-8"))
+          divergence = json.loads(Path("rotation/data/rotation-theme56-divergence.json").read_text(encoding="utf-8"))
+          chart = json.loads(Path("rotation/data/stock-chart/index.json").read_text(encoding="utf-8"))
+
+          dates = {
+              "state": str(state.get("date") or ""),
+              "rotation_divergence": str(divergence.get("asof") or ""),
+              "rotation_stock_chart": str(chart.get("session_date") or ""),
+          }
+          if any(v != target for v in dates.values()):
+              raise SystemExit(f"Rotation completion session mismatch: expected={target} actual={dates}")
+
+          if int(divergence.get("theme_count") or 0) != 56:
+              raise SystemExit(f"Rotation divergence theme count invalid: {divergence.get('theme_count')}")
+          if int(divergence.get("ready_count") or 0) < 50:
+              raise SystemExit(f"Rotation divergence coverage too low: {divergence.get('ready_count')}")
+
+          requested = int(chart.get("requested") or 0)
+          available = int(chart.get("available") or 0)
+          if requested <= 0 or available <= 0 or available / requested < 0.80:
+              raise SystemExit(f"Rotation stock chart coverage invalid: {available}/{requested}")
+
+          print("ROTATION_COMPLETION_READY", dates, f"chart={available}/{requested}")
+          PY
+
       - name: Confirm completed upstream pages are deployed
         shell: bash
         env:
@@ -162,6 +233,50 @@ jobs:
           gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
           echo "options_run_id=$run_id" >> "$GITHUB_OUTPUT"
 
+      - name: Confirm final main Pages are deployed
+        shell: bash
+        env:
+          TARGET_SESSION: ${{ steps.target.outputs.target_session }}
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          final_pages_sha="$(git rev-parse HEAD)"
+          echo "Final main Pages SHA=$final_pages_sha"
+          python tools/confirm_upstream_pages.py \
+            --repo "$REPO" \
+            --published-sha "$final_pages_sha" \
+            --expected-session "$TARGET_SESSION"
+
+      - name: Publish safe public site mirror and wait
+        id: public_mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          before="$(gh run list --repo "$REPO" \
+            --workflow publish-public-site.yml --event workflow_dispatch --limit 1 \
+            --json databaseId --jq '.[0].databaseId // 0')"
+
+          gh workflow run publish-public-site.yml --repo "$REPO" --ref main
+
+          run_id=""
+          for attempt in $(seq 1 40); do
+            candidate="$(gh run list --repo "$REPO" \
+              --workflow publish-public-site.yml --event workflow_dispatch --limit 1 \
+              --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 3
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve safe public mirror run"; exit 1; }
+
+          echo "Safe public mirror run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          echo "public_mirror_run_id=$run_id" >> "$GITHUB_OUTPUT"
+
       - name: Final same-session audit
         shell: bash
         env:
@@ -182,12 +297,32 @@ jobs:
           target = os.environ["TARGET_SESSION"]
           root = json.loads(Path("options_release_manifest.json").read_text(encoding="utf-8"))
           pub = json.loads(Path("release/options/options_release_manifest.json").read_text(encoding="utf-8"))
+          divergence = json.loads(Path("rotation/data/rotation-theme56-divergence.json").read_text(encoding="utf-8"))
+          chart = json.loads(Path("rotation/data/stock-chart/index.json").read_text(encoding="utf-8"))
 
           for label, data in (("root", root), ("public", pub)):
               if data.get("status") != "READY" or str(data.get("session_date") or "") != target:
                   raise SystemExit(f"{label} Options manifest not READY for {target}: {data}")
 
-          print("FULL_PRODUCTION_REFRESH_READY", target)
+          rotation_dates = {
+              "divergence": str(divergence.get("asof") or ""),
+              "stock_chart": str(chart.get("session_date") or ""),
+          }
+          if any(v != target for v in rotation_dates.values()):
+              raise SystemExit(f"Rotation final session mismatch for {target}: {rotation_dates}")
+
+          if int(divergence.get("theme_count") or 0) != 56 or int(divergence.get("ready_count") or 0) < 50:
+              raise SystemExit(
+                  f"Rotation divergence final quality invalid: "
+                  f"themes={divergence.get('theme_count')} ready={divergence.get('ready_count')}"
+              )
+
+          requested = int(chart.get("requested") or 0)
+          available = int(chart.get("available") or 0)
+          if requested <= 0 or available <= 0 or available / requested < 0.80:
+              raise SystemExit(f"Rotation stock chart final coverage invalid: {available}/{requested}")
+
+          print("FULL_PRODUCTION_REFRESH_READY", target, rotation_dates, f"chart={available}/{requested}")
           PY
 
           final_sha="$(git rev-parse HEAD)"
@@ -198,8 +333,9 @@ jobs:
             echo "- Session: $TARGET_SESSION"
             echo "- Command Center: PUBLISHED"
             echo "- V38: PUBLISHED"
-            echo "- Rotation: PUBLISHED"
+            echo "- Rotation: PUBLISHED (Theme56 / divergence / stock chart same-session)"
             echo "- Options: PUBLISHED complete snapshot"
+            echo "- Safe public mirror: workflow SUCCESS"
             echo "- Options release commit: $release_sha"
             echo "- Final main SHA: $final_sha"
             echo "- Daily Liquid / Intelligence / Chart: same-session verified"
