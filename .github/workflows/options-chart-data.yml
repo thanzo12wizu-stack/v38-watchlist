@@ -1,9 +1,6 @@
 name: Options chart data
 
 on:
-  workflow_run:
-    workflows: ["Options positioning"]
-    types: [completed]
   workflow_dispatch:
   push:
     branches: [main]
@@ -14,7 +11,6 @@ on:
       - options-chart-bridge.js
       - options-chart.css
       - options-intelligence.html
-      - .github/workflows/options-chart-data.yml
 
 permissions:
   contents: write
@@ -25,23 +21,27 @@ concurrency:
 
 jobs:
   chart-data:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
+
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+
       - name: Validate chart UI syntax
         run: |
           node --check options-chart.js
           node --check options-chart-bridge.js
+          python -m py_compile tools/validate_options_release.py
+
       - name: Install
         run: pip install --disable-pip-version-check -r requirements.txt
+
       - name: Build Options chart datasets
         env:
           V38_OPT_JSON: options_positioning.json
@@ -53,25 +53,68 @@ jobs:
           V38_OPT_CHART_PERIOD: 1y
           V38_OPT_CHART_WORKERS: '3'
           V38_OPT_CHART_ATTEMPTS: '2'
+        shell: bash
         run: |
+          set -euo pipefail
           python -m py_compile tools/build_options_chart_data.py tools/build_options_chart_history_shards.py
-          # Detailed names keep the 1y OHLCV/MA/VWAP chart.
           python tools/build_options_chart_data.py
-          # Broad daily Options observations are sharded for mobile/on-demand loading.
-          # No additional broad Yahoo price fetch is performed here.
           python tools/build_options_chart_history_shards.py
+
+          target="$(python - <<'PY'
+          import json
+          print(str(json.load(open("options_positioning.json", encoding="utf-8")).get("session_date") or ""))
+          PY
+          )"
+          [[ -n "$target" ]] || { echo "::error::Options positioning has no session_date"; exit 1; }
+
+          # Chart-only repair is publishable only while the rest of the Options
+          # snapshot is still a complete same-session release.
+          python tools/validate_options_release.py \
+            --mode release \
+            --expected-session "$target" \
+            --write-manifest options_release_manifest.json
+
+          [[ -d release/options ]] || {
+            echo "::error::release/options does not exist; run Full production refresh first"
+            exit 1
+          }
+
+          cp options_chart_data.json release/options/options_chart_data.json
+          rm -rf release/options/options_chart_history
+          mkdir -p release/options/options_chart_history
+          cp -a options_chart_history/. release/options/options_chart_history/
+          cp options_release_manifest.json release/options/options_release_manifest.json
+
       - name: Commit chart artifacts only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- options_chart_data.json options_chart_history
+
+          git add -- options_chart_data.json options_release_manifest.json
+          git add -A options_chart_history \
+            release/options/options_chart_data.json \
+            release/options/options_chart_history \
+            release/options/options_release_manifest.json
+
+          unexpected="$(git diff --cached --name-only | while IFS= read -r changed; do
+            case "$changed" in
+              options_chart_data.json|options_release_manifest.json|options_chart_history/*|release/options/options_chart_data.json|release/options/options_chart_history/*|release/options/options_release_manifest.json) ;;
+              *) echo "$changed" ;;
+            esac
+          done)"
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::Chart workflow attempted to stage files outside its ownership: $unexpected"
+            exit 1
+          fi
+
           if git diff --staged --quiet; then
             echo "no chart data changes"
             exit 0
           fi
-          git commit -m "Options chart data $(date +%F)"
+
+          git commit -m "Refresh complete Options chart snapshot $(date +%F)"
           for a in 1 2 3; do
             if git push origin HEAD:main; then
               exit 0
