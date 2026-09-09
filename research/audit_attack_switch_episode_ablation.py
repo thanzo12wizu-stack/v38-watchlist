@@ -35,12 +35,17 @@ def simulate_switch(idx,mx,nq,e,m,disabled=None):
     breadth=pd.to_numeric(mx['breadth'].reindex(idx),errors='coerce'); d5=breadth-breadth.shift(5)
     first=pd.Timestamp(idx[0]); state={'status':'READY','asof':str(first.date()),'cash':1.0,'positions':[],
         'pending':{'full_exits':[],'partial25':[],'entries':[]}}
-    rows=[]
-    a=b=None
+    rows=[]; a=b=None
     if disabled:
         a=pd.Timestamp(EPISODES[disabled][0]); b=pd.Timestamp(EPISODES[disabled][1])
     for d0 in idx:
-        d=pd.Timestamp(d0); c=hold.pit.companion(d,mx,{},nq,e,True)
+        d=pd.Timestamp(d0)
+        before={str(p.get('symbol') or ''):float(p.get('shares') or 0.0) for p in state.get('positions',[]) if str(p.get('symbol') or '')}
+        nav_open=float(state.get('cash') or 0.0)
+        for s,sh in before.items():
+            p=hold.px(mx['open'],d,s)
+            if np.isfinite(p): nav_open+=sh*p
+        c=hold.pit.companion(d,mx,{},nq,e,True)
         new_rows=hold.hybrid.hybrid_rows(d,m,'HYBRID8T3I_E1'); market=c.get('market') or {}; mode=str(market.get('mode') or 'STOP')
         color=str(nq.at[d,'nq_color']) if d in nq.index and pd.notna(nq.at[d,'nq_color']) else ''
         br=float(breadth.get(d,np.nan)); br5=float(d5.get(d,np.nan))
@@ -50,8 +55,19 @@ def simulate_switch(idx,mx,nq,e,m,disabled=None):
         if not use_current:
             c=dict(c); c['candidates']=new_rows
         state=hold.sleeve.advance_normal(state,c,str(d.date()),mx['open'],mx['close'])
+        after={str(p.get('symbol') or ''):float(p.get('shares') or 0.0) for p in state.get('positions',[]) if str(p.get('symbol') or '')}
+        buy=sell=0.0
+        for s in set(before)|set(after):
+            delta=after.get(s,0.0)-before.get(s,0.0)
+            if abs(delta)<=1e-14: continue
+            p=hold.px(mx['open'],d,s)
+            if not np.isfinite(p): continue
+            notional=abs(delta)*p
+            if delta>0: buy+=notional
+            else: sell+=notional
+        turnover=(buy+sell)/max(nav_open,1e-12)
         rows.append({'date':d,'nav':float(state['nav']),'gross_exposure':float(state.get('desired_pct') or 0)/100,
-                     'market_mode':mode,'engine_choice':choice,'breadth':br,'breadth_d5':br5})
+                     'turnover':float(turnover),'market_mode':mode,'engine_choice':choice,'breadth':br,'breadth_d5':br5})
     out=pd.DataFrame(rows).set_index('date'); out['return']=out.nav.pct_change(fill_method=None).fillna(0.0); return out
 
 
@@ -75,8 +91,8 @@ def main():
     idx=mx['close'].index[(mx['close'].index>=START)&(mx['close'].index<=END)]
 
     print('BASES',flush=True); new=hold.simulate_variant(idx,mx,nq,e,m,'NEW_8T3I1E'); full=hold.simulate_variant(idx,mx,nq,e,m,'SWITCH_BLUE_B70_RISING5')
-    custom=simulate_switch(idx,mx,nq,e,m,None); err=float((custom.nav-full.nav).abs().max())
-    if err>1e-10: raise RuntimeError(f'FULL_SWITCH_REPRO_FAILED {err}')
+    custom=simulate_switch(idx,mx,nq,e,m,None); err=float((custom.nav-full.nav).abs().max()); terr=float((custom.turnover-full.turnover).abs().max())
+    if err>1e-10 or terr>1e-10: raise RuntimeError(f'FULL_SWITCH_REPRO_FAILED nav={err} turnover={terr}')
     tq=pd.read_csv(args.tqqq_daily,compression='infer'); tq['date']=pd.to_datetime(tq['date'])
     reset=pd.read_csv(args.reset_daily,compression='infer'); reset['date']=pd.to_datetime(reset['date'])
 
@@ -101,7 +117,8 @@ def main():
     abl=df[df.variant=='SWITCH_A_MINUS_ONE'].copy()
     worst=abl.sort_values('primary_cagr_minus_full').iloc[0].to_dict(); best=abl.sort_values('primary_cagr_minus_full',ascending=False).iloc[0].to_dict()
     summary={'method':'Fixed leave-one-episode-out sensitivity audit of pre-registered Switch A; no threshold or strategy search.',
-             'coverage':diag,'holdout':[str(HOLDOUT_START.date()),str(END.date())],'episodes':EPISODES,'full_switch_repro_max_nav_error':err,
+             'coverage':diag,'holdout':[str(HOLDOUT_START.date()),str(END.date())],'episodes':EPISODES,
+             'full_switch_repro_max_nav_error':err,'full_switch_repro_max_turnover_error':terr,
              'new_primary':base_new_p,'full_switch_primary':base_full_p,'new_stock':base_new_s,'full_switch_stock':base_full_s,
              'most_important_episode_by_primary_cagr_loss':worst,'episode_whose_removal_improves_primary_cagr_most':best,'production_changed':False}
     (out/'summary.json').write_text(json.dumps(safe(summary),ensure_ascii=False,indent=2),encoding='utf-8')
