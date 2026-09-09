@@ -31,14 +31,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          downstream_before="$(gh run list --repo "$REPO" \
-            --workflow production-downstream-chain.yml --limit 20 \
-            --json databaseId,event \
-            --jq '.[] | select(.event == "workflow_run") | .databaseId' \
-            | head -n 1)"
-          downstream_before="${downstream_before:-0}"
-          echo "downstream_before=$downstream_before" >> "$GITHUB_OUTPUT"
-
           before="$(gh run list --repo "$REPO" \
             --workflow dashboard.yml --event workflow_dispatch --limit 1 \
             --json databaseId --jq '.[0].databaseId // 0')"
@@ -62,29 +54,36 @@ jobs:
           gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
           echo "command_run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for production downstream chain
+      - name: Run production downstream chain and wait
         id: downstream
         shell: bash
-        env:
-          BEFORE: ${{ steps.command.outputs.downstream_before }}
         run: |
           set -euo pipefail
+
+          # A workflow dispatched with this job's GITHUB_TOKEN does not create
+          # a follow-on workflow_run trigger. Dispatch downstream explicitly
+          # here; its normal workflow_run trigger remains intact for ordinary
+          # scheduled/manual Command Center runs outside this orchestrator.
+          before="$(gh run list --repo "$REPO" \
+            --workflow production-downstream-chain.yml --event workflow_dispatch --limit 1 \
+            --json databaseId --jq '.[0].databaseId // 0')"
+
+          gh workflow run production-downstream-chain.yml --repo "$REPO" --ref main
+
           run_id=""
-          for attempt in $(seq 1 80); do
+          for attempt in $(seq 1 40); do
             candidate="$(gh run list --repo "$REPO" \
-              --workflow production-downstream-chain.yml --limit 20 \
-              --json databaseId,event \
-              --jq '.[] | select(.event == "workflow_run") | .databaseId' \
-              | head -n 1)"
-            if [[ -n "$candidate" ]] && (( candidate > BEFORE )); then
+              --workflow production-downstream-chain.yml --event workflow_dispatch --limit 1 \
+              --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
               run_id="$candidate"
               break
             fi
-            sleep 5
+            sleep 3
           done
-          [[ -n "$run_id" ]] || { echo "::error::Could not resolve automatic downstream run newer than baseline $BEFORE"; exit 1; }
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve explicitly dispatched downstream run"; exit 1; }
 
-          echo "Downstream run_id=$run_id baseline=$BEFORE"
+          echo "Downstream run_id=$run_id"
           gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
           echo "downstream_run_id=$run_id" >> "$GITHUB_OUTPUT"
 
