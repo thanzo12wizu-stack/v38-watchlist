@@ -2,11 +2,6 @@ name: Full production refresh
 
 on:
   workflow_dispatch: {}
-  # One-time implementation self-test. Removed after the first verified run.
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/full-production-refresh.yml'
 
 permissions:
   contents: read
@@ -127,23 +122,13 @@ jobs:
         shell: bash
         env:
           PUBLISHED_SHA: ${{ steps.target.outputs.upstream_sha }}
+          TARGET_SESSION: ${{ steps.target.outputs.target_session }}
         run: |
           set -euo pipefail
-          run_id=""
-          for attempt in $(seq 1 120); do
-            run_id="$(gh run list --repo "$REPO" --limit 100 \
-              --json databaseId,name,headSha \
-              --jq ".[] | select(.name == \"pages build and deployment\" and .headSha == \"$PUBLISHED_SHA\") | .databaseId" \
-              | head -n 1)"
-            if [[ -n "$run_id" ]]; then
-              break
-            fi
-            sleep 5
-          done
-          [[ -n "$run_id" ]] || { echo "::error::Pages deployment not found for upstream SHA $PUBLISHED_SHA"; exit 1; }
-
-          echo "Upstream Pages run_id=$run_id sha=$PUBLISHED_SHA"
-          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          python tools/confirm_upstream_pages.py \
+            --repo "$REPO" \
+            --published-sha "$PUBLISHED_SHA" \
+            --expected-session "$TARGET_SESSION"
 
       - name: Run complete Options refresh and wait through Pages
         id: options
