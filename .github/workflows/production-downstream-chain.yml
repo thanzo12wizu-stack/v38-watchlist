@@ -260,9 +260,58 @@ jobs:
           echo "Rotation strong-stock context run_id=$run_id"
           gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
 
-  options_overlay:
+  options_positioning:
     needs: [leadership_overlay]
     if: always() && needs.leadership_overlay.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 260
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Run Options positioning for the same completed session
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(gh run list --repo "$REPO" --workflow options.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run options.yml --repo "$REPO" --ref main
+          run_id=""
+          for attempt in $(seq 1 30); do
+            candidate="$(gh run list --repo "$REPO" --workflow options.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 2
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve Options positioning run"; exit 1; }
+          echo "Options positioning run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path('state.json').read_text(encoding='utf-8'))
+          positioning=json.loads(Path('options_positioning.json').read_text(encoding='utf-8'))
+          daily=json.loads(Path('options_daily_liquid_status.json').read_text(encoding='utf-8'))
+          target=str(state.get('date') or '')
+          dates={
+              'state': target,
+              'options_positioning': str(positioning.get('session_date') or ''),
+              'options_daily_liquid': str(daily.get('session_date') or ''),
+          }
+          if not target or any(v != target for v in dates.values()):
+              raise SystemExit(f'Options positioning session mismatch after refresh: {dates}')
+          print('OPTIONS_POSITIONING_SESSION_OK', dates)
+          PY
+
+  options_overlay:
+    needs: [options_positioning]
+    if: always() && needs.options_positioning.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -284,12 +333,16 @@ jobs:
           state=json.loads(Path('state.json').read_text(encoding='utf-8'))
           status=json.loads(Path('rotation/data/status.json').read_text(encoding='utf-8'))
           context=json.loads(Path('rotation/data/rotation-theme56-stock-context.json').read_text(encoding='utf-8'))
+          positioning=json.loads(Path('options_positioning.json').read_text(encoding='utf-8'))
+          daily=json.loads(Path('options_daily_liquid_status.json').read_text(encoding='utf-8'))
           target=str(state.get('date') or '')
           dates={
               'state': target,
               'rotation_status': str(status.get('asof') or ''),
               'leadership_market': str((context.get('leadership_market') or {}).get('asof') or ''),
               'leadership_coverage': str((context.get('leadership_coverage') or {}).get('market_asof') or ''),
+              'options_positioning': str(positioning.get('session_date') or ''),
+              'options_daily_liquid': str(daily.get('session_date') or ''),
           }
           if not target or any(v != target for v in dates.values()):
               raise SystemExit(f'Options upstream snapshot mismatch: {dates}')
