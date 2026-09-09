@@ -210,9 +210,9 @@
       "target_coverage_ratio": 0.9438137386954012,
       "recent_median_coverage_ratio": 0.9658456802001154,
       "window_rows": 123,
-      "source": "CACHE_PLUS_BATCH_RETRY",
-      "cache_hit": false,
-      "failed_batches": 13,
+      "source": "VALIDATED_CACHE",
+      "cache_hit": true,
+      "failed_batches": 0,
       "retry_rounds": 0
     }
   },
@@ -226,7 +226,7 @@
   },
   "refresh": {
     "status": "FRESH",
-    "attempted_at_utc": "2026-09-08T22:45:50Z",
+    "attempted_at_utc": "2026-09-09T01:43:21Z",
     "attempted_asof": "2026-09-08",
     "last_successful_asof": "2026-09-08",
     "preserved_previous_ready": false,
