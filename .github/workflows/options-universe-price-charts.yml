@@ -1,0 +1,175 @@
+name: Options universe price charts
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'state.json'
+      - 'universe.csv'
+      - 'tools/build_options_universe_price_shard.py'
+      - 'options-chart-bridge-v2.js'
+      - 'options-intelligence.html'
+      - '.github/workflows/options-universe-price-charts.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-universe-price-charts-main
+  cancel-in-progress: true
+
+jobs:
+  build-shards:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 18
+      matrix:
+        bucket: [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install chart dependency
+        run: python -m pip install --disable-pip-version-check yfinance
+
+      - name: Validate chart code
+        run: |
+          python -m py_compile tools/build_options_universe_price_shard.py
+          node --check options-chart-bridge-v2.js
+
+      - name: Build ${{ matrix.bucket }} price shard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/options-price
+          python tools/build_options_universe_price_shard.py \
+            --bucket '${{ matrix.bucket }}' \
+            --universe universe.csv \
+            --state state.json \
+            --previous options_price_history \
+            --options-seed options_chart_data.json \
+            --rotation-seed rotation/data/stock-chart \
+            --output '/tmp/options-price/${{ matrix.bucket }}.json' \
+            --period 1y \
+            --max-bars 260 \
+            --workers 4 \
+            --attempts 3
+
+      - name: Upload ${{ matrix.bucket }} shard
+        uses: actions/upload-artifact@v5
+        with:
+          name: options-price-${{ matrix.bucket }}
+          path: /tmp/options-price/${{ matrix.bucket }}.json
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: build-shards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 2
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: options-price-*
+          path: /tmp/options-price
+          merge-multiple: true
+
+      - name: Validate complete universe chart set
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/options-price')
+          expected = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+          rows = []
+          for bucket in expected:
+              path = root / f'{bucket}.json'
+              if not path.is_file():
+                  raise SystemExit(f'missing shard: {path}')
+              payload = json.loads(path.read_text(encoding='utf-8'))
+              if payload.get('bucket') != bucket:
+                  raise SystemExit(f'bucket mismatch: {bucket} -> {payload.get("bucket")}')
+              rows.append(payload)
+
+          sessions = {str(row.get('session_date') or '') for row in rows}
+          if len(sessions) != 1 or not next(iter(sessions)):
+              raise SystemExit(f'shard session mismatch: {sorted(sessions)}')
+          requested = sum(int(row.get('requested') or 0) for row in rows)
+          available = sum(int(row.get('available') or 0) for row in rows)
+          fresh = sum(int(row.get('fresh') or 0) for row in rows)
+          stale = sum(int(row.get('stale') or 0) for row in rows)
+          if requested <= 0:
+              raise SystemExit('empty universe price build')
+          coverage = available / requested
+          if coverage < 0.90:
+              raise SystemExit(f'universe price coverage too low: {available}/{requested} = {coverage:.2%}')
+
+          index = {
+              'schema_version': '1.0',
+              'session_date': next(iter(sessions)),
+              'requested': requested,
+              'available': available,
+              'fresh': fresh,
+              'stale': stale,
+              'failed_without_cache': max(0, requested - available),
+              'coverage': round(coverage, 6),
+              'shards': {row['bucket']: int(row.get('available') or 0) for row in rows},
+              'source': 'options_intelligence_universe_price_history_presentation_only',
+          }
+          (root / 'index.json').write_text(json.dumps(index, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+          print(json.dumps(index, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Publish only universe price chart artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          published=false
+          for attempt in 1 2 3; do
+            git fetch --depth=2 origin main
+            git reset --hard origin/main
+            rm -rf options_price_history
+            mkdir -p options_price_history
+            cp /tmp/options-price/*.json options_price_history/
+            git add -A -- options_price_history
+
+            unexpected="$(git diff --cached --name-only | grep -v '^options_price_history/' || true)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::Universe chart workflow attempted to stage files outside its ownership: $unexpected"
+              exit 1
+            fi
+            if git diff --staged --quiet; then
+              echo 'Universe price shards already current'
+              published=true
+              break
+            fi
+            session="$(python -c 'import json; print(json.load(open("options_price_history/index.json"))["session_date"])')"
+            git commit -m "Publish Options universe price charts ${session}"
+            if git push origin HEAD:main; then
+              published=true
+              break
+            fi
+            echo "::warning::Main changed concurrently; retry publish $attempt/3"
+            sleep $((attempt * 2))
+          done
+          [[ "$published" == true ]] || exit 1
