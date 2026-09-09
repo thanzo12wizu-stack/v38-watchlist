@@ -7,6 +7,11 @@ on:
     - cron: '47 23 * * 1-5'
   # コードpushでは実データ取得しない。通常更新はschedule、修復確認は明示的な手動実行。
   workflow_dispatch:
+    inputs:
+      expected_session:
+        description: '親Workflowから渡す完成対象セッション (YYYY-MM-DD、空なら最新READY上流)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -19,27 +24,99 @@ concurrency:
 jobs:
   options:
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 300
+    env:
+      OPTIONS_RELEASE_ROOT: release/options
+      OPTIONS_RELEASE_FILES: >-
+        options_positioning.json
+        options_history.csv
+        options-positioning.html
+        options_scan_history.csv
+        options_scan_state.json
+        options_daily_liquid_status.json
+        options_intelligence.json
+        options_intelligence_history.csv
+        options_chart_data.json
+        options_release_manifest.json
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Sync latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+
       - run: pip install --disable-pip-version-check -r requirements.txt pytest
 
       - name: Preflight tests
         run: |
           python -m py_compile build_dashboard.py tools/build_options_positioning.py \
             tools/build_options_positioning_directional.py tools/build_options_daily_liquid.py \
-            tools/build_options_intelligence.py tools/render_options_html.py
+            tools/build_options_intelligence.py tools/render_options_html.py \
+            tools/build_options_chart_data.py tools/build_options_chart_history_shards.py \
+            tools/validate_options_release.py
           node --check options-intelligence.js
+          node --check options-chart.js
+          node --check options-chart-bridge.js
           pytest -q tests/test_dashboard_build_regressions.py \
             tests/test_options_positioning_quality.py \
             tests/test_options_daily_liquid.py \
             tests/test_options_intelligence.py \
             tests/test_options_time_direction.py
 
-      - name: Build options positioning
+      - name: Wait for same-session upstream
+        id: upstream
+        shell: bash
+        env:
+          EXPECTED_SESSION_INPUT: ${{ inputs.expected_session || '' }}
+        run: |
+          set -euo pipefail
+          ready=false
+          target=""
+          for attempt in $(seq 1 40); do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+
+            if [[ -n "$EXPECTED_SESSION_INPUT" ]]; then
+              target="$EXPECTED_SESSION_INPUT"
+            else
+              target="$(python - <<'PY'
+          import json
+          print(str(json.load(open("state.json", encoding="utf-8")).get("date") or ""))
+          PY
+              )"
+            fi
+
+            echo "Options upstream attempt=$attempt target=$target"
+            if [[ -n "$target" ]] && python tools/validate_options_release.py \
+                --mode upstream --expected-session "$target"; then
+              ready=true
+              break
+            fi
+
+            if [[ "$attempt" -lt 40 ]]; then
+              sleep 30
+            fi
+          done
+
+          if [[ "$ready" != true ]]; then
+            echo "::error::Options upstream did not become same-session READY"
+            exit 1
+          fi
+          echo "target_session=$target" >> "$GITHUB_OUTPUT"
+          echo "TARGET_SESSION=$target" >> "$GITHUB_ENV"
+          echo "OPTIONS_UPSTREAM_READY $target"
+
+      - name: Build complete Options page snapshot
         env:
           V38_STATE_JSON: state.json
           V38_OPT_JSON: options_positioning.json
@@ -62,13 +139,11 @@ jobs:
           V38_OPT_DASHBOARD_HTML: command-center.html
 
           # Broad daily universe = common stock, Price >= $5, Dashboard DDV >= $10M.
-          # No RS / Theme / trend filter is allowed here. Options availability is
-          # checked for every qualifying name every trading day.
+          # No RS / Theme / trend filter is allowed here.
           V38_OPT_MIN_PRICE: '5'
           V38_OPT_MIN_DVOL_M: '10'
 
-          # Provider-friendly throttling. Every eligible name is attempted; transient
-          # failures are retried in later passes. Stale rows are never relabelled current.
+          # Provider-friendly throttling.
           V38_OPT_SCAN_WORKERS: '2'
           V38_OPT_DAILY_BATCH_SIZE: '20'
           V38_OPT_DAILY_BATCH_PAUSE: '1.5'
@@ -82,14 +157,20 @@ jobs:
           V38_OPT_RETRY_BASE_SECONDS: '2'
           V38_OPT_MIN_REFRESH_RATIO: '0.35'
           V38_OPT_STALE_DAYS: '3'
+
+          # Chart is built in this same job so the page is promoted atomically.
+          V38_OPT_CHART_JSON: options_chart_data.json
+          V38_OPT_CHART_HISTORY_DIR: options_chart_history
+          V38_OPT_CHART_HISTORY_MAX: '260'
+          V38_OPT_CHART_PERIOD: 1y
+          V38_OPT_CHART_WORKERS: '3'
+          V38_OPT_CHART_ATTEMPTS: '2'
         shell: bash
         run: |
           set -euo pipefail
 
           # Manual runs can occur while Yahoo exposes expiry labels but not a
-          # usable OI/IV chain. Probe the same analysis path used by production
-          # before starting a large refresh. If all three reference ETFs are
-          # unusable, preserve the committed last-known-good snapshot.
+          # usable OI/IV chain. Probe production before starting the broad refresh.
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             set +e
             python - <<'PY'
@@ -130,7 +211,7 @@ jobs:
             preflight_rc=$?
             set -e
             if [[ "$preflight_rc" == "42" ]]; then
-              echo "::warning::Yahoo option chains are not currently usable for SPY/QQQ/IWM. Keeping the previous committed Options snapshot."
+              echo "::warning::Yahoo option chains are not currently usable for SPY/QQQ/IWM. Keeping the previous committed complete Options snapshot."
               echo "### Options positioning" >> "$GITHUB_STEP_SUMMARY"
               echo "- Status: retained last-known-good" >> "$GITHUB_STEP_SUMMARY"
               echo "- Reason: no usable OI/IV chain for SPY / QQQ / IWM during manual run" >> "$GITHUB_STEP_SUMMARY"
@@ -141,64 +222,193 @@ jobs:
             fi
           fi
 
-          # 1) Small detailed set: up to 8 expiries for period selector.
+          # 1) Detailed Positioning.
           python tools/build_options_positioning_directional.py
 
-          # 2) Broad set: every liquid common stock, every trading day.
-          #    Detail names that are already fresh for this same session are not
-          #    fetched twice. All remaining names are attempted in throttled batches.
+          # 2) Broad Daily Liquid for the same Command Center session.
           python tools/build_options_daily_liquid.py
 
-          # 3) Rebuild downstream Options-only views. No reverse write to V38/Rotation.
+          # 3) Options-only presentation/intelligence.
           python tools/render_options_html.py
           python tools/build_options_intelligence.py
 
+          # 4) Chart data + broad history shards in the same release.
+          python tools/build_options_chart_data.py
+          python tools/build_options_chart_history_shards.py
+
+          # 5) Hard gate. Nothing is published unless every Options component
+          #    points to the same target session and passes its quality checks.
+          python tools/validate_options_release.py \
+            --mode release \
+            --expected-session "$TARGET_SESSION" \
+            --write-manifest options_release_manifest.json
+
+          # Build the public Options snapshot. The live Options page reads only
+          # this directory, so upstream pages may advance independently without
+          # exposing a half-updated Options view.
+          rm -rf "$OPTIONS_RELEASE_ROOT"
+          mkdir -p "$OPTIONS_RELEASE_ROOT/options_chart_history"
+          cp options_intelligence.json "$OPTIONS_RELEASE_ROOT/options_intelligence.json"
+          cp options_positioning.json "$OPTIONS_RELEASE_ROOT/options_positioning.json"
+          cp options_history.csv "$OPTIONS_RELEASE_ROOT/options_history.csv"
+          cp options_scan_history.csv "$OPTIONS_RELEASE_ROOT/options_scan_history.csv"
+          cp universe.csv "$OPTIONS_RELEASE_ROOT/universe.csv"
+          cp options-rs-leaders.json "$OPTIONS_RELEASE_ROOT/options-rs-leaders.json"
+          cp rotation/data/status.json "$OPTIONS_RELEASE_ROOT/rotation-status.json"
+          cp state.json "$OPTIONS_RELEASE_ROOT/state.json"
+          cp trend_history.json "$OPTIONS_RELEASE_ROOT/trend_history.json"
+          cp options_chart_data.json "$OPTIONS_RELEASE_ROOT/options_chart_data.json"
+          cp options_daily_liquid_status.json "$OPTIONS_RELEASE_ROOT/options_daily_liquid_status.json"
+          cp options_intelligence_history.csv "$OPTIONS_RELEASE_ROOT/options_intelligence_history.csv"
+          cp options_release_manifest.json "$OPTIONS_RELEASE_ROOT/options_release_manifest.json"
+          cp -a options_chart_history/. "$OPTIONS_RELEASE_ROOT/options_chart_history/"
+
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
 
-          p = Path("options_daily_liquid_status.json")
-          if p.is_file():
-              q = json.loads(p.read_text(encoding="utf-8"))
-              with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
-                  fh.write("### Daily liquid Options coverage\n")
-                  fh.write(f"- Session: {q.get('session_date')}\n")
-                  fh.write(f"- Eligible: {q.get('eligible_total')}\n")
-                  fh.write(f"- Fresh detailed: {q.get('detail_fresh')}\n")
-                  fh.write(f"- Broad attempted: {q.get('broad_attempted_unique')}/{q.get('broad_requested')}\n")
-                  fh.write(f"- Current checked: {float(q.get('daily_checked_ratio') or 0)*100:.1f}%\n")
-                  fh.write(f"- Fresh usable Options: {q.get('fresh_options_total')}\n")
-                  fh.write(f"- Unresolved after retries: {q.get('unresolved')}\n")
+          q = json.loads(Path("options_daily_liquid_status.json").read_text(encoding="utf-8"))
+          m = json.loads(Path("options_release_manifest.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write("### Complete Options page snapshot\n")
+              fh.write(f"- Session: {m.get('session_date')}\n")
+              fh.write(f"- Status: {m.get('status')}\n")
+              fh.write(f"- Eligible: {q.get('eligible_total')}\n")
+              fh.write(f"- Fresh detailed: {q.get('detail_fresh')}\n")
+              fh.write(f"- Broad attempted: {q.get('broad_attempted_unique')}/{q.get('broad_requested')}\n")
+              fh.write(f"- Current checked: {float(q.get('daily_checked_ratio') or 0)*100:.1f}%\n")
+              fh.write(f"- Fresh usable Options: {q.get('fresh_options_total')}\n")
+              fh.write(f"- Unresolved after retries: {q.get('unresolved')}\n")
+              fh.write("- Publish policy: atomic Options commit only after hard gate\n")
           PY
 
-      - name: Commit and refresh dashboard
+      - name: Publish complete Options snapshot atomically
+        id: publish
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          target="${{ steps.upstream.outputs.target_session }}"
+
+          # If provider preflight retained an already-complete snapshot for the
+          # same target, this validation still succeeds. A stale target fails closed.
+          python tools/validate_options_release.py \
+            --mode release \
+            --expected-session "$target"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for f in options_positioning.json options_history.csv \
-                   options-positioning.html options_scan_history.csv options_scan_state.json \
-                   options_daily_liquid_status.json \
-                   options_intelligence.json options_intelligence_history.csv; do
-            [[ -f "$f" ]] && git add -- "$f"
+
+          staging="$(mktemp -d)"
+          for file in $OPTIONS_RELEASE_FILES; do
+            [[ -f "$file" ]] || { echo "::error::Missing Options release artifact: $file"; exit 1; }
+            cp -a "$file" "$staging/$file"
           done
-          [[ -d options_cache ]] && git add -A options_cache || true
-          if git diff --staged --quiet; then
-            echo "no options changes"
-            exit 0
-          fi
-          git commit -m "Options positioning $(date +%F)"
-          pushed=false
-          for a in 1 2 3; do
+          [[ -d options_cache ]] || { echo "::error::Missing options_cache"; exit 1; }
+          [[ -d options_chart_history ]] || { echo "::error::Missing options_chart_history"; exit 1; }
+          cp -a options_cache "$staging/options_cache"
+          cp -a options_chart_history "$staging/options_chart_history"
+          [[ -d "$OPTIONS_RELEASE_ROOT" ]] || { echo "::error::Missing $OPTIONS_RELEASE_ROOT"; exit 1; }
+          mkdir -p "$staging/release"
+          cp -a "$OPTIONS_RELEASE_ROOT" "$staging/release/options"
+
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+
+            # Never promote a completed old Options snapshot after Command Center
+            # has advanced to a newer session.
+            python tools/validate_options_release.py \
+              --mode upstream --expected-session "$target"
+
+            for file in $OPTIONS_RELEASE_FILES; do
+              cp -a "$staging/$file" "$file"
+            done
+            mkdir -p options_cache options_chart_history
+            cp -a "$staging/options_cache"/. options_cache/
+            cp -a "$staging/options_chart_history"/. options_chart_history/
+            rm -rf "$OPTIONS_RELEASE_ROOT"
+            mkdir -p release
+            cp -a "$staging/release/options" "$OPTIONS_RELEASE_ROOT"
+
+            python tools/validate_options_release.py \
+              --mode release \
+              --expected-session "$target"
+
+            git add -- $OPTIONS_RELEASE_FILES
+            git add -A options_cache options_chart_history "$OPTIONS_RELEASE_ROOT"
+
+            unexpected="$(git diff --cached --name-only | while IFS= read -r changed; do
+              case "$changed" in
+                options_cache/*|options_chart_history/*|release/options/*) ;;
+                *)
+                  case " $OPTIONS_RELEASE_FILES " in
+                    *" $changed "*) ;;
+                    *) echo "$changed" ;;
+                  esac
+                  ;;
+              esac
+            done)"
+            if [[ -n "$unexpected" ]]; then
+              echo "::error::Options publish attempted to stage files outside its ownership: $unexpected"
+              exit 1
+            fi
+
+            if git diff --staged --quiet; then
+              echo "Complete Options snapshot already current on main"
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "published_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            git commit -m "Publish complete Options session $target"
+            published_sha="$(git rev-parse HEAD)"
             if git push origin HEAD:main; then
-              pushed=true
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              echo "published_sha=$published_sha" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning::Main changed concurrently; retry atomic Options publish $attempt/3"
+            sleep $((attempt * 3))
+          done
+
+          echo "::error::Atomic Options publish failed after 3 attempts"
+          exit 1
+
+      - name: Wait for Options page deployment
+        if: steps.publish.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHED_SHA: ${{ steps.publish.outputs.published_sha }}
+        run: |
+          set -euo pipefail
+          run_id=""
+          for attempt in $(seq 1 120); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --limit 100 \
+              --json databaseId,name,headSha \
+              --jq ".[] | select(.name == \"pages build and deployment\" and .headSha == \"$PUBLISHED_SHA\") | .databaseId" \
+              | head -n 1)"
+            if [[ -n "$run_id" ]]; then
               break
             fi
-            git fetch origin main
-            git rebase origin/main || { git rebase --abort || true; exit 1; }
-            sleep $((a*2))
+            sleep 5
           done
-          [[ "$pushed" == true ]] || exit 1
+          [[ -n "$run_id" ]] || { echo "::error::Pages deployment not found for $PUBLISHED_SHA"; exit 1; }
+          echo "Options Pages run_id=$run_id sha=$PUBLISHED_SHA"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 10
+
+      - name: Report Options publication
+        if: always() && steps.publish.outcome == 'success'
+        shell: bash
+        run: |
+          {
+            echo "### Options publication"
+            echo "- Session: ${{ steps.upstream.outputs.target_session }}"
+            echo "- Atomic commit: ${{ steps.publish.outputs.published_sha }}"
+            echo "- New commit: ${{ steps.publish.outputs.changed }}"
+            echo "- Daily Liquid / Intelligence / Chart: same-session hard gate"
+            echo "- Public source: release/options/ complete snapshot"
+          } >> "$GITHUB_STEP_SUMMARY"
