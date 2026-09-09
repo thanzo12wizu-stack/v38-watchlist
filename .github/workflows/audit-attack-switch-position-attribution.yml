@@ -1,0 +1,57 @@
+name: Audit ATTACK Switch Position Attribution
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/audit_attack_switch_position_attribution.py'
+      - '.github/workflows/audit-attack-switch-position-attribution.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt scipy
+
+      - name: Verify frozen holdout source
+        run: |
+          test "$(git rev-parse HEAD:research/validate_attack_schemes_holdout.py)" = "0088b1c3ee52625bbc9fde1650790b040c7f0d80"
+          test "$(git rev-parse HEAD:research/8t3i1e_freeze_manifest.json)" = "e6710fc021b71558b02af472361d76dcd60ee228"
+
+      - name: Compile
+        run: python -m py_compile research/audit_attack_switch_position_attribution.py
+
+      - name: Run fixed position attribution
+        run: |
+          python -u -m research.audit_attack_switch_position_attribution \
+            --root . \
+            --output research_outputs/attack_switch_position_attribution \
+            --batch-size 100
+
+      - name: Upload attribution
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-attack-switch-position-attribution-20260909
+          path: research_outputs/attack_switch_position_attribution
+          if-no-files-found: warn
+          retention-days: 90
