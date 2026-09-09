@@ -5,6 +5,7 @@ const SAME = './options_chart_data.json';
 const RAW = 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_chart_data.json';
 const SHARD_BASE = './options_chart_history';
 const SHARD_RAW = 'https://raw.githubusercontent.com/thanzo12wizu-stack/v38-watchlist/main/options_chart_history';
+const VERSION = '20260908';
 let payloadPromise = null;
 const shardPromises = new Map();
 let activeChart = null;
@@ -28,7 +29,8 @@ async function fetchJson(urls, label) {
   let last = null;
   for (const url of urls) {
     try {
-      const r = await fetch(`${url}?v=${Date.now()}`, { cache: 'no-store' });
+      const join = url.includes('?') ? '&' : '?';
+      const r = await fetch(`${url}${join}v=${VERSION}`, { cache: 'default' });
       if (!r.ok) { last = new Error(`${label}:${r.status}`); continue; }
       const j = await r.json();
       if (j && typeof j === 'object') return j;
@@ -111,7 +113,7 @@ function chartPanel(ticker, rec, levels, payload) {
   const status = stale
     ? '<span class="warn">価格履歴更新失敗・前回値</span>'
     : hasCandles ? '<span>価格履歴 OK</span>' : '<span>Options専用Spot履歴</span>';
-  const wallStatus = wallDays > 0 ? `<span>Wall履歴 ${wallDays}日</span>` : '<span class="warn">Wall履歴なし</span>';
+  const wallStatus = wallDays > 0 ? `<span>Wall履歴 ${wallDays}日</span>` : '<span class="warn">Wall履歴読込中</span>';
   const broadStatus = !hasCandles && obsDays ? '<span>Broad 7–21DTE</span>' : '';
   const legend = available ? `<div class="v38ChartLegend">
     ${hasCandles ? '<span class="tech ema"><b>21EMA</b></span><span class="tech sma150"><b>150SMA</b></span><span class="tech vwap"><b>63VWAP</b></span>' : '<span><b>Spot</b></span>'}
@@ -137,17 +139,14 @@ function chartPanel(ticker, rec, levels, payload) {
 function loadingPanel(ticker) {
   return `<section class="v38ChartPanel" data-chart-ticker="${esc(ticker)}" data-chart-loading="1">
     <div class="v38ChartHead"><div class="v38ChartHeadLeft"><span class="v38ChartEyebrow">PRICE + OPTIONS MAP</span><div class="v38ChartTitle"><b>${esc(ticker)}</b><span>日足を準備中</span></div></div><div class="v38ChartStatus"><span>価格履歴を先読み中</span></div></div>
-    <div class="v38ChartCanvas"><div class="v38ChartPending"><b>チャートを読み込み中</b>価格履歴とOptions履歴を同期しています。</div></div>
+    <div class="v38ChartCanvas"><div class="v38ChartPending"><b>チャートを読み込み中</b>価格履歴を取得しています。</div></div>
   </section>`;
 }
 
 function insertPanel(card, panel) {
   const inline = card.closest('.inlineAnalysis');
   const slot = inline?.querySelector(':scope > .inlineChartSlot');
-  if (slot) {
-    slot.replaceChildren(panel);
-    return;
-  }
+  if (slot) { slot.replaceChildren(panel); return; }
   const anchor = card.querySelector('.directionHero') || card.querySelector('.selectedBadges') || card.querySelector('.selectedTop');
   if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', panel);
   else card.appendChild(panel);
@@ -159,7 +158,6 @@ function restoreAnchorPosition() {
   const delta = nowTop - preserveAnchorTop;
   if (Math.abs(delta) > 0.5) window.scrollBy(0, delta);
 }
-
 function settleAnchorPosition() {
   restoreAnchorPosition();
   requestAnimationFrame(() => {
@@ -171,9 +169,34 @@ function settleAnchorPosition() {
     });
   });
 }
-
 function activeSelectedCard() {
   return document.querySelector('.inlineAnalysis .selectedCard') || document.querySelector('#selected .selectedCard');
+}
+
+function mountPanel(currentCard, ticker, rec, levels, payload, token) {
+  if (!currentCard || token !== mountToken) return false;
+  const holder = document.createElement('div');
+  holder.innerHTML = chartPanel(ticker, rec, levels, payload);
+  const panel = holder.firstElementChild;
+  const currentInline = currentCard.closest('.inlineAnalysis');
+  const oldPanel = currentInline?.querySelector(':scope > .inlineChartSlot .v38ChartPanel') || currentCard.querySelector('.v38ChartPanel');
+  if (oldPanel) oldPanel.replaceWith(panel);
+  else insertPanel(currentCard, panel);
+  restoreAnchorPosition();
+  const canvas = panel.querySelector('[data-v38-chart]');
+  if (canvas && rec && window.V38Chart?.mount) {
+    if (activeChart) { try { activeChart.destroy(); } catch (_) {} }
+    activeChart = window.V38Chart.mount({
+      element: canvas,
+      bars: rec.bars || [],
+      spotHistory: rec.spot_history || [],
+      ticker,
+      levels,
+      wallHistory: rec.wall_history || [],
+      stale: !!rec.stale,
+    });
+  }
+  return true;
 }
 
 async function mountCurrent() {
@@ -181,18 +204,11 @@ async function mountCurrent() {
   const card = activeSelectedCard();
   const ticker = card?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
   if (!card || !ticker) {
-    if (activeChart) {
-      try { activeChart.destroy(); } catch (_) {}
-      activeChart = null;
-    }
+    if (activeChart) { try { activeChart.destroy(); } catch (_) {} activeChart = null; }
     return;
   }
   const token = ++mountToken;
-
-  if (activeChart) {
-    try { activeChart.destroy(); } catch (_) {}
-    activeChart = null;
-  }
+  if (activeChart) { try { activeChart.destroy(); } catch (_) {} activeChart = null; }
   const inlineRoot = card.closest('.inlineAnalysis');
   (inlineRoot?.querySelector(':scope > .inlineChartSlot .v38ChartPanel') || card.querySelector('.v38ChartPanel'))?.remove();
 
@@ -207,19 +223,27 @@ async function mountCurrent() {
 
   const loadingHolder = document.createElement('div');
   loadingHolder.innerHTML = loadingPanel(ticker);
-  const loading = loadingHolder.firstElementChild;
-  insertPanel(card, loading);
+  insertPanel(card, loadingHolder.firstElementChild);
   restoreAnchorPosition();
 
-  const payloadP = loadPayload(false).catch(() => ({ tickers: {} }));
   const broadP = loadShard(ticker).catch(() => []);
-  const [payload, broadRows] = await Promise.all([payloadP, broadP]);
+  const payload = await loadPayload(false).catch(() => ({ tickers: {} }));
 
-  const currentCard = activeSelectedCard();
-  const currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
+  let currentCard = activeSelectedCard();
+  let currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
   if (token !== mountToken || currentTicker !== ticker || !currentCard) return;
 
   const detailRec = payload?.tickers?.[ticker] || null;
+  if (detailRec?.bars?.length) {
+    mountPanel(currentCard, ticker, detailRec, baseLevels, payload, token);
+    settleAnchorPosition();
+  }
+
+  const broadRows = await broadP;
+  currentCard = activeSelectedCard();
+  currentTicker = currentCard?.querySelector('.selectedTicker')?.textContent?.trim()?.toUpperCase();
+  if (token !== mountToken || currentTicker !== ticker || !currentCard) return;
+
   const rec = withBroadHistory(detailRec, broadRows);
   const broadLatest = Array.isArray(broadRows) ? broadRows.at(-1) : null;
   const levels = {
@@ -229,28 +253,7 @@ async function mountCurrent() {
     expectedLow: baseLevels.expectedLow,
     expectedHigh: baseLevels.expectedHigh,
   };
-
-  const holder = document.createElement('div');
-  holder.innerHTML = chartPanel(ticker, rec, levels, payload);
-  const panel = holder.firstElementChild;
-  const currentInline = currentCard.closest('.inlineAnalysis');
-  const oldLoading = currentInline?.querySelector(':scope > .inlineChartSlot .v38ChartPanel[data-chart-loading="1"]') || currentCard.querySelector('.v38ChartPanel[data-chart-loading="1"]');
-  if (oldLoading) oldLoading.replaceWith(panel);
-  else insertPanel(currentCard, panel);
-  restoreAnchorPosition();
-
-  const canvas = panel.querySelector('[data-v38-chart]');
-  if (canvas && rec && window.V38Chart?.mount) {
-    activeChart = window.V38Chart.mount({
-      element: canvas,
-      bars: rec.bars || [],
-      spotHistory: rec.spot_history || [],
-      ticker,
-      levels,
-      wallHistory: rec.wall_history || [],
-      stale: !!rec.stale,
-    });
-  }
+  mountPanel(currentCard, ticker, rec, levels, payload, token);
   settleAnchorPosition();
 }
 
@@ -259,11 +262,9 @@ function schedule() {
   scheduled = true;
   requestAnimationFrame(() => mountCurrent().catch(err => console.error('OPTIONS_CHART', err)));
 }
-
 function installNavigationBehavior() {
   if (document.documentElement.dataset.chartAnchorPatched === '1') return;
   document.documentElement.dataset.chartAnchorPatched = '1';
-
   document.addEventListener('pointerdown', e => {
     const item = e.target.closest?.('[data-ticker]');
     if (!item) return;
@@ -274,7 +275,6 @@ function installNavigationBehavior() {
     if (ticker) loadShard(ticker).catch(() => []);
   }, true);
 }
-
 function boot() {
   const selected = document.querySelector('#selected');
   if (!selected) return;
@@ -284,7 +284,6 @@ function boot() {
   window.addEventListener('options:inline-selected-change', schedule);
   schedule();
 }
-
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
 else boot();
 })();
