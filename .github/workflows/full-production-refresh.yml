@@ -1,0 +1,220 @@
+name: Full production refresh
+
+on:
+  workflow_dispatch: {}
+  # One-time implementation self-test. Removed after the first verified run.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/full-production-refresh.yml'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: full-production-refresh-main
+  cancel-in-progress: false
+
+env:
+  REPO: ${{ github.repository }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 480
+    steps:
+      - name: Run Command Center and wait
+        id: command
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          downstream_before="$(gh run list --repo "$REPO" \
+            --workflow production-downstream-chain.yml --limit 1 \
+            --json databaseId --jq '.[0].databaseId // 0')"
+          echo "downstream_before=$downstream_before" >> "$GITHUB_OUTPUT"
+
+          before="$(gh run list --repo "$REPO" \
+            --workflow dashboard.yml --event workflow_dispatch --limit 1 \
+            --json databaseId --jq '.[0].databaseId // 0')"
+
+          gh workflow run dashboard.yml --repo "$REPO" --ref main
+
+          run_id=""
+          for attempt in $(seq 1 40); do
+            candidate="$(gh run list --repo "$REPO" \
+              --workflow dashboard.yml --event workflow_dispatch --limit 1 \
+              --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 3
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve Command Center run"; exit 1; }
+
+          echo "Command Center run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          echo "command_run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for production downstream chain
+        id: downstream
+        shell: bash
+        env:
+          BEFORE: ${{ steps.command.outputs.downstream_before }}
+        run: |
+          set -euo pipefail
+          run_id=""
+          for attempt in $(seq 1 80); do
+            candidate="$(gh run list --repo "$REPO" \
+              --workflow production-downstream-chain.yml --limit 10 \
+              --json databaseId,event \
+              --jq '.[] | select(.event == "workflow_run") | .databaseId' \
+              | head -n 1)"
+            if [[ -n "$candidate" && "$candidate" != "$BEFORE" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 5
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve automatic downstream run"; exit 1; }
+
+          echo "Downstream run_id=$run_id"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          echo "downstream_run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Lock completed upstream session
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+
+          target="$(python - <<'PY'
+          import json
+          print(str(json.load(open("state.json", encoding="utf-8")).get("date") or ""))
+          PY
+          )"
+          [[ -n "$target" ]] || { echo "::error::state.json has no date"; exit 1; }
+
+          python tools/validate_options_release.py \
+            --mode upstream --expected-session "$target"
+
+          sha="$(git rev-parse HEAD)"
+          echo "target_session=$target" >> "$GITHUB_OUTPUT"
+          echo "upstream_sha=$sha" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Upstream pages ready"
+            echo "- Session: $target"
+            echo "- Command Center: READY"
+            echo "- V38 / TQQQ / Sleeve: downstream SUCCESS"
+            echo "- Rotation / Leadership: downstream SUCCESS"
+            echo "- Main SHA before Options: $sha"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Confirm completed upstream pages are deployed
+        shell: bash
+        env:
+          PUBLISHED_SHA: ${{ steps.target.outputs.upstream_sha }}
+        run: |
+          set -euo pipefail
+          run_id=""
+          for attempt in $(seq 1 120); do
+            run_id="$(gh run list --repo "$REPO" --limit 100 \
+              --json databaseId,name,headSha \
+              --jq ".[] | select(.name == \"pages build and deployment\" and .headSha == \"$PUBLISHED_SHA\") | .databaseId" \
+              | head -n 1)"
+            if [[ -n "$run_id" ]]; then
+              break
+            fi
+            sleep 5
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Pages deployment not found for upstream SHA $PUBLISHED_SHA"; exit 1; }
+
+          echo "Upstream Pages run_id=$run_id sha=$PUBLISHED_SHA"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+
+      - name: Run complete Options refresh and wait through Pages
+        id: options
+        shell: bash
+        env:
+          TARGET_SESSION: ${{ steps.target.outputs.target_session }}
+        run: |
+          set -euo pipefail
+
+          before="$(gh run list --repo "$REPO" \
+            --workflow options.yml --event workflow_dispatch --limit 1 \
+            --json databaseId --jq '.[0].databaseId // 0')"
+
+          gh workflow run options.yml --repo "$REPO" --ref main \
+            -f expected_session="$TARGET_SESSION"
+
+          run_id=""
+          for attempt in $(seq 1 40); do
+            candidate="$(gh run list --repo "$REPO" \
+              --workflow options.yml --event workflow_dispatch --limit 1 \
+              --json databaseId --jq '.[0].databaseId // 0')"
+            if [[ "$candidate" != "0" && "$candidate" != "$before" ]]; then
+              run_id="$candidate"
+              break
+            fi
+            sleep 3
+          done
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve Options run"; exit 1; }
+
+          echo "Options run_id=$run_id target=$TARGET_SESSION"
+          gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
+          echo "options_run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Final same-session audit
+        shell: bash
+        env:
+          TARGET_SESSION: ${{ steps.target.outputs.target_session }}
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git reset --hard origin/main
+
+          python tools/validate_options_release.py \
+            --mode release --expected-session "$TARGET_SESSION"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          target = os.environ["TARGET_SESSION"]
+          root = json.loads(Path("options_release_manifest.json").read_text(encoding="utf-8"))
+          pub = json.loads(Path("release/options/options_release_manifest.json").read_text(encoding="utf-8"))
+
+          for label, data in (("root", root), ("public", pub)):
+              if data.get("status") != "READY" or str(data.get("session_date") or "") != target:
+                  raise SystemExit(f"{label} Options manifest not READY for {target}: {data}")
+
+          print("FULL_PRODUCTION_REFRESH_READY", target)
+          PY
+
+          final_sha="$(git rev-parse HEAD)"
+          release_sha="$(gh api "repos/$REPO/commits?path=release/options/options_release_manifest.json&per_page=1" --jq '.[0].sha')"
+
+          {
+            echo "### Full production refresh COMPLETE"
+            echo "- Session: $TARGET_SESSION"
+            echo "- Command Center: PUBLISHED"
+            echo "- V38: PUBLISHED"
+            echo "- Rotation: PUBLISHED"
+            echo "- Options: PUBLISHED complete snapshot"
+            echo "- Options release commit: $release_sha"
+            echo "- Final main SHA: $final_sha"
+            echo "- Daily Liquid / Intelligence / Chart: same-session verified"
+            echo "- Incomplete Options states are never promoted to release/options/"
+          } >> "$GITHUB_STEP_SUMMARY"
