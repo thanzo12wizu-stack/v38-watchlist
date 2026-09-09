@@ -1,0 +1,70 @@
+name: Audit ATTACK Switch All Windows
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [research/stock-nqsar-transition-early-20260907]
+    paths:
+      - 'research/audit_attack_switch_all_windows.py'
+      - '.github/workflows/audit-attack-switch-all-windows.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: research/stock-nqsar-transition-early-20260907
+          fetch-depth: 1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check -r requirements.txt scipy
+      - name: Download frozen Stage56 TQQQ series
+        uses: actions/download-artifact@v4
+        with:
+          name: tqqq-stage56-mandate-fx-tax
+          path: research_inputs/tqqq
+          github-token: ${{ github.token }}
+          run-id: 33080590798
+      - name: Download frozen final Gross100 Reset component
+        uses: actions/download-artifact@v4
+        with:
+          name: gross100-final-reset-recheck
+          path: research_inputs/gross100
+          github-token: ${{ github.token }}
+          run-id: 33405477190
+      - name: Verify frozen strategy sources
+        run: |
+          test "$(git rev-parse HEAD:research/validate_attack_schemes_holdout.py)" = "0088b1c3ee52625bbc9fde1650790b040c7f0d80"
+          test "$(git rev-parse HEAD:research/attack_scheme_holdout_freeze.json)" = "f2b5018d8ea5388d82b9f6568866424d4728ba5e"
+          test "$(git rev-parse HEAD:research/nqsar_hybrid_three_role_exact.py)" = "5e65aa58bea455740156b1819d561a4a280acf84"
+          test "$(git rev-parse HEAD:build_v38_sleeve_live.py)" = "b8da7fec2b01707f699d979b721e19910e423e09"
+      - name: Compile
+        run: python -m py_compile research/audit_attack_switch_all_windows.py
+      - name: Run final all-window path audit
+        run: |
+          python -u -m research.audit_attack_switch_all_windows \
+            --root . \
+            --tqqq-daily research_inputs/tqqq/tqqq_stage56_daily.csv.gz \
+            --reset-daily research_inputs/gross100/gross100_final_reset_components/rsi_RESET_RISE30_S029_P4_H20_daily.csv.gz \
+            --output research_outputs/attack_switch_all_windows \
+            --batch-size 100
+      - name: Upload all-window audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-attack-switch-all-windows-20260909
+          path: research_outputs/attack_switch_all_windows
+          if-no-files-found: warn
+          retention-days: 90
