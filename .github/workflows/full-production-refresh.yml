@@ -32,8 +32,11 @@ jobs:
           set -euo pipefail
 
           downstream_before="$(gh run list --repo "$REPO" \
-            --workflow production-downstream-chain.yml --limit 1 \
-            --json databaseId --jq '.[0].databaseId // 0')"
+            --workflow production-downstream-chain.yml --limit 20 \
+            --json databaseId,event \
+            --jq '.[] | select(.event == "workflow_run") | .databaseId' \
+            | head -n 1)"
+          downstream_before="${downstream_before:-0}"
           echo "downstream_before=$downstream_before" >> "$GITHUB_OUTPUT"
 
           before="$(gh run list --repo "$REPO" \
@@ -69,19 +72,19 @@ jobs:
           run_id=""
           for attempt in $(seq 1 80); do
             candidate="$(gh run list --repo "$REPO" \
-              --workflow production-downstream-chain.yml --limit 10 \
+              --workflow production-downstream-chain.yml --limit 20 \
               --json databaseId,event \
               --jq '.[] | select(.event == "workflow_run") | .databaseId' \
               | head -n 1)"
-            if [[ -n "$candidate" && "$candidate" != "$BEFORE" ]]; then
+            if [[ -n "$candidate" ]] && (( candidate > BEFORE )); then
               run_id="$candidate"
               break
             fi
             sleep 5
           done
-          [[ -n "$run_id" ]] || { echo "::error::Could not resolve automatic downstream run"; exit 1; }
+          [[ -n "$run_id" ]] || { echo "::error::Could not resolve automatic downstream run newer than baseline $BEFORE"; exit 1; }
 
-          echo "Downstream run_id=$run_id"
+          echo "Downstream run_id=$run_id baseline=$BEFORE"
           gh run watch "$run_id" --repo "$REPO" --exit-status --interval 10
           echo "downstream_run_id=$run_id" >> "$GITHUB_OUTPUT"
 
