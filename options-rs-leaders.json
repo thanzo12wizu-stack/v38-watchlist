@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "asof": "2026-11-18",
+  "asof": "2026-11-19",
   "source": "command-center.rs_pool",
   "mapping": {
     "short": {
@@ -17,7 +17,7 @@
     }
   },
   "leadership_market": {
-    "asof": "2026-11-18"
+    "asof": "2026-11-19"
   },
   "rankings": {
     "short": {
@@ -30,59 +30,59 @@
           "value": 100.0
         },
         {
-          "ticker": "SG",
+          "ticker": "XERS",
           "rank": 2,
-          "value": 99.956351
+          "value": 99.956217
         },
         {
-          "ticker": "XERS",
+          "ticker": "SG",
           "rank": 3,
-          "value": 99.912702
+          "value": 99.912434
         },
         {
           "ticker": "SGRY",
           "rank": 4,
-          "value": 99.869053
+          "value": 99.868651
         },
         {
           "ticker": "VIA",
           "rank": 5,
-          "value": 99.825404
+          "value": 99.824869
         },
         {
-          "ticker": "MYGN",
+          "ticker": "RSKD",
           "rank": 6,
-          "value": 99.781755
+          "value": 99.781086
         },
         {
           "ticker": "TLS",
           "rank": 7,
-          "value": 99.738106
-        },
-        {
-          "ticker": "RCEL",
-          "rank": 8,
-          "value": 99.694457
-        },
-        {
-          "ticker": "RSKD",
-          "rank": 9,
-          "value": 99.650808
+          "value": 99.737303
         },
         {
           "ticker": "GDYN",
-          "rank": 10,
-          "value": 99.607158
+          "rank": 8,
+          "value": 99.69352
         },
         {
           "ticker": "NTSK",
-          "rank": 11,
-          "value": 99.563509
+          "rank": 9,
+          "value": 99.649737
         },
         {
-          "ticker": "ONT",
+          "ticker": "ASO",
+          "rank": 10,
+          "value": 99.605954
+        },
+        {
+          "ticker": "CDNA",
+          "rank": 11,
+          "value": 99.562172
+        },
+        {
+          "ticker": "CRCT",
           "rank": 12,
-          "value": 99.51986
+          "value": 99.518389
         }
       ]
     },
@@ -96,59 +96,59 @@
           "value": 100.0
         },
         {
-          "ticker": "RCEL",
-          "rank": 2,
-          "value": 99.955947
-        },
-        {
           "ticker": "CDNA",
-          "rank": 3,
-          "value": 99.911894
+          "rank": 2,
+          "value": 99.955811
         },
         {
           "ticker": "VIA",
-          "rank": 4,
-          "value": 99.867841
+          "rank": 3,
+          "value": 99.911622
         },
         {
           "ticker": "SLN",
-          "rank": 5,
-          "value": 99.823789
+          "rank": 4,
+          "value": 99.867433
         },
         {
           "ticker": "XNCR",
-          "rank": 6,
-          "value": 99.779736
+          "rank": 5,
+          "value": 99.823243
         },
         {
           "ticker": "XERS",
-          "rank": 7,
-          "value": 99.735683
-        },
-        {
-          "ticker": "AZTA",
-          "rank": 8,
-          "value": 99.69163
+          "rank": 6,
+          "value": 99.779054
         },
         {
           "ticker": "AMPL",
-          "rank": 9,
-          "value": 99.647577
+          "rank": 7,
+          "value": 99.734865
         },
         {
           "ticker": "APPN",
+          "rank": 8,
+          "value": 99.690676
+        },
+        {
+          "ticker": "AZTA",
+          "rank": 9,
+          "value": 99.646487
+        },
+        {
+          "ticker": "TXG",
           "rank": 10,
-          "value": 99.603524
+          "value": 99.602298
         },
         {
           "ticker": "CBRL",
           "rank": 11,
-          "value": 99.559471
+          "value": 99.558109
         },
         {
-          "ticker": "ABCL",
+          "ticker": "PD",
           "rank": 12,
-          "value": 99.515419
+          "value": 99.51392
         }
       ]
     },
@@ -164,57 +164,57 @@
         {
           "ticker": "SLN",
           "rank": 2,
-          "value": 99.955536
-        },
-        {
-          "ticker": "MRNA",
-          "rank": 3,
-          "value": 99.911072
-        },
-        {
-          "ticker": "RCEL",
-          "rank": 4,
-          "value": 99.866607
+          "value": 99.955377
         },
         {
           "ticker": "CDNA",
-          "rank": 5,
-          "value": 99.822143
+          "rank": 3,
+          "value": 99.910754
+        },
+        {
+          "ticker": "MRNA",
+          "rank": 4,
+          "value": 99.866131
         },
         {
           "ticker": "ABCL",
-          "rank": 6,
-          "value": 99.777679
+          "rank": 5,
+          "value": 99.821508
         },
         {
           "ticker": "ETON",
+          "rank": 6,
+          "value": 99.776885
+        },
+        {
+          "ticker": "EVC",
           "rank": 7,
-          "value": 99.733215
+          "value": 99.732262
         },
         {
           "ticker": "PUBM",
           "rank": 8,
-          "value": 99.688751
+          "value": 99.687639
         },
         {
           "ticker": "PAYS",
           "rank": 9,
-          "value": 99.644286
+          "value": 99.643017
         },
         {
-          "ticker": "EVC",
+          "ticker": "FROG",
           "rank": 10,
-          "value": 99.599822
-        },
-        {
-          "ticker": "LIFE",
-          "rank": 11,
-          "value": 99.555358
+          "value": 99.598394
         },
         {
           "ticker": "TXG",
+          "rank": 11,
+          "value": 99.553771
+        },
+        {
+          "ticker": "XNCR",
           "rank": 12,
-          "value": 99.510894
+          "value": 99.509148
         }
       ]
     }
@@ -226,259 +226,259 @@
       "role": "DASHBOARD_RS",
       "rank_rs63": 1,
       "rs63": 100.0,
-      "rs126": 98.061674,
-      "rs189": 97.46554
-    },
-    {
-      "symbol": "SG",
-      "ticker": "SG",
-      "role": "DASHBOARD_RS",
-      "rank_rs63": 2,
-      "rs63": 99.956351,
-      "rs126": 90.748899,
-      "rs189": 97.554469
+      "rs126": 98.409191,
+      "rs189": 96.787149
     },
     {
       "symbol": "XERS",
       "ticker": "XERS",
       "role": "DASHBOARD_RS",
+      "rank_rs63": 2,
+      "rs63": 99.956217,
+      "rs126": 99.779054,
+      "rs189": 98.92905,
+      "rank_rs126": 6
+    },
+    {
+      "symbol": "SG",
+      "ticker": "SG",
+      "role": "DASHBOARD_RS",
       "rank_rs63": 3,
-      "rs63": 99.912702,
-      "rs126": 99.735683,
-      "rs189": 98.888395,
-      "rank_rs126": 7
+      "rs63": 99.912434,
+      "rs126": 91.515687,
+      "rs189": 98.081214
     },
     {
       "symbol": "SGRY",
       "ticker": "SGRY",
       "role": "DASHBOARD_RS",
       "rank_rs63": 4,
-      "rs63": 99.869053,
-      "rs126": 98.281938,
-      "rs189": 94.39751
+      "rs63": 99.868651,
+      "rs126": 98.674326,
+      "rs189": 94.332887
     },
     {
       "symbol": "VIA",
       "ticker": "VIA",
       "role": "DASHBOARD_RS",
       "rank_rs63": 5,
-      "rs63": 99.825404,
-      "rs126": 99.867841,
-      "rs189": 99.421965,
-      "rank_rs126": 4
+      "rs63": 99.824869,
+      "rs126": 99.911622,
+      "rs189": 99.375279,
+      "rank_rs126": 3
     },
     {
-      "symbol": "MYGN",
-      "ticker": "MYGN",
+      "symbol": "RSKD",
+      "ticker": "RSKD",
       "role": "DASHBOARD_RS",
       "rank_rs63": 6,
-      "rs63": 99.781755,
-      "rs126": 90.837004,
-      "rs189": 79.546465
+      "rs63": 99.781086,
+      "rs126": 98.762704,
+      "rs189": 97.72423
     },
     {
       "symbol": "TLS",
       "ticker": "TLS",
       "role": "DASHBOARD_RS",
       "rank_rs63": 7,
-      "rs63": 99.738106,
-      "rs126": 94.361233,
-      "rs189": 94.797688
-    },
-    {
-      "symbol": "RCEL",
-      "ticker": "RCEL",
-      "role": "DASHBOARD_RS",
-      "rank_rs63": 8,
-      "rs63": 99.694457,
-      "rs126": 99.955947,
-      "rs189": 99.866607,
-      "rank_rs126": 2,
-      "rank_rs189": 4
-    },
-    {
-      "symbol": "RSKD",
-      "ticker": "RSKD",
-      "role": "DASHBOARD_RS",
-      "rank_rs63": 9,
-      "rs63": 99.650808,
-      "rs126": 98.414097,
-      "rs189": 97.732325
+      "rs63": 99.737303,
+      "rs126": 94.653115,
+      "rs189": 94.957608
     },
     {
       "symbol": "GDYN",
       "ticker": "GDYN",
       "role": "DASHBOARD_RS",
-      "rank_rs63": 10,
-      "rs63": 99.607158,
-      "rs126": 97.665198,
-      "rs189": 95.375723
+      "rank_rs63": 8,
+      "rs63": 99.69352,
+      "rs126": 97.878922,
+      "rs189": 96.20705
     },
     {
       "symbol": "NTSK",
       "ticker": "NTSK",
       "role": "DASHBOARD_RS",
-      "rank_rs63": 11,
-      "rs63": 99.563509,
-      "rs126": 98.325991,
-      "rs189": 96.754113
+      "rank_rs63": 9,
+      "rs63": 99.649737,
+      "rs126": 98.718515,
+      "rs189": 97.991968
     },
     {
-      "symbol": "ONT",
-      "ticker": "ONT",
+      "symbol": "ASO",
+      "ticker": "ASO",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 10,
+      "rs63": 99.605954,
+      "rs126": 90.985418,
+      "rs189": 80.053548
+    },
+    {
+      "symbol": "CDNA",
+      "ticker": "CDNA",
+      "role": "DASHBOARD_RS",
+      "rank_rs63": 11,
+      "rs63": 99.562172,
+      "rs126": 99.955811,
+      "rs189": 99.910754,
+      "rank_rs126": 2,
+      "rank_rs189": 3
+    },
+    {
+      "symbol": "CRCT",
+      "ticker": "CRCT",
       "role": "DASHBOARD_RS",
       "rank_rs63": 12,
-      "rs63": 99.51986,
-      "rs126": 93.127753,
-      "rs189": 55.669186
+      "rs63": 99.518389,
+      "rs126": 99.425541,
+      "rs189": 95.983936
     },
     {
       "symbol": "MRNA",
       "ticker": "MRNA",
       "role": "DASHBOARD_RS",
       "rank_rs126": 1,
-      "rs63": 99.039721,
+      "rs63": 98.423818,
       "rs126": 100.0,
-      "rs189": 99.911072,
-      "rank_rs189": 3
-    },
-    {
-      "symbol": "CDNA",
-      "ticker": "CDNA",
-      "role": "DASHBOARD_RS",
-      "rank_rs126": 3,
-      "rs63": 99.388913,
-      "rs126": 99.911894,
-      "rs189": 99.822143,
-      "rank_rs189": 5
+      "rs189": 99.866131,
+      "rank_rs189": 4
     },
     {
       "symbol": "SLN",
       "ticker": "SLN",
       "role": "DASHBOARD_RS",
-      "rank_rs126": 5,
-      "rs63": 99.170668,
-      "rs126": 99.823789,
-      "rs189": 99.955536,
+      "rank_rs126": 4,
+      "rs63": 99.343257,
+      "rs126": 99.867433,
+      "rs189": 99.955377,
       "rank_rs189": 2
     },
     {
       "symbol": "XNCR",
       "ticker": "XNCR",
       "role": "DASHBOARD_RS",
-      "rank_rs126": 6,
-      "rs63": 95.635094,
-      "rs126": 99.779736,
-      "rs189": 99.46643
-    },
-    {
-      "symbol": "AZTA",
-      "ticker": "AZTA",
-      "role": "DASHBOARD_RS",
-      "rank_rs126": 8,
-      "rs63": 97.20646,
-      "rs126": 99.69163,
-      "rs189": 92.663406
+      "rank_rs126": 5,
+      "rs63": 95.665499,
+      "rs126": 99.823243,
+      "rs189": 99.509148,
+      "rank_rs189": 12
     },
     {
       "symbol": "AMPL",
       "ticker": "AMPL",
       "role": "DASHBOARD_RS",
-      "rank_rs126": 9,
-      "rs63": 96.639022,
-      "rs126": 99.647577,
-      "rs189": 98.488217
+      "rank_rs126": 7,
+      "rs63": 96.716287,
+      "rs126": 99.734865,
+      "rs189": 98.48282
     },
     {
       "symbol": "APPN",
       "ticker": "APPN",
       "role": "DASHBOARD_RS",
+      "rank_rs126": 8,
+      "rs63": 98.992995,
+      "rs126": 99.690676,
+      "rs189": 97.590361
+    },
+    {
+      "symbol": "AZTA",
+      "ticker": "AZTA",
+      "role": "DASHBOARD_RS",
+      "rank_rs126": 9,
+      "rs63": 96.278459,
+      "rs126": 99.646487,
+      "rs189": 92.057117
+    },
+    {
+      "symbol": "TXG",
+      "ticker": "TXG",
+      "role": "DASHBOARD_RS",
       "rank_rs126": 10,
-      "rs63": 98.821475,
-      "rs126": 99.603524,
-      "rs189": 97.821254
+      "rs63": 35.770578,
+      "rs126": 99.602298,
+      "rs189": 99.553771,
+      "rank_rs189": 11
     },
     {
       "symbol": "CBRL",
       "ticker": "CBRL",
       "role": "DASHBOARD_RS",
       "rank_rs126": 11,
-      "rs63": 97.773898,
-      "rs126": 99.559471,
-      "rs189": 98.31036
+      "rs63": 96.190893,
+      "rs126": 99.558109,
+      "rs189": 97.634984
     },
     {
-      "symbol": "ABCL",
-      "ticker": "ABCL",
+      "symbol": "PD",
+      "ticker": "PD",
       "role": "DASHBOARD_RS",
       "rank_rs126": 12,
-      "rs63": 49.061545,
-      "rs126": 99.515419,
-      "rs189": 99.777679,
-      "rank_rs189": 6
+      "rs63": 97.022767,
+      "rs126": 99.51392,
+      "rs189": 98.572066
     },
     {
       "symbol": "AGL",
       "ticker": "AGL",
       "role": "DASHBOARD_RS",
       "rank_rs189": 1,
-      "rs63": 55.390659,
-      "rs126": 66.387665,
+      "rs63": 50.30648,
+      "rs126": 69.907203,
       "rs189": 100.0
+    },
+    {
+      "symbol": "ABCL",
+      "ticker": "ABCL",
+      "role": "DASHBOARD_RS",
+      "rank_rs189": 5,
+      "rs63": 59.763573,
+      "rs126": 99.204596,
+      "rs189": 99.821508
     },
     {
       "symbol": "ETON",
       "ticker": "ETON",
       "role": "DASHBOARD_RS",
+      "rank_rs189": 6,
+      "rs63": 60.726795,
+      "rs126": 97.260274,
+      "rs189": 99.776885
+    },
+    {
+      "symbol": "EVC",
+      "ticker": "EVC",
+      "role": "DASHBOARD_RS",
       "rank_rs189": 7,
-      "rs63": 70.755129,
-      "rs126": 97.488987,
-      "rs189": 99.733215
+      "rs63": 89.316988,
+      "rs126": 42.15643,
+      "rs189": 99.732262
     },
     {
       "symbol": "PUBM",
       "ticker": "PUBM",
       "role": "DASHBOARD_RS",
       "rank_rs189": 8,
-      "rs63": 95.067656,
-      "rs126": 98.634361,
-      "rs189": 99.688751
+      "rs63": 96.322242,
+      "rs126": 98.630137,
+      "rs189": 99.687639
     },
     {
       "symbol": "PAYS",
       "ticker": "PAYS",
       "role": "DASHBOARD_RS",
       "rank_rs189": 9,
-      "rs63": 11.436054,
-      "rs126": 95.110132,
-      "rs189": 99.644286
+      "rs63": 11.996497,
+      "rs126": 95.006628,
+      "rs189": 99.643017
     },
     {
-      "symbol": "EVC",
-      "ticker": "EVC",
+      "symbol": "FROG",
+      "ticker": "FROG",
       "role": "DASHBOARD_RS",
       "rank_rs189": 10,
-      "rs63": 79.484941,
-      "rs126": 57.180617,
-      "rs189": 99.599822
-    },
-    {
-      "symbol": "LIFE",
-      "ticker": "LIFE",
-      "role": "DASHBOARD_RS",
-      "rank_rs189": 11,
-      "rs63": 53.775644,
-      "rs126": 95.066079,
-      "rs189": 99.555358
-    },
-    {
-      "symbol": "TXG",
-      "ticker": "TXG",
-      "role": "DASHBOARD_RS",
-      "rank_rs189": 12,
-      "rs63": 35.050196,
-      "rs126": 99.427313,
-      "rs189": 99.510894
+      "rs63": 96.015762,
+      "rs126": 95.271763,
+      "rs189": 99.598394
     }
   ]
 }
